@@ -1,0 +1,28 @@
+{
+  "name": "youmart",
+  "version": "0.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.19.0 <21.0.0",
+    "pnpm": "9.15.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "lint": "eslint . --ext .ts,.tsx,.js,.cjs,.mjs",
+    "format": "prettier --write .",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "infra:up": "docker compose -f docker/docker-compose.yml --env-file .env up -d",
+    "infra:down": "docker compose -f docker/docker-compose.yml --env-file .env down",
+    "infra:logs": "docker compose -f docker/docker-compose.yml --env-file .env logs -f"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "@typescript-eslint/eslint-plugin": "8.70.0",
+    "@typescript-eslint/parser": "8.70.0",
+    "eslint": "8.57.1",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-prettier": "5.5.6",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3"
+  }
+}

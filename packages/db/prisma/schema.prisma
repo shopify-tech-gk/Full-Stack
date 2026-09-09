@@ -1,0 +1,1006 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7 removed the `url` datasource property from schema files - the connection
+// URL now lives in prisma.config.ts (see that file next to this one).
+datasource db {
+  provider = "postgresql"
+  schemas  = ["admin", "auth", "sellers", "catalog", "inventory", "cart", "orders", "payments", "logistics", "tracking", "returns", "notifications", "promotions", "reviews", "settlements", "recommendations"]
+}
+
+// ---------------------------------------------------------------------------
+// Standing conventions for EVERY table in this schema file (all schemas):
+//   id         String    @id @default(uuid(7))   -- time-ordered UUIDv7
+//   created_at DateTime  @default(now())
+//   updated_at DateTime  @updatedAt
+//   deleted_at DateTime? (nullable; soft delete)
+//   snake_case column/table names in Postgres via @map / @@map, camelCase in Prisma
+//
+// Soft-delete + uniqueness: declarative @unique is NOT used on any column where
+// soft delete applies. Instead a PARTIAL UNIQUE INDEX (WHERE deleted_at IS NULL)
+// is hand-added in the migration SQL, and a plain @@index is kept here for query
+// performance. Look for a "/// enforced via partial unique index" comment on any
+// such field/model.
+//
+// Only the `admin`, `auth`, `sellers`, `catalog`, `inventory`, `cart`, `orders`,
+// `payments`, `logistics`, `tracking`, `returns`, `notifications`,
+// `promotions`, `reviews`, and `settlements` schemas have tables so far.
+// `recommendations` is declared upfront so multiSchema doesn't need
+// reconfiguring later, but stays empty - it belongs to a separate Python
+// recommendation service in a later chapter.
+//
+// Cross-schema references (e.g. catalog.Product.sellerId -> sellers.Seller,
+// orders.Order.userId -> auth.User) are SOFT REFERENCES ONLY: a plain indexed
+// String column with no Prisma @relation and no database foreign key. Only
+// same-schema references get a real @relation + FK. This keeps each bounded
+// context's schema independently migratable/droppable.
+// ---------------------------------------------------------------------------
+
+enum AdminRole {
+  SUPER_ADMIN
+  OPS
+  SUPPORT
+  FINANCE
+
+  @@schema("admin")
+}
+
+enum MarketplaceMode {
+  ENABLED
+  DISABLED
+
+  @@schema("admin")
+}
+
+/// Platform staff account. `email` uniqueness is enforced via a partial unique
+/// index (WHERE deleted_at IS NULL), hand-added in migration SQL - not a Prisma @unique.
+model Admin {
+  id           String    @id @default(uuid(7))
+  email        String
+  name         String
+  adminRole    AdminRole @map("admin_role")
+  passwordHash String?   @map("password_hash")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  @@index([email])
+  @@map("admin")
+  @@schema("admin")
+}
+
+/// RBAC role definition. `key` uniqueness is enforced via a partial unique index
+/// (WHERE deleted_at IS NULL), hand-added in migration SQL - not a Prisma @unique.
+model Role {
+  id          String    @id @default(uuid(7))
+  key         String
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  rolePermissions RolePermission[]
+
+  @@index([key])
+  @@map("role")
+  @@schema("admin")
+}
+
+/// RBAC permission definition. `key` uniqueness is enforced via a partial unique
+/// index (WHERE deleted_at IS NULL), hand-added in migration SQL - not a Prisma @unique.
+model Permission {
+  id          String    @id @default(uuid(7))
+  key         String
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  rolePermissions RolePermission[]
+
+  @@index([key])
+  @@map("permission")
+  @@schema("admin")
+}
+
+/// Join table between Role and Permission. Also carries deleted_at (standing
+/// convention), so the (role_id, permission_id) pairing is enforced via a partial
+/// unique index (WHERE deleted_at IS NULL), hand-added in migration SQL - not a
+/// Prisma @@unique - for the same soft-delete-reactivation reason as above.
+model RolePermission {
+  id           String     @id @default(uuid(7))
+  role         Role       @relation(fields: [roleId], references: [id])
+  roleId       String     @map("role_id")
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  permissionId String     @map("permission_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  @@index([roleId, permissionId])
+  @@map("role_permission")
+  @@schema("admin")
+}
+
+/// Single-row config table; governs multivendor on/off. DISABLED = hard-off
+/// (sellers cannot register). This is the platform's chosen default.
+model MarketplaceSettings {
+  id              String          @id @default(uuid(7))
+  marketplaceMode MarketplaceMode @default(DISABLED) @map("marketplace_mode")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  deletedAt       DateTime?       @map("deleted_at")
+
+  @@map("marketplace_settings")
+  @@schema("admin")
+}
+
+// ---------------------------------------------------------------------------
+// auth schema - customer & identity data. DATA LAYER ONLY: no OTP generation,
+// password hashing, JWT issuance, or verification logic lives here (Ch3).
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+
+  @@schema("auth")
+}
+
+enum OtpPurpose {
+  LOGIN
+  PHONE_VERIFY
+
+  @@schema("auth")
+}
+
+enum OAuthProvider {
+  GOOGLE
+  APPLE
+
+  @@schema("auth")
+}
+
+/// Customer account. `phone` (primary identity for OTP login) and `email` (when
+/// present) uniqueness are each enforced via partial unique indexes
+/// (WHERE deleted_at IS NULL), hand-added in migration SQL - not a Prisma @unique.
+model User {
+  id              String     @id @default(uuid(7))
+  phone           String
+  email           String?
+  name            String?
+  isPhoneVerified Boolean    @default(false) @map("is_phone_verified")
+  isEmailVerified Boolean    @default(false) @map("is_email_verified")
+  status          UserStatus @default(ACTIVE)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  deletedAt       DateTime?  @map("deleted_at")
+
+  refreshTokens RefreshToken[]
+  oauthAccounts OAuthAccount[]
+
+  @@index([phone])
+  @@index([email])
+  @@map("user")
+  @@schema("auth")
+}
+
+/// Issued OTP record. `codeHash` stores a hash, never the raw OTP code.
+model OtpChallenge {
+  id           String     @id @default(uuid(7))
+  phone        String
+  codeHash     String     @map("code_hash")
+  purpose      OtpPurpose
+  expiresAt    DateTime   @map("expires_at")
+  consumedAt   DateTime?  @map("consumed_at")
+  attemptCount Int        @default(0) @map("attempt_count")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  @@index([phone, purpose])
+  @@map("otp_challenge")
+  @@schema("auth")
+}
+
+/// Server-side record of an issued refresh token. `tokenHash` stores a hash,
+/// never the raw token. Rotation/revocation behavior lives in Ch3.
+model RefreshToken {
+  id        String    @id @default(uuid(7))
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String    @map("user_id")
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  userAgent String?   @map("user_agent")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([userId])
+  @@map("refresh_token")
+  @@schema("auth")
+}
+
+/// Linked Google/Apple identity. `(provider, providerAccountId)` uniqueness is
+/// enforced via a partial unique index (WHERE deleted_at IS NULL), hand-added
+/// in migration SQL - not a Prisma @@unique.
+model OAuthAccount {
+  id                String        @id @default(uuid(7))
+  user              User          @relation(fields: [userId], references: [id])
+  userId            String        @map("user_id")
+  provider          OAuthProvider
+  providerAccountId String        @map("provider_account_id")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  deletedAt         DateTime?     @map("deleted_at")
+
+  @@index([provider, providerAccountId])
+  @@map("oauth_account")
+  @@schema("auth")
+}
+
+// ---------------------------------------------------------------------------
+// sellers schema - the marketplace/vendor side, including the hard-off gate
+// data (Seller.isDefaultSeller / MarketplaceSettings.marketplaceMode). DATA
+// LAYER ONLY: no KYC validation or penny-drop logic lives here (Ch5).
+// ---------------------------------------------------------------------------
+
+enum SellerStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+  REJECTED
+
+  @@schema("sellers")
+}
+
+enum KycStatus {
+  NOT_SUBMITTED
+  PENDING
+  VERIFIED
+  REJECTED
+
+  @@schema("sellers")
+}
+
+/// A vendor on the platform. `displayName` uniqueness is enforced via a partial
+/// unique index (WHERE deleted_at IS NULL). `isDefaultSeller` has its own
+/// separate partial unique index guaranteeing at most one active default-seller
+/// row (WHERE is_default_seller = true AND deleted_at IS NULL) - the platform's
+/// own first-party store, seeded in 2.4. Both hand-added in migration SQL.
+///
+/// `ownerUserId` is a SOFT reference to auth.User.id in a different Postgres
+/// schema - deliberately a plain indexed column with NO database foreign key,
+/// so the sellers module stays decoupled from auth's tables at the DB level;
+/// the reference is enforced in application code only.
+model Seller {
+  id                    String       @id @default(uuid(7))
+  displayName           String       @map("display_name")
+  legalName             String?      @map("legal_name")
+  status                SellerStatus @default(PENDING)
+  isDefaultSeller       Boolean      @default(false) @map("is_default_seller")
+  commissionRatePercent Decimal      @default(0.00) @db.Decimal(5, 2) @map("commission_rate_percent")
+  ownerUserId           String?      @map("owner_user_id")
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+  deletedAt             DateTime?    @map("deleted_at")
+
+  kycSubmissions SellerKyc[]
+
+  @@index([displayName])
+  @@index([ownerUserId])
+  @@map("seller")
+  @@schema("sellers")
+}
+
+/// A KYC submission record for a seller (a seller may resubmit after rejection,
+/// so this is a one-to-many history, not a single row per seller). `gstin`
+/// uniqueness (when present) is enforced via a partial unique index
+/// (WHERE gstin IS NOT NULL AND deleted_at IS NULL), hand-added in migration
+/// SQL. `bankAccountNumberHash` stores a hash, never the raw account number.
+model SellerKyc {
+  id                    String     @id @default(uuid(7))
+  seller                Seller     @relation(fields: [sellerId], references: [id])
+  sellerId              String     @map("seller_id")
+  gstin                 String?
+  pan                   String?
+  bankAccountNumberHash String?    @map("bank_account_number_hash")
+  bankIfsc              String?    @map("bank_ifsc")
+  kycStatus             KycStatus  @default(NOT_SUBMITTED) @map("kyc_status")
+  submittedAt           DateTime?  @map("submitted_at")
+  verifiedAt            DateTime?  @map("verified_at")
+  createdAt             DateTime   @default(now()) @map("created_at")
+  updatedAt             DateTime   @updatedAt @map("updated_at")
+  deletedAt             DateTime?  @map("deleted_at")
+
+  @@index([sellerId])
+  @@index([gstin])
+  @@map("seller_kyc")
+  @@schema("sellers")
+}
+
+// ---------------------------------------------------------------------------
+// catalog schema - products, categories, SKUs, images. DATA LAYER ONLY.
+// ---------------------------------------------------------------------------
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+
+  @@schema("catalog")
+}
+
+/// Product category. `slug` uniqueness is enforced via a partial unique index
+/// (WHERE deleted_at IS NULL), hand-added in migration SQL - not a Prisma @unique.
+/// `parentId` is a same-schema self-relation (a real FK is fine here).
+model Category {
+  id        String     @id @default(uuid(7))
+  name      String
+  slug      String
+  parentId  String?    @map("parent_id")
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryHierarchy")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  deletedAt DateTime?  @map("deleted_at")
+
+  products Product[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@map("category")
+  @@schema("catalog")
+}
+
+/// A product. `slug` uniqueness is enforced via a partial unique index
+/// (WHERE deleted_at IS NULL), hand-added in migration SQL - not a Prisma @unique.
+/// `sellerId` is a SOFT reference to sellers.seller.id (different Postgres
+/// schema) - plain indexed column, no database foreign key. `categoryId` is a
+/// same-schema relation to Category (a real FK is fine here). `attributes` is
+/// jsonb, holding variable per-category specs (our flexible-attribute approach).
+model Product {
+  id          String        @id @default(uuid(7))
+  title       String
+  slug        String
+  description String?       @db.Text
+  sellerId    String        @map("seller_id")
+  categoryId  String        @map("category_id")
+  category    Category      @relation(fields: [categoryId], references: [id])
+  attributes  Json          @map("attributes")
+  status      ProductStatus @default(DRAFT)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  deletedAt   DateTime?     @map("deleted_at")
+
+  skus   Sku[]
+  images ProductImage[]
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([slug])
+  @@map("product")
+  @@schema("catalog")
+}
+
+/// A sellable variant of a Product. `skuCode` uniqueness is enforced via a
+/// partial unique index (WHERE deleted_at IS NULL), hand-added in migration
+/// SQL - not a Prisma @unique. `productId` is a same-schema relation to
+/// Product (a real FK is fine here). `attributes` is jsonb, holding variant
+/// specs (e.g. size/color).
+model Sku {
+  id           String    @id @default(uuid(7))
+  productId    String    @map("product_id")
+  product      Product   @relation(fields: [productId], references: [id])
+  skuCode      String    @map("sku_code")
+  mrp          Decimal   @db.Decimal(12, 2)
+  sellingPrice Decimal   @db.Decimal(12, 2) @map("selling_price")
+  attributes   Json
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  @@index([productId])
+  @@index([skuCode])
+  @@map("sku")
+  @@schema("catalog")
+}
+
+/// A product image. `url` stores a path/key only - the CDN base
+/// (cdn.youmart.in) is applied at the API layer via env in a later chapter,
+/// never hardcoded here. `productId` is a same-schema relation to Product.
+model ProductImage {
+  id        String    @id @default(uuid(7))
+  productId String    @map("product_id")
+  product   Product   @relation(fields: [productId], references: [id])
+  url       String
+  position  Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([productId])
+  @@map("product_image")
+  @@schema("catalog")
+}
+
+// ---------------------------------------------------------------------------
+// inventory schema - stock levels and reservations. DATA LAYER ONLY: the
+// Redis SETNX stock lock (the anti-oversell mechanism) is BEHAVIOR built in
+// Ch4. These are only the durable records; no locking lives here.
+// ---------------------------------------------------------------------------
+
+enum ReservationStatus {
+  HELD
+  COMMITTED
+  RELEASED
+  EXPIRED
+
+  @@schema("inventory")
+}
+
+/// Current stock for a SKU. `skuId` is a SOFT reference to catalog.sku.id
+/// (different Postgres schema; inventory is its own module) - plain indexed
+/// column, no database foreign key. Exactly one active stock row per SKU is
+/// enforced via a partial unique index (WHERE deleted_at IS NULL), hand-added
+/// in migration SQL.
+model StockLevel {
+  id        String    @id @default(uuid(7))
+  skuId     String    @map("sku_id")
+  available Int       @default(0)
+  reserved  Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([skuId])
+  @@map("stock_level")
+  @@schema("inventory")
+}
+
+/// A durable record of stock held/committed/released for a checkout attempt.
+/// `skuId` is a soft reference to catalog.sku.id; `orderId` is a soft
+/// reference to orders.order.id, set once an order exists. Both plain
+/// indexed columns, no database foreign keys.
+model Reservation {
+  id        String            @id @default(uuid(7))
+  skuId     String            @map("sku_id")
+  orderId   String?           @map("order_id")
+  quantity  Int
+  status    ReservationStatus @default(HELD)
+  expiresAt DateTime          @map("expires_at")
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  deletedAt DateTime?         @map("deleted_at")
+
+  @@index([skuId])
+  @@index([orderId])
+  @@index([status])
+  @@map("reservation")
+  @@schema("inventory")
+}
+
+// ---------------------------------------------------------------------------
+// cart schema - shopping cart. DATA LAYER ONLY.
+// ---------------------------------------------------------------------------
+
+enum CartStatus {
+  ACTIVE
+  CONVERTED
+  ABANDONED
+
+  @@schema("cart")
+}
+
+/// A customer's cart. `userId` is a SOFT reference to auth.user.id (different
+/// Postgres schema) - plain indexed column, no database foreign key. Enforcing
+/// "one active cart per user" is NOT done at the DB level (the application
+/// manages this); only a plain index is added here.
+model Cart {
+  id        String     @id @default(uuid(7))
+  userId    String     @map("user_id")
+  status    CartStatus @default(ACTIVE)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  deletedAt DateTime?  @map("deleted_at")
+
+  items CartItem[]
+
+  @@index([userId])
+  @@map("cart")
+  @@schema("cart")
+}
+
+/// A line item in a cart. `cartId` is a same-schema relation to Cart (a real
+/// FK is fine here). `skuId` is a soft reference to catalog.sku.id - plain
+/// indexed column, no database foreign key. `priceSnapshot` captures the
+/// selling price at add-to-cart time.
+model CartItem {
+  id            String    @id @default(uuid(7))
+  cartId        String    @map("cart_id")
+  cart          Cart      @relation(fields: [cartId], references: [id])
+  skuId         String    @map("sku_id")
+  quantity      Int
+  priceSnapshot Decimal   @db.Decimal(12, 2) @map("price_snapshot")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  @@index([cartId])
+  @@index([skuId])
+  @@map("cart_item")
+  @@schema("cart")
+}
+
+// ---------------------------------------------------------------------------
+// orders schema - orders, order lines, status history. DATA LAYER ONLY: no
+// order-number generation logic, no price calculation lives here.
+// ---------------------------------------------------------------------------
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+
+  @@schema("orders")
+}
+
+enum OrderItemStatus {
+  PENDING
+  CONFIRMED
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+
+  @@schema("orders")
+}
+
+/// A customer order. `userId` is a SOFT reference to auth.user.id - plain
+/// indexed column, no database foreign key. `orderNumber` (human-facing id)
+/// uniqueness is enforced via a partial unique index (WHERE deleted_at IS
+/// NULL), hand-added in migration SQL - not a Prisma @unique.
+model Order {
+  id            String      @id @default(uuid(7))
+  userId        String      @map("user_id")
+  orderNumber   String      @map("order_number")
+  status        OrderStatus @default(PENDING_PAYMENT)
+  subtotal      Decimal     @db.Decimal(12, 2)
+  shippingTotal Decimal     @default(0.00) @db.Decimal(12, 2) @map("shipping_total")
+  grandTotal    Decimal     @db.Decimal(12, 2) @map("grand_total")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  deletedAt     DateTime?   @map("deleted_at")
+
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("order")
+  @@schema("orders")
+}
+
+/// One line of an order. `orderId` is a same-schema relation to Order (a real
+/// FK is fine here). `skuId`, `productId`, and `sellerId` are all SOFT
+/// references to catalog.sku.id, catalog.product.id, and sellers.seller.id
+/// respectively (different Postgres schemas) - plain indexed columns, no
+/// database foreign keys. `sellerId` is the multivendor split hook and is
+/// REQUIRED on every line, even in single-vendor mode. `titleSnapshot` and
+/// `unitPrice` capture product data at order time.
+model OrderItem {
+  id            String          @id @default(uuid(7))
+  orderId       String          @map("order_id")
+  order         Order           @relation(fields: [orderId], references: [id])
+  skuId         String          @map("sku_id")
+  productId     String          @map("product_id")
+  sellerId      String          @map("seller_id")
+  titleSnapshot String          @map("title_snapshot")
+  unitPrice     Decimal         @db.Decimal(12, 2) @map("unit_price")
+  quantity      Int
+  lineTotal     Decimal         @db.Decimal(12, 2) @map("line_total")
+  sellerStatus  OrderItemStatus @default(PENDING) @map("seller_status")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  deletedAt     DateTime?       @map("deleted_at")
+
+  @@index([orderId])
+  @@index([sellerId])
+  @@index([skuId])
+  @@index([sellerStatus])
+  @@map("order_item")
+  @@schema("orders")
+}
+
+/// An audit trail entry for an order's status transitions. `orderId` is a
+/// same-schema relation to Order (a real FK is fine here).
+model OrderStatusHistory {
+  id         String       @id @default(uuid(7))
+  orderId    String       @map("order_id")
+  order      Order        @relation(fields: [orderId], references: [id])
+  fromStatus OrderStatus? @map("from_status")
+  toStatus   OrderStatus  @map("to_status")
+  note       String?
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  deletedAt  DateTime?    @map("deleted_at")
+
+  @@index([orderId])
+  @@map("order_status_history")
+  @@schema("orders")
+}
+
+// ---------------------------------------------------------------------------
+// payments schema - payments, refunds, webhook events. DATA LAYER ONLY: no
+// Razorpay API calls live here.
+// ---------------------------------------------------------------------------
+
+enum PaymentStatus {
+  CREATED
+  CAPTURED
+  FAILED
+  REFUNDED
+
+  @@schema("payments")
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
+
+  @@schema("payments")
+}
+
+/// A payment attempt for an order. `orderId` is a SOFT reference to
+/// orders.order.id (different Postgres schema; payments is its own module) -
+/// plain indexed column, no database foreign key. `razorpayOrderId` and
+/// `razorpayPaymentId` uniqueness (when present) are each enforced via a
+/// partial unique index (WHERE deleted_at IS NULL), hand-added in migration
+/// SQL - not a Prisma @unique.
+model Payment {
+  id                String        @id @default(uuid(7))
+  orderId           String        @map("order_id")
+  amount            Decimal       @db.Decimal(12, 2)
+  currency          String        @default("INR")
+  status            PaymentStatus @default(CREATED)
+  razorpayOrderId   String?       @map("razorpay_order_id")
+  razorpayPaymentId String?       @map("razorpay_payment_id")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  deletedAt         DateTime?     @map("deleted_at")
+
+  refunds Refund[]
+
+  @@index([orderId])
+  @@index([status])
+  @@map("payment")
+  @@schema("payments")
+}
+
+/// A refund against a Payment. `paymentId` is a same-schema relation to
+/// Payment (a real FK is fine here). `razorpayRefundId` uniqueness (when
+/// present) is enforced via a partial unique index (WHERE deleted_at IS
+/// NULL), hand-added in migration SQL - not a Prisma @unique.
+model Refund {
+  id               String       @id @default(uuid(7))
+  paymentId        String       @map("payment_id")
+  payment          Payment      @relation(fields: [paymentId], references: [id])
+  amount           Decimal      @db.Decimal(12, 2)
+  reason           String?
+  status           RefundStatus @default(PENDING)
+  razorpayRefundId String?      @map("razorpay_refund_id")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  deletedAt        DateTime?    @map("deleted_at")
+
+  @@index([paymentId])
+  @@index([status])
+  @@map("refund")
+  @@schema("payments")
+}
+
+/// A received Razorpay webhook event. `eventId` is the idempotency key - a
+/// replayed webhook is a no-op - and its uniqueness (when present) is
+/// enforced via a partial unique index (WHERE deleted_at IS NULL), hand-added
+/// in migration SQL - not a Prisma @unique.
+model PaymentWebhookEvent {
+  id          String    @id @default(uuid(7))
+  eventId     String    @map("event_id")
+  payload     Json
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([eventId])
+  @@map("payment_webhook_event")
+  @@schema("payments")
+}
+
+// ---------------------------------------------------------------------------
+// logistics schema - shipments. DATA LAYER ONLY: no courier API calls here.
+// ---------------------------------------------------------------------------
+
+enum ShipmentStatus {
+  CREATED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  RTO
+  CANCELLED
+
+  @@schema("logistics")
+}
+
+/// A shipment for one order item. `orderItemId` is a SOFT reference to
+/// orders.order_item.id - plain indexed column, no database foreign key.
+/// `awbNumber` uniqueness (when present) is enforced via a partial unique
+/// index (WHERE deleted_at IS NULL), hand-added in migration SQL - not a
+/// Prisma @unique.
+model Shipment {
+  id                String         @id @default(uuid(7))
+  orderItemId       String         @map("order_item_id")
+  carrier           String?
+  awbNumber         String?        @map("awb_number")
+  status            ShipmentStatus @default(CREATED)
+  shiprocketOrderId String?        @map("shiprocket_order_id")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  deletedAt         DateTime?      @map("deleted_at")
+
+  @@index([orderItemId])
+  @@index([awbNumber])
+  @@index([status])
+  @@map("shipment")
+  @@schema("logistics")
+}
+
+// ---------------------------------------------------------------------------
+// tracking schema - raw courier tracking events. DATA LAYER ONLY.
+// ---------------------------------------------------------------------------
+
+/// A raw tracking event from a courier for a Shipment. `shipmentId` is a SOFT
+/// reference to logistics.shipment.id (different Postgres schema) - plain
+/// indexed column, no database foreign key.
+model TrackingEvent {
+  id         String    @id @default(uuid(7))
+  shipmentId String    @map("shipment_id")
+  status     String
+  location   String?
+  occurredAt DateTime  @map("occurred_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  @@index([shipmentId])
+  @@index([occurredAt])
+  @@map("tracking_event")
+  @@schema("tracking")
+}
+
+// ---------------------------------------------------------------------------
+// returns schema - customer return requests. DATA LAYER ONLY.
+// ---------------------------------------------------------------------------
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PICKED_UP
+  REFUNDED
+
+  @@schema("returns")
+}
+
+/// A customer return request for an order item. `orderItemId` and `userId`
+/// are SOFT references to orders.order_item.id and auth.user.id - plain
+/// indexed columns, no database foreign keys.
+model ReturnRequest {
+  id            String       @id @default(uuid(7))
+  orderItemId   String       @map("order_item_id")
+  userId        String       @map("user_id")
+  reason        String
+  status        ReturnStatus @default(REQUESTED)
+  refundAmount  Decimal?     @db.Decimal(12, 2) @map("refund_amount")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  @@index([orderItemId])
+  @@index([userId])
+  @@index([status])
+  @@map("return_request")
+  @@schema("returns")
+}
+
+// ---------------------------------------------------------------------------
+// notifications schema - outbound notification log. DATA LAYER ONLY: no
+// actual sending logic here.
+// ---------------------------------------------------------------------------
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  WHATSAPP
+
+  @@schema("notifications")
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+
+  @@schema("notifications")
+}
+
+/// A log entry for one attempted notification delivery. `userId` is a SOFT
+/// reference to auth.user.id - plain indexed column, no database foreign
+/// key - nullable because some notifications are system/seller-targeted
+/// rather than user-targeted.
+model NotificationLog {
+  id        String              @id @default(uuid(7))
+  userId    String?             @map("user_id")
+  channel   NotificationChannel
+  template  String
+  status    NotificationStatus  @default(QUEUED)
+  payload   Json
+  sentAt    DateTime?           @map("sent_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+  deletedAt DateTime?           @map("deleted_at")
+
+  @@index([userId])
+  @@index([channel])
+  @@index([status])
+  @@map("notification_log")
+  @@schema("notifications")
+}
+
+// ---------------------------------------------------------------------------
+// promotions schema - coupons. DATA LAYER ONLY: no discount-application
+// logic here.
+// ---------------------------------------------------------------------------
+
+enum DiscountType {
+  PERCENT
+  FLAT
+
+  @@schema("promotions")
+}
+
+/// A discount coupon. `code` uniqueness (when active) is enforced via a
+/// partial unique index (WHERE deleted_at IS NULL), hand-added in migration
+/// SQL - not a Prisma @unique.
+model Coupon {
+  id            String       @id @default(uuid(7))
+  code          String
+  discountType  DiscountType @map("discount_type")
+  discountValue Decimal      @db.Decimal(12, 2) @map("discount_value")
+  maxDiscount   Decimal?     @db.Decimal(12, 2) @map("max_discount")
+  minOrderValue Decimal?     @db.Decimal(12, 2) @map("min_order_value")
+  usageLimit    Int?         @map("usage_limit")
+  usedCount     Int          @default(0) @map("used_count")
+  startsAt      DateTime?    @map("starts_at")
+  endsAt        DateTime?    @map("ends_at")
+  isActive      Boolean      @default(true) @map("is_active")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  @@index([code])
+  @@index([isActive])
+  @@map("coupon")
+  @@schema("promotions")
+}
+
+// ---------------------------------------------------------------------------
+// reviews schema - product reviews. DATA LAYER ONLY: no moderation logic
+// here.
+// ---------------------------------------------------------------------------
+
+enum ReviewStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
+
+  @@schema("reviews")
+}
+
+/// A customer review of a Product. `productId`, `userId`, and `orderItemId`
+/// are SOFT references to catalog.product.id, auth.user.id, and
+/// orders.order_item.id - plain indexed columns, no database foreign keys.
+/// `orderItemId` is nullable and verifies purchase when present.
+/// `rating` is additionally enforced to be between 1 and 5 via a CHECK
+/// constraint, hand-added in migration SQL - not expressible declaratively
+/// in Prisma.
+model Review {
+  id          String       @id @default(uuid(7))
+  productId   String       @map("product_id")
+  userId      String       @map("user_id")
+  orderItemId String?      @map("order_item_id")
+  rating      Int
+  title       String?
+  body        String?      @db.Text
+  status      ReviewStatus @default(PENDING)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  deletedAt   DateTime?    @map("deleted_at")
+
+  @@index([productId])
+  @@index([userId])
+  @@index([status])
+  @@map("review")
+  @@schema("reviews")
+}
+
+// ---------------------------------------------------------------------------
+// settlements schema - seller payout settlements. DATA LAYER ONLY: no payout
+// calculation logic here.
+// ---------------------------------------------------------------------------
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+
+  @@schema("settlements")
+}
+
+/// A payout settlement for one seller over a period. `sellerId` is a SOFT
+/// reference to sellers.seller.id - plain indexed column, no database
+/// foreign key. `razorpayPayoutId` uniqueness (when present) is enforced via
+/// a partial unique index (WHERE deleted_at IS NULL), hand-added in
+/// migration SQL - not a Prisma @unique.
+model Settlement {
+  id                String           @id @default(uuid(7))
+  sellerId          String           @map("seller_id")
+  periodStart       DateTime         @map("period_start")
+  periodEnd         DateTime         @map("period_end")
+  grossAmount       Decimal          @db.Decimal(12, 2) @map("gross_amount")
+  commissionAmount  Decimal          @db.Decimal(12, 2) @map("commission_amount")
+  tcsAmount         Decimal          @db.Decimal(12, 2) @default(0.00) @map("tcs_amount")
+  tdsAmount         Decimal          @db.Decimal(12, 2) @default(0.00) @map("tds_amount")
+  netPayable        Decimal          @db.Decimal(12, 2) @map("net_payable")
+  status            SettlementStatus @default(PENDING)
+  razorpayPayoutId  String?          @map("razorpay_payout_id")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  deletedAt         DateTime?        @map("deleted_at")
+
+  lines SettlementLine[]
+
+  @@index([sellerId])
+  @@index([status])
+  @@map("settlement")
+  @@schema("settlements")
+}
+
+/// One line item within a Settlement. `settlementId` is a same-schema
+/// relation to Settlement (a real FK is fine here). `orderItemId` is a SOFT
+/// reference to orders.order_item.id - plain indexed column, no database
+/// foreign key.
+model SettlementLine {
+  id           String     @id @default(uuid(7))
+  settlementId String     @map("settlement_id")
+  settlement   Settlement @relation(fields: [settlementId], references: [id])
+  orderItemId  String     @map("order_item_id")
+  amount       Decimal    @db.Decimal(12, 2)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  @@index([settlementId])
+  @@index([orderItemId])
+  @@map("settlement_line")
+  @@schema("settlements")
+}
+
+
