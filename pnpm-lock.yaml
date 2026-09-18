@@ -41,6 +41,9 @@ importers:
       '@youmart/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@youmart/queue':
+        specifier: workspace:*
+        version: link:../../packages/queue
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types

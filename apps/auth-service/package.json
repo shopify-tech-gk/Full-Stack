@@ -12,6 +12,7 @@
   "dependencies": {
     "@youmart/config": "workspace:*",
     "@youmart/db": "workspace:*",
+    "@youmart/queue": "workspace:*",
     "@youmart/shared-types": "workspace:*",
     "zod": "4.5.4",
     "express": "5.2.1",

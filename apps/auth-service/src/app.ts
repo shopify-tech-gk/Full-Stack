@@ -9,6 +9,7 @@ import { logger } from './logger';
 import { prisma } from './db';
 import { config } from './config';
 import { AppError } from './errors';
+import { otpRouter } from './routes/otp.routes';
 
 /**
  * Builds the Express app without listening - keeps it testable and is the
@@ -45,6 +46,8 @@ export function createApp(): Express {
         next(new AppError('INTERNAL_ERROR', 503, 'Database is not reachable'));
       });
   });
+
+  app.use('/auth', otpRouter);
 
   app.use((_req, _res, next) => {
     next(new AppError('NOT_FOUND', 404, 'Route not found'));
