@@ -32,19 +32,17 @@ export interface ProductDetail {
 }
 
 /**
- * NOT YET BACKED BY A REAL ENDPOINT. catalog-service (Ch4.1/4.2) only
- * exposes `GET /catalog/products/:slug` - there is no lookup by `skuId`.
- * Cart/checkout need one (price + active status for a SKU already in a
- * cart/order line, where only the skuId is known). 4.4b (or a small
- * catalog-service addition) MUST add `GET /catalog/skus/:skuId` (or
- * `/internal/skus/:skuId`) returning this shape before `getSku` can be
- * called for real - calling it today will 404.
+ * Backed by catalog-service's `GET /catalog/skus/:skuId` (Ch4.4b).
+ * `sellerId` (Ch4.5a) is the ONLY authoritative source of a SKU's seller -
+ * order-service uses it to set `order_item.seller_id` per line, since
+ * orders_svc cannot read the catalog schema itself.
  */
 export interface SkuDetail {
   skuId: string;
   productId: string;
   productSlug: string;
   title: string;
+  sellerId: string;
   sellingPrice: Money;
   mrp: Money;
   active: boolean;
@@ -57,8 +55,6 @@ export interface CreateCatalogClientOptions {
 
 export interface CatalogClient {
   getProductBySlug(slug: string, authToken?: string): Promise<ProductDetail>;
-  /** See the `SkuDetail` doc comment above - not yet backed by a real
-   * catalog-service endpoint (flagged for 4.4b). */
   getSku(skuId: string, authToken?: string): Promise<SkuDetail>;
 }
 

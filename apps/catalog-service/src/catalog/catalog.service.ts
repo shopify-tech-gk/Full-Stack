@@ -232,6 +232,7 @@ export interface SkuDetail {
   productId: string;
   productSlug: string;
   title: string;
+  sellerId: string;
   sellingPrice: Money;
   mrp: Money;
   active: boolean;
@@ -243,6 +244,11 @@ export interface SkuDetail {
  * product is DRAFT/ARCHIVED/deleted is NOT 404: it's returned with
  * `active: false` so a caller can distinguish "doesn't exist" from
  * "exists but can't be sold right now". Only a missing/deleted SKU 404s.
+ *
+ * `sellerId` = product.sellerId (the default seller in today's hard-off
+ * mode; the real per-product seller once marketplace mode is enabled) -
+ * this is the ONLY authoritative source of a SKU's seller, since
+ * order-service (orders_svc) cannot read the catalog schema itself.
  */
 export async function getSkuById(skuId: string): Promise<SkuDetail> {
   const sku = await prisma.sku.findFirst({
@@ -259,6 +265,7 @@ export async function getSkuById(skuId: string): Promise<SkuDetail> {
     productId: sku.productId,
     productSlug: sku.product.slug,
     title: sku.product.title,
+    sellerId: sku.product.sellerId,
     sellingPrice: decimalToMoney(sku.sellingPrice),
     mrp: decimalToMoney(sku.mrp),
     active: sku.product.status === 'ACTIVE' && sku.product.deletedAt === null,

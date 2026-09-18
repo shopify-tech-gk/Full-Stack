@@ -52,12 +52,9 @@ const inventory = createInventoryClient({ baseUrl: config.inventoryServiceUrl })
 const stock = await inventory.getStock(skuId, req.auth.accessToken);
 ```
 
-## Known gap: `getSku(skuId)`
+## `createCartClient`
 
-`createCatalogClient().getSku(skuId)` is a typed method signature only -
-catalog-service does not yet expose a lookup by `skuId` (only `GET
-/catalog/products/:slug`). Cart/checkout need to look up price + active
-status for a SKU by id. **4.4b (or a small catalog-service addition) must
-add `GET /catalog/skus/:skuId`** (or `/internal/skus/:skuId`) returning the
-`SkuDetail` shape before this method can be used for real - calling it
-today will 404.
+`createCartClient({ baseUrl, timeoutMs? })` exposes `getMyCart(authToken)`,
+backed by cart-service's `GET /cart/internal/me` (Ch4.5a) - always the
+caller's OWN cart (derived from the forwarded token), used by order-service
+to read a cart server-side during checkout.
