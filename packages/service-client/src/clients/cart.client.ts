@@ -24,10 +24,19 @@ export interface CreateCartClientOptions {
   timeoutMs?: number;
 }
 
+export interface ConvertCartResult {
+  converted: boolean;
+  cartId: string | null;
+}
+
 export interface CartClient {
   /** Backed by `GET /cart/internal/me` (Ch4.5a) - always the caller's OWN
    * cart, derived from the forwarded `authToken`. */
   getMyCart(authToken: string): Promise<CartView>;
+  /** Backed by `POST /cart/internal/convert` (Ch4.5b) - marks the caller's
+   * OWN active cart CONVERTED after a successful checkout. A benign no-op
+   * if there's no active cart. */
+  convertCart(authToken: string): Promise<ConvertCartResult>;
 }
 
 /** `baseUrl` (e.g. `CART_SERVICE_URL`) is injected by the caller - this
@@ -39,6 +48,16 @@ export function createCartClient({ baseUrl, timeoutMs }: CreateCartClientOptions
         baseUrl,
         path: '/cart/internal/me',
         method: 'GET',
+        authToken,
+        timeoutMs,
+      });
+    },
+
+    convertCart(authToken) {
+      return request<ConvertCartResult>({
+        baseUrl,
+        path: '/cart/internal/convert',
+        method: 'POST',
         authToken,
         timeoutMs,
       });

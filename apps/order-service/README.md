@@ -26,11 +26,17 @@ shipping_total` - all via `@youmart/shared-utils`.
    grouping by `seller_id` is future-chapter behavior.
 5. `order` + `order_item`s + an initial `order_status_history` row
    (`null -> PENDING_PAYMENT`) are created in ONE `prisma.$transaction`.
+6. Stock is RESERVED for every line via `inventoryClient.reserve(..., orderId)`
+   (Ch4.3's Redis lock, ALL-OR-NOTHING: any failure releases everything
+   reserved so far via `releaseByOrder` and cancels the order - see
+   `checkout()` in `order.service.ts`).
+7. The source cart is marked `CONVERTED` via `cartClient.convertCart` -
+   best-effort/non-fatal (a cart-service hiccup here doesn't undo an
+   otherwise-successful order).
 
-**Not done in 4.5a (see `TODO(4.5b)` in `order.service.ts`)**: stock is not
-reserved, and the source cart is not marked `CONVERTED`. 4.5b adds the
-`inventoryClient.reserve` call (under inventory-service's Redis lock) and
-cart conversion before this is a complete, safe checkout.
+Stock `commit` (payment success) and `release` (payment failure/expiry)
+happen in Ch4.6, via `inventoryClient.commitByOrder`/`releaseByOrder` -
+already wired here for checkout-time rollback, ready for 4.6 to reuse.
 
 ## `order_number`
 

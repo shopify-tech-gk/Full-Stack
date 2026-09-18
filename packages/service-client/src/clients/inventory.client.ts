@@ -30,6 +30,12 @@ export interface InventoryClient {
   ): Promise<ReservationResult>;
   release(reservationId: string, authToken: string): Promise<void>;
   commit(reservationId: string, authToken: string): Promise<void>;
+  /** Releases every still-HELD reservation linked to this order (checkout
+   * rollback on partial reserve failure). */
+  releaseByOrder(orderId: string, authToken: string): Promise<void>;
+  /** Commits every still-HELD reservation linked to this order (payment
+   * success, Ch4.6). */
+  commitByOrder(orderId: string, authToken: string): Promise<void>;
 }
 
 /** `baseUrl` (e.g. `INVENTORY_SERVICE_URL`) is injected by the caller - this
@@ -86,6 +92,26 @@ export function createInventoryClient({
       return request<void>({
         baseUrl,
         path: `/inventory/reservations/${reservationId}/commit`,
+        method: 'POST',
+        authToken,
+        timeoutMs,
+      });
+    },
+
+    releaseByOrder(orderId, authToken) {
+      return request<void>({
+        baseUrl,
+        path: `/inventory/orders/${orderId}/release`,
+        method: 'POST',
+        authToken,
+        timeoutMs,
+      });
+    },
+
+    commitByOrder(orderId, authToken) {
+      return request<void>({
+        baseUrl,
+        path: `/inventory/orders/${orderId}/commit`,
         method: 'POST',
         authToken,
         timeoutMs,

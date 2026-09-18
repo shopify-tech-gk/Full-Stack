@@ -220,3 +220,26 @@ export async function clearCart(userId: string, authToken: string): Promise<Cart
 
   return buildCartView(cart, authToken);
 }
+
+export interface ConvertCartResult {
+  converted: boolean;
+  cartId: string | null;
+}
+
+/**
+ * Internal, service-to-service op called by order-service right after a
+ * successful checkout. If the caller has no ACTIVE cart (already
+ * converted, or never had one), that's a benign no-op - the order already
+ * exists regardless, so this must never hard-fail a checkout that already
+ * succeeded.
+ */
+export async function convertActiveCart(userId: string): Promise<ConvertCartResult> {
+  const cart = await findActiveCart(userId);
+  if (!cart) {
+    return { converted: false, cartId: null };
+  }
+
+  await prisma.cart.update({ where: { id: cart.id }, data: { status: 'CONVERTED' } });
+
+  return { converted: true, cartId: cart.id };
+}

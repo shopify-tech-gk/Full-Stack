@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import { AddItemBody, UpdateItemBody } from '../cart/cart.schema';
-import { getCart, addItem, updateItem, removeItem, clearCart } from '../cart/cart.service';
+import {
+  getCart,
+  addItem,
+  updateItem,
+  removeItem,
+  clearCart,
+  convertActiveCart,
+} from '../cart/cart.service';
 import { requireAuth } from '../authMiddleware';
 import { extractBearerToken, requireUserId } from '../authToken';
 
@@ -30,6 +37,16 @@ cartRouter.get('/internal/me', requireAuth, async (req, res) => {
   const authToken = extractBearerToken(req);
   const view = await getCart(userId, authToken);
   res.status(200).json(view);
+});
+
+// Internal, service-to-service write (order-service, right after a
+// successful checkout). Same no-:userId-param pattern as /internal/me. If
+// the caller has no ACTIVE cart, this is a benign no-op (see
+// convertActiveCart's doc comment) rather than a 404/error.
+cartRouter.post('/internal/convert', requireAuth, async (req, res) => {
+  const userId = requireUserId(req);
+  const result = await convertActiveCart(userId);
+  res.status(200).json(result);
 });
 
 cartRouter.post('/items', requireAuth, async (req, res) => {

@@ -1,6 +1,14 @@
 import { Router } from 'express';
 import { SetStockBody, ReserveBody } from '../inventory/inventory.schema';
-import { getStock, setStock, reserve, release, commit } from '../inventory/inventory.service';
+import {
+  getStock,
+  setStock,
+  reserve,
+  release,
+  commit,
+  releaseByOrder,
+  commitByOrder,
+} from '../inventory/inventory.service';
 import { requireAuth } from '../authMiddleware';
 import { requireInventoryManager } from '../inventoryManager.middleware';
 
@@ -45,5 +53,22 @@ inventoryRouter.post('/reservations/:id/release', requireAuth, async (req, res) 
 inventoryRouter.post('/reservations/:id/commit', requireAuth, async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   await commit(id);
+  res.status(204).send();
+});
+
+// Called by order-service's checkout rollback (partial reserve failure) -
+// releases every HELD reservation linked to this order via
+// reservation.order_id, without order-service needing to track individual
+// reservation ids itself.
+inventoryRouter.post('/orders/:orderId/release', requireAuth, async (req, res) => {
+  const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
+  await releaseByOrder(orderId);
+  res.status(204).send();
+});
+
+// Called by order/payment-service (Ch4.6) on payment success.
+inventoryRouter.post('/orders/:orderId/commit', requireAuth, async (req, res) => {
+  const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
+  await commitByOrder(orderId);
   res.status(204).send();
 });

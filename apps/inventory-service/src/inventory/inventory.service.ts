@@ -170,3 +170,35 @@ export async function commit(reservationId: string): Promise<void> {
     ]);
   });
 }
+
+/**
+ * Releases every still-HELD reservation for an order. Used by
+ * order-service's checkout rollback (a partial reserve failure must leave
+ * NO dangling reservations for the order) and, later, for payment-failure/
+ * expiry cleanup. Reservation ids aren't stored in the orders schema (no
+ * schema changes) - `reservation.order_id` (set via `reserve(..., orderId)`)
+ * is the only link, so this looks reservations up by that instead. Each
+ * line goes through `release()`'s own idempotent, per-SKU-locked path.
+ */
+export async function releaseByOrder(orderId: string): Promise<void> {
+  const reservations = await prisma.reservation.findMany({
+    where: { orderId, status: 'HELD' },
+  });
+  for (const reservation of reservations) {
+    await release(reservation.id);
+  }
+}
+
+/**
+ * Commits every still-HELD reservation for an order (payment success,
+ * Ch4.6). Not called anywhere in Ch4.5b itself - checkout only reserves;
+ * this is wired now so 4.6 doesn't need any new inventory-service plumbing.
+ */
+export async function commitByOrder(orderId: string): Promise<void> {
+  const reservations = await prisma.reservation.findMany({
+    where: { orderId, status: 'HELD' },
+  });
+  for (const reservation of reservations) {
+    await commit(reservation.id);
+  }
+}
