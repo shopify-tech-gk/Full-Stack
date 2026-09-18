@@ -1,13 +1,11 @@
-import express, { type Express, type Request, type Response, type NextFunction } from 'express';
+import express, { type Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
-import { ZodError } from 'zod';
-import type { ApiError } from '@youmart/shared-types';
+import { AppError, createErrorHandler } from '@youmart/errors';
 import { logger } from './logger';
 import { prisma } from './db';
 import { config } from './config';
-import { AppError } from './errors';
 import { catalogRouter } from './routes/catalog.routes';
 
 /**
@@ -51,64 +49,8 @@ export function createApp(): Express {
     next(new AppError('NOT_FOUND', 404, 'Route not found'));
   });
 
-  // Central error handler - same template as auth-service. Express only
-  // treats a 4-arg function as error middleware, so `next` stays declared
-  // (unused) even though it's never called.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
-    req.log.error({ err }, 'request error');
-
-    if (err instanceof ZodError) {
-      const body: ApiError = {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Validation failed',
-          details: err.issues,
-        },
-      };
-      res.status(400).json(body);
-      return;
-    }
-
-    if (err instanceof SyntaxError && (err as { type?: string }).type === 'entity.parse.failed') {
-      const body: ApiError = {
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Malformed JSON body',
-        },
-      };
-      res.status(400).json(body);
-      return;
-    }
-
-    if (err instanceof AppError) {
-      const body: ApiError = {
-        error: {
-          code: err.code,
-          message: err.message,
-          details: err.details,
-        },
-      };
-      res.status(err.httpStatus).json(body);
-      return;
-    }
-
-    // Unknown error: never leak internals in production.
-    const message =
-      config.nodeEnv === 'production'
-        ? 'Internal server error'
-        : err instanceof Error
-          ? err.message
-          : 'Internal server error';
-
-    const body: ApiError = {
-      error: {
-        code: 'INTERNAL_ERROR',
-        message,
-      },
-    };
-    res.status(500).json(body);
-  });
+  // Central error handler - shared by every service (@youmart/errors).
+  app.use(createErrorHandler({ isProd: config.nodeEnv === 'production' }));
 
   return app;
 }

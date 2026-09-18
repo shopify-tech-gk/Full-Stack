@@ -4,7 +4,7 @@ import type { Money } from '@youmart/shared-types';
 import { compare } from '@youmart/shared-utils';
 import { prisma } from '../db';
 import { config } from '../config';
-import { AppError } from '../errors';
+import { AppError } from '@youmart/errors';
 import type {
   ListProductsQuery,
   CreateProductBody,

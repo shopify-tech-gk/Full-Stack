@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express';
 import { config } from './config';
-import { AppError } from './errors';
+import { AppError } from '@youmart/errors';
 
 /**
  * TEMPORARY dev-only authorization gate for catalog write endpoints.
