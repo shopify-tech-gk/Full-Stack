@@ -1,0 +1,23 @@
+{
+  "name": "@youmart/auth-middleware",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@youmart/shared-types": "workspace:*",
+    "jsonwebtoken": "9.0.3",
+    "zod": "4.5.4"
+  },
+  "peerDependencies": {
+    "express": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/jsonwebtoken": "9.0.10"
+  }
+}
