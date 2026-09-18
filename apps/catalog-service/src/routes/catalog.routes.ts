@@ -12,6 +12,7 @@ import {
 import {
   listProducts,
   getProductBySlug,
+  getSkuById,
   listCategories,
   createProduct,
   updateProduct,
@@ -49,6 +50,16 @@ catalogRouter.get('/products/:slug', optionalAuth, async (req, res) => {
 catalogRouter.get('/categories', optionalAuth, async (_req, res) => {
   const items = await listCategories();
   res.status(200).json({ items });
+});
+
+// Internal-ish lookup for other services (cart/checkout) via
+// @youmart/service-client. optionalAuth for now (read-only price/SKU info,
+// forwarded user tokens are fine) - may move to a dedicated
+// service-to-service auth gate later.
+catalogRouter.get('/skus/:skuId', optionalAuth, async (req, res) => {
+  const skuId = typeof req.params.skuId === 'string' ? req.params.skuId : '';
+  const sku = await getSkuById(skuId);
+  res.status(200).json(sku);
 });
 
 // --- write endpoints (Ch4.2) ---

@@ -227,6 +227,44 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail> {
   return toProductDetail(product);
 }
 
+export interface SkuDetail {
+  skuId: string;
+  productId: string;
+  productSlug: string;
+  title: string;
+  sellingPrice: Money;
+  mrp: Money;
+  active: boolean;
+}
+
+/**
+ * Internal-ish lookup used by other services (cart/checkout) via
+ * @youmart/service-client's getSku - unlike getProductBySlug, a SKU whose
+ * product is DRAFT/ARCHIVED/deleted is NOT 404: it's returned with
+ * `active: false` so a caller can distinguish "doesn't exist" from
+ * "exists but can't be sold right now". Only a missing/deleted SKU 404s.
+ */
+export async function getSkuById(skuId: string): Promise<SkuDetail> {
+  const sku = await prisma.sku.findFirst({
+    where: { id: skuId, deletedAt: null },
+    include: { product: true },
+  });
+
+  if (!sku) {
+    throw new AppError('NOT_FOUND', 404, 'SKU not found');
+  }
+
+  return {
+    skuId: sku.id,
+    productId: sku.productId,
+    productSlug: sku.product.slug,
+    title: sku.product.title,
+    sellingPrice: decimalToMoney(sku.sellingPrice),
+    mrp: decimalToMoney(sku.mrp),
+    active: sku.product.status === 'ACTIVE' && sku.product.deletedAt === null,
+  };
+}
+
 export async function listCategories(): Promise<CategoryListItem[]> {
   const categories = await prisma.category.findMany({
     where: { deletedAt: null },
