@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import { PaginationQuery } from '@youmart/shared-types';
-import { checkout, getOrder, getMyOrders } from '../order/order.service';
+import {
+  checkout,
+  getOrder,
+  getMyOrders,
+  getInternalOrder,
+  confirmOrder,
+  cancelOrderForPaymentFailure,
+} from '../order/order.service';
 import { requireAuth } from '../authMiddleware';
 import { extractBearerToken, requireUserId } from '../authToken';
 
@@ -20,6 +27,33 @@ orderRouter.post('/checkout', requireAuth, async (req, res) => {
   const authToken = extractBearerToken(req);
   const order = await checkout(userId, authToken);
   res.status(201).json(order);
+});
+
+// --- Internal/service endpoints (called by payment-service, Ch4.6) ---
+// Registered BEFORE the generic GET /:id below so "internal" is never
+// swallowed as an :id. Protected by requireAuth + a forwarded token for
+// now (no ownership filter on the GET - the caller does its own ownership
+// check); a dedicated service-to-service auth mechanism is a documented
+// future improvement.
+
+orderRouter.get('/internal/:orderId', requireAuth, async (req, res) => {
+  const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
+  const order = await getInternalOrder(orderId);
+  res.status(200).json(order);
+});
+
+orderRouter.post('/internal/:orderId/confirm', requireAuth, async (req, res) => {
+  const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
+  const authToken = extractBearerToken(req);
+  await confirmOrder(orderId, authToken);
+  res.status(200).json({ confirmed: true });
+});
+
+orderRouter.post('/internal/:orderId/cancel', requireAuth, async (req, res) => {
+  const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
+  const authToken = extractBearerToken(req);
+  await cancelOrderForPaymentFailure(orderId, authToken);
+  res.status(200).json({ cancelled: true });
 });
 
 orderRouter.get('/', requireAuth, async (req, res) => {

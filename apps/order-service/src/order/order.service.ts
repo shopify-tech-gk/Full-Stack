@@ -304,6 +304,92 @@ export async function getOrder(userId: string, orderId: string): Promise<OrderVi
   return loadOrderView(orderId, userId);
 }
 
+export interface InternalOrderView {
+  orderId: string;
+  userId: string;
+  status: OrderStatusValue;
+  grandTotal: Money;
+}
+
+/**
+ * Internal/service lookup (no ownership filter - payment-service calls this
+ * to fetch grand_total + userId, then does its own ownership check against
+ * the calling user). Protected by requireAuth + a forwarded token for now;
+ * a dedicated service-to-service auth mechanism is a documented future
+ * improvement (see payment-service's report / README).
+ */
+export async function getInternalOrder(orderId: string): Promise<InternalOrderView> {
+  const order = await prisma.order.findFirst({ where: { id: orderId, deletedAt: null } });
+  if (!order) {
+    throw new AppError('NOT_FOUND', 404, 'Order not found');
+  }
+  return {
+    orderId: order.id,
+    userId: order.userId,
+    status: order.status,
+    grandTotal: decimalToMoney(order.grandTotal),
+  };
+}
+
+/**
+ * Confirms a PENDING_PAYMENT order (payment captured) AND commits its held
+ * stock reservations in the same operation - order-service owns this
+ * pairing (not payment-service) so "order confirmed" and "stock committed"
+ * always happen together, and payment-service never needs to know about
+ * inventory at all. Idempotent: already-CONFIRMED is a no-op (payment
+ * webhooks retry).
+ */
+export async function confirmOrder(orderId: string, authToken: string): Promise<void> {
+  const order = await prisma.order.findFirst({ where: { id: orderId, deletedAt: null } });
+  if (!order) {
+    throw new AppError('NOT_FOUND', 404, 'Order not found');
+  }
+  if (order.status === 'CONFIRMED') {
+    return;
+  }
+  if (order.status !== 'PENDING_PAYMENT') {
+    throw new AppError('CONFLICT', 409, `Cannot confirm an order in status ${order.status}`);
+  }
+
+  await inventoryClient.commitByOrder(orderId, authToken);
+
+  await prisma.$transaction([
+    prisma.order.update({ where: { id: orderId }, data: { status: 'CONFIRMED' } }),
+    prisma.orderStatusHistory.create({
+      data: {
+        orderId,
+        fromStatus: 'PENDING_PAYMENT',
+        toStatus: 'CONFIRMED',
+        note: 'Payment captured',
+      },
+    }),
+  ]);
+}
+
+/**
+ * Cancels a PENDING_PAYMENT order (payment failed) AND releases its held
+ * stock reservations - mirrors `confirmOrder`'s pairing. Idempotent:
+ * already-CANCELLED is a no-op.
+ */
+export async function cancelOrderForPaymentFailure(
+  orderId: string,
+  authToken: string,
+): Promise<void> {
+  const order = await prisma.order.findFirst({ where: { id: orderId, deletedAt: null } });
+  if (!order) {
+    throw new AppError('NOT_FOUND', 404, 'Order not found');
+  }
+  if (order.status === 'CANCELLED') {
+    return;
+  }
+  if (order.status !== 'PENDING_PAYMENT') {
+    throw new AppError('CONFLICT', 409, `Cannot cancel an order in status ${order.status}`);
+  }
+
+  await inventoryClient.releaseByOrder(orderId, authToken);
+  await cancelOrder(orderId, 'Payment failed - stock released and order cancelled');
+}
+
 export interface GetMyOrdersQuery {
   cursor?: string;
   limit: number;
