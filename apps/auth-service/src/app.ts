@@ -10,6 +10,7 @@ import { prisma } from './db';
 import { config } from './config';
 import { AppError } from './errors';
 import { otpRouter } from './routes/otp.routes';
+import { sessionRouter } from './routes/session.routes';
 
 /**
  * Builds the Express app without listening - keeps it testable and is the
@@ -48,6 +49,7 @@ export function createApp(): Express {
   });
 
   app.use('/auth', otpRouter);
+  app.use('/auth', sessionRouter);
 
   app.use((_req, _res, next) => {
     next(new AppError('NOT_FOUND', 404, 'Route not found'));

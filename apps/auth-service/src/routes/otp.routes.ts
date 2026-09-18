@@ -1,6 +1,9 @@
 import { Router } from 'express';
+import { config } from '../config';
 import { OtpRequestBody, OtpVerifyBody } from '../otp/otp.schema';
 import { requestOtp, verifyOtpCode } from '../otp/otp.service';
+import { issueSession } from '../auth/session.service';
+import { REFRESH_COOKIE_OPTIONS } from '../auth/cookie.util';
 
 export const otpRouter: Router = Router();
 
@@ -16,6 +19,19 @@ otpRouter.post('/otp/request', async (req, res) => {
 
 otpRouter.post('/otp/verify', async (req, res) => {
   const body = OtpVerifyBody.parse(req.body);
-  const result = await verifyOtpCode(body);
-  res.status(200).json(result);
+  const { userId } = await verifyOtpCode(body);
+
+  const session = await issueSession(userId, req.headers['user-agent']);
+
+  res.cookie(config.refreshCookieName, session.refreshTokenRaw, {
+    ...REFRESH_COOKIE_OPTIONS,
+    maxAge: config.refreshTokenTtlSeconds * 1000,
+  });
+
+  // Refresh token stays ONLY in the cookie set above - never in this body.
+  res.status(200).json({
+    accessToken: session.accessToken,
+    expiresIn: session.accessTokenExpiresIn,
+    user: session.user,
+  });
 });
