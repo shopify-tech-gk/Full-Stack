@@ -27,12 +27,33 @@ const catalogServiceEnvSchema = baseEnvSchema.extend({
   // Prepended to stored image paths/keys to build absolute URLs - never a
   // hardcoded CDN domain in code.
   CDN_BASE_URL: z.string().url(),
+  // Hard-off multivendor: sellers can't register yet, so every product
+  // created here is owned by this one default seller. catalog_svc cannot
+  // read the sellers schema (cross-schema isolation), so this id is
+  // injected via env rather than looked up - looked up once via the owner
+  // role, see apps/catalog-service/README.md.
+  DEFAULT_SELLER_ID: z.string().uuid(),
+  // Injected for now because catalog_svc cannot read admin.marketplace_settings.
+  // Ch6 replaces this with a real lookup/cache once the admin schema and
+  // seller registration exist - today it's always DISABLED (hard-off).
+  MARKETPLACE_MODE: z.enum(['ENABLED', 'DISABLED']).default('DISABLED'),
+  // TEMPORARY dev-only catalog-write authorization gate: comma-separated
+  // user ids allowed to manage the catalog. There is no admin/role claim
+  // on access tokens yet - real RBAC replaces this in Ch6.
+  ADMIN_USER_IDS: z.string().default(''),
 });
 
 const parsed = loadConfigWith(catalogServiceEnvSchema);
 
 function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
+}
+
+function parseAdminUserIds(value: string): string[] {
+  return value
+    .split(',')
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0);
 }
 
 export interface CatalogServiceConfig {
@@ -46,6 +67,9 @@ export interface CatalogServiceConfig {
   jwtIssuer: string;
   jwtAudience: string;
   cdnBaseUrl: string;
+  defaultSellerId: string;
+  marketplaceMode: 'ENABLED' | 'DISABLED';
+  adminUserIds: string[];
 }
 
 export const config: Readonly<CatalogServiceConfig> = Object.freeze({
@@ -59,4 +83,7 @@ export const config: Readonly<CatalogServiceConfig> = Object.freeze({
   jwtIssuer: parsed.JWT_ISSUER,
   jwtAudience: parsed.JWT_AUDIENCE,
   cdnBaseUrl: parsed.CDN_BASE_URL,
+  defaultSellerId: parsed.DEFAULT_SELLER_ID,
+  marketplaceMode: parsed.MARKETPLACE_MODE,
+  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
 });

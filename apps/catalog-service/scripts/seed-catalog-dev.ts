@@ -1,19 +1,12 @@
-import path from 'node:path';
+import { config } from '../src/config';
 import { prisma, close } from '../src/db';
 
-// Same repo-root .env pattern as the service itself.
-process.loadEnvFile(path.resolve(__dirname, '../../../.env'));
-
 // catalog_svc cannot read the sellers schema (cross-schema isolation is
-// enforced at the database level, by design) - the default seller's id is
-// looked up ONCE via the owner role (psql) and passed in here as a plain
-// dev-only env var. This script is local-testing tooling only, separate
-// from the Ch2 main db:seed, and never wired into it.
-const DEFAULT_SELLER_ID = process.env['DEFAULT_SELLER_ID'];
-
-if (!DEFAULT_SELLER_ID) {
-  throw new Error('DEFAULT_SELLER_ID env var is required to run this dev seed script');
-}
+// enforced at the database level, by design) - DEFAULT_SELLER_ID is now part
+// of the service's validated config (Ch4.2), looked up once via the owner
+// role and injected via env. This script is local-testing tooling only,
+// separate from the Ch2 main db:seed, and never wired into it.
+const DEFAULT_SELLER_ID = config.defaultSellerId;
 
 interface CategorySeed {
   name: string;

@@ -15,6 +15,7 @@
     "@youmart/config": "workspace:*",
     "@youmart/db": "workspace:*",
     "@youmart/shared-types": "workspace:*",
+    "@youmart/shared-utils": "workspace:*",
     "zod": "4.5.4",
     "express": "5.2.1",
     "helmet": "8.3.0",
