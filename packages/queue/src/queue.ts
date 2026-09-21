@@ -1,4 +1,11 @@
-import { Queue, Worker, type Job, type JobsOptions, type WorkerOptions } from 'bullmq';
+import {
+  Queue,
+  Worker,
+  type Job,
+  type JobsOptions,
+  type WorkerOptions,
+  type RepeatOptions,
+} from 'bullmq';
 import type { ZodType } from 'zod';
 import { getConnection } from './connection';
 import { DEFAULT_JOB_OPTIONS } from './config';
@@ -13,6 +20,19 @@ type TypedJob<TPayload> = Job<TPayload, unknown, string>;
 export interface TypedQueue<TPayload> {
   readonly name: string;
   enqueue(payload: TPayload, opts?: JobsOptions): Promise<TypedJob<TPayload>>;
+  /**
+   * Registers (or updates) a BullMQ repeatable "job scheduler" - the
+   * `repeat` field on `JobsOptions` was removed in this BullMQ version in
+   * favor of `Queue.upsertJobScheduler`, which this wraps. Idempotent:
+   * calling this again with the same `schedulerId` (e.g. on every service
+   * restart) updates the existing scheduler in place rather than creating
+   * a duplicate schedule.
+   */
+  upsertScheduler(
+    schedulerId: string,
+    repeatOpts: Omit<RepeatOptions, 'key'>,
+    payload: TPayload,
+  ): Promise<void>;
 }
 
 export function createQueue<TPayload>(
@@ -31,6 +51,17 @@ export function createQueue<TPayload>(
       }
       const job = await queue.add(name, result.data, { ...DEFAULT_JOB_OPTIONS, ...opts });
       return job as unknown as TypedJob<TPayload>;
+    },
+    async upsertScheduler(schedulerId, repeatOpts, payload) {
+      const result = payloadSchema.safeParse(payload);
+      if (!result.success) {
+        throw new Error(`Invalid scheduler payload for queue "${name}": ${result.error.message}`);
+      }
+      await queue.upsertJobScheduler(schedulerId, repeatOpts, {
+        name,
+        data: result.data,
+        opts: DEFAULT_JOB_OPTIONS,
+      });
     },
   };
 }

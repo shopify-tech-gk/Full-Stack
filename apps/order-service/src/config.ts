@@ -20,6 +20,10 @@ const orderServiceEnvSchema = baseEnvSchema.extend({
   CART_SERVICE_URL: z.string().url(),
   CATALOG_SERVICE_URL: z.string().url(),
   INVENTORY_SERVICE_URL: z.string().url(),
+  // orders_svc cannot read the sellers schema either (cross-schema
+  // isolation) - "is the caller an active seller, and which one" for the
+  // seller-scoped order endpoints (Ch5.2) is resolved over HTTP too.
+  SELLER_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
@@ -42,6 +46,7 @@ export interface OrderServiceConfig {
   cartServiceUrl: string;
   catalogServiceUrl: string;
   inventoryServiceUrl: string;
+  sellerServiceUrl: string;
   serviceHttpTimeoutMs: number;
 }
 
@@ -58,5 +63,6 @@ export const config: Readonly<OrderServiceConfig> = Object.freeze({
   cartServiceUrl: parsed.CART_SERVICE_URL,
   catalogServiceUrl: parsed.CATALOG_SERVICE_URL,
   inventoryServiceUrl: parsed.INVENTORY_SERVICE_URL,
+  sellerServiceUrl: parsed.SELLER_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
 });

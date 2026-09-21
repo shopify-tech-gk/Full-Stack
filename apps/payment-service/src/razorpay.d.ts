@@ -17,6 +17,20 @@ declare module 'razorpay' {
     notes?: Record<string, string>;
   }
 
+  interface RazorpayRefund {
+    id: string;
+    entity: string;
+    amount: number;
+    currency: string;
+    payment_id: string;
+    status: string;
+  }
+
+  interface RazorpayRefundParams {
+    amount?: number;
+    notes?: Record<string, string>;
+  }
+
   interface RazorpayOptions {
     key_id: string;
     key_secret: string;
@@ -26,6 +40,9 @@ declare module 'razorpay' {
     constructor(options: RazorpayOptions);
     orders: {
       create(params: RazorpayOrdersCreateParams): Promise<RazorpayOrder>;
+    };
+    payments: {
+      refund(paymentId: string, params: RazorpayRefundParams): Promise<RazorpayRefund>;
     };
   }
 

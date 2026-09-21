@@ -353,8 +353,18 @@ export async function confirmOrder(orderId: string, authToken: string): Promise<
 
   await inventoryClient.commitByOrder(orderId, authToken);
 
+  // Each line's OWN seller_status moves PENDING -> CONFIRMED alongside the
+  // order itself (Ch5.2 addition) - this is what makes a line reachable by
+  // its owning seller's CONFIRMED -> PACKED transition
+  // (seller-order.service.ts). Never touches a line already past PENDING
+  // (e.g. a re-entrant call after a partial failure) - same idempotent
+  // spirit as the rest of this function.
   await prisma.$transaction([
     prisma.order.update({ where: { id: orderId }, data: { status: 'CONFIRMED' } }),
+    prisma.orderItem.updateMany({
+      where: { orderId, sellerStatus: 'PENDING', deletedAt: null },
+      data: { sellerStatus: 'CONFIRMED' },
+    }),
     prisma.orderStatusHistory.create({
       data: {
         orderId,
@@ -426,5 +436,167 @@ export async function getMyOrders(
       createdAt: order.createdAt.toISOString(),
     })),
     nextCursor,
+  };
+}
+
+export interface SettleableItemView {
+  orderItemId: string;
+  orderId: string;
+  sellerId: string;
+  lineTotal: Money;
+  deliveredAt: string;
+}
+
+/**
+ * Internal, service-to-service read for settlement-service (Ch5.3) -
+ * requireAuth + a forwarded token for now, same temporary pattern as every
+ * other internal endpoint. Returns every DELIVERED, non-deleted order_item
+ * for `sellerId` whose `updatedAt` falls in `[from, to)`.
+ *
+ * DELIVERED-detection approximation: `order_item` has no `delivered_at`
+ * column (no schema changes in this prompt) - `updated_at` is used as a
+ * proxy for "when it became DELIVERED", since that's the last time the row
+ * changed and (today) nothing updates a DELIVERED row afterwards. A
+ * precise `delivered_at` timestamp would need a schema change, deferred.
+ *
+ * "Not-yet-settled" is NOT filtered here - order-service has no concept of
+ * settlement at all (cross-schema isolation: it can't see the settlements
+ * schema). This intentionally returns ALL matching DELIVERED items;
+ * settlement-service is the one that knows which order_item_ids it has
+ * already settled (via its own `settlement_line` rows) and excludes them.
+ */
+export async function getSettleableItems(
+  sellerId: string,
+  from: Date,
+  to: Date,
+): Promise<SettleableItemView[]> {
+  const rows = await prisma.orderItem.findMany({
+    where: {
+      sellerId,
+      sellerStatus: 'DELIVERED',
+      deletedAt: null,
+      updatedAt: { gte: from, lt: to },
+    },
+    orderBy: { updatedAt: 'asc' },
+  });
+
+  return rows.map((row) => ({
+    orderItemId: row.id,
+    orderId: row.orderId,
+    sellerId: row.sellerId,
+    lineTotal: decimalToMoney(row.lineTotal),
+    deliveredAt: row.updatedAt.toISOString(),
+  }));
+}
+
+export interface InternalOrderItemView {
+  orderItemId: string;
+  orderId: string;
+  userId: string;
+  sellerId: string;
+  skuId: string;
+  quantity: number;
+  lineTotal: Money;
+  sellerStatus: OrderItemStatusValue;
+  /** ISO timestamp of the row's last update - used as a DELIVERED-time
+   * proxy by callers (e.g. returns-service's return-window check, Ch5.5)
+   * since order_item has no dedicated `delivered_at` column (no schema
+   * changes). Same approximation as settlement-service's
+   * getSettleableItems (Ch5.3). */
+  updatedAt: string;
+}
+
+/**
+ * Internal, service-to-service read for logistics-service (Ch5.4) -
+ * requireAuth + a forwarded token for now, same temporary pattern as every
+ * other internal endpoint. Includes the order's `userId` (a join) so
+ * callers can do their OWN ownership check (e.g. logistics-service's
+ * customer tracking endpoint verifying "is this the order's owner")
+ * without orders-service needing to know anything about tracking/shipping.
+ */
+export async function getInternalOrderItem(orderItemId: string): Promise<InternalOrderItemView> {
+  const item = await prisma.orderItem.findFirst({
+    where: { id: orderItemId, deletedAt: null },
+    include: { order: true },
+  });
+  if (!item) {
+    throw new AppError('NOT_FOUND', 404, 'Order item not found');
+  }
+  return {
+    orderItemId: item.id,
+    orderId: item.orderId,
+    userId: item.order.userId,
+    sellerId: item.sellerId,
+    skuId: item.skuId,
+    quantity: item.quantity,
+    lineTotal: decimalToMoney(item.lineTotal),
+    sellerStatus: item.sellerStatus,
+    updatedAt: item.updatedAt.toISOString(),
+  };
+}
+
+/**
+ * LOGISTICS-DRIVEN seller_status transitions (locked, documented) - the
+ * counterpart to seller-order.service.ts's seller-driven CONFIRMED->PACKED
+ * (Ch5.2): logistics-service (Ch5.4) may only move PACKED->SHIPPED (on
+ * shipment creation) and SHIPPED->DELIVERED (on delivery). Any other
+ * requested status is well-formed but disallowed here -> 409 CONFLICT, not
+ * 400 (the shape is valid, the transition isn't). This is what makes an
+ * item settleable (5.3 settles DELIVERED items).
+/**
+ * SERVER-VALIDATED seller_status transitions for the internal
+ * set-status endpoint (locked, documented) - the counterpart to
+ * seller-order.service.ts's seller-driven CONFIRMED->PACKED (Ch5.2).
+ * logistics-service (Ch5.4) may move PACKED->SHIPPED (on shipment
+ * creation) and SHIPPED->DELIVERED (on delivery); returns-service (Ch5.5)
+ * may move DELIVERED->RETURNED (on a refunded return). Any other
+ * requested status is well-formed but disallowed here -> 409 CONFLICT,
+ * not 400 (the shape is valid, the transition isn't). PACKED->SHIPPED and
+ * SHIPPED->DELIVERED are what make an item settleable (5.3 settles
+ * DELIVERED items).
+ */
+const LOGISTICS_ALLOWED_TRANSITIONS: Partial<Record<OrderItemStatusValue, OrderItemStatusValue[]>> =
+  {
+    PACKED: ['SHIPPED'],
+    SHIPPED: ['DELIVERED'],
+    DELIVERED: ['RETURNED'],
+  };
+
+export async function setSellerItemStatusInternal(
+  orderItemId: string,
+  nextStatus: OrderItemStatusValue,
+): Promise<InternalOrderItemView> {
+  const item = await prisma.orderItem.findFirst({
+    where: { id: orderItemId, deletedAt: null },
+    include: { order: true },
+  });
+  if (!item) {
+    throw new AppError('NOT_FOUND', 404, 'Order item not found');
+  }
+
+  const allowed = LOGISTICS_ALLOWED_TRANSITIONS[item.sellerStatus] ?? [];
+  if (!allowed.includes(nextStatus)) {
+    throw new AppError(
+      'CONFLICT',
+      409,
+      `Cannot transition seller_status from ${item.sellerStatus} to ${nextStatus} - logistics may only move PACKED to SHIPPED to DELIVERED here`,
+    );
+  }
+
+  const updated = await prisma.orderItem.update({
+    where: { id: orderItemId },
+    data: { sellerStatus: nextStatus },
+  });
+
+  return {
+    orderItemId: updated.id,
+    orderId: updated.orderId,
+    userId: item.order.userId,
+    sellerId: updated.sellerId,
+    skuId: updated.skuId,
+    quantity: updated.quantity,
+    lineTotal: decimalToMoney(updated.lineTotal),
+    sellerStatus: updated.sellerStatus,
+    updatedAt: updated.updatedAt.toISOString(),
   };
 }

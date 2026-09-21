@@ -41,6 +41,11 @@ const catalogServiceEnvSchema = baseEnvSchema.extend({
   // user ids allowed to manage the catalog. There is no admin/role claim
   // on access tokens yet - real RBAC replaces this in Ch6.
   ADMIN_USER_IDS: z.string().default(''),
+  // catalog_svc cannot read the sellers schema (cross-schema isolation) -
+  // "is the caller an active seller, and which one" is resolved over HTTP
+  // against seller-service (Ch5.2's seller-scoped product endpoints).
+  SELLER_SERVICE_URL: z.string().url(),
+  SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
 const parsed = loadConfigWith(catalogServiceEnvSchema);
@@ -70,6 +75,8 @@ export interface CatalogServiceConfig {
   defaultSellerId: string;
   marketplaceMode: 'ENABLED' | 'DISABLED';
   adminUserIds: string[];
+  sellerServiceUrl: string;
+  serviceHttpTimeoutMs: number;
 }
 
 export const config: Readonly<CatalogServiceConfig> = Object.freeze({
@@ -86,4 +93,6 @@ export const config: Readonly<CatalogServiceConfig> = Object.freeze({
   defaultSellerId: parsed.DEFAULT_SELLER_ID,
   marketplaceMode: parsed.MARKETPLACE_MODE,
   adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
+  sellerServiceUrl: parsed.SELLER_SERVICE_URL,
+  serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
 });
