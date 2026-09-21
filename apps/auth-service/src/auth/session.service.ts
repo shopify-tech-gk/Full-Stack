@@ -1,6 +1,6 @@
 import { prisma } from '../db';
 import { config } from '../config';
-import { AppError } from '../errors';
+import { AppError } from '@youmart/errors';
 import { signAccessToken, generateRefreshToken, hashRefreshToken } from './token.util';
 
 export interface SessionUser {

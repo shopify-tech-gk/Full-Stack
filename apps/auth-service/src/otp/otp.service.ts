@@ -1,6 +1,6 @@
 import { prisma } from '../db';
 import { config } from '../config';
-import { AppError } from '../errors';
+import { AppError } from '@youmart/errors';
 import { generateOtp, hashOtp, verifyOtp } from './otp.util';
 import { otpSendQueue } from './otp.queue';
 import type { OtpPurpose } from './otp.schema';

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { config } from '../config';
-import { AppError } from '../errors';
+import { AppError } from '@youmart/errors';
 import { rotateSession, revokeSession } from '../auth/session.service';
 import { REFRESH_COOKIE_OPTIONS } from '../auth/cookie.util';
 
