@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { RegisterSellerBody, SubmitKycBody } from './seller.schema';
-import { registerSeller, getMySeller, submitKyc } from './seller.service';
+import { registerSeller, getMySeller, submitKyc, getMySellerIdentity } from './seller.service';
 import { isSellerActive } from './admin.service';
 import { requireAuth } from '../authMiddleware';
 import { requireUserId } from '../authToken';
@@ -44,4 +44,14 @@ sellerRouter.get('/internal/:id/active', requireAuth, async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const result = await isSellerActive(id);
   res.status(200).json(result);
+});
+
+// Internal, service-to-service read - "who is the CALLER's own seller, and
+// are they active" (Ch5.2). Resolves via the forwarded token's userId, not
+// a path param - a caller can only ever ask about themselves. Backs
+// @youmart/service-client's `sellerClient.getByOwnerMe`.
+sellerRouter.get('/internal/by-owner/me', requireAuth, async (req, res) => {
+  const userId = requireUserId(req);
+  const identity = await getMySellerIdentity(userId);
+  res.status(200).json(identity);
 });

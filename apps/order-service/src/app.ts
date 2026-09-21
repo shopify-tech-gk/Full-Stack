@@ -7,6 +7,7 @@ import { logger } from './logger';
 import { prisma } from './db';
 import { config } from './config';
 import { orderRouter } from './routes/order.routes';
+import { sellerOrderRouter } from './order/seller-order.routes';
 
 /**
  * Builds the Express app without listening - mirrors the auth/catalog/
@@ -43,6 +44,9 @@ export function createApp(): Express {
       });
   });
 
+  // Mounted before orderRouter (distinct '/orders/seller' prefix, no
+  // actual path overlap either way) - the seller-owned path (Ch5.2).
+  app.use('/orders/seller', sellerOrderRouter);
   app.use('/orders', orderRouter);
 
   app.use((_req, _res, next) => {

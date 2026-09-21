@@ -223,4 +223,35 @@ export async function getMyKyc(userId: string): Promise<KycView> {
   return toKycView(latest);
 }
 
+export interface SellerIdentityView {
+  sellerId: string;
+  status: SellerStatusValue;
+  kycStatus: KycStatusValue;
+  active: boolean;
+  isDefaultSeller: boolean;
+}
+
+/**
+ * Resolves "who is this caller's seller, and are they allowed to act" -
+ * the one call catalog/order need (via @youmart/service-client's
+ * `getByOwnerMe`) to scope seller-owned actions, since neither can read
+ * the sellers schema directly (cross-schema isolation). Same
+ * APPROVED-AND-KYC-VERIFIED rule as `isSellerActive` (admin.service.ts).
+ */
+export async function getMySellerIdentity(userId: string): Promise<SellerIdentityView> {
+  const seller = await findActiveSellerByOwner(userId);
+  if (!seller) {
+    throw new AppError('NOT_FOUND', 404, 'You do not have a seller account');
+  }
+  const latest = await findLatestKyc(seller.id);
+  const kycStatus = latest?.kycStatus ?? 'NOT_SUBMITTED';
+  return {
+    sellerId: seller.id,
+    status: seller.status,
+    kycStatus,
+    active: seller.status === 'APPROVED' && kycStatus === 'VERIFIED',
+    isDefaultSeller: seller.isDefaultSeller,
+  };
+}
+
 export { toSellerView, toKycView, findLatestKyc };

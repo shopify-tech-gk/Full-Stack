@@ -353,8 +353,18 @@ export async function confirmOrder(orderId: string, authToken: string): Promise<
 
   await inventoryClient.commitByOrder(orderId, authToken);
 
+  // Each line's OWN seller_status moves PENDING -> CONFIRMED alongside the
+  // order itself (Ch5.2 addition) - this is what makes a line reachable by
+  // its owning seller's CONFIRMED -> PACKED transition
+  // (seller-order.service.ts). Never touches a line already past PENDING
+  // (e.g. a re-entrant call after a partial failure) - same idempotent
+  // spirit as the rest of this function.
   await prisma.$transaction([
     prisma.order.update({ where: { id: orderId }, data: { status: 'CONFIRMED' } }),
+    prisma.orderItem.updateMany({
+      where: { orderId, sellerStatus: 'PENDING', deletedAt: null },
+      data: { sellerStatus: 'CONFIRMED' },
+    }),
     prisma.orderStatusHistory.create({
       data: {
         orderId,

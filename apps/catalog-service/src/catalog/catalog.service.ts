@@ -398,13 +398,28 @@ const ALLOWED_STATUS_TRANSITIONS: Record<
 /**
  * Creates a product with its SKUs and (optional) images atomically.
  *
- * Hard-off multivendor: `sellerId` is always `config.defaultSellerId` -
- * catalog_svc cannot read the `sellers` schema to look up a real seller, and
- * there are no real sellers to assign to yet anyway (marketplace_mode is
- * DISABLED). `config.marketplaceMode` is exposed for Ch6 to branch on once
- * seller-owned products exist.
+ * Hard-off multivendor: the ADMIN path (this function) always assigns
+ * `config.defaultSellerId` - catalog_svc cannot read the `sellers` schema
+ * to look up a real seller, and in hard-off mode the default seller is the
+ * only one anyway. Ch4.2's admin write-endpoints keep using this. The
+ * SELLER path (`createProductForSeller`, Ch5.2) is the same logic with a
+ * caller-resolved `sellerId` instead - see seller-scope.middleware.ts.
  */
 export async function createProduct(input: CreateProductBody): Promise<AdminProductDetail> {
+  return createProductForSeller(config.defaultSellerId, input);
+}
+
+/**
+ * Shared create logic for BOTH paths - admin (`createProduct`, always
+ * `config.defaultSellerId`) and seller-owned (Ch5.2, a caller-resolved
+ * `sellerId`, NEVER client-supplied - see catalog.seller.routes.ts). Only
+ * the `sellerId` differs; validation (price rule, slug/SKU-code
+ * uniqueness) is identical either way.
+ */
+export async function createProductForSeller(
+  sellerId: string,
+  input: CreateProductBody,
+): Promise<AdminProductDetail> {
   for (const sku of input.skus) {
     assertSellingPriceWithinMrp(sku.sellingPrice, sku.mrp, sku.skuCode);
   }
@@ -419,7 +434,7 @@ export async function createProduct(input: CreateProductBody): Promise<AdminProd
         title: input.title,
         slug,
         description: input.description ?? null,
-        sellerId: config.defaultSellerId,
+        sellerId,
         categoryId: input.categoryId,
         attributes: toJsonInput(input.attributes),
         status: input.status ?? 'DRAFT',
@@ -452,6 +467,96 @@ export async function createProduct(input: CreateProductBody): Promise<AdminProd
   });
 
   return loadAdminProductDetailById(productId);
+}
+
+/**
+ * OWNERSHIP ENFORCEMENT (the crux of the seller-scoped surface, Ch5.2): a
+ * seller must never read or modify another seller's products. 404 (not
+ * 403) on a mismatch/missing product - "exists but isn't yours" and
+ * "doesn't exist" must be indistinguishable to the caller.
+ */
+export async function assertProductOwnedBySeller(
+  productId: string,
+  sellerId: string,
+): Promise<void> {
+  const product = await prisma.product.findFirst({ where: { id: productId, deletedAt: null } });
+  if (!product || product.sellerId !== sellerId) {
+    throw new AppError('NOT_FOUND', 404, 'Product not found');
+  }
+}
+
+/** Same ownership check, resolved through a SKU's parent product. Returns
+ * the productId for the caller's convenience. */
+export async function assertSkuOwnedBySeller(skuId: string, sellerId: string): Promise<string> {
+  const sku = await prisma.sku.findFirst({
+    where: { id: skuId, deletedAt: null },
+    include: { product: true },
+  });
+  if (!sku || sku.product.deletedAt || sku.product.sellerId !== sellerId) {
+    throw new AppError('NOT_FOUND', 404, 'SKU not found');
+  }
+  return sku.productId;
+}
+
+/** Same ownership check, resolved through an image's parent product. */
+export async function assertImageOwnedBySeller(imageId: string, sellerId: string): Promise<string> {
+  const image = await prisma.productImage.findFirst({
+    where: { id: imageId, deletedAt: null },
+    include: { product: true },
+  });
+  if (!image || image.product.deletedAt || image.product.sellerId !== sellerId) {
+    throw new AppError('NOT_FOUND', 404, 'Image not found');
+  }
+  return image.productId;
+}
+
+/**
+ * SELLER-OWNED product listing (Ch5.2) - unlike the public `listProducts`,
+ * this returns EVERY status (DRAFT/ACTIVE/ARCHIVED) since it's the seller
+ * managing their own catalog, not a shopper browsing it - but only ever the
+ * caller's own `sellerId`, never another seller's.
+ */
+export async function listSellerProducts(
+  sellerId: string,
+  query: ListProductsQuery,
+): Promise<PaginatedList<ProductListItem & { status: AdminProductDetail['status'] }>> {
+  const { cursor, limit, categoryId, minPrice, maxPrice, q } = query;
+
+  const priceFilter: Prisma.SkuWhereInput | undefined =
+    minPrice !== undefined || maxPrice !== undefined
+      ? {
+          deletedAt: null,
+          sellingPrice: {
+            ...(minPrice !== undefined ? { gte: minPrice } : {}),
+            ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
+          },
+        }
+      : undefined;
+
+  const where: Prisma.ProductWhereInput = {
+    sellerId,
+    deletedAt: null,
+    ...(categoryId ? { categoryId } : {}),
+    ...(q ? { title: { contains: q, mode: 'insensitive' } } : {}),
+    ...(priceFilter ? { skus: { some: priceFilter } } : {}),
+  };
+
+  const rows = await prisma.product.findMany({
+    where,
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    include: PRODUCT_LIST_INCLUDE,
+  });
+
+  const hasMore = rows.length > limit;
+  const pageRows = hasMore ? rows.slice(0, limit) : rows;
+  const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null;
+
+  return {
+    items: pageRows.map((row) => ({ ...toListItem(row), status: row.status })),
+    nextCursor,
+  };
 }
 
 /**
