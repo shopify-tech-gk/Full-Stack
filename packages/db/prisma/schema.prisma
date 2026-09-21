@@ -6,7 +6,7 @@ generator client {
 // URL now lives in prisma.config.ts (see that file next to this one).
 datasource db {
   provider = "postgresql"
-  schemas  = ["admin", "auth", "sellers", "catalog", "inventory", "cart", "orders", "payments", "logistics", "tracking", "returns", "notifications", "promotions", "reviews", "settlements", "recommendations"]
+  schemas  = ["admin", "auth", "sellers", "catalog", "inventory", "cart", "addresses", "orders", "payments", "logistics", "tracking", "returns", "notifications", "promotions", "reviews", "settlements", "recommendations"]
 }
 
 // ---------------------------------------------------------------------------
@@ -23,12 +23,13 @@ datasource db {
 // performance. Look for a "/// enforced via partial unique index" comment on any
 // such field/model.
 //
-// Only the `admin`, `auth`, `sellers`, `catalog`, `inventory`, `cart`, `orders`,
-// `payments`, `logistics`, `tracking`, `returns`, `notifications`,
-// `promotions`, `reviews`, and `settlements` schemas have tables so far.
-// `recommendations` is declared upfront so multiSchema doesn't need
-// reconfiguring later, but stays empty - it belongs to a separate Python
-// recommendation service in a later chapter.
+// Only the `admin`, `auth`, `sellers`, `catalog`, `inventory`, `cart`,
+// `addresses`, `orders`, `payments`, `logistics`, `tracking`, `returns`,
+// `notifications`, `promotions`, `reviews`, and `settlements` schemas have
+// tables so far (`addresses` added Ch6.1 - the first schema addition since
+// the initial Ch2 migrations). `recommendations` is declared upfront so
+// multiSchema doesn't need reconfiguring later, but stays empty - it
+// belongs to a separate Python recommendation service in a later chapter.
 //
 // Cross-schema references (e.g. catalog.Product.sellerId -> sellers.Seller,
 // orders.Order.userId -> auth.User) are SOFT REFERENCES ONLY: a plain indexed
@@ -564,17 +565,39 @@ enum OrderItemStatus {
 /// indexed column, no database foreign key. `orderNumber` (human-facing id)
 /// uniqueness is enforced via a partial unique index (WHERE deleted_at IS
 /// NULL), hand-added in migration SQL - not a Prisma @unique.
+///
+/// `ship*` columns (Ch6.1) are a SNAPSHOT of the chosen addresses.Address at
+/// checkout time - deliberately NOT just a foreign key to addresses.address,
+/// so the order preserves the delivery address exactly as it was at
+/// purchase even if the user later edits or deletes that saved address.
+/// `shippingAddressId` is kept alongside purely as a soft-reference
+/// provenance pointer (which saved address this came from) - it is never
+/// read back to re-derive the ship_* fields. All ship_* columns are
+/// nullable at the DB level only because they were added in a later,
+/// additive migration (pre-existing rows have none) - `checkout()` always
+/// populates every one of them for every new order; a shipping address is
+/// mandatory going forward.
 model Order {
-  id            String      @id @default(uuid(7))
-  userId        String      @map("user_id")
-  orderNumber   String      @map("order_number")
-  status        OrderStatus @default(PENDING_PAYMENT)
-  subtotal      Decimal     @db.Decimal(12, 2)
-  shippingTotal Decimal     @default(0.00) @db.Decimal(12, 2) @map("shipping_total")
-  grandTotal    Decimal     @db.Decimal(12, 2) @map("grand_total")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
-  deletedAt     DateTime?   @map("deleted_at")
+  id                String      @id @default(uuid(7))
+  userId            String      @map("user_id")
+  orderNumber       String      @map("order_number")
+  status            OrderStatus @default(PENDING_PAYMENT)
+  subtotal          Decimal     @db.Decimal(12, 2)
+  shippingTotal     Decimal     @default(0.00) @db.Decimal(12, 2) @map("shipping_total")
+  grandTotal        Decimal     @db.Decimal(12, 2) @map("grand_total")
+  shippingAddressId String?     @map("shipping_address_id")
+  shipFullName      String?     @map("ship_full_name")
+  shipPhone         String?     @map("ship_phone")
+  shipLine1         String?     @map("ship_line1")
+  shipLine2         String?     @map("ship_line2")
+  shipLandmark      String?     @map("ship_landmark")
+  shipCity          String?     @map("ship_city")
+  shipState         String?     @map("ship_state")
+  shipPincode       String?     @map("ship_pincode")
+  shipCountry       String?     @map("ship_country")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  deletedAt         DateTime?   @map("deleted_at")
 
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
@@ -632,6 +655,53 @@ model OrderStatusHistory {
   @@index([orderId])
   @@map("order_status_history")
   @@schema("orders")
+}
+
+// ---------------------------------------------------------------------------
+// addresses schema - saved shipping addresses. DATA LAYER ONLY. First
+// schema added since the initial Ch2 migrations (Ch6.1).
+// ---------------------------------------------------------------------------
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+
+  @@schema("addresses")
+}
+
+/// A user's saved shipping address (Amazon/Flipkart style - multiple per
+/// user, one marked default). `userId` is a SOFT reference to auth.user.id
+/// (different Postgres schema) - plain indexed column, no database foreign
+/// key, same isolation model as every other cross-schema reference in this
+/// file. `isDefault` has its own partial unique index guaranteeing at most
+/// one active default address per user (WHERE is_default = true AND
+/// deleted_at IS NULL), hand-added in migration SQL - this is the actual
+/// guarantee against a race producing two defaults; the service layer's
+/// transactional unset-others logic is a courtesy for a clean read path,
+/// not the sole enforcement. `pincode` is validated as a 6-digit Indian
+/// PIN code at the API layer (address.schema.ts) - not enforced by the DB.
+model Address {
+  id          String      @id @default(uuid(7))
+  userId      String      @map("user_id")
+  fullName    String      @map("full_name")
+  phone       String
+  line1       String
+  line2       String?
+  landmark    String?
+  city        String
+  state       String
+  pincode     String
+  country     String      @default("India")
+  addressType AddressType @default(HOME) @map("address_type")
+  isDefault   Boolean     @default(false) @map("is_default")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
+
+  @@index([userId])
+  @@map("address")
+  @@schema("addresses")
 }
 
 // ---------------------------------------------------------------------------

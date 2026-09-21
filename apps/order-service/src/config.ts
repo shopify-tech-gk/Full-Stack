@@ -24,6 +24,10 @@ const orderServiceEnvSchema = baseEnvSchema.extend({
   // isolation) - "is the caller an active seller, and which one" for the
   // seller-scoped order endpoints (Ch5.2) is resolved over HTTP too.
   SELLER_SERVICE_URL: z.string().url(),
+  // orders_svc cannot read the addresses schema (cross-schema isolation) -
+  // checkout validates + snapshots the caller's chosen shipping address
+  // over HTTP via @youmart/service-client (Ch6.1).
+  ADDRESS_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
@@ -47,6 +51,7 @@ export interface OrderServiceConfig {
   catalogServiceUrl: string;
   inventoryServiceUrl: string;
   sellerServiceUrl: string;
+  addressServiceUrl: string;
   serviceHttpTimeoutMs: number;
 }
 
@@ -64,5 +69,6 @@ export const config: Readonly<OrderServiceConfig> = Object.freeze({
   catalogServiceUrl: parsed.CATALOG_SERVICE_URL,
   inventoryServiceUrl: parsed.INVENTORY_SERVICE_URL,
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
+  addressServiceUrl: parsed.ADDRESS_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
 });

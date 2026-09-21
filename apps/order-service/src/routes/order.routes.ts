@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { PaginationQuery } from '@youmart/shared-types';
+import { AppError } from '@youmart/errors';
 import {
   checkout,
   getOrder,
@@ -13,6 +14,7 @@ import {
 } from '../order/order.service';
 import { SettleableItemsQuery } from '../order/settleable.schema';
 import { SetSellerItemStatusBody } from '../order/item-status.schema';
+import { CheckoutBody } from '../order/checkout.schema';
 import { requireAuth } from '../authMiddleware';
 import { extractBearerToken, requireUserId } from '../authToken';
 
@@ -22,15 +24,23 @@ export const orderRouter: Router = Router();
 // central error handler (app.ts). Every route requires auth - an order is
 // always the logged-in user's own.
 
-// CHECKOUT SECURITY PRINCIPLE (locked): this handler NEVER reads req.body -
-// any items/prices a client sends here are silently ignored. The cart is
-// read server-side and every price is re-derived from catalog
+// CHECKOUT SECURITY PRINCIPLE (locked): this handler NEVER reads items or
+// prices from req.body - any a client sends here are silently ignored.
+// The cart is read server-side and every price is re-derived from catalog
 // (order.service.ts's checkout()) - the client can only say "check out my
-// cart", never what's in it or what it costs.
+// cart", never what's in it or what it costs. `addressId` (Ch6.1) is the
+// ONE thing the client DOES contribute - which of their OWN saved
+// addresses to ship to. Parsed with safeParse (not .parse()) so ANY
+// validation failure (missing, wrong type, malformed uuid) surfaces as the
+// exact same message, rather than zod's generic "Validation failed".
 orderRouter.post('/checkout', requireAuth, async (req, res) => {
   const userId = requireUserId(req);
   const authToken = extractBearerToken(req);
-  const order = await checkout(userId, authToken);
+  const parsed = CheckoutBody.safeParse(req.body);
+  if (!parsed.success) {
+    throw new AppError('VALIDATION_ERROR', 400, 'a shipping address is required');
+  }
+  const order = await checkout(userId, parsed.data.addressId, authToken);
   res.status(201).json(order);
 });
 

@@ -4,7 +4,7 @@ import type { Money } from '@youmart/shared-types';
 import { add, multiplyByQuantity, sum } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
 import { prisma } from '../db';
-import { cartClient, catalogClient, inventoryClient } from '../serviceClients';
+import { cartClient, catalogClient, inventoryClient, addressClient } from '../serviceClients';
 
 function decimalToMoney(value: Prisma.Decimal): Money {
   return value.toFixed(2) as Money;
@@ -25,6 +25,24 @@ export interface OrderItemView {
   sellerStatus: OrderItemStatusValue;
 }
 
+/** A SNAPSHOT of the address chosen at checkout time (Ch6.1) - preserved
+ * verbatim even if the source saved address is later edited/deleted.
+ * `addressId` is kept purely as provenance (which saved address this came
+ * from), never re-read to refresh these fields. `null` only for orders
+ * created before Ch6.1 (pre-existing rows have no ship_* data). */
+export interface ShippingAddressView {
+  addressId: string | null;
+  fullName: string;
+  phone: string;
+  line1: string;
+  line2: string | null;
+  landmark: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+}
+
 export interface OrderView {
   orderId: string;
   orderNumber: string;
@@ -33,6 +51,7 @@ export interface OrderView {
   subtotal: Money;
   shippingTotal: Money;
   grandTotal: Money;
+  shippingAddress: ShippingAddressView | null;
 }
 
 export interface OrderListItem {
@@ -48,6 +67,32 @@ const ORDER_WITH_ITEMS_INCLUDE = {
 } satisfies Prisma.OrderInclude;
 
 type OrderWithItems = Prisma.OrderGetPayload<{ include: typeof ORDER_WITH_ITEMS_INCLUDE }>;
+
+function toShippingAddressView(order: OrderWithItems): ShippingAddressView | null {
+  if (
+    !order.shipFullName ||
+    !order.shipPhone ||
+    !order.shipLine1 ||
+    !order.shipCity ||
+    !order.shipState ||
+    !order.shipPincode ||
+    !order.shipCountry
+  ) {
+    return null;
+  }
+  return {
+    addressId: order.shippingAddressId,
+    fullName: order.shipFullName,
+    phone: order.shipPhone,
+    line1: order.shipLine1,
+    line2: order.shipLine2,
+    landmark: order.shipLandmark,
+    city: order.shipCity,
+    state: order.shipState,
+    pincode: order.shipPincode,
+    country: order.shipCountry,
+  };
+}
 
 function toOrderView(order: OrderWithItems): OrderView {
   return {
@@ -67,6 +112,7 @@ function toOrderView(order: OrderWithItems): OrderView {
     subtotal: decimalToMoney(order.subtotal),
     shippingTotal: decimalToMoney(order.shippingTotal),
     grandTotal: decimalToMoney(order.grandTotal),
+    shippingAddress: toShippingAddressView(order),
   };
 }
 
@@ -135,15 +181,31 @@ async function cancelOrder(orderId: string, note: string): Promise<void> {
 
 /**
  * CHECKOUT SECURITY PRINCIPLE (locked): the client sends NO items/prices -
- * `checkout` takes only `userId`/`authToken` and never reads `req.body`.
- * The cart is read server-side (`cartClient.getMyCart`) and EVERY price is
- * re-derived from catalog (`catalogClient.getSku`) - `unit_price` is the
- * LIVE catalog `sellingPrice` at checkout time, NOT the cart's
- * `priceSnapshot` (that snapshot is a UX convenience only, shown in the
- * cart view - it is never charged). This is what prevents a tampered
- * client request from paying less than the real current price.
+ * `checkout` takes only `userId`/`addressId`/`authToken` and never reads
+ * cart contents or prices from `req.body`. The cart is read server-side
+ * (`cartClient.getMyCart`) and EVERY price is re-derived from catalog
+ * (`catalogClient.getSku`) - `unit_price` is the LIVE catalog
+ * `sellingPrice` at checkout time, NOT the cart's `priceSnapshot` (that
+ * snapshot is a UX convenience only, shown in the cart view - it is never
+ * charged). This is what prevents a tampered client request from paying
+ * less than the real current price.
+ *
+ * `addressId` (Ch6.1) is the ONLY thing the client contributes beyond "check
+ * out my cart" - it is validated via `addressClient.getAddressForOrder`,
+ * which resolves ownership server-side from the forwarded `authToken` (never
+ * a client-supplied userId), and the returned snapshot is persisted onto
+ * the order verbatim (see `ShippingAddressView`'s doc comment for why a
+ * snapshot, not just a foreign key).
  */
-export async function checkout(userId: string, authToken: string): Promise<OrderView> {
+export async function checkout(
+  userId: string,
+  addressId: string,
+  authToken: string,
+): Promise<OrderView> {
+  if (!addressId) {
+    throw new AppError('VALIDATION_ERROR', 400, 'a shipping address is required');
+  }
+
   const recentOrder = await prisma.order.findFirst({
     where: {
       userId,
@@ -156,6 +218,11 @@ export async function checkout(userId: string, authToken: string): Promise<Order
   if (recentOrder) {
     return loadOrderView(recentOrder.id, userId);
   }
+
+  // Ownership resolved server-side by address-service from the forwarded
+  // token - throws a 404 AppError (never revealing existence otherwise) if
+  // the address doesn't exist or isn't the caller's own.
+  const address = await addressClient.getAddressForOrder(addressId, authToken);
 
   const cart = await cartClient.getMyCart(authToken);
 
@@ -211,6 +278,16 @@ export async function checkout(userId: string, authToken: string): Promise<Order
         subtotal,
         shippingTotal,
         grandTotal,
+        shippingAddressId: address.addressId,
+        shipFullName: address.fullName,
+        shipPhone: address.phone,
+        shipLine1: address.line1,
+        shipLine2: address.line2,
+        shipLandmark: address.landmark,
+        shipCity: address.city,
+        shipState: address.state,
+        shipPincode: address.pincode,
+        shipCountry: address.country,
       },
     });
 
@@ -309,6 +386,11 @@ export interface InternalOrderView {
   userId: string;
   status: OrderStatusValue;
   grandTotal: Money;
+  /** The snapshot captured at checkout time (Ch6.1) - `null` only for
+   * orders created before Ch6.1. Lets fulfillment/logistics access the
+   * real ship-to address for a real shipping label without order-service
+   * needing to expose a separate address endpoint. */
+  shippingAddress: ShippingAddressView | null;
 }
 
 /**
@@ -328,6 +410,27 @@ export async function getInternalOrder(orderId: string): Promise<InternalOrderVi
     userId: order.userId,
     status: order.status,
     grandTotal: decimalToMoney(order.grandTotal),
+    shippingAddress:
+      order.shipFullName &&
+      order.shipPhone &&
+      order.shipLine1 &&
+      order.shipCity &&
+      order.shipState &&
+      order.shipPincode &&
+      order.shipCountry
+        ? {
+            addressId: order.shippingAddressId,
+            fullName: order.shipFullName,
+            phone: order.shipPhone,
+            line1: order.shipLine1,
+            line2: order.shipLine2,
+            landmark: order.shipLandmark,
+            city: order.shipCity,
+            state: order.shipState,
+            pincode: order.shipPincode,
+            country: order.shipCountry,
+          }
+        : null,
   };
 }
 

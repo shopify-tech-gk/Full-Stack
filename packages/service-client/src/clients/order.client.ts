@@ -3,11 +3,30 @@ import { request } from '../http';
 
 export type OrderStatusValue = 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED';
 
+/** A SNAPSHOT of the address chosen at checkout time (Ch6.1) - preserved
+ * verbatim even if the source saved address is later edited/deleted.
+ * `null` only for orders created before Ch6.1. */
+export interface InternalOrderShippingAddress {
+  addressId: string | null;
+  fullName: string;
+  phone: string;
+  line1: string;
+  line2: string | null;
+  landmark: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+}
+
 export interface InternalOrderView {
   orderId: string;
   userId: string;
   status: OrderStatusValue;
   grandTotal: Money;
+  /** Lets fulfillment/logistics access the real ship-to address for a real
+   * shipping label without a separate address-lookup endpoint (Ch6.1). */
+  shippingAddress: InternalOrderShippingAddress | null;
 }
 
 /** Backed by `GET /orders/internal/settleable` (Ch5.3). */
