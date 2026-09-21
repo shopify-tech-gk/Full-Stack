@@ -2,12 +2,14 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { AppError } from '@youmart/errors';
+import { sum, add, subtract, compare } from '@youmart/shared-utils';
 import { prisma } from '../db';
 import { config } from '../config';
 import { orderClient } from '../serviceClients';
 import { razorpay } from '../razorpayClient';
+import { logger } from '../logger';
 import { moneyToPaise } from './money-paise';
-import { RazorpayWebhookPayload } from './payment.schema';
+import { RazorpayWebhookPayload, CreateRefundBody } from './payment.schema';
 
 function decimalToMoney(value: Prisma.Decimal): Money {
   return value.toFixed(2) as Money;
@@ -109,6 +111,152 @@ export async function createRazorpayOrder(
     amount: amountPaise,
     currency: 'INR',
     orderId,
+  };
+}
+
+export type RefundStatusValue = 'PENDING' | 'PROCESSED' | 'FAILED';
+
+export interface RefundResult {
+  refundId: string;
+  paymentId: string;
+  amount: Money;
+  status: RefundStatusValue;
+  razorpayRefundId: string | null;
+  /** true when the Razorpay API call itself could not be reached/succeed
+   * (e.g. placeholder dev credentials) - the refund record still exists
+   * (status FAILED), but no money actually moved. Mirrors the same
+   * BLOCKED-on-creds honesty as `createRazorpayOrder`/Ch4.6's webhook
+   * testing - never faked as a success. */
+  blocked: boolean;
+}
+
+/**
+ * Creates a refund against the CAPTURED payment for `orderId` (Ch5.5,
+ * called by returns-service). Order of operations:
+ * 1. Find the CAPTURED payment - 409 if none (can't refund an
+ *    uncaptured/already-refunded-in-full/failed payment).
+ * 2. NEVER OVER-REFUND: sum every existing PROCESSED refund against this
+ *    payment (via shared-utils `sum`), and reject (400) if
+ *    `amount > remaining = payment.amount - alreadyRefunded` (via
+ *    shared-utils `compare`) - PENDING/FAILED refunds don't count against
+ *    the cap (they never moved money).
+ * 3. Persist a PENDING refund row FIRST (a durable record exists even if
+ *    the Razorpay call itself throws/times out).
+ * 4. Call `razorpay.payments.refund` (paise, via `moneyToPaise`). This
+ *    hits Razorpay's real API - BLOCKED-on-placeholder-creds exactly like
+ *    `createRazorpayOrder`, but UNLIKE that function, a failure here is
+ *    caught (not left to throw/500) and the refund row is updated to
+ *    FAILED with `blocked: true` returned - see the doc comment on
+ *    `processRefund` (returns-service) for why: the rest of the return
+ *    flow (restock, order status) must remain verifiable even when the
+ *    live Razorpay call is blocked on dev credentials, without ever
+ *    faking a successful refund.
+ * 5. On success: refund row -> PROCESSED with `razorpay_refund_id`; if
+ *    this refund brings cumulative PROCESSED refunds up to the full
+ *    payment amount, `payment.status` -> REFUNDED.
+ *
+ * RETRY-SAFETY: once `payment.status` is REFUNDED, a repeated call for
+ * the SAME orderId (e.g. returns-service retrying `processRefund` after a
+ * downstream step - restock, order status - failed post-refund) returns
+ * the EXISTING PROCESSED refund instead of erroring or attempting a
+ * second Razorpay call - this is what makes the whole return flow safe
+ * to retry without double-refunding.
+ *
+ * A Razorpay `refund.processed` webhook could reconcile this
+ * asynchronously later (not implemented) - for launch, the SDK call's own
+ * response is treated as authoritative.
+ */
+export async function createRefund(input: CreateRefundBody): Promise<RefundResult> {
+  const payment = await prisma.payment.findFirst({
+    where: { orderId: input.orderId, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!payment) {
+    throw new AppError('CONFLICT', 409, `No payment found for order ${input.orderId}`);
+  }
+
+  if (payment.status === 'REFUNDED') {
+    const existingRefund = await prisma.refund.findFirst({
+      where: { paymentId: payment.id, status: 'PROCESSED', deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (existingRefund) {
+      return {
+        refundId: existingRefund.id,
+        paymentId: payment.id,
+        amount: decimalToMoney(existingRefund.amount),
+        status: existingRefund.status,
+        razorpayRefundId: existingRefund.razorpayRefundId,
+        blocked: false,
+      };
+    }
+  }
+
+  if (payment.status !== 'CAPTURED' || !payment.razorpayPaymentId) {
+    throw new AppError('CONFLICT', 409, `No CAPTURED payment found for order ${input.orderId}`);
+  }
+
+  const processedRefunds = await prisma.refund.findMany({
+    where: { paymentId: payment.id, status: 'PROCESSED', deletedAt: null },
+  });
+  const alreadyRefunded = sum(processedRefunds.map((r) => decimalToMoney(r.amount)));
+  const paymentAmount = decimalToMoney(payment.amount);
+  const remaining = subtract(paymentAmount, alreadyRefunded);
+
+  if (compare(input.amount, remaining) > 0) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      400,
+      `Refund amount ${input.amount} exceeds the remaining refundable amount ${remaining}`,
+      { paymentId: payment.id, paymentAmount, alreadyRefunded, remaining },
+    );
+  }
+
+  const refundRow = await prisma.refund.create({
+    data: { paymentId: payment.id, amount: input.amount, reason: input.reason, status: 'PENDING' },
+  });
+
+  let razorpayRefundId: string | null = null;
+  let finalStatus: RefundStatusValue = 'PENDING';
+  let blocked = false;
+
+  try {
+    const razorpayRefund = await razorpay.payments.refund(payment.razorpayPaymentId, {
+      amount: moneyToPaise(input.amount),
+      notes: input.reason ? { reason: input.reason } : undefined,
+    });
+    razorpayRefundId = razorpayRefund.id;
+    finalStatus = 'PROCESSED';
+  } catch (err: unknown) {
+    // BLOCKED-on-creds (or any other Razorpay-side failure) - recorded
+    // honestly as FAILED, never silently upgraded to PROCESSED.
+    finalStatus = 'FAILED';
+    blocked = true;
+    logger.error(
+      { err, paymentId: payment.id, orderId: input.orderId },
+      'Razorpay refund call failed - refund recorded as FAILED (see blocked:true)',
+    );
+  }
+
+  const updated = await prisma.refund.update({
+    where: { id: refundRow.id },
+    data: { status: finalStatus, razorpayRefundId },
+  });
+
+  if (finalStatus === 'PROCESSED') {
+    const newTotal = add(alreadyRefunded, input.amount);
+    if (compare(newTotal, paymentAmount) >= 0) {
+      await prisma.payment.update({ where: { id: payment.id }, data: { status: 'REFUNDED' } });
+    }
+  }
+
+  return {
+    refundId: updated.id,
+    paymentId: payment.id,
+    amount: input.amount,
+    status: updated.status,
+    razorpayRefundId: updated.razorpayRefundId,
+    blocked,
   };
 }
 

@@ -1,7 +1,7 @@
 import { AppError } from '@youmart/errors';
 import { prisma } from '../db';
 import { withStockLock } from './stock-lock';
-import type { SetStockBody, ReserveBody } from './inventory.schema';
+import type { SetStockBody, ReserveBody, RestockBody } from './inventory.schema';
 
 // Reservations are HELD for a bounded window (checkout must complete within
 // this) - order-service (Ch4.5) will call reserve during checkout, then
@@ -201,4 +201,40 @@ export async function commitByOrder(orderId: string): Promise<void> {
   for (const reservation of reservations) {
     await commit(reservation.id);
   }
+}
+
+/**
+ * RESTOCK (Ch5.5) - a returned item's units re-enter sellable stock.
+ * `reserved` is untouched (the unit was already sold/committed, not held) -
+ * this only increments `available`, under the same per-SKU Redis lock as
+ * reserve/commit so it can never race with a concurrent reserve.
+ *
+ * NO built-in idempotency key here (unlike reserve/commit, which are tied
+ * to a `reservation` row) - inventory_svc has no visibility into the
+ * returns schema (cross-schema isolation), so it cannot itself know
+ * "which return this call is for" or whether it already ran. The caller
+ * (returns-service) is responsible for calling this AT MOST ONCE per
+ * return - enforced there via `return_request.status` (restock only
+ * happens on the PICKED_UP -> REFUNDED transition, and a `REFUNDED` return
+ * is never processed again).
+ */
+export async function restock(skuId: string, input: RestockBody): Promise<StockSummary> {
+  return withStockLock(skuId, async () => {
+    const existing = await prisma.stockLevel.findFirst({ where: { skuId, deletedAt: null } });
+
+    if (existing) {
+      const updated = await prisma.stockLevel.update({
+        where: { id: existing.id },
+        data: { available: { increment: input.quantity } },
+      });
+      return { skuId, available: updated.available, reserved: updated.reserved };
+    }
+
+    // No stock row yet - unlikely for a previously-sold SKU, but handled
+    // the same way setStock does: the first write for a SKU creates it.
+    const created = await prisma.stockLevel.create({
+      data: { skuId, available: input.quantity, reserved: 0 },
+    });
+    return { skuId, available: created.available, reserved: created.reserved };
+  });
 }

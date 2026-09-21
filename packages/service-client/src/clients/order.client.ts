@@ -22,15 +22,23 @@ export interface SettleableItemView {
 export type OrderItemStatusValue =
   'PENDING' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'RETURNED';
 
-/** Backed by `GET /orders/internal/items/:orderItemId` (Ch5.4) - includes
- * the order's `userId` so callers (e.g. logistics-service's customer
- * tracking endpoint) can do their OWN ownership check. */
+/** Backed by `GET /orders/internal/items/:orderItemId` (Ch5.4; extended
+ * Ch5.5 with `skuId`/`quantity`/`lineTotal`/`updatedAt`) - includes the
+ * order's `userId` so callers (e.g. logistics-service's customer tracking
+ * endpoint, returns-service's ownership/return-window checks) can do
+ * their OWN checks. */
 export interface InternalOrderItemView {
   orderItemId: string;
   orderId: string;
   userId: string;
   sellerId: string;
+  skuId: string;
+  quantity: number;
+  lineTotal: Money;
   sellerStatus: OrderItemStatusValue;
+  /** DELIVERED-time proxy (order_item has no `delivered_at` column) - same
+   * approximation used by settlement-service's getSettleableItems. */
+  updatedAt: string;
 }
 
 export interface CreateOrderClientOptions {

@@ -36,6 +36,15 @@ export interface InventoryClient {
   /** Commits every still-HELD reservation linked to this order (payment
    * success, Ch4.6). */
   commitByOrder(orderId: string, authToken: string): Promise<void>;
+  /** Backed by `POST /inventory/:skuId/restock` (Ch5.5) - a returned
+   * item's units re-enter sellable stock. NO built-in idempotency key;
+   * the caller must call at most once per return. */
+  restock(
+    skuId: string,
+    quantity: number,
+    authToken: string,
+    reason?: string,
+  ): Promise<StockSummary>;
 }
 
 /** `baseUrl` (e.g. `INVENTORY_SERVICE_URL`) is injected by the caller - this
@@ -113,6 +122,17 @@ export function createInventoryClient({
         baseUrl,
         path: `/inventory/orders/${orderId}/commit`,
         method: 'POST',
+        authToken,
+        timeoutMs,
+      });
+    },
+
+    restock(skuId, quantity, authToken, reason) {
+      return request<StockSummary>({
+        baseUrl,
+        path: `/inventory/${skuId}/restock`,
+        method: 'POST',
+        body: { quantity, ...(reason ? { reason } : {}) },
         authToken,
         timeoutMs,
       });

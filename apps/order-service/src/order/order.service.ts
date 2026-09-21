@@ -494,7 +494,16 @@ export interface InternalOrderItemView {
   orderId: string;
   userId: string;
   sellerId: string;
+  skuId: string;
+  quantity: number;
+  lineTotal: Money;
   sellerStatus: OrderItemStatusValue;
+  /** ISO timestamp of the row's last update - used as a DELIVERED-time
+   * proxy by callers (e.g. returns-service's return-window check, Ch5.5)
+   * since order_item has no dedicated `delivered_at` column (no schema
+   * changes). Same approximation as settlement-service's
+   * getSettleableItems (Ch5.3). */
+  updatedAt: string;
 }
 
 /**
@@ -518,7 +527,11 @@ export async function getInternalOrderItem(orderItemId: string): Promise<Interna
     orderId: item.orderId,
     userId: item.order.userId,
     sellerId: item.sellerId,
+    skuId: item.skuId,
+    quantity: item.quantity,
+    lineTotal: decimalToMoney(item.lineTotal),
     sellerStatus: item.sellerStatus,
+    updatedAt: item.updatedAt.toISOString(),
   };
 }
 
@@ -530,11 +543,23 @@ export async function getInternalOrderItem(orderItemId: string): Promise<Interna
  * requested status is well-formed but disallowed here -> 409 CONFLICT, not
  * 400 (the shape is valid, the transition isn't). This is what makes an
  * item settleable (5.3 settles DELIVERED items).
+/**
+ * SERVER-VALIDATED seller_status transitions for the internal
+ * set-status endpoint (locked, documented) - the counterpart to
+ * seller-order.service.ts's seller-driven CONFIRMED->PACKED (Ch5.2).
+ * logistics-service (Ch5.4) may move PACKED->SHIPPED (on shipment
+ * creation) and SHIPPED->DELIVERED (on delivery); returns-service (Ch5.5)
+ * may move DELIVERED->RETURNED (on a refunded return). Any other
+ * requested status is well-formed but disallowed here -> 409 CONFLICT,
+ * not 400 (the shape is valid, the transition isn't). PACKED->SHIPPED and
+ * SHIPPED->DELIVERED are what make an item settleable (5.3 settles
+ * DELIVERED items).
  */
 const LOGISTICS_ALLOWED_TRANSITIONS: Partial<Record<OrderItemStatusValue, OrderItemStatusValue[]>> =
   {
     PACKED: ['SHIPPED'],
     SHIPPED: ['DELIVERED'],
+    DELIVERED: ['RETURNED'],
   };
 
 export async function setSellerItemStatusInternal(
@@ -568,6 +593,10 @@ export async function setSellerItemStatusInternal(
     orderId: updated.orderId,
     userId: item.order.userId,
     sellerId: updated.sellerId,
+    skuId: updated.skuId,
+    quantity: updated.quantity,
+    lineTotal: decimalToMoney(updated.lineTotal),
     sellerStatus: updated.sellerStatus,
+    updatedAt: updated.updatedAt.toISOString(),
   };
 }

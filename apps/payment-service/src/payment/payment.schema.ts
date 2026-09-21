@@ -1,9 +1,17 @@
 import { z } from 'zod';
+import { Money } from '@youmart/shared-types';
 
 export const CreateRazorpayOrderBody = z.object({
   orderId: z.string().uuid(),
 });
 export type CreateRazorpayOrderBody = z.infer<typeof CreateRazorpayOrderBody>;
+
+export const CreateRefundBody = z.object({
+  orderId: z.string().uuid(),
+  amount: Money,
+  reason: z.string().min(1).max(500).optional(),
+});
+export type CreateRefundBody = z.infer<typeof CreateRefundBody>;
 
 // Only the fields this service actually reads from Razorpay's webhook
 // payload - Razorpay's real payload has many more fields, all ignored.

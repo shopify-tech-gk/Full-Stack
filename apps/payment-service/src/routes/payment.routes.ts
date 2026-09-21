@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AppError } from '@youmart/errors';
-import { CreateRazorpayOrderBody } from '../payment/payment.schema';
-import { createRazorpayOrder, handleWebhook } from '../payment/payment.service';
+import { CreateRazorpayOrderBody, CreateRefundBody } from '../payment/payment.schema';
+import { createRazorpayOrder, createRefund, handleWebhook } from '../payment/payment.service';
 import { requireAuth } from '../authMiddleware';
 import { extractBearerToken, requireUserId } from '../authToken';
 
@@ -12,6 +12,18 @@ paymentRouter.post('/razorpay-order', requireAuth, async (req, res) => {
   const authToken = extractBearerToken(req);
   const body = CreateRazorpayOrderBody.parse(req.body);
   const result = await createRazorpayOrder(userId, body.orderId, authToken);
+  res.status(201).json(result);
+});
+
+// Internal, service-to-service write - called by returns-service (Ch5.5)
+// to issue a Razorpay refund for an approved/picked-up return. requireAuth
+// + a forwarded token for now, same temporary pattern as every other
+// internal endpoint. Always 200 (even when the Razorpay call itself is
+// BLOCKED-on-creds) - the response body's `status`/`blocked` fields carry
+// the actual outcome; see payment.service.ts's createRefund doc comment.
+paymentRouter.post('/internal/refund', requireAuth, async (req, res) => {
+  const body = CreateRefundBody.parse(req.body);
+  const result = await createRefund(body);
   res.status(201).json(result);
 });
 

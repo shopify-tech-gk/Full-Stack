@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { SetStockBody, ReserveBody } from '../inventory/inventory.schema';
+import { SetStockBody, ReserveBody, RestockBody } from '../inventory/inventory.schema';
 import {
   getStock,
   setStock,
@@ -8,6 +8,7 @@ import {
   commit,
   releaseByOrder,
   commitByOrder,
+  restock,
 } from '../inventory/inventory.service';
 import { requireAuth } from '../authMiddleware';
 import { requireInventoryManager } from '../inventoryManager.middleware';
@@ -71,4 +72,14 @@ inventoryRouter.post('/orders/:orderId/commit', requireAuth, async (req, res) =>
   const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
   await commitByOrder(orderId);
   res.status(204).send();
+});
+
+// Called by returns-service (Ch5.5) once a return is refunded - see
+// inventory.service.ts's restock doc comment for the idempotency caveat
+// (no built-in dedupe key here; the caller must call at most once).
+inventoryRouter.post('/:skuId/restock', requireAuth, async (req, res) => {
+  const skuId = typeof req.params.skuId === 'string' ? req.params.skuId : '';
+  const body = RestockBody.parse(req.body);
+  const stock = await restock(skuId, body);
+  res.status(200).json(stock);
 });
