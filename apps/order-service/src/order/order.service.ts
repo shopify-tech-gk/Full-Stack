@@ -488,3 +488,86 @@ export async function getSettleableItems(
     deliveredAt: row.updatedAt.toISOString(),
   }));
 }
+
+export interface InternalOrderItemView {
+  orderItemId: string;
+  orderId: string;
+  userId: string;
+  sellerId: string;
+  sellerStatus: OrderItemStatusValue;
+}
+
+/**
+ * Internal, service-to-service read for logistics-service (Ch5.4) -
+ * requireAuth + a forwarded token for now, same temporary pattern as every
+ * other internal endpoint. Includes the order's `userId` (a join) so
+ * callers can do their OWN ownership check (e.g. logistics-service's
+ * customer tracking endpoint verifying "is this the order's owner")
+ * without orders-service needing to know anything about tracking/shipping.
+ */
+export async function getInternalOrderItem(orderItemId: string): Promise<InternalOrderItemView> {
+  const item = await prisma.orderItem.findFirst({
+    where: { id: orderItemId, deletedAt: null },
+    include: { order: true },
+  });
+  if (!item) {
+    throw new AppError('NOT_FOUND', 404, 'Order item not found');
+  }
+  return {
+    orderItemId: item.id,
+    orderId: item.orderId,
+    userId: item.order.userId,
+    sellerId: item.sellerId,
+    sellerStatus: item.sellerStatus,
+  };
+}
+
+/**
+ * LOGISTICS-DRIVEN seller_status transitions (locked, documented) - the
+ * counterpart to seller-order.service.ts's seller-driven CONFIRMED->PACKED
+ * (Ch5.2): logistics-service (Ch5.4) may only move PACKED->SHIPPED (on
+ * shipment creation) and SHIPPED->DELIVERED (on delivery). Any other
+ * requested status is well-formed but disallowed here -> 409 CONFLICT, not
+ * 400 (the shape is valid, the transition isn't). This is what makes an
+ * item settleable (5.3 settles DELIVERED items).
+ */
+const LOGISTICS_ALLOWED_TRANSITIONS: Partial<Record<OrderItemStatusValue, OrderItemStatusValue[]>> =
+  {
+    PACKED: ['SHIPPED'],
+    SHIPPED: ['DELIVERED'],
+  };
+
+export async function setSellerItemStatusInternal(
+  orderItemId: string,
+  nextStatus: OrderItemStatusValue,
+): Promise<InternalOrderItemView> {
+  const item = await prisma.orderItem.findFirst({
+    where: { id: orderItemId, deletedAt: null },
+    include: { order: true },
+  });
+  if (!item) {
+    throw new AppError('NOT_FOUND', 404, 'Order item not found');
+  }
+
+  const allowed = LOGISTICS_ALLOWED_TRANSITIONS[item.sellerStatus] ?? [];
+  if (!allowed.includes(nextStatus)) {
+    throw new AppError(
+      'CONFLICT',
+      409,
+      `Cannot transition seller_status from ${item.sellerStatus} to ${nextStatus} - logistics may only move PACKED to SHIPPED to DELIVERED here`,
+    );
+  }
+
+  const updated = await prisma.orderItem.update({
+    where: { id: orderItemId },
+    data: { sellerStatus: nextStatus },
+  });
+
+  return {
+    orderItemId: updated.id,
+    orderId: updated.orderId,
+    userId: item.order.userId,
+    sellerId: updated.sellerId,
+    sellerStatus: updated.sellerStatus,
+  };
+}

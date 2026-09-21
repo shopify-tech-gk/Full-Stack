@@ -19,6 +19,20 @@ export interface SettleableItemView {
   deliveredAt: string;
 }
 
+export type OrderItemStatusValue =
+  'PENDING' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'RETURNED';
+
+/** Backed by `GET /orders/internal/items/:orderItemId` (Ch5.4) - includes
+ * the order's `userId` so callers (e.g. logistics-service's customer
+ * tracking endpoint) can do their OWN ownership check. */
+export interface InternalOrderItemView {
+  orderItemId: string;
+  orderId: string;
+  userId: string;
+  sellerId: string;
+  sellerStatus: OrderItemStatusValue;
+}
+
 export interface CreateOrderClientOptions {
   baseUrl: string;
   timeoutMs?: number;
@@ -44,6 +58,20 @@ export interface OrderClient {
     to: string,
     authToken: string,
   ): Promise<SettleableItemView[]>;
+  /** Backed by `GET /orders/internal/items/:orderItemId` (Ch5.4) - no
+   * ownership filter server-side; the caller must check `.userId`/
+   * `.sellerId` itself. */
+  getInternalOrderItem(orderItemId: string, authToken: string): Promise<InternalOrderItemView>;
+  /** Backed by `POST /orders/internal/items/:orderItemId/seller-status`
+   * (Ch5.4) - the LOGISTICS-driven counterpart to the seller-driven
+   * CONFIRMED->PACKED transition (Ch5.2). Server validates the requested
+   * transition is one of PACKED->SHIPPED / SHIPPED->DELIVERED; anything
+   * else is a 409. */
+  setSellerItemStatus(
+    orderItemId: string,
+    status: OrderItemStatusValue,
+    authToken: string,
+  ): Promise<InternalOrderItemView>;
 }
 
 /** `baseUrl` (e.g. `ORDER_SERVICE_URL`) is injected by the caller - this
@@ -90,6 +118,27 @@ export function createOrderClient({ baseUrl, timeoutMs }: CreateOrderClientOptio
         timeoutMs,
       });
       return result.items;
+    },
+
+    getInternalOrderItem(orderItemId, authToken) {
+      return request<InternalOrderItemView>({
+        baseUrl,
+        path: `/orders/internal/items/${orderItemId}`,
+        method: 'GET',
+        authToken,
+        timeoutMs,
+      });
+    },
+
+    setSellerItemStatus(orderItemId, status, authToken) {
+      return request<InternalOrderItemView>({
+        baseUrl,
+        path: `/orders/internal/items/${orderItemId}/seller-status`,
+        method: 'POST',
+        body: { status },
+        authToken,
+        timeoutMs,
+      });
     },
   };
 }

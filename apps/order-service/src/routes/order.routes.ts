@@ -8,8 +8,11 @@ import {
   confirmOrder,
   cancelOrderForPaymentFailure,
   getSettleableItems,
+  getInternalOrderItem,
+  setSellerItemStatusInternal,
 } from '../order/order.service';
 import { SettleableItemsQuery } from '../order/settleable.schema';
+import { SetSellerItemStatusBody } from '../order/item-status.schema';
 import { requireAuth } from '../authMiddleware';
 import { extractBearerToken, requireUserId } from '../authToken';
 
@@ -51,6 +54,26 @@ orderRouter.get('/internal/:orderId', requireAuth, async (req, res) => {
   const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
   const order = await getInternalOrder(orderId);
   res.status(200).json(order);
+});
+
+// Internal reads/writes for logistics-service (Ch5.4). "items" as the 2nd
+// segment never collides with the ":orderId" routes above/below (different
+// segment counts either way).
+orderRouter.get('/internal/items/:orderItemId', requireAuth, async (req, res) => {
+  const orderItemId = typeof req.params.orderItemId === 'string' ? req.params.orderItemId : '';
+  const item = await getInternalOrderItem(orderItemId);
+  res.status(200).json(item);
+});
+
+// LOGISTICS-DRIVEN seller_status transitions (PACKED->SHIPPED->DELIVERED) -
+// the counterpart to the seller-driven CONFIRMED->PACKED path (Ch5.2's
+// /orders/seller/items/:orderItemId/status). See order.service.ts's
+// setSellerItemStatusInternal for the allowed-transitions table.
+orderRouter.post('/internal/items/:orderItemId/seller-status', requireAuth, async (req, res) => {
+  const orderItemId = typeof req.params.orderItemId === 'string' ? req.params.orderItemId : '';
+  const body = SetSellerItemStatusBody.parse(req.body);
+  const item = await setSellerItemStatusInternal(orderItemId, body.status);
+  res.status(200).json(item);
 });
 
 orderRouter.post('/internal/:orderId/confirm', requireAuth, async (req, res) => {
