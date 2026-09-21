@@ -1,0 +1,33 @@
+{
+  "name": "@youmart/settlement-service",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@youmart/auth-middleware": "workspace:*",
+    "@youmart/config": "workspace:*",
+    "@youmart/db": "workspace:*",
+    "@youmart/errors": "workspace:*",
+    "@youmart/queue": "workspace:*",
+    "@youmart/service-client": "workspace:*",
+    "@youmart/shared-types": "workspace:*",
+    "@youmart/shared-utils": "workspace:*",
+    "zod": "4.5.4",
+    "express": "5.2.1",
+    "helmet": "8.3.0",
+    "cors": "2.8.6",
+    "pino": "10.3.1",
+    "pino-http": "11.0.0"
+  },
+  "devDependencies": {
+    "tsx": "4.23.13",
+    "@types/express": "5.0.6",
+    "@types/cors": "2.8.19"
+  }
+}

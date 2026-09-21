@@ -438,3 +438,53 @@ export async function getMyOrders(
     nextCursor,
   };
 }
+
+export interface SettleableItemView {
+  orderItemId: string;
+  orderId: string;
+  sellerId: string;
+  lineTotal: Money;
+  deliveredAt: string;
+}
+
+/**
+ * Internal, service-to-service read for settlement-service (Ch5.3) -
+ * requireAuth + a forwarded token for now, same temporary pattern as every
+ * other internal endpoint. Returns every DELIVERED, non-deleted order_item
+ * for `sellerId` whose `updatedAt` falls in `[from, to)`.
+ *
+ * DELIVERED-detection approximation: `order_item` has no `delivered_at`
+ * column (no schema changes in this prompt) - `updated_at` is used as a
+ * proxy for "when it became DELIVERED", since that's the last time the row
+ * changed and (today) nothing updates a DELIVERED row afterwards. A
+ * precise `delivered_at` timestamp would need a schema change, deferred.
+ *
+ * "Not-yet-settled" is NOT filtered here - order-service has no concept of
+ * settlement at all (cross-schema isolation: it can't see the settlements
+ * schema). This intentionally returns ALL matching DELIVERED items;
+ * settlement-service is the one that knows which order_item_ids it has
+ * already settled (via its own `settlement_line` rows) and excludes them.
+ */
+export async function getSettleableItems(
+  sellerId: string,
+  from: Date,
+  to: Date,
+): Promise<SettleableItemView[]> {
+  const rows = await prisma.orderItem.findMany({
+    where: {
+      sellerId,
+      sellerStatus: 'DELIVERED',
+      deletedAt: null,
+      updatedAt: { gte: from, lt: to },
+    },
+    orderBy: { updatedAt: 'asc' },
+  });
+
+  return rows.map((row) => ({
+    orderItemId: row.id,
+    orderId: row.orderId,
+    sellerId: row.sellerId,
+    lineTotal: decimalToMoney(row.lineTotal),
+    deliveredAt: row.updatedAt.toISOString(),
+  }));
+}

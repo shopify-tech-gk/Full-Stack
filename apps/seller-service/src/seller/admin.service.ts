@@ -177,6 +177,7 @@ export interface SellerActiveView {
   active: boolean;
   status: SellerView['status'];
   kycStatus: KycView['kycStatus'];
+  commissionRatePercent: string;
 }
 
 /**
@@ -184,7 +185,12 @@ export interface SellerActiveView {
  * BOTH gates have cleared: account status APPROVED AND its latest KYC
  * submission VERIFIED (see the approve-vs-KYC rule above). Used internally
  * today; catalog/order will call the internal HTTP endpoint that wraps
- * this once the marketplace is on.
+ * this once the marketplace is on. `commissionRatePercent` (Ch5.3) rides
+ * along on the same call so settlement-service doesn't need a second
+ * round-trip - it's the seller's OWN configured rate (set via
+ * `setCommission`, defaulting to `DEFAULT_COMMISSION_PERCENT` at
+ * registration); settlement-service falls back to its own platform default
+ * only if this field is ever missing/unparseable.
  */
 export async function isSellerActive(sellerId: string): Promise<SellerActiveView> {
   const seller = await findActiveSellerById(sellerId);
@@ -194,5 +200,37 @@ export async function isSellerActive(sellerId: string): Promise<SellerActiveView
     active: seller.status === 'APPROVED' && kycStatus === 'VERIFIED',
     status: seller.status,
     kycStatus,
+    commissionRatePercent: seller.commissionRatePercent.toFixed(2),
   };
+}
+
+export interface ActiveSellerSummary {
+  sellerId: string;
+  commissionRatePercent: string;
+}
+
+/**
+ * Every seller currently APPROVED + KYC VERIFIED (Ch5.3) - used by
+ * settlement-service's `runSettlementForAllSellers` to iterate sellers
+ * without settlement-service ever querying the sellers schema directly.
+ * In hard-off mode, the seeded default seller is never returned here (it
+ * has no owner and is never put through this approval workflow) - so a
+ * hard-off settlement run naturally settles nothing, documented.
+ */
+export async function listActiveSellers(): Promise<ActiveSellerSummary[]> {
+  const approved = await prisma.seller.findMany({
+    where: { status: 'APPROVED', deletedAt: null },
+  });
+
+  const results: ActiveSellerSummary[] = [];
+  for (const seller of approved) {
+    const latest = await findLatestKyc(seller.id);
+    if (latest?.kycStatus === 'VERIFIED') {
+      results.push({
+        sellerId: seller.id,
+        commissionRatePercent: seller.commissionRatePercent.toFixed(2),
+      });
+    }
+  }
+  return results;
 }

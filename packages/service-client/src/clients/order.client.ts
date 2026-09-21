@@ -10,6 +10,15 @@ export interface InternalOrderView {
   grandTotal: Money;
 }
 
+/** Backed by `GET /orders/internal/settleable` (Ch5.3). */
+export interface SettleableItemView {
+  orderItemId: string;
+  orderId: string;
+  sellerId: string;
+  lineTotal: Money;
+  deliveredAt: string;
+}
+
 export interface CreateOrderClientOptions {
   baseUrl: string;
   timeoutMs?: number;
@@ -25,6 +34,16 @@ export interface OrderClient {
   /** Backed by `POST /orders/internal/:orderId/cancel` (Ch4.6) -
    * PENDING_PAYMENT -> CANCELLED and releases held stock. Idempotent. */
   cancelOrder(orderId: string, authToken: string): Promise<void>;
+  /** Backed by `GET /orders/internal/settleable` (Ch5.3) - every DELIVERED
+   * order_item for `sellerId` in `[from, to)`. Does NOT exclude
+   * already-settled items - the caller (settlement-service) owns that
+   * knowledge via its own settlement_line rows. */
+  getSettleableItems(
+    sellerId: string,
+    from: string,
+    to: string,
+    authToken: string,
+  ): Promise<SettleableItemView[]>;
 }
 
 /** `baseUrl` (e.g. `ORDER_SERVICE_URL`) is injected by the caller - this
@@ -59,6 +78,18 @@ export function createOrderClient({ baseUrl, timeoutMs }: CreateOrderClientOptio
         authToken,
         timeoutMs,
       });
+    },
+
+    async getSettleableItems(sellerId, from, to, authToken) {
+      const query = new URLSearchParams({ sellerId, from, to }).toString();
+      const result = await request<{ items: SettleableItemView[] }>({
+        baseUrl,
+        path: `/orders/internal/settleable?${query}`,
+        method: 'GET',
+        authToken,
+        timeoutMs,
+      });
+      return result.items;
     },
   };
 }

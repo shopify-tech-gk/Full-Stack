@@ -7,7 +7,9 @@ import {
   getInternalOrder,
   confirmOrder,
   cancelOrderForPaymentFailure,
+  getSettleableItems,
 } from '../order/order.service';
+import { SettleableItemsQuery } from '../order/settleable.schema';
 import { requireAuth } from '../authMiddleware';
 import { extractBearerToken, requireUserId } from '../authToken';
 
@@ -29,12 +31,21 @@ orderRouter.post('/checkout', requireAuth, async (req, res) => {
   res.status(201).json(order);
 });
 
-// --- Internal/service endpoints (called by payment-service, Ch4.6) ---
+// --- Internal/service endpoints (called by payment-service, Ch4.6, and
+// settlement-service, Ch5.3) ---
 // Registered BEFORE the generic GET /:id below so "internal" is never
 // swallowed as an :id. Protected by requireAuth + a forwarded token for
 // now (no ownership filter on the GET - the caller does its own ownership
 // check); a dedicated service-to-service auth mechanism is a documented
 // future improvement.
+
+// Registered BEFORE '/internal/:orderId' - otherwise "settleable" would be
+// swallowed as :orderId.
+orderRouter.get('/internal/settleable', requireAuth, async (req, res) => {
+  const query = SettleableItemsQuery.parse(req.query);
+  const items = await getSettleableItems(query.sellerId, new Date(query.from), new Date(query.to));
+  res.status(200).json({ items });
+});
 
 orderRouter.get('/internal/:orderId', requireAuth, async (req, res) => {
   const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
