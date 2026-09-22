@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { compare } from '@youmart/shared-utils';
+import { enqueueSearchReindex } from '@youmart/search-reindex-client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { AppError } from '@youmart/errors';
@@ -212,6 +213,84 @@ export async function listProducts(
   const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null;
 
   return { items: pageRows.map(toListItem), nextCursor };
+}
+
+/** Search-service's view of a product (Ch6.3) - deliberately includes
+ * EVERY status and soft-deleted rows (unlike every public/seller-facing
+ * function above) so search-service's `upsertProduct` can tell "gone/not
+ * active -> remove from index" apart from "active -> upsert", using
+ * catalog as the single source of truth each time rather than trusting a
+ * possibly-stale enqueue payload. */
+export interface ProductForIndex {
+  id: string;
+  title: string;
+  description: string | null;
+  slug: string;
+  status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+  deletedAt: string | null;
+  categoryId: string;
+  categoryName: string;
+  price: Money | null;
+  primaryImageUrl: string | null;
+  attributes: unknown;
+  createdAt: string;
+}
+
+function toProductForIndex(product: ProductWithListRelations): ProductForIndex {
+  const price = minSellingPrice(product.skus);
+  const primaryImage = product.images[0];
+  return {
+    id: product.id,
+    title: product.title,
+    description: product.description,
+    slug: product.slug,
+    status: product.status,
+    deletedAt: product.deletedAt ? product.deletedAt.toISOString() : null,
+    categoryId: product.categoryId,
+    categoryName: product.category.name,
+    price: price ? decimalToMoney(price) : null,
+    primaryImageUrl: primaryImage ? buildImageUrl(primaryImage.url) : null,
+    attributes: product.attributes,
+    createdAt: product.createdAt.toISOString(),
+  };
+}
+
+/** Internal, service-to-service read (search-service's event-driven
+ * reindex worker, Ch6.3) - `null` only if the id never existed at all;
+ * an existing-but-soft-deleted/DRAFT/ARCHIVED product is still returned
+ * (with its real status/deletedAt) rather than 404ing, since the caller
+ * needs exactly that information to decide to remove it from the index. */
+export async function getProductForIndex(id: string): Promise<ProductForIndex | null> {
+  const product = await prisma.product.findFirst({
+    where: { id },
+    include: PRODUCT_LIST_INCLUDE,
+  });
+  return product ? toProductForIndex(product) : null;
+}
+
+/** Internal, service-to-service read (search-service's `fullReindex`
+ * safety net, Ch6.3) - ONLY ACTIVE, non-deleted products (a full rebuild
+ * only ever needs to know what SHOULD be in the index, never the
+ * excluded statuses). */
+export async function listProductsForIndex(query: {
+  cursor?: string;
+  limit: number;
+}): Promise<PaginatedList<ProductForIndex>> {
+  const { cursor, limit } = query;
+
+  const rows = await prisma.product.findMany({
+    where: { status: 'ACTIVE', deletedAt: null },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    include: PRODUCT_LIST_INCLUDE,
+  });
+
+  const hasMore = rows.length > limit;
+  const pageRows = hasMore ? rows.slice(0, limit) : rows;
+  const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null;
+
+  return { items: pageRows.map(toProductForIndex), nextCursor };
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductDetail> {
@@ -466,6 +545,8 @@ export async function createProductForSeller(
     return created.id;
   });
 
+  await enqueueSearchReindex(productId);
+
   return loadAdminProductDetailById(productId);
 }
 
@@ -599,6 +680,8 @@ export async function updateProduct(
 
   await prisma.product.update({ where: { id }, data });
 
+  await enqueueSearchReindex(id);
+
   return loadAdminProductDetailById(id);
 }
 
@@ -625,6 +708,8 @@ export async function addSku(productId: string, input: AddSkuBody): Promise<Admi
     },
   });
 
+  await enqueueSearchReindex(productId);
+
   return loadAdminProductDetailById(productId);
 }
 
@@ -645,6 +730,8 @@ export async function updateSku(id: string, input: UpdateSkuBody): Promise<Admin
   };
 
   await prisma.sku.update({ where: { id }, data });
+
+  await enqueueSearchReindex(existing.productId);
 
   return loadAdminProductDetailById(existing.productId);
 }
@@ -669,6 +756,8 @@ export async function softDeleteProduct(id: string): Promise<void> {
       data: { deletedAt: now },
     }),
   ]);
+
+  await enqueueSearchReindex(id);
 }
 
 export async function addImage(
@@ -685,6 +774,8 @@ export async function addImage(
 
   await prisma.productImage.create({ data: { productId, url: input.url, position } });
 
+  await enqueueSearchReindex(productId);
+
   return loadAdminProductDetailById(productId);
 }
 
@@ -698,6 +789,8 @@ export async function softDeleteImage(id: string): Promise<void> {
     return;
   }
   await prisma.productImage.update({ where: { id }, data: { deletedAt: new Date() } });
+
+  await enqueueSearchReindex(existing.productId);
 }
 
 export async function createCategory(input: CreateCategoryBody): Promise<CategoryListItem> {
