@@ -3,8 +3,15 @@ import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { add, multiplyByQuantity, sum } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
+import { enqueueNotification } from '@youmart/notifications-client';
 import { prisma } from '../db';
-import { cartClient, catalogClient, inventoryClient, addressClient } from '../serviceClients';
+import {
+  cartClient,
+  catalogClient,
+  inventoryClient,
+  addressClient,
+  authClient,
+} from '../serviceClients';
 
 function decimalToMoney(value: Prisma.Decimal): Money {
   return value.toFixed(2) as Money;
@@ -383,6 +390,7 @@ export async function getOrder(userId: string, orderId: string): Promise<OrderVi
 
 export interface InternalOrderView {
   orderId: string;
+  orderNumber: string;
   userId: string;
   status: OrderStatusValue;
   grandTotal: Money;
@@ -407,6 +415,7 @@ export async function getInternalOrder(orderId: string): Promise<InternalOrderVi
   }
   return {
     orderId: order.id,
+    orderNumber: order.orderNumber,
     userId: order.userId,
     status: order.status,
     grandTotal: decimalToMoney(order.grandTotal),
@@ -477,6 +486,38 @@ export async function confirmOrder(orderId: string, authToken: string): Promise<
       },
     }),
   ]);
+
+  // Order-confirmation notification (Ch6.2) - BEST-EFFORT, NEVER blocks or
+  // fails order confirmation itself: a notification problem must never
+  // undo a real payment capture. WhatsApp goes to the order's OWN
+  // snapshotted ship_phone (no extra lookup needed); email additionally
+  // requires the buyer's email, resolved via authClient (cross-schema
+  // isolation - orders_svc cannot read the auth schema directly).
+  try {
+    const amount = decimalToMoney(order.grandTotal);
+    if (order.shipPhone) {
+      await enqueueNotification({
+        channel: 'WHATSAPP',
+        to: order.shipPhone,
+        templateKey: 'ORDER_CONFIRMATION',
+        data: { orderNumber: order.orderNumber, amount },
+        userId: order.userId,
+      });
+    }
+    const contact = await authClient.getUserContact(order.userId, authToken);
+    if (contact.email) {
+      await enqueueNotification({
+        channel: 'EMAIL',
+        to: contact.email,
+        templateKey: 'ORDER_CONFIRMATION',
+        data: { orderNumber: order.orderNumber, amount },
+        userId: order.userId,
+      });
+    }
+  } catch (notifyErr: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('failed to enqueue order-confirmation notification(s)', notifyErr);
+  }
 }
 
 /**

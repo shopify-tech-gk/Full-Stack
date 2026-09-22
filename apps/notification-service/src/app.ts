@@ -1,19 +1,17 @@
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
 import { AppError, createErrorHandler } from '@youmart/errors';
 import { logger } from './logger';
 import { prisma } from './db';
 import { config } from './config';
-import { otpRouter } from './routes/otp.routes';
-import { sessionRouter } from './routes/session.routes';
-import { internalRouter } from './routes/internal.routes';
 
 /**
- * Builds the Express app without listening - keeps it testable and is the
- * template every future service in this repo copies.
+ * Builds the Express app without listening - mirrors the template every
+ * service in this repo copies. notification-service has no protected HTTP
+ * surface today (it is a queue worker, not a request-driven API) - only
+ * health/ready are exposed.
  */
 export function createApp(): Express {
   const app = express();
@@ -22,7 +20,6 @@ export function createApp(): Express {
   app.use(helmet());
   app.use(cors()); // dev defaults; prod origins get locked down at deploy
   app.use(express.json({ limit: '1mb' }));
-  app.use(cookieParser());
   app.use(pinoHttp({ logger }));
 
   // Liveness: must never touch the DB, so the process stays "up" during a
@@ -30,13 +27,13 @@ export function createApp(): Express {
   app.get('/health', (_req, res) => {
     res.status(200).json({
       status: 'ok',
-      service: 'auth',
+      service: 'notification',
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     });
   });
 
-  // Readiness: actually checks DB connectivity as the auth_svc role.
+  // Readiness: actually checks DB connectivity as the notifications_svc role.
   app.get('/ready', (_req, res, next) => {
     prisma.$queryRaw`SELECT 1`
       .then(() => {
@@ -46,10 +43,6 @@ export function createApp(): Express {
         next(new AppError('INTERNAL_ERROR', 503, 'Database is not reachable'));
       });
   });
-
-  app.use('/auth', otpRouter);
-  app.use('/auth', sessionRouter);
-  app.use('/auth', internalRouter);
 
   app.use((_req, _res, next) => {
     next(new AppError('NOT_FOUND', 404, 'Route not found'));

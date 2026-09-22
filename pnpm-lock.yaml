@@ -87,6 +87,9 @@ importers:
 
   apps/auth-service:
     dependencies:
+      '@youmart/auth-middleware':
+        specifier: workspace:*
+        version: link:../../packages/auth-middleware
       '@youmart/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -96,6 +99,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/notifications-client':
+        specifier: workspace:*
+        version: link:../../packages/notifications-client
       '@youmart/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -310,9 +316,61 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/notifications-client':
+        specifier: workspace:*
+        version: link:../../packages/notifications-client
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
+      '@youmart/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      cors:
+        specifier: 2.8.6
+        version: 2.8.6
+      express:
+        specifier: 5.2.1
+        version: 5.2.1
+      helmet:
+        specifier: 8.3.0
+        version: 8.3.0
+      pino:
+        specifier: 10.3.1
+        version: 10.3.1
+      pino-http:
+        specifier: 11.0.0
+        version: 11.0.0
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
+    devDependencies:
+      '@types/cors':
+        specifier: 2.8.19
+        version: 2.8.19
+      '@types/express':
+        specifier: 5.0.6
+        version: 5.0.6
+      tsx:
+        specifier: 4.23.13
+        version: 4.23.13
+
+  apps/notification-service:
+    dependencies:
+      '@youmart/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@youmart/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@youmart/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@youmart/notifications-client':
+        specifier: workspace:*
+        version: link:../../packages/notifications-client
+      '@youmart/queue':
+        specifier: workspace:*
+        version: link:../../packages/queue
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -359,6 +417,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/notifications-client':
+        specifier: workspace:*
+        version: link:../../packages/notifications-client
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
@@ -682,6 +743,15 @@ importers:
       '@types/express':
         specifier: 5.0.6
         version: 5.0.6
+
+  packages/notifications-client:
+    dependencies:
+      '@youmart/queue':
+        specifier: workspace:*
+        version: link:../queue
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
 
   packages/queue:
     dependencies:

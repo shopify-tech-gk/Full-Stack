@@ -6,3 +6,4 @@ export * from './clients/order.client';
 export * from './clients/seller.client';
 export * from './clients/payment.client';
 export * from './clients/address.client';
+export * from './clients/auth.client';

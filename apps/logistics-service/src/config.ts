@@ -24,6 +24,10 @@ const logisticsServiceEnvSchema = baseEnvSchema.extend({
   // come over HTTP via @youmart/service-client.
   ORDER_SERVICE_URL: z.string().url(),
   SELLER_SERVICE_URL: z.string().url(),
+  // logistics_svc cannot read the auth schema either (cross-schema
+  // isolation) - resolving the buyer's email for the shipping-update
+  // notification (Ch6.2) goes over HTTP too.
+  AUTH_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
   // TEMPORARY dev-only admin authorization gate for the platform-fulfillment
   // endpoints - same pattern (and, in dev, the same list) as every other
@@ -63,6 +67,7 @@ export interface LogisticsServiceConfig {
   jwtAudience: string;
   orderServiceUrl: string;
   sellerServiceUrl: string;
+  authServiceUrl: string;
   serviceHttpTimeoutMs: number;
   adminUserIds: string[];
   defaultShippingProvider: string;
@@ -80,6 +85,7 @@ export const config: Readonly<LogisticsServiceConfig> = Object.freeze({
   jwtAudience: parsed.JWT_AUDIENCE,
   orderServiceUrl: parsed.ORDER_SERVICE_URL,
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
+  authServiceUrl: parsed.AUTH_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   defaultShippingProvider: parsed.DEFAULT_SHIPPING_PROVIDER,

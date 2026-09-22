@@ -1,8 +1,8 @@
 import { prisma } from '../db';
 import { config } from '../config';
 import { AppError } from '@youmart/errors';
+import { enqueueNotification } from '@youmart/notifications-client';
 import { generateOtp, hashOtp, verifyOtp } from './otp.util';
-import { otpSendQueue } from './otp.queue';
 import type { OtpPurpose } from './otp.schema';
 
 export interface RequestOtpInput {
@@ -60,8 +60,19 @@ export async function requestOtp({ phone, purpose }: RequestOtpInput): Promise<R
     data: { phone, codeHash, purpose, expiresAt, attemptCount: 0 },
   });
 
-  // Async send - never synchronous, never blocks the response on SMS delivery.
-  await otpSendQueue.enqueue({ phone, code, purpose });
+  // Async, non-blocking send (Ch6.2): the DEV STUB that just logged the
+  // code is retired - the raw code now flows ONLY through this queue job
+  // (Redis) to notification-service's SMS provider (MSG91). It is never
+  // stored in this service's DB and never returned in an HTTP response;
+  // notification-service also never persists it in plaintext (see its
+  // log-redaction.util.ts). `enqueueNotification` never throws - a queue
+  // outage must never block the OTP response.
+  await enqueueNotification({
+    channel: 'SMS',
+    to: phone,
+    templateKey: 'OTP',
+    data: { code, minutes: Math.round(config.otpTtlSeconds / 60) },
+  });
 
   return { status: 'otp_sent', expiresInSeconds: config.otpTtlSeconds };
 }

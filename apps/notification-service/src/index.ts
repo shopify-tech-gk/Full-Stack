@@ -2,14 +2,21 @@ import { createApp } from './app';
 import { config } from './config';
 import { logger } from './logger';
 import { close } from './db';
+import {
+  startNotificationWorker,
+  closeNotificationWorker,
+} from './notification/notification.queue';
 import { closeConnection } from '@youmart/queue';
 
 const app = createApp();
 
+startNotificationWorker();
+logger.info({ queue: 'notifications' }, 'notifications worker registered');
+
 const server = app.listen(config.port, () => {
   logger.info(
-    { service: 'auth', port: config.port, nodeEnv: config.nodeEnv },
-    'auth-service started',
+    { service: 'notification', port: config.port, nodeEnv: config.nodeEnv },
+    'notification-service started',
   );
 });
 
@@ -30,11 +37,13 @@ function shutdown(signal: string): void {
       logger.info('http server closed');
     }
 
-    // OTP sending is now notification-service's job (Ch6.2) - auth-service
-    // only ENQUEUES via @youmart/notifications-client, it has no worker of
-    // its own to stop; still closes its own queue connection (used to
-    // enqueue) before the db pool.
-    closeConnection()
+    // Order matters: stop the worker before closing the shared queue
+    // connection it depends on, then release the db pool.
+    closeNotificationWorker()
+      .then(() => {
+        logger.info('notifications worker closed');
+        return closeConnection();
+      })
       .then(() => {
         logger.info('queue connection closed');
         return close();

@@ -4,6 +4,7 @@ import {
   createInventoryClient,
   createSellerClient,
   createAddressClient,
+  createAuthClient,
 } from '@youmart/service-client';
 import { config } from './config';
 
@@ -35,5 +36,13 @@ export const sellerClient = createSellerClient({
 // HTTP instead (Ch6.1).
 export const addressClient = createAddressClient({
   baseUrl: config.addressServiceUrl,
+  timeoutMs: config.serviceHttpTimeoutMs,
+});
+
+// orders_svc cannot read the auth schema (cross-schema isolation) -
+// resolving the buyer's email for the order-confirmation notification
+// (Ch6.2) goes over HTTP instead.
+export const authClient = createAuthClient({
+  baseUrl: config.authServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
 });

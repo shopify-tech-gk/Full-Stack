@@ -1,7 +1,8 @@
 import { AppError } from '@youmart/errors';
+import { enqueueNotification } from '@youmart/notifications-client';
 import { prisma } from '../db';
 import { config } from '../config';
-import { orderClient } from '../serviceClients';
+import { orderClient, authClient } from '../serviceClients';
 import { getProvider } from '../providers/registry';
 import type { FulfillmentMode } from '../providers/provider.interface';
 import type { CreateShipmentBody } from './logistics.schema';
@@ -237,6 +238,44 @@ export async function createShipment(
   });
 
   await orderClient.setSellerItemStatus(input.orderItemId, 'SHIPPED', authToken);
+
+  // Shipping-update notification (Ch6.2) - BEST-EFFORT, NEVER blocks or
+  // fails shipment creation: a notification problem must never undo a
+  // real fulfillment action. No approved WhatsApp template exists for
+  // shipping updates (only "youmart_order_confirmation" is approved), so
+  // this goes out via SMS (using the order's own snapshotted ship_phone)
+  // + email (buyer's email, resolved via authClient - cross-schema
+  // isolation, logistics_svc cannot read the auth schema directly).
+  try {
+    const orderView = await orderClient.getInternalOrder(item.orderId, authToken);
+    const notifyData = {
+      orderNumber: orderView.orderNumber,
+      awb: input.awbNumber ?? providerResult.providerRef ?? 'N/A',
+      carrier: input.carrier ?? 'N/A',
+    };
+    if (orderView.shippingAddress?.phone) {
+      await enqueueNotification({
+        channel: 'SMS',
+        to: orderView.shippingAddress.phone,
+        templateKey: 'SHIPPING_UPDATE',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+    const contact = await authClient.getUserContact(orderView.userId, authToken);
+    if (contact.email) {
+      await enqueueNotification({
+        channel: 'EMAIL',
+        to: contact.email,
+        templateKey: 'SHIPPING_UPDATE',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+  } catch (notifyErr: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('failed to enqueue shipping-update notification(s)', notifyErr);
+  }
 
   return toShipmentView(created);
 }

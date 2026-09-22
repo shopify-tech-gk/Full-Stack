@@ -21,12 +21,3 @@ export const OtpVerifyBody = z.object({
   code: z.string().regex(/^\d+$/, 'Code must be numeric'),
 });
 export type OtpVerifyBody = z.infer<typeof OtpVerifyBody>;
-
-// Queue payload - the only place the raw code travels outside this process
-// (via Redis, to the send worker).
-export const OtpSendJob = z.object({
-  phone: Phone,
-  code: z.string(),
-  purpose: OtpPurpose,
-});
-export type OtpSendJob = z.infer<typeof OtpSendJob>;

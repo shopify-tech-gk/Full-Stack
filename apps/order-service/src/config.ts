@@ -28,6 +28,10 @@ const orderServiceEnvSchema = baseEnvSchema.extend({
   // checkout validates + snapshots the caller's chosen shipping address
   // over HTTP via @youmart/service-client (Ch6.1).
   ADDRESS_SERVICE_URL: z.string().url(),
+  // orders_svc cannot read the auth schema (cross-schema isolation) -
+  // resolving the buyer's email for the order-confirmation notification
+  // (Ch6.2) goes over HTTP too.
+  AUTH_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
@@ -52,6 +56,7 @@ export interface OrderServiceConfig {
   inventoryServiceUrl: string;
   sellerServiceUrl: string;
   addressServiceUrl: string;
+  authServiceUrl: string;
   serviceHttpTimeoutMs: number;
 }
 
@@ -70,5 +75,6 @@ export const config: Readonly<OrderServiceConfig> = Object.freeze({
   inventoryServiceUrl: parsed.INVENTORY_SERVICE_URL,
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
   addressServiceUrl: parsed.ADDRESS_SERVICE_URL,
+  authServiceUrl: parsed.AUTH_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
 });

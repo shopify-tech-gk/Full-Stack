@@ -21,6 +21,7 @@ export interface InternalOrderShippingAddress {
 
 export interface InternalOrderView {
   orderId: string;
+  orderNumber: string;
   userId: string;
   status: OrderStatusValue;
   grandTotal: Money;
