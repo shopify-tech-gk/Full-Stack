@@ -20,6 +20,10 @@ const returnsServiceEnvSchema = baseEnvSchema.extend({
   ORDER_SERVICE_URL: z.string().url(),
   PAYMENT_SERVICE_URL: z.string().url(),
   INVENTORY_SERVICE_URL: z.string().url(),
+  // returns_svc cannot read the auth schema either (cross-schema
+  // isolation) - resolving the buyer's email for the refund-processed
+  // notification (Ch6.2c) goes over HTTP too.
+  AUTH_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
   // TEMPORARY dev-only admin authorization gate for the return-management
   // endpoints - same pattern (and, in dev, the same list) as every other
@@ -58,6 +62,7 @@ export interface ReturnsServiceConfig {
   orderServiceUrl: string;
   paymentServiceUrl: string;
   inventoryServiceUrl: string;
+  authServiceUrl: string;
   serviceHttpTimeoutMs: number;
   adminUserIds: string[];
   returnWindowDays: number;
@@ -76,6 +81,7 @@ export const config: Readonly<ReturnsServiceConfig> = Object.freeze({
   orderServiceUrl: parsed.ORDER_SERVICE_URL,
   paymentServiceUrl: parsed.PAYMENT_SERVICE_URL,
   inventoryServiceUrl: parsed.INVENTORY_SERVICE_URL,
+  authServiceUrl: parsed.AUTH_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   returnWindowDays: parsed.RETURN_WINDOW_DAYS,

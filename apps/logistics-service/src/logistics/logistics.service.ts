@@ -160,9 +160,53 @@ async function applyShipmentStatus(
 
   if (nextStatus === 'DELIVERED') {
     await orderClient.setSellerItemStatus(shipment.orderItemId, 'DELIVERED', authToken);
+    await enqueueOrderDeliveredNotification(shipment.orderItemId, authToken);
   }
 
   return toShipmentView(updated);
+}
+
+/**
+ * Order-delivered notification (Ch6.2c) - BEST-EFFORT, NEVER blocks or
+ * fails the DELIVERED transition itself. Resolves `orderNumber` and
+ * `customerName` (from the order's own snapshotted ship_full_name, Ch6.1)
+ * via `orderClient.getInternalOrder`, and the buyer's email via
+ * `authClient` (cross-schema isolation - logistics_svc cannot read the
+ * auth schema directly).
+ */
+async function enqueueOrderDeliveredNotification(
+  orderItemId: string,
+  authToken: string,
+): Promise<void> {
+  try {
+    const item = await orderClient.getInternalOrderItem(orderItemId, authToken);
+    const orderView = await orderClient.getInternalOrder(item.orderId, authToken);
+    const customerName = orderView.shippingAddress?.fullName ?? 'there';
+    const notifyData = { customerName, orderNumber: orderView.orderNumber };
+
+    if (orderView.shippingAddress?.phone) {
+      await enqueueNotification({
+        channel: 'WHATSAPP',
+        to: orderView.shippingAddress.phone,
+        templateKey: 'ORDER_DELIVERED',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+    const contact = await authClient.getUserContact(orderView.userId, authToken);
+    if (contact.email) {
+      await enqueueNotification({
+        channel: 'EMAIL',
+        to: contact.email,
+        templateKey: 'ORDER_DELIVERED',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+  } catch (notifyErr: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('failed to enqueue order-delivered notification(s)', notifyErr);
+  }
 }
 
 /**
@@ -239,17 +283,19 @@ export async function createShipment(
 
   await orderClient.setSellerItemStatus(input.orderItemId, 'SHIPPED', authToken);
 
-  // Shipping-update notification (Ch6.2, channels rewired Ch6.2b to
-  // WhatsApp+email - SMS dropped as a target) - BEST-EFFORT, NEVER blocks
-  // or fails shipment creation: a notification problem must never undo a
-  // real fulfillment action. The WhatsApp leg needs its OWN approved
-  // template (MSG91_WHATSAPP_SHIPPING_TEMPLATE, not yet approved) - it
-  // fails honestly until Vijesh sets one; email (buyer's email, resolved
+  // Order-shipped notification (Ch6.2, channels WhatsApp+email since
+  // Ch6.2b, template names aligned Ch6.2c to the final approved
+  // "youmart_order_shipped") - BEST-EFFORT, NEVER blocks or fails
+  // shipment creation: a notification problem must never undo a real
+  // fulfillment action. `customerName` comes from the order's own
+  // snapshotted ship_full_name (Ch6.1); email (buyer's email, resolved
   // via authClient - cross-schema isolation, logistics_svc cannot read
-  // the auth schema directly) is the reliable leg meanwhile.
+  // the auth schema directly) is the second leg.
   try {
     const orderView = await orderClient.getInternalOrder(item.orderId, authToken);
+    const customerName = orderView.shippingAddress?.fullName ?? 'there';
     const notifyData = {
+      customerName,
       orderNumber: orderView.orderNumber,
       awb: input.awbNumber ?? providerResult.providerRef ?? 'N/A',
       carrier: input.carrier ?? 'N/A',
@@ -258,7 +304,7 @@ export async function createShipment(
       await enqueueNotification({
         channel: 'WHATSAPP',
         to: orderView.shippingAddress.phone,
-        templateKey: 'SHIPPING_UPDATE',
+        templateKey: 'ORDER_SHIPPED',
         data: notifyData,
         userId: orderView.userId,
       });
@@ -268,14 +314,14 @@ export async function createShipment(
       await enqueueNotification({
         channel: 'EMAIL',
         to: contact.email,
-        templateKey: 'SHIPPING_UPDATE',
+        templateKey: 'ORDER_SHIPPED',
         data: notifyData,
         userId: orderView.userId,
       });
     }
   } catch (notifyErr: unknown) {
     // eslint-disable-next-line no-console
-    console.error('failed to enqueue shipping-update notification(s)', notifyErr);
+    console.error('failed to enqueue order-shipped notification(s)', notifyErr);
   }
 
   return toShipmentView(created);

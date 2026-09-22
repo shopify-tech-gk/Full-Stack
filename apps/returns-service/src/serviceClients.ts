@@ -2,6 +2,7 @@ import {
   createOrderClient,
   createPaymentClient,
   createInventoryClient,
+  createAuthClient,
 } from '@youmart/service-client';
 import { config } from './config';
 
@@ -22,5 +23,13 @@ export const paymentClient = createPaymentClient({
 
 export const inventoryClient = createInventoryClient({
   baseUrl: config.inventoryServiceUrl,
+  timeoutMs: config.serviceHttpTimeoutMs,
+});
+
+// returns_svc cannot read the auth schema either (cross-schema isolation)
+// - resolving the buyer's email for the refund-processed notification
+// (Ch6.2c) goes over HTTP instead.
+export const authClient = createAuthClient({
+  baseUrl: config.authServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
 });

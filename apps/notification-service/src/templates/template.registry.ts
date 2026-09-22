@@ -1,7 +1,8 @@
 import { config } from '../config';
 import type { RenderedMessage } from '../providers/provider.interface';
 
-export type TemplateKey = 'OTP' | 'ORDER_CONFIRMATION' | 'SHIPPING_UPDATE';
+export type TemplateKey =
+  'OTP' | 'ORDER_PLACED' | 'ORDER_SHIPPED' | 'ORDER_DELIVERED' | 'REFUND_PROCESSED';
 type RenderableChannel = 'SMS' | 'WHATSAPP' | 'EMAIL';
 
 type ChannelRenderer = (data: Record<string, unknown>) => RenderedMessage;
@@ -13,35 +14,45 @@ type ChannelRenderer = (data: Record<string, unknown>) => RenderedMessage;
  * go out on - no other code changes needed (the queue worker, provider
  * registry, and logging path are all template-agnostic).
  *
- * Ch6.2b channel decision (Vijesh, locked): WhatsApp + email only. SMS is
+ * Ch6.2c: aligned to the 5 FINAL MSG91 WhatsApp templates Vijesh created
+ * (the old single "youmart_order_confirmation" template is DELETED - no
+ * code below references it). Every WhatsApp template NAME comes from env
+ * (a rename is an env change, never a code change) - see config.ts.
+ *
+ * Ch6.2b channel decision (still locked): WhatsApp + email only. SMS is
  * DROPPED as an active routing target for every template below -
  * Msg91SmsProvider itself stays registered (providers/registry.ts) for a
  * possible future fallback, but since no renderer here ever produces a
  * `channel: 'SMS'` RenderedMessage, `renderTemplate` can never resolve to
- * it - the safest way to guarantee "nothing routes to SMS" (a job that
- * somehow specified channel SMS would hit the "no renderer" error path
- * below, not a real send).
+ * it - the safest way to guarantee "nothing routes to SMS".
+ *
+ * WHATSAPP PARAM ORDER (critical - must exactly match each MSG91 template's
+ * {{1}},{{2}},... or the customer sees wrong data in the wrong slot):
+ *   OTP ("youmart_login_otp", AUTHENTICATION): {{1}}=code
+ *   ORDER_PLACED ("youmart_order_placed", UTILITY): {{1}}=customerName, {{2}}=orderNumber, {{3}}=amount
+ *   ORDER_SHIPPED ("youmart_order_shipped", UTILITY): {{1}}=customerName, {{2}}=orderNumber, {{3}}=awb, {{4}}=carrier
+ *   ORDER_DELIVERED ("youmart_order_delivered", UTILITY): {{1}}=customerName, {{2}}=orderNumber
+ *   REFUND_PROCESSED ("youmart_refund_processed", UTILITY): {{1}}=customerName, {{2}}=amount, {{3}}=orderNumber
+ *
+ * `amount` is always passed as the bare numeric value (e.g. "999.00") -
+ * every template's own approved text already contains the literal "Rs "
+ * before {{n}}, so prefixing it here would double it ("Rs Rs 999.00").
  */
 const templates: Record<TemplateKey, Partial<Record<RenderableChannel, ChannelRenderer>>> = {
-  // WhatsApp OTP REQUIRES a separate, pre-approved AUTHENTICATION-category
-  // template (MSG91_WHATSAPP_OTP_TEMPLATE) - order/marketing templates
-  // (like the order-confirmation one) cannot carry an OTP; Meta rejects
-  // it. `body1` + `button1` both carry the SAME code value: the body text
-  // variable and the "copy code" quick-reply button's payload
-  // respectively - the standard Meta/MSG91 auth-template shape. Until
-  // Vijesh creates + gets this template approved, sends here fail
-  // honestly (template not found) - see providers/msg91-whatsapp.provider.ts.
-  // EMAIL is the login-safety fallback leg (see notification.service.ts) -
-  // never used as this template's PRIMARY channel, only invoked directly
-  // by the fallback path once the WhatsApp leg exhausts its retries.
+  // AUTHENTICATION category - MSG91/Meta requires a SEPARATE approved
+  // template from any UTILITY template; the code is the ONLY body param
+  // AND the "copy code" button's payload (Meta requires both to carry the
+  // identical value). EMAIL is the login-safety fallback leg only (see
+  // notification.service.ts) - never this template's primary channel.
   OTP: {
     WHATSAPP: (data) => ({
       channel: 'WHATSAPP',
       templateName: config.msg91WhatsappOtpTemplate,
       namespace: config.msg91WhatsappOtpNamespace,
+      category: 'AUTHENTICATION',
       components: {
-        body1: String(data.code),
-        button1: String(data.code),
+        bodyParams: [String(data.code)],
+        authButtonCode: String(data.code),
       },
     }),
     EMAIL: (data) => ({
@@ -53,59 +64,102 @@ const templates: Record<TemplateKey, Partial<Record<RenderableChannel, ChannelRe
     }),
   },
 
-  // WhatsApp side maps our data onto Vijesh's approved "youmart_order_confirmation"
-  // template's components: body_1 = order number, body_2 = amount. No
-  // header (no document/invoice URL available yet - optional, omitted).
-  ORDER_CONFIRMATION: {
+  // "youmart_order_placed": "Hi {{1}}, thank you for your order! Your
+  // order {{2}} is confirmed. Total: Rs {{3}}. We'll let you know when it
+  // ships." - {{1}}=customerName, {{2}}=orderNumber, {{3}}=amount.
+  ORDER_PLACED: {
     WHATSAPP: (data) => ({
       channel: 'WHATSAPP',
-      templateName: config.msg91WhatsappTemplate,
+      templateName: config.msg91WhatsappOrderPlacedTemplate,
       namespace: config.msg91WhatsappNamespace,
+      category: 'UTILITY',
       components: {
-        body1: String(data.orderNumber),
-        body2: `₹${String(data.amount)}`,
+        bodyParams: [String(data.customerName), String(data.orderNumber), String(data.amount)],
       },
     }),
     EMAIL: (data) => ({
       channel: 'EMAIL',
       subject: `Your YouMart order ${String(data.orderNumber)} is confirmed`,
-      html: `<p>Hi,</p><p>Your order <strong>${String(data.orderNumber)}</strong> for <strong>₹${String(
+      html: `<p>Hi ${String(data.customerName)},</p><p>Thank you for your order! Your order <strong>${String(
+        data.orderNumber,
+      )}</strong> is confirmed. Total: Rs ${String(
         data.amount,
-      )}</strong> is confirmed. We'll notify you again once it ships.</p><p>Thanks for shopping with YouMart.</p>`,
+      )}.</p><p>We'll let you know when it ships.</p>`,
     }),
   },
 
-  SHIPPING_UPDATE: {
-    // No shipping-specific WhatsApp template is approved yet
-    // (MSG91_WHATSAPP_SHIPPING_TEMPLATE unset) - reusing the
-    // order-confirmation template's fixed wording for a shipped-item
-    // message would be misleading, so this deliberately throws a clear,
-    // permanent (non-retried, see notification.service.ts) error instead
-    // of sending a wrong-content WhatsApp message. EMAIL is the reliable
-    // leg until Vijesh approves a dedicated shipping template.
-    WHATSAPP: (data) => {
-      if (!config.msg91WhatsappShippingTemplate) {
-        throw new Error(
-          'No approved WhatsApp template configured for shipping updates yet ' +
-            '(MSG91_WHATSAPP_SHIPPING_TEMPLATE) - set it once Vijesh approves one; EMAIL is the reliable leg meanwhile.',
-        );
-      }
-      return {
-        channel: 'WHATSAPP',
-        templateName: config.msg91WhatsappShippingTemplate,
-        namespace: config.msg91WhatsappNamespace,
-        components: {
-          body1: String(data.orderNumber),
-          body2: `${String(data.carrier)} - ${String(data.awb)}`,
-        },
-      };
-    },
+  // "youmart_order_shipped": "Hi {{1}}, your YouMart order {{2}} has
+  // shipped! Track it with AWB {{3}} via {{4}}." - {{1}}=customerName,
+  // {{2}}=orderNumber, {{3}}=awb, {{4}}=carrier.
+  ORDER_SHIPPED: {
+    WHATSAPP: (data) => ({
+      channel: 'WHATSAPP',
+      templateName: config.msg91WhatsappOrderShippedTemplate,
+      namespace: config.msg91WhatsappNamespace,
+      category: 'UTILITY',
+      components: {
+        bodyParams: [
+          String(data.customerName),
+          String(data.orderNumber),
+          String(data.awb),
+          String(data.carrier),
+        ],
+      },
+    }),
     EMAIL: (data) => ({
       channel: 'EMAIL',
       subject: `Your YouMart order ${String(data.orderNumber)} has shipped`,
-      html: `<p>Hi,</p><p>Your order <strong>${String(data.orderNumber)}</strong> has shipped via <strong>${String(
+      html: `<p>Hi ${String(data.customerName)},</p><p>Your YouMart order <strong>${String(
+        data.orderNumber,
+      )}</strong> has shipped! Track it with AWB <strong>${String(data.awb)}</strong> via <strong>${String(
         data.carrier,
-      )}</strong>. Tracking number: <strong>${String(data.awb)}</strong>.</p>`,
+      )}</strong>.</p>`,
+    }),
+  },
+
+  // "youmart_order_delivered": "Hi {{1}}, your YouMart order {{2}} has
+  // been delivered. Thank you for shopping with us!" - {{1}}=customerName,
+  // {{2}}=orderNumber.
+  ORDER_DELIVERED: {
+    WHATSAPP: (data) => ({
+      channel: 'WHATSAPP',
+      templateName: config.msg91WhatsappOrderDeliveredTemplate,
+      namespace: config.msg91WhatsappNamespace,
+      category: 'UTILITY',
+      components: {
+        bodyParams: [String(data.customerName), String(data.orderNumber)],
+      },
+    }),
+    EMAIL: (data) => ({
+      channel: 'EMAIL',
+      subject: `Your YouMart order ${String(data.orderNumber)} has been delivered`,
+      html: `<p>Hi ${String(data.customerName)},</p><p>Your YouMart order <strong>${String(
+        data.orderNumber,
+      )}</strong> has been delivered. Thank you for shopping with us!</p>`,
+    }),
+  },
+
+  // "youmart_refund_processed": "Hi {{1}}, your refund of Rs {{2}} for
+  // order {{3}} has been processed. It will reflect in 5-7 business
+  // days." - {{1}}=customerName, {{2}}=amount, {{3}}=orderNumber.
+  REFUND_PROCESSED: {
+    WHATSAPP: (data) => ({
+      channel: 'WHATSAPP',
+      templateName: config.msg91WhatsappRefundTemplate,
+      namespace: config.msg91WhatsappNamespace,
+      category: 'UTILITY',
+      components: {
+        bodyParams: [String(data.customerName), String(data.amount), String(data.orderNumber)],
+      },
+    }),
+    EMAIL: (data) => ({
+      channel: 'EMAIL',
+      subject: `Your refund for order ${String(data.orderNumber)} has been processed`,
+      html: `<p>Hi ${String(data.customerName)},</p><p>Your refund of Rs ${String(
+        data.amount,
+      )} for order <strong>${String(
+        data.orderNumber,
+      )}</strong> has been processed. It will reflect in 5-7 business days.</p>`,
     }),
   },
 };

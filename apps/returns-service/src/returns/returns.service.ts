@@ -2,10 +2,11 @@ import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { compare } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
+import { enqueueNotification } from '@youmart/notifications-client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { logger } from '../logger';
-import { orderClient, paymentClient, inventoryClient } from '../serviceClients';
+import { orderClient, paymentClient, inventoryClient, authClient } from '../serviceClients';
 import type { RefundResult } from '@youmart/service-client';
 import type { RequestReturnBody, ListReturnsQuery } from './returns.schema';
 
@@ -323,6 +324,45 @@ export async function processRefund(id: string, authToken: string): Promise<Proc
     where: { id },
     data: { status: 'REFUNDED' },
   });
+
+  // Refund-processed notification (Ch6.2c) - BEST-EFFORT, NEVER blocks or
+  // fails the refund flow itself (already fully committed above by this
+  // point, including when Razorpay itself was BLOCKED-on-creds).
+  // `customerName` comes from the order's own snapshotted ship_full_name
+  // (Ch6.1); email (buyer's email, resolved via authClient - cross-schema
+  // isolation, returns_svc cannot read the auth schema directly).
+  try {
+    const orderView = await orderClient.getInternalOrder(item.orderId, authToken);
+    const customerName = orderView.shippingAddress?.fullName ?? 'there';
+    const notifyData = {
+      customerName,
+      amount: refundAmount,
+      orderNumber: orderView.orderNumber,
+    };
+
+    if (orderView.shippingAddress?.phone) {
+      await enqueueNotification({
+        channel: 'WHATSAPP',
+        to: orderView.shippingAddress.phone,
+        templateKey: 'REFUND_PROCESSED',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+    const contact = await authClient.getUserContact(orderView.userId, authToken);
+    if (contact.email) {
+      await enqueueNotification({
+        channel: 'EMAIL',
+        to: contact.email,
+        templateKey: 'REFUND_PROCESSED',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+  } catch (notifyErr: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('failed to enqueue refund-processed notification(s)', notifyErr);
+  }
 
   return { return: toReturnView(updated), refund, restocked };
 }

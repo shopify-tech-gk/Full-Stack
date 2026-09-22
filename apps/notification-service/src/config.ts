@@ -26,31 +26,33 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
     .default('true')
     .transform((v) => v === 'true'),
 
-  // --- MSG91 (SMS + WhatsApp) ---
+  // --- MSG91 (WhatsApp - 5 final approved templates, Ch6.2c) ---
   MSG91_AUTH_KEY: z.string().min(1),
   MSG91_INTEGRATED_NUMBER: z.string().min(1),
-  MSG91_WHATSAPP_TEMPLATE: z.string().min(1).default('youmart_order_confirmation'),
+  // Shared WhatsApp Business namespace for every UTILITY template below
+  // (order placed/shipped/delivered, refund) - all created together in
+  // the same MSG91/Meta WABA.
   MSG91_WHATSAPP_NAMESPACE: z.string().min(1),
-  // Ch6.2b: OTP now goes over WhatsApp, which requires a SEPARATE,
-  // pre-approved AUTHENTICATION-category template (an order/marketing
-  // template like MSG91_WHATSAPP_TEMPLATE CANNOT carry an OTP - Meta
-  // rejects it). Vijesh creates + gets this approved in MSG91/Meta and
-  // sets its real name here; until then OTP-over-WhatsApp fails honestly
-  // (template not found), by design - see templates/template.registry.ts.
+  // AUTHENTICATION-category template for OTP - a SEPARATE template from
+  // the UTILITY ones (order/marketing templates cannot carry an OTP, Meta
+  // rejects it). Template NAMES are not secret (only MSG91_AUTH_KEY is) -
+  // a rename is an env change, never a code change.
   MSG91_WHATSAPP_OTP_TEMPLATE: z.string().min(1),
   // Optional - only set if the OTP auth template was approved under a
-  // DIFFERENT WhatsApp namespace than the order template; otherwise it
+  // DIFFERENT WhatsApp namespace than the UTILITY templates; otherwise it
   // reuses MSG91_WHATSAPP_NAMESPACE (see config object below).
   MSG91_WHATSAPP_OTP_NAMESPACE: z.string().optional(),
-  // Optional - a shipping-update WhatsApp template is a separate Vijesh
-  // to-do (not approved yet as of Ch6.2b). Left unset, SHIPPING_UPDATE's
-  // WhatsApp leg fails honestly with a clear "not configured yet" error
-  // (EMAIL is the reliable leg meanwhile) - see template.registry.ts.
-  MSG91_WHATSAPP_SHIPPING_TEMPLATE: z.string().optional(),
-  // Sender id for MSG91's legacy plain-text SMS API - Ch6.2b DROPS SMS as
-  // an active routing target (WhatsApp+email only); Msg91SmsProvider and
-  // this setting are kept for a possible future fallback, not read by any
-  // template today.
+  // UTILITY templates - one env var per notification event (Ch6.2c final
+  // set; the old single MSG91_WHATSAPP_TEMPLATE "youmart_order_confirmation"
+  // is DELETED/replaced by these four).
+  MSG91_WHATSAPP_ORDER_PLACED_TEMPLATE: z.string().min(1),
+  MSG91_WHATSAPP_ORDER_SHIPPED_TEMPLATE: z.string().min(1),
+  MSG91_WHATSAPP_ORDER_DELIVERED_TEMPLATE: z.string().min(1),
+  MSG91_WHATSAPP_REFUND_TEMPLATE: z.string().min(1),
+  // Sender id for MSG91's legacy plain-text SMS API - SMS is DROPPED as an
+  // active routing target (WhatsApp+email only, Ch6.2b); Msg91SmsProvider
+  // and this setting are kept for a possible future fallback, not read by
+  // any template today.
   MSG91_SENDER_ID: z.string().min(1),
   // Optional: MSG91's OTP API only requires this when the account has more
   // than one registered OTP template. Unused now that OTP routes over
@@ -91,11 +93,13 @@ export interface NotificationServiceConfig {
   notificationsEnabled: boolean;
   msg91AuthKey: string;
   msg91IntegratedNumber: string;
-  msg91WhatsappTemplate: string;
   msg91WhatsappNamespace: string;
   msg91WhatsappOtpTemplate: string;
   msg91WhatsappOtpNamespace: string;
-  msg91WhatsappShippingTemplate: string | undefined;
+  msg91WhatsappOrderPlacedTemplate: string;
+  msg91WhatsappOrderShippedTemplate: string;
+  msg91WhatsappOrderDeliveredTemplate: string;
+  msg91WhatsappRefundTemplate: string;
   msg91SenderId: string;
   msg91OtpTemplateId: string | undefined;
   zohoClientId: string;
@@ -119,11 +123,13 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   notificationsEnabled: parsed.NOTIFICATIONS_ENABLED,
   msg91AuthKey: parsed.MSG91_AUTH_KEY,
   msg91IntegratedNumber: parsed.MSG91_INTEGRATED_NUMBER,
-  msg91WhatsappTemplate: parsed.MSG91_WHATSAPP_TEMPLATE,
   msg91WhatsappNamespace: parsed.MSG91_WHATSAPP_NAMESPACE,
   msg91WhatsappOtpTemplate: parsed.MSG91_WHATSAPP_OTP_TEMPLATE,
   msg91WhatsappOtpNamespace: parsed.MSG91_WHATSAPP_OTP_NAMESPACE || parsed.MSG91_WHATSAPP_NAMESPACE,
-  msg91WhatsappShippingTemplate: parsed.MSG91_WHATSAPP_SHIPPING_TEMPLATE,
+  msg91WhatsappOrderPlacedTemplate: parsed.MSG91_WHATSAPP_ORDER_PLACED_TEMPLATE,
+  msg91WhatsappOrderShippedTemplate: parsed.MSG91_WHATSAPP_ORDER_SHIPPED_TEMPLATE,
+  msg91WhatsappOrderDeliveredTemplate: parsed.MSG91_WHATSAPP_ORDER_DELIVERED_TEMPLATE,
+  msg91WhatsappRefundTemplate: parsed.MSG91_WHATSAPP_REFUND_TEMPLATE,
   msg91SenderId: parsed.MSG91_SENDER_ID,
   msg91OtpTemplateId: parsed.MSG91_OTP_TEMPLATE_ID,
   zohoClientId: parsed.ZOHO_CLIENT_ID,

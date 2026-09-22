@@ -20,8 +20,19 @@ interface Msg91BulkResponse {
 /**
  * POSTs to MSG91's v5 WhatsApp bulk-message endpoint using the exact
  * `to_and_components` structure MSG91 requires: one recipient per call
- * (this repo sends one notification job at a time - no batching), each
- * component keyed `header_1`/`body_1`/`body_2` per MSG91's naming.
+ * (this repo sends one notification job at a time - no batching).
+ *
+ * AUTHENTICATION vs UTILITY templates (Ch6.2c): both use the SAME v5 bulk
+ * endpoint/envelope - the difference is just which component keys are
+ * populated. UTILITY templates (order_placed/shipped/delivered/refund)
+ * populate `body_1..body_N` from `components.bodyParams`, in order -
+ * getting this order right is what maps our data onto the template's
+ * `{{1}}`,`{{2}}`,... exactly. AUTHENTICATION templates (OTP) populate
+ * ONLY `body_1` (the code - `bodyParams` has exactly one entry) PLUS
+ * `button_1` (the same code, for the "copy code" button -
+ * `authButtonCode`) - `category` is threaded through mainly for this
+ * documentation/clarity; the payload shape itself doesn't currently branch
+ * beyond "is there a button".
  */
 export class Msg91WhatsappProvider implements NotificationProvider {
   async send(message: OutgoingMessage): Promise<SendResult> {
@@ -34,24 +45,14 @@ export class Msg91WhatsappProvider implements NotificationProvider {
     const { templateName, namespace, components } = message.rendered;
 
     const componentsPayload: Record<string, Msg91WhatsappComponentPayload> = {};
-    if (components.header1) {
-      componentsPayload.header_1 = {
-        type: components.header1.type,
-        value: components.header1.value,
-      };
+    if (components.headerDocumentUrl) {
+      componentsPayload.header_1 = { type: 'document', value: components.headerDocumentUrl };
     }
-    if (components.body1 !== undefined) {
-      componentsPayload.body_1 = { type: 'text', value: components.body1 };
-    }
-    if (components.body2 !== undefined) {
-      componentsPayload.body_2 = { type: 'text', value: components.body2 };
-    }
-    // AUTHENTICATION-category (OTP) templates only - the "copy code"
-    // button's payload; best-effort mapping (verify against MSG91's actual
-    // dashboard payload preview once the OTP template is approved - some
-    // accounts may require additional button fields not modeled here).
-    if (components.button1 !== undefined) {
-      componentsPayload.button_1 = { type: 'text', value: components.button1 };
+    components.bodyParams.forEach((value, index) => {
+      componentsPayload[`body_${index + 1}`] = { type: 'text', value };
+    });
+    if (components.authButtonCode !== undefined) {
+      componentsPayload.button_1 = { type: 'text', value: components.authButtonCode };
     }
 
     const body = {

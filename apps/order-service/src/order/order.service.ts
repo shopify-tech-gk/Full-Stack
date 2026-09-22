@@ -487,20 +487,24 @@ export async function confirmOrder(orderId: string, authToken: string): Promise<
     }),
   ]);
 
-  // Order-confirmation notification (Ch6.2) - BEST-EFFORT, NEVER blocks or
-  // fails order confirmation itself: a notification problem must never
-  // undo a real payment capture. WhatsApp goes to the order's OWN
-  // snapshotted ship_phone (no extra lookup needed); email additionally
-  // requires the buyer's email, resolved via authClient (cross-schema
-  // isolation - orders_svc cannot read the auth schema directly).
+  // Order-placed notification (Ch6.2, template names aligned Ch6.2c) -
+  // BEST-EFFORT, NEVER blocks or fails order confirmation itself: a
+  // notification problem must never undo a real payment capture. WhatsApp
+  // goes to the order's OWN snapshotted ship_phone (no extra lookup
+  // needed); `customerName` likewise comes from the order's own
+  // snapshotted ship_full_name (Ch6.1) rather than a separate auth lookup.
+  // Email additionally requires the buyer's email, resolved via
+  // authClient (cross-schema isolation - orders_svc cannot read the auth
+  // schema directly).
   try {
     const amount = decimalToMoney(order.grandTotal);
+    const customerName = order.shipFullName ?? 'there';
     if (order.shipPhone) {
       await enqueueNotification({
         channel: 'WHATSAPP',
         to: order.shipPhone,
-        templateKey: 'ORDER_CONFIRMATION',
-        data: { orderNumber: order.orderNumber, amount },
+        templateKey: 'ORDER_PLACED',
+        data: { customerName, orderNumber: order.orderNumber, amount },
         userId: order.userId,
       });
     }
@@ -509,14 +513,14 @@ export async function confirmOrder(orderId: string, authToken: string): Promise<
       await enqueueNotification({
         channel: 'EMAIL',
         to: contact.email,
-        templateKey: 'ORDER_CONFIRMATION',
-        data: { orderNumber: order.orderNumber, amount },
+        templateKey: 'ORDER_PLACED',
+        data: { customerName, orderNumber: order.orderNumber, amount },
         userId: order.userId,
       });
     }
   } catch (notifyErr: unknown) {
     // eslint-disable-next-line no-console
-    console.error('failed to enqueue order-confirmation notification(s)', notifyErr);
+    console.error('failed to enqueue order-placed notification(s)', notifyErr);
   }
 }
 
