@@ -31,11 +31,30 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
   MSG91_INTEGRATED_NUMBER: z.string().min(1),
   MSG91_WHATSAPP_TEMPLATE: z.string().min(1).default('youmart_order_confirmation'),
   MSG91_WHATSAPP_NAMESPACE: z.string().min(1),
-  // Sender id for MSG91's legacy plain-text SMS API (non-OTP messages,
-  // e.g. shipping updates) - see providers/msg91-sms.provider.ts.
+  // Ch6.2b: OTP now goes over WhatsApp, which requires a SEPARATE,
+  // pre-approved AUTHENTICATION-category template (an order/marketing
+  // template like MSG91_WHATSAPP_TEMPLATE CANNOT carry an OTP - Meta
+  // rejects it). Vijesh creates + gets this approved in MSG91/Meta and
+  // sets its real name here; until then OTP-over-WhatsApp fails honestly
+  // (template not found), by design - see templates/template.registry.ts.
+  MSG91_WHATSAPP_OTP_TEMPLATE: z.string().min(1),
+  // Optional - only set if the OTP auth template was approved under a
+  // DIFFERENT WhatsApp namespace than the order template; otherwise it
+  // reuses MSG91_WHATSAPP_NAMESPACE (see config object below).
+  MSG91_WHATSAPP_OTP_NAMESPACE: z.string().optional(),
+  // Optional - a shipping-update WhatsApp template is a separate Vijesh
+  // to-do (not approved yet as of Ch6.2b). Left unset, SHIPPING_UPDATE's
+  // WhatsApp leg fails honestly with a clear "not configured yet" error
+  // (EMAIL is the reliable leg meanwhile) - see template.registry.ts.
+  MSG91_WHATSAPP_SHIPPING_TEMPLATE: z.string().optional(),
+  // Sender id for MSG91's legacy plain-text SMS API - Ch6.2b DROPS SMS as
+  // an active routing target (WhatsApp+email only); Msg91SmsProvider and
+  // this setting are kept for a possible future fallback, not read by any
+  // template today.
   MSG91_SENDER_ID: z.string().min(1),
   // Optional: MSG91's OTP API only requires this when the account has more
-  // than one registered OTP template.
+  // than one registered OTP template. Unused now that OTP routes over
+  // WhatsApp (Ch6.2b) - kept for the dormant SMS path.
   MSG91_OTP_TEMPLATE_ID: z.string().optional(),
 
   // --- Zoho Mail (transactional email via OAuth refresh flow) ---
@@ -74,6 +93,9 @@ export interface NotificationServiceConfig {
   msg91IntegratedNumber: string;
   msg91WhatsappTemplate: string;
   msg91WhatsappNamespace: string;
+  msg91WhatsappOtpTemplate: string;
+  msg91WhatsappOtpNamespace: string;
+  msg91WhatsappShippingTemplate: string | undefined;
   msg91SenderId: string;
   msg91OtpTemplateId: string | undefined;
   zohoClientId: string;
@@ -99,6 +121,9 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   msg91IntegratedNumber: parsed.MSG91_INTEGRATED_NUMBER,
   msg91WhatsappTemplate: parsed.MSG91_WHATSAPP_TEMPLATE,
   msg91WhatsappNamespace: parsed.MSG91_WHATSAPP_NAMESPACE,
+  msg91WhatsappOtpTemplate: parsed.MSG91_WHATSAPP_OTP_TEMPLATE,
+  msg91WhatsappOtpNamespace: parsed.MSG91_WHATSAPP_OTP_NAMESPACE || parsed.MSG91_WHATSAPP_NAMESPACE,
+  msg91WhatsappShippingTemplate: parsed.MSG91_WHATSAPP_SHIPPING_TEMPLATE,
   msg91SenderId: parsed.MSG91_SENDER_ID,
   msg91OtpTemplateId: parsed.MSG91_OTP_TEMPLATE_ID,
   zohoClientId: parsed.ZOHO_CLIENT_ID,

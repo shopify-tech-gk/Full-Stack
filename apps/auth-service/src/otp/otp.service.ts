@@ -60,18 +60,37 @@ export async function requestOtp({ phone, purpose }: RequestOtpInput): Promise<R
     data: { phone, codeHash, purpose, expiresAt, attemptCount: 0 },
   });
 
-  // Async, non-blocking send (Ch6.2): the DEV STUB that just logged the
-  // code is retired - the raw code now flows ONLY through this queue job
-  // (Redis) to notification-service's SMS provider (MSG91). It is never
-  // stored in this service's DB and never returned in an HTTP response;
-  // notification-service also never persists it in plaintext (see its
-  // log-redaction.util.ts). `enqueueNotification` never throws - a queue
-  // outage must never block the OTP response.
+  // Best-effort, read-only, INTERNAL lookup only - never influences the
+  // client-visible response shape (still identical whether or not `phone`
+  // maps to an account, per this function's doc comment above). Used
+  // solely to give notification-service a login-safety fallback email
+  // (Ch6.2b) if the WhatsApp OTP send ultimately fails.
+  const existingUser = await prisma.user.findFirst({ where: { phone, deletedAt: null } });
+  const fallbackEmail = existingUser?.email ?? undefined;
+
+  // Async, non-blocking send (Ch6.2, rewired Ch6.2b): the DEV STUB that
+  // just logged the code is retired - the raw code now flows ONLY through
+  // this queue job (Redis) to notification-service's WhatsApp provider
+  // (MSG91). It is never stored in this service's DB and never returned
+  // in an HTTP response; notification-service also never persists it in
+  // plaintext (see its log-redaction.util.ts). `enqueueNotification` never
+  // throws - a queue outage must never block the OTP response.
+  //
+  // Ch6.2b channel decision (Vijesh, locked): OTP goes over WHATSAPP, not
+  // SMS - a separate approved WhatsApp AUTHENTICATION template is required
+  // (see notification-service's template.registry.ts); SMS stays built but
+  // unrouted. `fallbackEmail`, when present, lets notification-service
+  // fall back to email if WhatsApp delivery is ultimately exhausted -
+  // login-safety net so a user is never silently unable to receive an OTP.
   await enqueueNotification({
-    channel: 'SMS',
+    channel: 'WHATSAPP',
     to: phone,
     templateKey: 'OTP',
-    data: { code, minutes: Math.round(config.otpTtlSeconds / 60) },
+    data: {
+      code,
+      minutes: Math.round(config.otpTtlSeconds / 60),
+      ...(fallbackEmail ? { fallbackEmail } : {}),
+    },
   });
 
   return { status: 'otp_sent', expiresInSeconds: config.otpTtlSeconds };

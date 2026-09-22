@@ -1,11 +1,15 @@
 export type NotificationChannelValue = 'EMAIL' | 'SMS' | 'WHATSAPP' | 'PUSH';
 
 /** One WhatsApp template component slot - mirrors MSG91's v5 bulk API
- * `to_and_components[].components` shape (header_1/body_1/body_2/...). */
+ * `to_and_components[].components` shape (header_1/body_1/body_2/...).
+ * `button1` is specific to AUTHENTICATION-category templates (OTP) - the
+ * "copy code" quick-reply button's payload, which Meta requires to carry
+ * the SAME value as the body's code variable. */
 export interface WhatsappComponents {
   header1?: { type: 'document' | 'text' | 'image'; value: string };
   body1?: string;
   body2?: string;
+  button1?: string;
 }
 
 /** Pre-rendered, channel-specific content (from the template registry) -

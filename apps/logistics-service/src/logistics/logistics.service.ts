@@ -239,13 +239,14 @@ export async function createShipment(
 
   await orderClient.setSellerItemStatus(input.orderItemId, 'SHIPPED', authToken);
 
-  // Shipping-update notification (Ch6.2) - BEST-EFFORT, NEVER blocks or
-  // fails shipment creation: a notification problem must never undo a
-  // real fulfillment action. No approved WhatsApp template exists for
-  // shipping updates (only "youmart_order_confirmation" is approved), so
-  // this goes out via SMS (using the order's own snapshotted ship_phone)
-  // + email (buyer's email, resolved via authClient - cross-schema
-  // isolation, logistics_svc cannot read the auth schema directly).
+  // Shipping-update notification (Ch6.2, channels rewired Ch6.2b to
+  // WhatsApp+email - SMS dropped as a target) - BEST-EFFORT, NEVER blocks
+  // or fails shipment creation: a notification problem must never undo a
+  // real fulfillment action. The WhatsApp leg needs its OWN approved
+  // template (MSG91_WHATSAPP_SHIPPING_TEMPLATE, not yet approved) - it
+  // fails honestly until Vijesh sets one; email (buyer's email, resolved
+  // via authClient - cross-schema isolation, logistics_svc cannot read
+  // the auth schema directly) is the reliable leg meanwhile.
   try {
     const orderView = await orderClient.getInternalOrder(item.orderId, authToken);
     const notifyData = {
@@ -255,7 +256,7 @@ export async function createShipment(
     };
     if (orderView.shippingAddress?.phone) {
       await enqueueNotification({
-        channel: 'SMS',
+        channel: 'WHATSAPP',
         to: orderView.shippingAddress.phone,
         templateKey: 'SHIPPING_UPDATE',
         data: notifyData,

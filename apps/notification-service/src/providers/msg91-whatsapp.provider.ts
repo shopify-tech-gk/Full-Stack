@@ -46,6 +46,13 @@ export class Msg91WhatsappProvider implements NotificationProvider {
     if (components.body2 !== undefined) {
       componentsPayload.body_2 = { type: 'text', value: components.body2 };
     }
+    // AUTHENTICATION-category (OTP) templates only - the "copy code"
+    // button's payload; best-effort mapping (verify against MSG91's actual
+    // dashboard payload preview once the OTP template is approved - some
+    // accounts may require additional button fields not modeled here).
+    if (components.button1 !== undefined) {
+      componentsPayload.button_1 = { type: 'text', value: components.button1 };
+    }
 
     const body = {
       integrated_number: config.msg91IntegratedNumber,
