@@ -66,6 +66,18 @@ orderRouter.get('/internal/:orderId', requireAuth, async (req, res) => {
   res.status(200).json(order);
 });
 
+// Deliberately UNAUTHENTICATED (Ch6.4) - invoice-service's queue worker has
+// no forwarded user token at all (it's triggered by a BullMQ job, not an
+// inbound HTTP request), same documented gap/pattern as search-service's
+// unauthenticated catalog internal endpoints (Ch6.3). Returns the exact
+// same InternalOrderView shape (incl. items) as the authenticated route
+// above; a real service-to-service credential system replaces this later.
+orderRouter.get('/internal/for-invoice/:orderId', async (req, res) => {
+  const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
+  const order = await getInternalOrder(orderId);
+  res.status(200).json(order);
+});
+
 // Internal reads/writes for logistics-service (Ch5.4). "items" as the 2nd
 // segment never collides with the ":orderId" routes above/below (different
 // segment counts either way).

@@ -4,6 +4,7 @@ import type { Money } from '@youmart/shared-types';
 import { add, multiplyByQuantity, sum } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
 import { enqueueNotification } from '@youmart/notifications-client';
+import { enqueueInvoiceGeneration } from '@youmart/invoice-client';
 import { prisma } from '../db';
 import {
   cartClient,
@@ -399,6 +400,9 @@ export interface InternalOrderView {
    * real ship-to address for a real shipping label without order-service
    * needing to expose a separate address endpoint. */
   shippingAddress: ShippingAddressView | null;
+  /** Order lines (Ch6.4 addition) - lets invoice-service build per-line
+   * invoice entries without a separate per-order-item fetch loop. */
+  items: OrderItemView[];
 }
 
 /**
@@ -409,7 +413,10 @@ export interface InternalOrderView {
  * improvement (see payment-service's report / README).
  */
 export async function getInternalOrder(orderId: string): Promise<InternalOrderView> {
-  const order = await prisma.order.findFirst({ where: { id: orderId, deletedAt: null } });
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, deletedAt: null },
+    include: ORDER_WITH_ITEMS_INCLUDE,
+  });
   if (!order) {
     throw new AppError('NOT_FOUND', 404, 'Order not found');
   }
@@ -419,27 +426,17 @@ export async function getInternalOrder(orderId: string): Promise<InternalOrderVi
     userId: order.userId,
     status: order.status,
     grandTotal: decimalToMoney(order.grandTotal),
-    shippingAddress:
-      order.shipFullName &&
-      order.shipPhone &&
-      order.shipLine1 &&
-      order.shipCity &&
-      order.shipState &&
-      order.shipPincode &&
-      order.shipCountry
-        ? {
-            addressId: order.shippingAddressId,
-            fullName: order.shipFullName,
-            phone: order.shipPhone,
-            line1: order.shipLine1,
-            line2: order.shipLine2,
-            landmark: order.shipLandmark,
-            city: order.shipCity,
-            state: order.shipState,
-            pincode: order.shipPincode,
-            country: order.shipCountry,
-          }
-        : null,
+    shippingAddress: toShippingAddressView(order),
+    items: order.items.map((item) => ({
+      skuId: item.skuId,
+      productId: item.productId,
+      sellerId: item.sellerId,
+      title: item.titleSnapshot,
+      unitPrice: decimalToMoney(item.unitPrice),
+      quantity: item.quantity,
+      lineTotal: decimalToMoney(item.lineTotal),
+      sellerStatus: item.sellerStatus,
+    })),
   };
 }
 
@@ -522,6 +519,13 @@ export async function confirmOrder(orderId: string, authToken: string): Promise<
     // eslint-disable-next-line no-console
     console.error('failed to enqueue order-placed notification(s)', notifyErr);
   }
+
+  // GST tax invoice generation (Ch6.4) - QUEUED and NON-BLOCKING, same
+  // spirit as the notification above: a PDF/invoice problem must never
+  // undo or fail a real payment capture. invoice-service's own worker
+  // re-fetches this order fresh and is itself idempotent (an existing
+  // invoice for this order is returned, never duplicated).
+  await enqueueInvoiceGeneration(orderId);
 }
 
 /**

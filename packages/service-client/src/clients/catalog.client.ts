@@ -46,6 +46,11 @@ export interface SkuDetail {
   sellingPrice: Money;
   mrp: Money;
   active: boolean;
+  /** GST invoice fields (Ch6.4) - product-level, nullable; the caller
+   * (invoice-service) applies its own default HSN/rate fallback when
+   * either is null. */
+  hsnCode: string | null;
+  gstRatePercent: string | null;
 }
 
 export interface CreateCatalogClientOptions {

@@ -73,3 +73,50 @@ export function toMoney(value: string): Money {
   }
   return fromDecimal(decimal);
 }
+
+export interface GstBackCalculation {
+  taxableValue: Money;
+  tax: Money;
+}
+
+/**
+ * Back-calculates the taxable value and GST tax portion out of a
+ * GST-INCLUSIVE amount (YouMart's product prices already include GST) -
+ * taxableValue = inclusiveAmount * 100 / (100 + ratePercent), and
+ * tax = inclusiveAmount - taxableValue (via `subtract`, not a second
+ * division), which is what GUARANTEES `taxableValue + tax === inclusiveAmount`
+ * exactly, to the paisa, every time - required for GST invoice compliance
+ * (invoice-service, Ch6.4).
+ */
+export function gstBackCalculate(inclusiveAmount: Money, ratePercent: string): GstBackCalculation {
+  assertMoney(inclusiveAmount, 'inclusiveAmount');
+  const rate = new D(ratePercent);
+  if (!rate.isFinite()) {
+    throw new Error(`ratePercent is not a valid number: "${ratePercent}"`);
+  }
+  const taxableValue = fromDecimal(toDecimal(inclusiveAmount).times(100).dividedBy(rate.plus(100)));
+  const tax = subtract(inclusiveAmount, taxableValue);
+  return { taxableValue, tax };
+}
+
+export interface EqualTaxSplit {
+  first: Money;
+  second: Money;
+}
+
+/**
+ * Splits a tax amount into two equal (CGST/SGST) halves, handling an odd
+ * paisa exactly: `second` is the floor-rounded-down half, and `first` gets
+ * whatever's left over (`subtract(tax, second)`) - so `first + second ===
+ * tax` exactly, always, even when `tax` has an odd number of paisa (e.g.
+ * tax "0.01" -> first "0.01", second "0.00"). Callers pass CGST as `first`
+ * so CGST is the one that (rarely) receives the extra paisa - an
+ * arbitrary but documented, consistent convention (Ch6.4).
+ */
+export function splitTaxEqually(tax: Money): EqualTaxSplit {
+  assertMoney(tax, 'tax');
+  const second = toDecimal(tax).dividedBy(2).toDecimalPlaces(2, D.ROUND_DOWN);
+  const secondMoney = fromDecimal(second);
+  const first = subtract(tax, secondMoney);
+  return { first, second: secondMoney };
+}

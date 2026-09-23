@@ -73,11 +73,13 @@ export interface ProductDetail {
 
 // Richer shape returned only from write-endpoint responses (never the public
 // read endpoints, whose shape must stay exactly as it was in 4.1) - includes
-// fields a catalog manager needs (status, sellerId) but a public shopper
-// doesn't.
+// fields a catalog manager needs (status, sellerId, GST invoice fields) but a
+// public shopper doesn't.
 export interface AdminProductDetail extends ProductDetail {
   status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
   sellerId: string;
+  hsnCode: string | null;
+  gstRatePercent: string | null;
 }
 
 export interface CategoryListItem {
@@ -152,7 +154,13 @@ function toProductDetail(product: ProductWithDetailRelations): ProductDetail {
 }
 
 function toAdminProductDetail(product: ProductWithDetailRelations): AdminProductDetail {
-  return { ...toProductDetail(product), status: product.status, sellerId: product.sellerId };
+  return {
+    ...toProductDetail(product),
+    status: product.status,
+    sellerId: product.sellerId,
+    hsnCode: product.hsnCode,
+    gstRatePercent: product.gstRatePercent ? product.gstRatePercent.toFixed(2) : null,
+  };
 }
 
 async function loadAdminProductDetailById(id: string): Promise<AdminProductDetail> {
@@ -315,6 +323,11 @@ export interface SkuDetail {
   sellingPrice: Money;
   mrp: Money;
   active: boolean;
+  /** GST invoice fields (Ch6.4) - product-level, nullable; invoice-service
+   * applies its own DEFAULT_HSN_CODE/DEFAULT_GST_RATE_PERCENT fallback
+   * when either is null. */
+  hsnCode: string | null;
+  gstRatePercent: string | null;
 }
 
 /**
@@ -348,6 +361,8 @@ export async function getSkuById(skuId: string): Promise<SkuDetail> {
     sellingPrice: decimalToMoney(sku.sellingPrice),
     mrp: decimalToMoney(sku.mrp),
     active: sku.product.status === 'ACTIVE' && sku.product.deletedAt === null,
+    hsnCode: sku.product.hsnCode,
+    gstRatePercent: sku.product.gstRatePercent ? sku.product.gstRatePercent.toFixed(2) : null,
   };
 }
 
@@ -517,6 +532,8 @@ export async function createProductForSeller(
         categoryId: input.categoryId,
         attributes: toJsonInput(input.attributes),
         status: input.status ?? 'DRAFT',
+        hsnCode: input.hsnCode ?? null,
+        gstRatePercent: input.gstRatePercent ?? null,
       },
     });
 
@@ -676,6 +693,8 @@ export async function updateProduct(
     ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
     ...(input.attributes !== undefined ? { attributes: toJsonInput(input.attributes) } : {}),
     ...(input.status !== undefined ? { status: input.status } : {}),
+    ...(input.hsnCode !== undefined ? { hsnCode: input.hsnCode } : {}),
+    ...(input.gstRatePercent !== undefined ? { gstRatePercent: input.gstRatePercent } : {}),
   };
 
   await prisma.product.update({ where: { id }, data });

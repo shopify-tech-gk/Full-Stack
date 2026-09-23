@@ -28,6 +28,21 @@ export interface InternalOrderView {
   /** Lets fulfillment/logistics access the real ship-to address for a real
    * shipping label without a separate address-lookup endpoint (Ch6.1). */
   shippingAddress: InternalOrderShippingAddress | null;
+  /** Order lines (Ch6.4 addition) - needed by invoice-service to build
+   * per-line invoice entries (product/sku, quantity, GST-inclusive line
+   * total) without a separate per-order-item fetch loop. */
+  items: InternalOrderLineView[];
+}
+
+/** One order line, as returned inside `InternalOrderView.items` (Ch6.4). */
+export interface InternalOrderLineView {
+  skuId: string;
+  productId: string;
+  sellerId: string;
+  title: string;
+  unitPrice: Money;
+  quantity: number;
+  lineTotal: Money;
 }
 
 /** Backed by `GET /orders/internal/settleable` (Ch5.3). */
@@ -100,6 +115,12 @@ export interface OrderClient {
     status: OrderItemStatusValue,
     authToken: string,
   ): Promise<InternalOrderItemView>;
+  /** Backed by `GET /orders/internal/for-invoice/:orderId` (Ch6.4) -
+   * deliberately UNAUTHENTICATED (no `authToken` param at all): invoice-
+   * service's queue worker has no forwarded user token (triggered by a
+   * BullMQ job, not an inbound HTTP request). Returns the exact same
+   * shape as `getInternalOrder`. */
+  getInternalOrderForInvoice(orderId: string): Promise<InternalOrderView>;
 }
 
 /** `baseUrl` (e.g. `ORDER_SERVICE_URL`) is injected by the caller - this
@@ -165,6 +186,15 @@ export function createOrderClient({ baseUrl, timeoutMs }: CreateOrderClientOptio
         method: 'POST',
         body: { status },
         authToken,
+        timeoutMs,
+      });
+    },
+
+    getInternalOrderForInvoice(orderId) {
+      return request<InternalOrderView>({
+        baseUrl,
+        path: `/orders/internal/for-invoice/${orderId}`,
+        method: 'GET',
         timeoutMs,
       });
     },

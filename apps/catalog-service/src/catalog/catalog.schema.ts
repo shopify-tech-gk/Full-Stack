@@ -14,6 +14,13 @@ export type ListProductsQuery = z.infer<typeof ListProductsQuery>;
 
 const AttributesRecord = z.record(z.string(), z.unknown());
 const ProductStatusEnum = z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']);
+// GST rate as a plain decimal string (e.g. "18.00"), not a coerced number -
+// fed straight into @youmart/shared-utils' gstBackCalculate(), matching
+// settlement-service's PercentString convention. Matches the Decimal(5,2)
+// column (up to 3 integer digits, 2 decimal places).
+const GstRatePercent = z
+  .string()
+  .regex(/^\d{1,3}(\.\d{1,2})?$/, 'gstRatePercent must be a decimal like "18.00"');
 
 export const SkuInput = z.object({
   skuCode: z.string().min(1).max(100).optional(),
@@ -37,6 +44,11 @@ export const CreateProductBody = z.object({
   skus: z.array(SkuInput).min(1),
   images: z.array(ImageInput).optional().default([]),
   status: ProductStatusEnum.optional().default('DRAFT'),
+  // GST invoice fields (Ch6.4) - both optional/nullable; invoice-service
+  // falls back to its configured DEFAULT_HSN_CODE/DEFAULT_GST_RATE_PERCENT
+  // when unset, so every product invoices correctly from day one.
+  hsnCode: z.string().min(1).max(20).optional(),
+  gstRatePercent: GstRatePercent.optional(),
 });
 export type CreateProductBody = z.infer<typeof CreateProductBody>;
 
@@ -47,6 +59,8 @@ export const UpdateProductBody = z
     categoryId: z.string().uuid().optional(),
     attributes: AttributesRecord.optional(),
     status: ProductStatusEnum.optional(),
+    hsnCode: z.string().min(1).max(20).nullable().optional(),
+    gstRatePercent: GstRatePercent.nullable().optional(),
   })
   .refine((body) => Object.keys(body).length > 0, {
     message: 'At least one field must be provided',
