@@ -12,22 +12,33 @@ import { logger } from './logger';
  * `/api/catalog/products` reaches catalog-service's real
  * `/catalog/products` unchanged.
  *
- * `inventory-service` (4003) and `notification-service` (4012) are
- * DELIBERATELY NOT routed here at all: inventory's only non-internal
- * endpoint is an admin stock-set op with no real frontend use case (every
- * read endpoint became SERVICE-ONLY in Ch6.5), and notification-service
- * exposes no HTTP surface whatsoever (pure BullMQ consumer). Neither has
- * anything for a frontend to call.
+ * `notification-service` is DELIBERATELY NOT routed here at all - it
+ * exposes no HTTP surface whatsoever (pure BullMQ consumer), nothing for
+ * a frontend to call. `inventory-service` (4003) IS routed as of Ch6.7a:
+ * its one admin endpoint (`POST /:skuId/set`) is now real-RBAC-gated
+ * (`requireAdmin('inventory.manage')`) and an admin dashboard needs to
+ * reach it; its OTHER route (`GET /:skuId`) stays SERVICE-ONLY
+ * (`requireServiceAuth`, Ch6.5, HS256) - reachable BY PATH through the
+ * gateway but still rejects any customer/admin RS256 token, since that's
+ * a completely different alg+secret the service itself verifies. No
+ * `/internal/*` segment guards THIS one (it was never under `/internal`),
+ * but the service's own auth boundary still holds regardless.
  *
- * FOUR extra `/api/admin/<x>` prefixes exist because seller/settlement/
- * returns/invoice-service each mount their admin sub-router at a literal
- * `/admin/<service>` path (not `/<service>/admin`) - a real, pre-existing
- * backend inconsistency this table simply mirrors rather than "fixing"
- * (fixing it would mean renaming real routes in 4 services, out of scope).
+ * FIVE extra `/api/admin/<x>` prefixes exist because admin/seller/
+ * settlement/returns/invoice-service each mount an admin sub-router at a
+ * literal `/admin/<service>` path (not `/<service>/admin`) - a real,
+ * pre-existing backend inconsistency this table simply mirrors rather
+ * than "fixing" (fixing it would mean renaming real routes in 4
+ * services, out of scope). `/api/admin` (admin-service itself - login/
+ * me/admin management) is registered LAST in this array so it never
+ * swallows the four more specific `/api/admin/<x>` prefixes above it
+ * (http-proxy-middleware tries routes in registration order; the first
+ * `pathFilter` match wins).
  */
 const ROUTES: Array<{ prefix: string; target: string }> = [
   { prefix: '/api/auth', target: config.services.auth },
   { prefix: '/api/catalog', target: config.services.catalog },
+  { prefix: '/api/inventory', target: config.services.inventory },
   { prefix: '/api/cart', target: config.services.cart },
   { prefix: '/api/orders', target: config.services.order },
   { prefix: '/api/payments', target: config.services.payment },
@@ -42,6 +53,7 @@ const ROUTES: Array<{ prefix: string; target: string }> = [
   { prefix: '/api/admin/settlements', target: config.services.settlement },
   { prefix: '/api/admin/returns', target: config.services.returns },
   { prefix: '/api/admin/invoices', target: config.services.invoice },
+  { prefix: '/api/admin', target: config.services.admin },
 ];
 
 /**
@@ -77,6 +89,7 @@ const ALWAYS_AUTHENTICATED_PREFIXES = [
   '/api/orders',
   '/api/cart',
   '/api/addresses',
+  '/api/inventory',
   '/api/admin/sellers',
   '/api/admin/settlements',
   '/api/admin/returns',

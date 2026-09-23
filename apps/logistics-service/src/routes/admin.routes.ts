@@ -11,17 +11,16 @@ import {
   markDelivered,
   getTracking,
 } from '../logistics/logistics.service';
-import { requireAuth } from '../authMiddleware';
-import { requireLogisticsAdmin } from '../logisticsAdmin.middleware';
+import { requireAdmin } from '../authMiddleware';
 
 export const adminLogisticsRouter: Router = Router();
 
-// PLATFORM-fulfillment path (requireAuth + the TEMPORARY ADMIN_USER_IDS
-// guard) - for launch (single-vendor), YouMart itself ships every order,
+// PLATFORM-fulfillment path (requireAdmin('fulfillment.manage'), Ch6.7a
+// RBAC) - for launch (single-vendor), YouMart itself ships every order,
 // so this IS the launch fulfillment path. Express 5 auto-forwards
 // rejected promises to the central error handler.
 
-adminLogisticsRouter.post('/shipments', requireAuth, requireLogisticsAdmin, async (req, res) => {
+adminLogisticsRouter.post('/shipments', requireAdmin('fulfillment.manage'), async (req, res) => {
   const body = CreateShipmentBody.parse(req.body);
   const shipment = await createShipment(body);
   res.status(201).json(shipment);
@@ -29,8 +28,7 @@ adminLogisticsRouter.post('/shipments', requireAuth, requireLogisticsAdmin, asyn
 
 adminLogisticsRouter.patch(
   '/shipments/:id/status',
-  requireAuth,
-  requireLogisticsAdmin,
+  requireAdmin('fulfillment.manage'),
   async (req, res) => {
     const id = typeof req.params.id === 'string' ? req.params.id : '';
     const body = UpdateShipmentStatusBody.parse(req.body);
@@ -41,8 +39,7 @@ adminLogisticsRouter.patch(
 
 adminLogisticsRouter.post(
   '/shipments/:id/tracking',
-  requireAuth,
-  requireLogisticsAdmin,
+  requireAdmin('fulfillment.manage'),
   async (req, res) => {
     const id = typeof req.params.id === 'string' ? req.params.id : '';
     const body = AddTrackingEventBody.parse(req.body);
@@ -57,8 +54,7 @@ adminLogisticsRouter.post(
 
 adminLogisticsRouter.post(
   '/shipments/:id/delivered',
-  requireAuth,
-  requireLogisticsAdmin,
+  requireAdmin('fulfillment.manage'),
   async (req, res) => {
     const id = typeof req.params.id === 'string' ? req.params.id : '';
     const shipment = await markDelivered(id);
@@ -66,7 +62,7 @@ adminLogisticsRouter.post(
   },
 );
 
-adminLogisticsRouter.get('/shipments/:id', requireAuth, requireLogisticsAdmin, async (req, res) => {
+adminLogisticsRouter.get('/shipments/:id', requireAdmin('fulfillment.manage'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const detail = await getTracking(id);
   res.status(200).json(detail);

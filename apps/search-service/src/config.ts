@@ -33,10 +33,6 @@ const searchServiceEnvSchema = z.object({
   JWT_ISSUER: z.string().default('youmart-auth'),
   JWT_AUDIENCE: z.string().default('youmart'),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
-  // TEMPORARY dev-only admin authorization gate for the manual full-reindex
-  // trigger endpoint - same pattern as every other service's
-  // ADMIN_USER_IDS. Real RBAC replaces this in Ch6/7.
-  ADMIN_USER_IDS: z.string().default(''),
   // Cron pattern (BullMQ repeatable job) for the nightly full-reindex
   // safety net - config-driven so dev can use a short interval without a
   // code change. Default: 2 AM daily.
@@ -54,13 +50,6 @@ function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
 }
 
-function parseAdminUserIds(value: string): string[] {
-  return value
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
-}
-
 export interface SearchServiceConfig {
   nodeEnv: 'development' | 'test' | 'production';
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
@@ -75,7 +64,6 @@ export interface SearchServiceConfig {
   jwtIssuer: string;
   jwtAudience: string;
   serviceHttpTimeoutMs: number;
-  adminUserIds: string[];
   fullReindexScheduleCron: string;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
@@ -95,7 +83,6 @@ export const config: Readonly<SearchServiceConfig> = Object.freeze({
   jwtIssuer: parsed.JWT_ISSUER,
   jwtAudience: parsed.JWT_AUDIENCE,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
-  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   fullReindexScheduleCron: parsed.FULL_REINDEX_SCHEDULE_CRON,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,

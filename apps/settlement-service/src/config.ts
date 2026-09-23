@@ -26,10 +26,6 @@ const settlementServiceEnvSchema = baseEnvSchema.extend({
   ORDER_SERVICE_URL: z.string().url(),
   SELLER_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
-  // TEMPORARY dev-only admin authorization gate for the settlement-run/list
-  // endpoints - same pattern (and, in dev, the same list) as every other
-  // service's ADMIN_USER_IDS. Real RBAC replaces this in Ch6.
-  ADMIN_USER_IDS: z.string().default(''),
 
   // --- Settlement rules (Ch5.3) - TEMPORARY env-backed settings. Each
   // component is an independent enabled/disabled TOGGLE + a PERCENTAGE,
@@ -74,13 +70,6 @@ function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
 }
 
-function parseAdminUserIds(value: string): string[] {
-  return value
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
-}
-
 export interface SettlementServiceConfig {
   nodeEnv: 'development' | 'test' | 'production';
   databaseUrl: string;
@@ -94,7 +83,6 @@ export interface SettlementServiceConfig {
   orderServiceUrl: string;
   sellerServiceUrl: string;
   serviceHttpTimeoutMs: number;
-  adminUserIds: string[];
   commissionEnabled: boolean;
   commissionDefaultPercent: string;
   tcsEnabled: boolean;
@@ -119,7 +107,6 @@ export const config: Readonly<SettlementServiceConfig> = Object.freeze({
   orderServiceUrl: parsed.ORDER_SERVICE_URL,
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
-  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   commissionEnabled: parsed.COMMISSION_ENABLED,
   commissionDefaultPercent: parsed.COMMISSION_DEFAULT_PERCENT,
   tcsEnabled: parsed.TCS_ENABLED,

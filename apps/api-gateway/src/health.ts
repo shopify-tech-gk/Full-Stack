@@ -21,6 +21,7 @@ const SERVICES: Record<string, string> = {
   notification: config.services.notification,
   search: config.services.search,
   invoice: config.services.invoice,
+  admin: config.services.admin,
 };
 
 async function pingService(

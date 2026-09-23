@@ -10,8 +10,7 @@ import {
   commitByOrder,
   restock,
 } from '../inventory/inventory.service';
-import { requireAuth, requireServiceAuth } from '../authMiddleware';
-import { requireInventoryManager } from '../inventoryManager.middleware';
+import { requireServiceAuth, requireAdmin } from '../authMiddleware';
 
 export const inventoryRouter: Router = Router();
 
@@ -25,9 +24,9 @@ inventoryRouter.get('/:skuId', requireServiceAuth, async (req, res) => {
   res.status(200).json(stock);
 });
 
-// Admin op (TEMPORARY manager guard - see inventoryManager.middleware.ts) -
-// USER-FACING, unchanged: an admin's own token, not a service token.
-inventoryRouter.post('/:skuId/set', requireAuth, requireInventoryManager, async (req, res) => {
+// Ch6.7a: real RBAC - requireAdmin('inventory.manage') replaces the
+// retired ADMIN_USER_IDS gate (requireInventoryManager).
+inventoryRouter.post('/:skuId/set', requireAdmin('inventory.manage'), async (req, res) => {
   const skuId = typeof req.params.skuId === 'string' ? req.params.skuId : '';
   const body = SetStockBody.parse(req.body);
   const stock = await setStock(skuId, body);

@@ -39,6 +39,10 @@ const apiGatewayEnvSchema = z.object({
   NOTIFICATION_SERVICE_URL: z.string().url(),
   SEARCH_SERVICE_URL: z.string().url(),
   INVOICE_SERVICE_URL: z.string().url(),
+  // Ch6.7a: admin-service (email/password login + RBAC), routed at
+  // /api/admin - registered LAST in the gateway's routing table so it
+  // never swallows the more specific /api/admin/<x> prefixes.
+  ADMIN_SERVICE_URL: z.string().url(),
 
   // Comma-separated list of allowed CORS origins - dev localhost origins +
   // the future frontend's real origin(s), added as they're known.
@@ -80,6 +84,7 @@ export interface ApiGatewayConfig {
     notification: string;
     search: string;
     invoice: string;
+    admin: string;
   };
   corsAllowedOrigins: string[];
   rateLimitWindowMs: number;
@@ -105,6 +110,7 @@ export const config: Readonly<ApiGatewayConfig> = Object.freeze({
     notification: parsed.NOTIFICATION_SERVICE_URL,
     search: parsed.SEARCH_SERVICE_URL,
     invoice: parsed.INVOICE_SERVICE_URL,
+    admin: parsed.ADMIN_SERVICE_URL,
   }),
   corsAllowedOrigins: parseOrigins(parsed.CORS_ALLOWED_ORIGINS),
   rateLimitWindowMs: parsed.RATE_LIMIT_WINDOW_MS,

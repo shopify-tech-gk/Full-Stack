@@ -6,20 +6,19 @@ import {
   listSettlementsAdmin,
   getSettlementDetailAdmin,
 } from '../settlement/settlement.service';
-import { requireAuth } from '../authMiddleware';
-import { requireSettlementAdmin } from '../settlementAdmin.middleware';
+import { requireAdmin } from '../authMiddleware';
 
 export const adminSettlementRouter: Router = Router();
 
-// Every route requires requireAuth + the TEMPORARY requireSettlementAdmin
-// gate (see settlementAdmin.middleware.ts) - NOT the seller-active gate;
-// an admin manages settlements for ANY seller.
+// Ch6.7a RBAC: `settlements.manage` gates actually RUNNING a settlement
+// (money movement); `settlements.view` gates read-only list/detail - NOT
+// the seller-active gate; an admin manages settlements for ANY seller.
 
 // MANUAL TRIGGER - runs the engine SYNCHRONOUSLY inside this request.
 // order-service/seller-service calls now go through @youmart/service-
 // client, which mints its own service token per call (Ch6.5) - no user
 // token forwarding needed here anymore.
-adminSettlementRouter.post('/run', requireAuth, requireSettlementAdmin, async (req, res) => {
+adminSettlementRouter.post('/run', requireAdmin('settlements.manage'), async (req, res) => {
   const body = RunSettlementBody.parse(req.body);
   const periodStart = new Date(body.periodStart);
   const periodEnd = new Date(body.periodEnd);
@@ -34,13 +33,13 @@ adminSettlementRouter.post('/run', requireAuth, requireSettlementAdmin, async (r
   res.status(200).json({ results });
 });
 
-adminSettlementRouter.get('/', requireAuth, requireSettlementAdmin, async (req, res) => {
+adminSettlementRouter.get('/', requireAdmin('settlements.view'), async (req, res) => {
   const query = ListSettlementsQuery.parse(req.query);
   const result = await listSettlementsAdmin(query);
   res.status(200).json(result);
 });
 
-adminSettlementRouter.get('/:id', requireAuth, requireSettlementAdmin, async (req, res) => {
+adminSettlementRouter.get('/:id', requireAdmin('settlements.view'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const settlement = await getSettlementDetailAdmin(id);
   res.status(200).json(settlement);

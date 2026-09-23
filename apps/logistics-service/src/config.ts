@@ -29,10 +29,6 @@ const logisticsServiceEnvSchema = baseEnvSchema.extend({
   // notification (Ch6.2) goes over HTTP too.
   AUTH_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
-  // TEMPORARY dev-only admin authorization gate for the platform-fulfillment
-  // endpoints - same pattern (and, in dev, the same list) as every other
-  // service's ADMIN_USER_IDS. Real RBAC replaces this in Ch6.
-  ADMIN_USER_IDS: z.string().default(''),
   // Multi-courier FOUNDATION (Ch5.4): selects which registered
   // ShippingProvider handles shipment creation when none is specified.
   // "manual" (ManualProvider) is the ONLY provider at launch - real
@@ -46,13 +42,6 @@ const parsed = loadConfigWith(logisticsServiceEnvSchema);
 
 function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
-}
-
-function parseAdminUserIds(value: string): string[] {
-  return value
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
 }
 
 export interface LogisticsServiceConfig {
@@ -69,7 +58,6 @@ export interface LogisticsServiceConfig {
   sellerServiceUrl: string;
   authServiceUrl: string;
   serviceHttpTimeoutMs: number;
-  adminUserIds: string[];
   defaultShippingProvider: string;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
@@ -89,7 +77,6 @@ export const config: Readonly<LogisticsServiceConfig> = Object.freeze({
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
   authServiceUrl: parsed.AUTH_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
-  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   defaultShippingProvider: parsed.DEFAULT_SHIPPING_PROVIDER,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,

@@ -37,10 +37,6 @@ const catalogServiceEnvSchema = baseEnvSchema.extend({
   // Ch6 replaces this with a real lookup/cache once the admin schema and
   // seller registration exist - today it's always DISABLED (hard-off).
   MARKETPLACE_MODE: z.enum(['ENABLED', 'DISABLED']).default('DISABLED'),
-  // TEMPORARY dev-only catalog-write authorization gate: comma-separated
-  // user ids allowed to manage the catalog. There is no admin/role claim
-  // on access tokens yet - real RBAC replaces this in Ch6.
-  ADMIN_USER_IDS: z.string().default(''),
   // catalog_svc cannot read the sellers schema (cross-schema isolation) -
   // "is the caller an active seller, and which one" is resolved over HTTP
   // against seller-service (Ch5.2's seller-scoped product endpoints).
@@ -52,13 +48,6 @@ const parsed = loadConfigWith(catalogServiceEnvSchema);
 
 function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
-}
-
-function parseAdminUserIds(value: string): string[] {
-  return value
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
 }
 
 export interface CatalogServiceConfig {
@@ -74,7 +63,6 @@ export interface CatalogServiceConfig {
   cdnBaseUrl: string;
   defaultSellerId: string;
   marketplaceMode: 'ENABLED' | 'DISABLED';
-  adminUserIds: string[];
   sellerServiceUrl: string;
   serviceHttpTimeoutMs: number;
   serviceJwtSecret: string;
@@ -94,7 +82,6 @@ export const config: Readonly<CatalogServiceConfig> = Object.freeze({
   cdnBaseUrl: parsed.CDN_BASE_URL,
   defaultSellerId: parsed.DEFAULT_SELLER_ID,
   marketplaceMode: parsed.MARKETPLACE_MODE,
-  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,

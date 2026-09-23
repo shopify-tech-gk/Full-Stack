@@ -26,11 +26,6 @@ const sellerServiceEnvSchema = baseEnvSchema.extend({
   // source of truth once it exists - today it's always DISABLED (hard-off),
   // so self-registration is blocked and only the seeded default seller sells.
   MARKETPLACE_MODE: z.enum(['ENABLED', 'DISABLED']).default('DISABLED'),
-  // TEMPORARY dev-only admin authorization gate for the seller-approval
-  // endpoints - the SAME pattern (and, in dev, the same list) as
-  // catalog-service/inventory-service's ADMIN_USER_IDS. There is no
-  // admin/role claim on access tokens yet - real RBAC replaces this in Ch6.
-  ADMIN_USER_IDS: z.string().default(''),
   // Default commission applied to a newly-registered (non-default) seller,
   // as a "0.00".."100.00" decimal string - Decimal(5,2) at the DB layer.
   DEFAULT_COMMISSION_PERCENT: z
@@ -50,13 +45,6 @@ function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
 }
 
-function parseAdminUserIds(value: string): string[] {
-  return value
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
-}
-
 export interface SellerServiceConfig {
   nodeEnv: 'development' | 'test' | 'production';
   databaseUrl: string;
@@ -68,7 +56,6 @@ export interface SellerServiceConfig {
   jwtIssuer: string;
   jwtAudience: string;
   marketplaceMode: 'ENABLED' | 'DISABLED';
-  adminUserIds: string[];
   defaultCommissionPercent: string;
   bankAccountHashSecret: string;
   serviceJwtSecret: string;
@@ -86,7 +73,6 @@ export const config: Readonly<SellerServiceConfig> = Object.freeze({
   jwtIssuer: parsed.JWT_ISSUER,
   jwtAudience: parsed.JWT_AUDIENCE,
   marketplaceMode: parsed.MARKETPLACE_MODE,
-  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   defaultCommissionPercent: parsed.DEFAULT_COMMISSION_PERCENT,
   bankAccountHashSecret: parsed.BANK_ACCOUNT_HASH_SECRET,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,

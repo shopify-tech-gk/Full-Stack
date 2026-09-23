@@ -1,17 +1,16 @@
 import { Router } from 'express';
 import { AppError } from '@youmart/errors';
-import { requireAuth } from '../authMiddleware';
-import { requireInvoiceAdmin } from '../invoiceAdmin.middleware';
+import { requireAdmin } from '../authMiddleware';
 import { listInvoices, getInvoiceById, generateInvoice } from '../invoice/invoice.service';
 
 export const adminInvoiceRouter: Router = Router();
 
-adminInvoiceRouter.get('/', requireAuth, requireInvoiceAdmin, async (_req, res) => {
+adminInvoiceRouter.get('/', requireAdmin('invoices.view'), async (_req, res) => {
   const items = await listInvoices();
   res.status(200).json({ items });
 });
 
-adminInvoiceRouter.get('/:id', requireAuth, requireInvoiceAdmin, async (req, res) => {
+adminInvoiceRouter.get('/:id', requireAdmin('invoices.view'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const invoice = await getInvoiceById(id);
   if (!invoice) {
@@ -27,8 +26,7 @@ adminInvoiceRouter.get('/:id', requireAuth, requireInvoiceAdmin, async (req, res
 // or was never enqueued (e.g. a pre-Ch6.4 CONFIRMED order).
 adminInvoiceRouter.post(
   '/regenerate/:orderId',
-  requireAuth,
-  requireInvoiceAdmin,
+  requireAdmin('invoices.manage'),
   async (req, res) => {
     const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
     const invoice = await generateInvoice(orderId);

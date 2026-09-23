@@ -23,9 +23,6 @@ const invoiceServiceEnvSchema = baseEnvSchema.extend({
   ORDER_SERVICE_URL: z.string().url(),
   CATALOG_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
-  // TEMPORARY dev-only admin authorization gate for the admin invoice
-  // endpoints - same pattern as every other service's ADMIN_USER_IDS.
-  ADMIN_USER_IDS: z.string().default(''),
 
   // --- Business (seller) GST identity - SNAPSHOTTED onto every invoice at
   // generation time (never re-read from config afterwards), same principle
@@ -56,13 +53,6 @@ function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
 }
 
-function parseAdminUserIds(value: string): string[] {
-  return value
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
-}
-
 export interface InvoiceServiceConfig {
   nodeEnv: 'development' | 'test' | 'production';
   databaseUrl: string;
@@ -76,7 +66,6 @@ export interface InvoiceServiceConfig {
   orderServiceUrl: string;
   catalogServiceUrl: string;
   serviceHttpTimeoutMs: number;
-  adminUserIds: string[];
   businessLegalName: string;
   businessGstin: string;
   businessAddress: string;
@@ -103,7 +92,6 @@ export const config: Readonly<InvoiceServiceConfig> = Object.freeze({
   orderServiceUrl: parsed.ORDER_SERVICE_URL,
   catalogServiceUrl: parsed.CATALOG_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
-  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   businessLegalName: parsed.BUSINESS_LEGAL_NAME,
   businessGstin: parsed.BUSINESS_GSTIN,
   businessAddress: parsed.BUSINESS_ADDRESS,
