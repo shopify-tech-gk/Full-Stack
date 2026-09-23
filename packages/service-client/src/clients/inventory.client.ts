@@ -1,4 +1,5 @@
 import { request } from '../http';
+import { mintCallerServiceToken, type ServiceAuthOptions } from '../serviceAuth';
 
 export interface StockSummary {
   skuId: string;
@@ -17,34 +18,28 @@ export interface ReservationResult {
 export interface CreateInventoryClientOptions {
   baseUrl: string;
   timeoutMs?: number;
+  /** Every inventory-service endpoint this client calls is SERVICE-ONLY
+   * (Ch6.5) - a service token is minted fresh per call, never a forwarded
+   * user token. */
+  serviceAuth: ServiceAuthOptions;
 }
 
 export interface InventoryClient {
-  getStock(skuId: string, authToken: string): Promise<StockSummary>;
-  setStock(skuId: string, available: number, authToken: string): Promise<StockSummary>;
-  reserve(
-    skuId: string,
-    quantity: number,
-    authToken: string,
-    orderId?: string,
-  ): Promise<ReservationResult>;
-  release(reservationId: string, authToken: string): Promise<void>;
-  commit(reservationId: string, authToken: string): Promise<void>;
+  getStock(skuId: string): Promise<StockSummary>;
+  setStock(skuId: string, available: number): Promise<StockSummary>;
+  reserve(skuId: string, quantity: number, orderId?: string): Promise<ReservationResult>;
+  release(reservationId: string): Promise<void>;
+  commit(reservationId: string): Promise<void>;
   /** Releases every still-HELD reservation linked to this order (checkout
    * rollback on partial reserve failure). */
-  releaseByOrder(orderId: string, authToken: string): Promise<void>;
+  releaseByOrder(orderId: string): Promise<void>;
   /** Commits every still-HELD reservation linked to this order (payment
    * success, Ch4.6). */
-  commitByOrder(orderId: string, authToken: string): Promise<void>;
+  commitByOrder(orderId: string): Promise<void>;
   /** Backed by `POST /inventory/:skuId/restock` (Ch5.5) - a returned
    * item's units re-enter sellable stock. NO built-in idempotency key;
    * the caller must call at most once per return. */
-  restock(
-    skuId: string,
-    quantity: number,
-    authToken: string,
-    reason?: string,
-  ): Promise<StockSummary>;
+  restock(skuId: string, quantity: number, reason?: string): Promise<StockSummary>;
 }
 
 /** `baseUrl` (e.g. `INVENTORY_SERVICE_URL`) is injected by the caller - this
@@ -53,87 +48,92 @@ export interface InventoryClient {
 export function createInventoryClient({
   baseUrl,
   timeoutMs,
+  serviceAuth,
 }: CreateInventoryClientOptions): InventoryClient {
+  function authToken(): string {
+    return mintCallerServiceToken(serviceAuth);
+  }
+
   return {
-    getStock(skuId, authToken) {
+    getStock(skuId) {
       return request<StockSummary>({
         baseUrl,
         path: `/inventory/${skuId}`,
         method: 'GET',
-        authToken,
+        authToken: authToken(),
         timeoutMs,
       });
     },
 
-    setStock(skuId, available, authToken) {
+    setStock(skuId, available) {
       return request<StockSummary>({
         baseUrl,
         path: `/inventory/${skuId}/set`,
         method: 'POST',
         body: { available },
-        authToken,
+        authToken: authToken(),
         timeoutMs,
       });
     },
 
-    reserve(skuId, quantity, authToken, orderId) {
+    reserve(skuId, quantity, orderId) {
       return request<ReservationResult>({
         baseUrl,
         path: `/inventory/${skuId}/reserve`,
         method: 'POST',
         body: { quantity, ...(orderId ? { orderId } : {}) },
-        authToken,
+        authToken: authToken(),
         timeoutMs,
       });
     },
 
-    release(reservationId, authToken) {
+    release(reservationId) {
       return request<void>({
         baseUrl,
         path: `/inventory/reservations/${reservationId}/release`,
         method: 'POST',
-        authToken,
+        authToken: authToken(),
         timeoutMs,
       });
     },
 
-    commit(reservationId, authToken) {
+    commit(reservationId) {
       return request<void>({
         baseUrl,
         path: `/inventory/reservations/${reservationId}/commit`,
         method: 'POST',
-        authToken,
+        authToken: authToken(),
         timeoutMs,
       });
     },
 
-    releaseByOrder(orderId, authToken) {
+    releaseByOrder(orderId) {
       return request<void>({
         baseUrl,
         path: `/inventory/orders/${orderId}/release`,
         method: 'POST',
-        authToken,
+        authToken: authToken(),
         timeoutMs,
       });
     },
 
-    commitByOrder(orderId, authToken) {
+    commitByOrder(orderId) {
       return request<void>({
         baseUrl,
         path: `/inventory/orders/${orderId}/commit`,
         method: 'POST',
-        authToken,
+        authToken: authToken(),
         timeoutMs,
       });
     },
 
-    restock(skuId, quantity, authToken, reason) {
+    restock(skuId, quantity, reason) {
       return request<StockSummary>({
         baseUrl,
         path: `/inventory/${skuId}/restock`,
         method: 'POST',
         body: { quantity, ...(reason ? { reason } : {}) },
-        authToken,
+        authToken: authToken(),
         timeoutMs,
       });
     },

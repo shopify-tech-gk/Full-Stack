@@ -5,3 +5,10 @@ export type {
   CreateAuthMiddlewareOptions,
   AuthMiddleware,
 } from './middleware';
+export { createServiceAuthMiddleware, mintServiceToken } from './serviceAuth';
+export type {
+  ServiceClaims,
+  MintServiceTokenOptions,
+  CreateServiceAuthMiddlewareOptions,
+  ServiceAuthMiddleware,
+} from './serviceAuth';

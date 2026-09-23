@@ -301,10 +301,7 @@ export async function generateInvoice(orderId: string): Promise<InvoiceView> {
     return invoice;
   });
 
-  logger.info(
-    { orderId, invoiceId: created.id, invoiceNumber },
-    'invoice generated',
-  );
+  logger.info({ orderId, invoiceId: created.id, invoiceNumber }, 'invoice generated');
 
   return findActiveInvoiceByOrderId(orderId).then((view) => toInvoiceView(view!));
 }

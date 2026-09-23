@@ -66,6 +66,8 @@ export interface ReturnsServiceConfig {
   serviceHttpTimeoutMs: number;
   adminUserIds: string[];
   returnWindowDays: number;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<ReturnsServiceConfig> = Object.freeze({
@@ -85,4 +87,6 @@ export const config: Readonly<ReturnsServiceConfig> = Object.freeze({
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   returnWindowDays: parsed.RETURN_WINDOW_DAYS,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

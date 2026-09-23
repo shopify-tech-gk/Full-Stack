@@ -59,33 +59,34 @@ export interface CreateCatalogClientOptions {
 }
 
 export interface CatalogClient {
-  getProductBySlug(slug: string, authToken?: string): Promise<ProductDetail>;
-  getSku(skuId: string, authToken?: string): Promise<SkuDetail>;
+  getProductBySlug(slug: string): Promise<ProductDetail>;
+  getSku(skuId: string): Promise<SkuDetail>;
 }
 
 /** `baseUrl` (e.g. `CATALOG_SERVICE_URL`) is injected by the caller - this
- * package never reads `process.env` itself. */
+ * package never reads `process.env` itself. Both endpoints below are
+ * genuinely PUBLIC (`optionalAuth`, unchanged since Ch4.1) - not part of
+ * the Ch6.5 internal-endpoint lockdown, so no service token is attached
+ * here at all. */
 export function createCatalogClient({
   baseUrl,
   timeoutMs,
 }: CreateCatalogClientOptions): CatalogClient {
   return {
-    getProductBySlug(slug, authToken) {
+    getProductBySlug(slug) {
       return request<ProductDetail>({
         baseUrl,
         path: `/catalog/products/${slug}`,
         method: 'GET',
-        authToken,
         timeoutMs,
       });
     },
 
-    getSku(skuId, authToken) {
+    getSku(skuId) {
       return request<SkuDetail>({
         baseUrl,
         path: `/catalog/skus/${skuId}`,
         method: 'GET',
-        authToken,
         timeoutMs,
       });
     },

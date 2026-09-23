@@ -1,5 +1,6 @@
 import type { Money } from '@youmart/shared-types';
 import { request } from '../http';
+import { mintCallerServiceToken, type ServiceAuthOptions } from '../serviceAuth';
 
 export type RefundStatusValue = 'PENDING' | 'PROCESSED' | 'FAILED';
 
@@ -19,6 +20,9 @@ export interface RefundResult {
 export interface CreatePaymentClientOptions {
   baseUrl: string;
   timeoutMs?: number;
+  /** SERVICE-ONLY endpoint (Ch6.5) - a service token is minted fresh per
+   * call, never a forwarded user token. */
+  serviceAuth: ServiceAuthOptions;
 }
 
 export interface PaymentClient {
@@ -29,12 +33,7 @@ export interface PaymentClient {
    * proceed with its own retryable steps (restock, order status). Throws
    * an `AppError` only for a genuine request-level failure (e.g. no
    * CAPTURED payment found, or an over-refund attempt). */
-  createRefund(
-    orderId: string,
-    amount: Money,
-    authToken: string,
-    reason?: string,
-  ): Promise<RefundResult>;
+  createRefund(orderId: string, amount: Money, reason?: string): Promise<RefundResult>;
 }
 
 /** `baseUrl` (e.g. `PAYMENT_SERVICE_URL`) is injected by the caller - this
@@ -42,15 +41,16 @@ export interface PaymentClient {
 export function createPaymentClient({
   baseUrl,
   timeoutMs,
+  serviceAuth,
 }: CreatePaymentClientOptions): PaymentClient {
   return {
-    createRefund(orderId, amount, authToken, reason) {
+    createRefund(orderId, amount, reason) {
       return request<RefundResult>({
         baseUrl,
         path: '/payments/internal/refund',
         method: 'POST',
         body: { orderId, amount, ...(reason ? { reason } : {}) },
-        authToken,
+        authToken: mintCallerServiceToken(serviceAuth),
         timeoutMs,
       });
     },

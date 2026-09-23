@@ -71,6 +71,8 @@ export interface SellerServiceConfig {
   adminUserIds: string[];
   defaultCommissionPercent: string;
   bankAccountHashSecret: string;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<SellerServiceConfig> = Object.freeze({
@@ -87,4 +89,6 @@ export const config: Readonly<SellerServiceConfig> = Object.freeze({
   adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   defaultCommissionPercent: parsed.DEFAULT_COMMISSION_PERCENT,
   bankAccountHashSecret: parsed.BANK_ACCOUNT_HASH_SECRET,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

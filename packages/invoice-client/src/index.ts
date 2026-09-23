@@ -26,9 +26,12 @@ export async function enqueueInvoiceGeneration(orderId: string): Promise<void> {
     await invoiceGenerationQueue.enqueue({ orderId });
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('failed to enqueue invoice-generation job (non-fatal, order confirm still succeeds)', {
-      orderId,
-      err,
-    });
+    console.error(
+      'failed to enqueue invoice-generation job (non-fatal, order confirm still succeeds)',
+      {
+        orderId,
+        err,
+      },
+    );
   }
 }

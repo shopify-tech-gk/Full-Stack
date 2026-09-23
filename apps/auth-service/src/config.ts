@@ -71,6 +71,8 @@ export interface AuthServiceConfig {
   refreshCookieName: string;
   cookieSecure: boolean;
   cookieDomain: string | undefined;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<AuthServiceConfig> = Object.freeze({
@@ -95,4 +97,6 @@ export const config: Readonly<AuthServiceConfig> = Object.freeze({
   refreshCookieName: parsed.REFRESH_COOKIE_NAME,
   cookieSecure: parsed.COOKIE_SECURE,
   cookieDomain: parsed.COOKIE_DOMAIN,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

@@ -919,6 +919,9 @@ importers:
 
   packages/service-client:
     dependencies:
+      '@youmart/auth-middleware':
+        specifier: workspace:*
+        version: link:../auth-middleware
       '@youmart/errors':
         specifier: workspace:*
         version: link:../errors

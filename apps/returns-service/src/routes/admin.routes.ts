@@ -9,7 +9,6 @@ import {
 } from '../returns/returns.service';
 import { requireAuth } from '../authMiddleware';
 import { requireReturnsAdmin } from '../returnsAdmin.middleware';
-import { extractBearerToken } from '../authToken';
 
 export const adminReturnsRouter: Router = Router();
 
@@ -25,10 +24,9 @@ adminReturnsRouter.get('/', requireAuth, requireReturnsAdmin, async (req, res) =
 });
 
 adminReturnsRouter.post('/:id/approve', requireAuth, requireReturnsAdmin, async (req, res) => {
-  const authToken = extractBearerToken(req);
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const body = ApproveReturnBody.parse(req.body);
-  const returnRequest = await approveReturn(id, body.refundAmount, authToken);
+  const returnRequest = await approveReturn(id, body.refundAmount);
   res.status(200).json(returnRequest);
 });
 
@@ -50,9 +48,8 @@ adminReturnsRouter.post(
   requireAuth,
   requireReturnsAdmin,
   async (req, res) => {
-    const authToken = extractBearerToken(req);
     const id = typeof req.params.id === 'string' ? req.params.id : '';
-    const result = await processRefund(id, authToken);
+    const result = await processRefund(id);
     res.status(200).json(result);
   },
 );

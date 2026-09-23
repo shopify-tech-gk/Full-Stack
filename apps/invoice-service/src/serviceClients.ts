@@ -1,5 +1,17 @@
-import { createOrderClient, createCatalogClient } from '@youmart/service-client';
+import {
+  createOrderClient,
+  createCatalogClient,
+  type ServiceAuthOptions,
+} from '@youmart/service-client';
 import { config } from './config';
+
+// Ch6.5 - self-minted short-lived service token attached to every internal
+// call below (never a forwarded user token - the queue worker has none).
+const serviceAuth: ServiceAuthOptions = {
+  callerServiceName: 'invoice-service',
+  serviceSecret: config.serviceJwtSecret,
+  ttlSeconds: config.serviceTokenTtlSeconds,
+};
 
 /**
  * invoices_svc cannot read the orders/catalog schemas (cross-schema
@@ -9,6 +21,7 @@ import { config } from './config';
 export const orderClient = createOrderClient({
   baseUrl: config.orderServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
+  serviceAuth,
 });
 
 export const catalogClient = createCatalogClient({

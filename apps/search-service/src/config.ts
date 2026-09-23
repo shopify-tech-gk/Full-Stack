@@ -41,6 +41,11 @@ const searchServiceEnvSchema = z.object({
   // safety net - config-driven so dev can use a short interval without a
   // code change. Default: 2 AM daily.
   FULL_REINDEX_SCHEDULE_CRON: z.string().default('0 2 * * *'),
+  // Ch6.5: shared symmetric secret for self-minted service-to-service
+  // HS256 tokens - DEDICATED, separate from the JWT_PUBLIC_KEY above (not
+  // part of baseEnvSchema here since this service defines its own schema).
+  SERVICE_JWT_SECRET: z.string().min(32),
+  SERVICE_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(300),
 });
 
 const parsed = loadConfigWith(searchServiceEnvSchema);
@@ -72,6 +77,8 @@ export interface SearchServiceConfig {
   serviceHttpTimeoutMs: number;
   adminUserIds: string[];
   fullReindexScheduleCron: string;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<SearchServiceConfig> = Object.freeze({
@@ -90,4 +97,6 @@ export const config: Readonly<SearchServiceConfig> = Object.freeze({
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   fullReindexScheduleCron: parsed.FULL_REINDEX_SCHEDULE_CRON,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

@@ -44,6 +44,8 @@ export interface InventoryServiceConfig {
   jwtIssuer: string;
   jwtAudience: string;
   adminUserIds: string[];
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<InventoryServiceConfig> = Object.freeze({
@@ -57,4 +59,6 @@ export const config: Readonly<InventoryServiceConfig> = Object.freeze({
   jwtIssuer: parsed.JWT_ISSUER,
   jwtAudience: parsed.JWT_AUDIENCE,
   adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

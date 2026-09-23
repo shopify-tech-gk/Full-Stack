@@ -189,8 +189,8 @@ async function cancelOrder(orderId: string, note: string): Promise<void> {
 
 /**
  * CHECKOUT SECURITY PRINCIPLE (locked): the client sends NO items/prices -
- * `checkout` takes only `userId`/`addressId`/`authToken` and never reads
- * cart contents or prices from `req.body`. The cart is read server-side
+ * `checkout` takes only `userId`/`addressId` and never reads cart contents
+ * or prices from `req.body`. The cart is read server-side
  * (`cartClient.getMyCart`) and EVERY price is re-derived from catalog
  * (`catalogClient.getSku`) - `unit_price` is the LIVE catalog
  * `sellingPrice` at checkout time, NOT the cart's `priceSnapshot` (that
@@ -200,16 +200,13 @@ async function cancelOrder(orderId: string, note: string): Promise<void> {
  *
  * `addressId` (Ch6.1) is the ONLY thing the client contributes beyond "check
  * out my cart" - it is validated via `addressClient.getAddressForOrder`,
- * which resolves ownership server-side from the forwarded `authToken` (never
- * a client-supplied userId), and the returned snapshot is persisted onto
- * the order verbatim (see `ShippingAddressView`'s doc comment for why a
- * snapshot, not just a foreign key).
+ * which resolves ownership server-side against the explicit `userId`
+ * param (Ch6.5 - a self-minted service token authenticates the CALL
+ * itself, never a forwarded user token), and the returned snapshot is
+ * persisted onto the order verbatim (see `ShippingAddressView`'s doc
+ * comment for why a snapshot, not just a foreign key).
  */
-export async function checkout(
-  userId: string,
-  addressId: string,
-  authToken: string,
-): Promise<OrderView> {
+export async function checkout(userId: string, addressId: string): Promise<OrderView> {
   if (!addressId) {
     throw new AppError('VALIDATION_ERROR', 400, 'a shipping address is required');
   }
@@ -227,12 +224,13 @@ export async function checkout(
     return loadOrderView(recentOrder.id, userId);
   }
 
-  // Ownership resolved server-side by address-service from the forwarded
-  // token - throws a 404 AppError (never revealing existence otherwise) if
-  // the address doesn't exist or isn't the caller's own.
-  const address = await addressClient.getAddressForOrder(addressId, authToken);
+  // Ownership resolved server-side by address-service - throws a 404
+  // AppError (never revealing existence otherwise) if the address doesn't
+  // exist or isn't `userId`'s own. The service token authenticates the
+  // CALLER (order-service); `userId` identifies the SUBJECT (Ch6.5).
+  const address = await addressClient.getAddressForOrder(userId, addressId);
 
-  const cart = await cartClient.getMyCart(authToken);
+  const cart = await cartClient.getMyCart(userId);
 
   if (cart.items.length === 0) {
     throw new AppError('VALIDATION_ERROR', 400, 'Cart is empty');
@@ -240,7 +238,7 @@ export async function checkout(
 
   const lines: RepricedLine[] = [];
   for (const cartItem of cart.items) {
-    const sku = await catalogClient.getSku(cartItem.skuId, authToken);
+    const sku = await catalogClient.getSku(cartItem.skuId);
 
     if (!sku.active) {
       throw new AppError('CONFLICT', 409, `"${sku.title}" is no longer available`, {
@@ -335,14 +333,14 @@ export async function checkout(
   // the other gets a 409 here, triggering its own rollback below.
   try {
     for (const line of lines) {
-      await inventoryClient.reserve(line.skuId, line.quantity, authToken, orderId);
+      await inventoryClient.reserve(line.skuId, line.quantity, orderId);
     }
   } catch (err) {
     // Roll back EVERYTHING reserved so far for this order (never leave a
     // dangling HELD reservation), and cancel the order (soft - keeps the
     // audit trail via order_status_history, never deleted).
     try {
-      await inventoryClient.releaseByOrder(orderId, authToken);
+      await inventoryClient.releaseByOrder(orderId);
     } catch (releaseErr: unknown) {
       // Best-effort: even if the release call itself fails (e.g. inventory
       // briefly unreachable), the order is still cancelled below so it's
@@ -376,7 +374,7 @@ export async function checkout(
   // a checkout failure - so a cart-service outage here must not undo an
   // otherwise-successful order.
   try {
-    await cartClient.convertCart(authToken);
+    await cartClient.convertCart(userId);
   } catch (convertErr: unknown) {
     // eslint-disable-next-line no-console
     console.error('failed to mark cart CONVERTED after successful checkout', convertErr);
@@ -408,9 +406,8 @@ export interface InternalOrderView {
 /**
  * Internal/service lookup (no ownership filter - payment-service calls this
  * to fetch grand_total + userId, then does its own ownership check against
- * the calling user). Protected by requireAuth + a forwarded token for now;
- * a dedicated service-to-service auth mechanism is a documented future
- * improvement (see payment-service's report / README).
+ * the calling user). SERVICE-ONLY (Ch6.5) - gated by `requireServiceAuth`
+ * at the route level, a self-minted service token authenticates the call.
  */
 export async function getInternalOrder(orderId: string): Promise<InternalOrderView> {
   const order = await prisma.order.findFirst({
@@ -448,7 +445,7 @@ export async function getInternalOrder(orderId: string): Promise<InternalOrderVi
  * inventory at all. Idempotent: already-CONFIRMED is a no-op (payment
  * webhooks retry).
  */
-export async function confirmOrder(orderId: string, authToken: string): Promise<void> {
+export async function confirmOrder(orderId: string): Promise<void> {
   const order = await prisma.order.findFirst({ where: { id: orderId, deletedAt: null } });
   if (!order) {
     throw new AppError('NOT_FOUND', 404, 'Order not found');
@@ -460,7 +457,7 @@ export async function confirmOrder(orderId: string, authToken: string): Promise<
     throw new AppError('CONFLICT', 409, `Cannot confirm an order in status ${order.status}`);
   }
 
-  await inventoryClient.commitByOrder(orderId, authToken);
+  await inventoryClient.commitByOrder(orderId);
 
   // Each line's OWN seller_status moves PENDING -> CONFIRMED alongside the
   // order itself (Ch5.2 addition) - this is what makes a line reachable by
@@ -505,7 +502,7 @@ export async function confirmOrder(orderId: string, authToken: string): Promise<
         userId: order.userId,
       });
     }
-    const contact = await authClient.getUserContact(order.userId, authToken);
+    const contact = await authClient.getUserContact(order.userId);
     if (contact.email) {
       await enqueueNotification({
         channel: 'EMAIL',
@@ -533,10 +530,7 @@ export async function confirmOrder(orderId: string, authToken: string): Promise<
  * stock reservations - mirrors `confirmOrder`'s pairing. Idempotent:
  * already-CANCELLED is a no-op.
  */
-export async function cancelOrderForPaymentFailure(
-  orderId: string,
-  authToken: string,
-): Promise<void> {
+export async function cancelOrderForPaymentFailure(orderId: string): Promise<void> {
   const order = await prisma.order.findFirst({ where: { id: orderId, deletedAt: null } });
   if (!order) {
     throw new AppError('NOT_FOUND', 404, 'Order not found');
@@ -548,7 +542,7 @@ export async function cancelOrderForPaymentFailure(
     throw new AppError('CONFLICT', 409, `Cannot cancel an order in status ${order.status}`);
   }
 
-  await inventoryClient.releaseByOrder(orderId, authToken);
+  await inventoryClient.releaseByOrder(orderId);
   await cancelOrder(orderId, 'Payment failed - stock released and order cancelled');
 }
 
@@ -601,9 +595,9 @@ export interface SettleableItemView {
 
 /**
  * Internal, service-to-service read for settlement-service (Ch5.3) -
- * requireAuth + a forwarded token for now, same temporary pattern as every
- * other internal endpoint. Returns every DELIVERED, non-deleted order_item
- * for `sellerId` whose `updatedAt` falls in `[from, to)`.
+ * SERVICE-ONLY (Ch6.5), gated by `requireServiceAuth` at the route level.
+ * Returns every DELIVERED, non-deleted order_item for `sellerId` whose
+ * `updatedAt` falls in `[from, to)`.
  *
  * DELIVERED-detection approximation: `order_item` has no `delivered_at`
  * column (no schema changes in this prompt) - `updated_at` is used as a
@@ -660,11 +654,11 @@ export interface InternalOrderItemView {
 
 /**
  * Internal, service-to-service read for logistics-service (Ch5.4) -
- * requireAuth + a forwarded token for now, same temporary pattern as every
- * other internal endpoint. Includes the order's `userId` (a join) so
- * callers can do their OWN ownership check (e.g. logistics-service's
- * customer tracking endpoint verifying "is this the order's owner")
- * without orders-service needing to know anything about tracking/shipping.
+ * SERVICE-ONLY (Ch6.5), gated by `requireServiceAuth` at the route level.
+ * Includes the order's `userId` (a join) so callers can do their OWN
+ * ownership check (e.g. logistics-service's customer tracking endpoint
+ * verifying "is this the order's owner") without orders-service needing
+ * to know anything about tracking/shipping.
  */
 export async function getInternalOrderItem(orderItemId: string): Promise<InternalOrderItemView> {
   const item = await prisma.orderItem.findFirst({

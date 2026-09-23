@@ -71,6 +71,8 @@ export interface LogisticsServiceConfig {
   serviceHttpTimeoutMs: number;
   adminUserIds: string[];
   defaultShippingProvider: string;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<LogisticsServiceConfig> = Object.freeze({
@@ -89,4 +91,6 @@ export const config: Readonly<LogisticsServiceConfig> = Object.freeze({
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   defaultShippingProvider: parsed.DEFAULT_SHIPPING_PROVIDER,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

@@ -115,12 +115,8 @@ export type ComputeSettlementResult =
  * `rules.commission.defaultPercent` (the PLATFORM default) is only a
  * defensive fallback for the improbable case that field is ever missing.
  */
-async function resolveCommissionRate(
-  sellerId: string,
-  authToken: string,
-  rules: SettlementRules,
-): Promise<string> {
-  const seller = await sellerClient.getActive(sellerId, authToken);
+async function resolveCommissionRate(sellerId: string, rules: SettlementRules): Promise<string> {
+  const seller = await sellerClient.getActive(sellerId);
   return seller.commissionRatePercent || rules.commission.defaultPercent;
 }
 
@@ -152,13 +148,11 @@ export async function computeSettlement(
   sellerId: string,
   periodStart: Date,
   periodEnd: Date,
-  authToken: string,
 ): Promise<ComputeSettlementResult> {
   const settleable = await orderClient.getSettleableItems(
     sellerId,
     periodStart.toISOString(),
     periodEnd.toISOString(),
-    authToken,
   );
 
   if (settleable.length === 0) {
@@ -181,7 +175,7 @@ export async function computeSettlement(
 
   let commission: Money = '0.00' as Money;
   if (rules.commission.enabled) {
-    const rate = await resolveCommissionRate(sellerId, authToken, rules);
+    const rate = await resolveCommissionRate(sellerId, rules);
     commission = percentageOf(gross, rate);
   }
 
@@ -257,12 +251,11 @@ export async function computeSettlement(
 export async function runSettlementForAllSellers(
   periodStart: Date,
   periodEnd: Date,
-  authToken: string,
 ): Promise<ComputeSettlementResult[]> {
-  const sellers = await sellerClient.getActiveList(authToken);
+  const sellers = await sellerClient.getActiveList();
   const results: ComputeSettlementResult[] = [];
   for (const seller of sellers) {
-    results.push(await computeSettlement(seller.sellerId, periodStart, periodEnd, authToken));
+    results.push(await computeSettlement(seller.sellerId, periodStart, periodEnd));
   }
   return results;
 }

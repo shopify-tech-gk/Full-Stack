@@ -125,7 +125,6 @@ const ALLOWED_SHIPMENT_TRANSITIONS: Record<ShipmentStatusValue, ShipmentStatusVa
 async function applyShipmentStatus(
   shipmentId: string,
   nextStatus: ShipmentStatusValue,
-  authToken: string,
   eventLocation?: string,
   occurredAt?: Date,
 ): Promise<ShipmentView> {
@@ -159,8 +158,8 @@ async function applyShipmentStatus(
   });
 
   if (nextStatus === 'DELIVERED') {
-    await orderClient.setSellerItemStatus(shipment.orderItemId, 'DELIVERED', authToken);
-    await enqueueOrderDeliveredNotification(shipment.orderItemId, authToken);
+    await orderClient.setSellerItemStatus(shipment.orderItemId, 'DELIVERED');
+    await enqueueOrderDeliveredNotification(shipment.orderItemId);
   }
 
   return toShipmentView(updated);
@@ -174,13 +173,10 @@ async function applyShipmentStatus(
  * `authClient` (cross-schema isolation - logistics_svc cannot read the
  * auth schema directly).
  */
-async function enqueueOrderDeliveredNotification(
-  orderItemId: string,
-  authToken: string,
-): Promise<void> {
+async function enqueueOrderDeliveredNotification(orderItemId: string): Promise<void> {
   try {
-    const item = await orderClient.getInternalOrderItem(orderItemId, authToken);
-    const orderView = await orderClient.getInternalOrder(item.orderId, authToken);
+    const item = await orderClient.getInternalOrderItem(orderItemId);
+    const orderView = await orderClient.getInternalOrder(item.orderId);
     const customerName = orderView.shippingAddress?.fullName ?? 'there';
     const notifyData = { customerName, orderNumber: orderView.orderNumber };
 
@@ -193,7 +189,7 @@ async function enqueueOrderDeliveredNotification(
         userId: orderView.userId,
       });
     }
-    const contact = await authClient.getUserContact(orderView.userId, authToken);
+    const contact = await authClient.getUserContact(orderView.userId);
     if (contact.email) {
       await enqueueNotification({
         channel: 'EMAIL',
@@ -228,10 +224,9 @@ async function enqueueOrderDeliveredNotification(
  */
 export async function createShipment(
   input: CreateShipmentBody,
-  authToken: string,
   actorSellerId?: string,
 ): Promise<ShipmentView> {
-  const item = await orderClient.getInternalOrderItem(input.orderItemId, authToken);
+  const item = await orderClient.getInternalOrderItem(input.orderItemId);
 
   if (actorSellerId && item.sellerId !== actorSellerId) {
     throw new AppError('NOT_FOUND', 404, 'Order item not found');
@@ -281,7 +276,7 @@ export async function createShipment(
     return shipment;
   });
 
-  await orderClient.setSellerItemStatus(input.orderItemId, 'SHIPPED', authToken);
+  await orderClient.setSellerItemStatus(input.orderItemId, 'SHIPPED');
 
   // Order-shipped notification (Ch6.2, channels WhatsApp+email since
   // Ch6.2b, template names aligned Ch6.2c to the final approved
@@ -292,7 +287,7 @@ export async function createShipment(
   // via authClient - cross-schema isolation, logistics_svc cannot read
   // the auth schema directly) is the second leg.
   try {
-    const orderView = await orderClient.getInternalOrder(item.orderId, authToken);
+    const orderView = await orderClient.getInternalOrder(item.orderId);
     const customerName = orderView.shippingAddress?.fullName ?? 'there';
     const notifyData = {
       customerName,
@@ -309,7 +304,7 @@ export async function createShipment(
         userId: orderView.userId,
       });
     }
-    const contact = await authClient.getUserContact(orderView.userId, authToken);
+    const contact = await authClient.getUserContact(orderView.userId);
     if (contact.email) {
       await enqueueNotification({
         channel: 'EMAIL',
@@ -343,14 +338,13 @@ export async function createShipment(
 export async function addTrackingEvent(
   shipmentId: string,
   input: { status: string; location?: string; occurredAt?: Date },
-  authToken: string,
 ): Promise<ShipmentDetailView> {
   await findActiveShipment(shipmentId);
 
   const mapped = mapTrackingStatus(input.status);
 
   if (mapped) {
-    await applyShipmentStatus(shipmentId, mapped, authToken, input.location, input.occurredAt);
+    await applyShipmentStatus(shipmentId, mapped, input.location, input.occurredAt);
   } else {
     await prisma.trackingEvent.create({
       data: {
@@ -374,14 +368,13 @@ export async function addTrackingEvent(
 export async function updateShipmentStatus(
   shipmentId: string,
   status: ShipmentStatusValue,
-  authToken: string,
 ): Promise<ShipmentView> {
-  return applyShipmentStatus(shipmentId, status, authToken);
+  return applyShipmentStatus(shipmentId, status);
 }
 
 /** Convenience wrapper - "mark this shipment DELIVERED right now". */
-export async function markDelivered(shipmentId: string, authToken: string): Promise<ShipmentView> {
-  return applyShipmentStatus(shipmentId, 'DELIVERED', authToken);
+export async function markDelivered(shipmentId: string): Promise<ShipmentView> {
+  return applyShipmentStatus(shipmentId, 'DELIVERED');
 }
 
 export async function getShipmentByOrderItem(orderItemId: string): Promise<ShipmentView> {

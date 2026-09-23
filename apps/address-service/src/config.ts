@@ -32,6 +32,8 @@ export interface AddressServiceConfig {
   jwtPublicKey: string;
   jwtIssuer: string;
   jwtAudience: string;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<AddressServiceConfig> = Object.freeze({
@@ -44,4 +46,6 @@ export const config: Readonly<AddressServiceConfig> = Object.freeze({
   jwtPublicKey: decodeBase64Pem(parsed.JWT_PUBLIC_KEY),
   jwtIssuer: parsed.JWT_ISSUER,
   jwtAudience: parsed.JWT_AUDIENCE,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

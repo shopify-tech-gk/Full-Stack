@@ -3,7 +3,10 @@ import { createApp } from './app';
 import { config } from './config';
 import { logger } from './logger';
 import { close } from './db';
-import { startInvoiceGenerationWorker, closeInvoiceGenerationWorker } from './invoice/invoice.queue';
+import {
+  startInvoiceGenerationWorker,
+  closeInvoiceGenerationWorker,
+} from './invoice/invoice.queue';
 
 const app = createApp();
 

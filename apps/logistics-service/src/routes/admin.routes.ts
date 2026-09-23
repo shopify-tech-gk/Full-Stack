@@ -13,7 +13,6 @@ import {
 } from '../logistics/logistics.service';
 import { requireAuth } from '../authMiddleware';
 import { requireLogisticsAdmin } from '../logisticsAdmin.middleware';
-import { extractBearerToken } from '../authToken';
 
 export const adminLogisticsRouter: Router = Router();
 
@@ -23,9 +22,8 @@ export const adminLogisticsRouter: Router = Router();
 // rejected promises to the central error handler.
 
 adminLogisticsRouter.post('/shipments', requireAuth, requireLogisticsAdmin, async (req, res) => {
-  const authToken = extractBearerToken(req);
   const body = CreateShipmentBody.parse(req.body);
-  const shipment = await createShipment(body, authToken);
+  const shipment = await createShipment(body);
   res.status(201).json(shipment);
 });
 
@@ -34,10 +32,9 @@ adminLogisticsRouter.patch(
   requireAuth,
   requireLogisticsAdmin,
   async (req, res) => {
-    const authToken = extractBearerToken(req);
     const id = typeof req.params.id === 'string' ? req.params.id : '';
     const body = UpdateShipmentStatusBody.parse(req.body);
-    const shipment = await updateShipmentStatus(id, body.status, authToken);
+    const shipment = await updateShipmentStatus(id, body.status);
     res.status(200).json(shipment);
   },
 );
@@ -47,18 +44,13 @@ adminLogisticsRouter.post(
   requireAuth,
   requireLogisticsAdmin,
   async (req, res) => {
-    const authToken = extractBearerToken(req);
     const id = typeof req.params.id === 'string' ? req.params.id : '';
     const body = AddTrackingEventBody.parse(req.body);
-    const detail = await addTrackingEvent(
-      id,
-      {
-        status: body.status,
-        location: body.location,
-        occurredAt: body.occurredAt ? new Date(body.occurredAt) : undefined,
-      },
-      authToken,
-    );
+    const detail = await addTrackingEvent(id, {
+      status: body.status,
+      location: body.location,
+      occurredAt: body.occurredAt ? new Date(body.occurredAt) : undefined,
+    });
     res.status(200).json(detail);
   },
 );
@@ -68,9 +60,8 @@ adminLogisticsRouter.post(
   requireAuth,
   requireLogisticsAdmin,
   async (req, res) => {
-    const authToken = extractBearerToken(req);
     const id = typeof req.params.id === 'string' ? req.params.id : '';
-    const shipment = await markDelivered(id, authToken);
+    const shipment = await markDelivered(id);
     res.status(200).json(shipment);
   },
 );

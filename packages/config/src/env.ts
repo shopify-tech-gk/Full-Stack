@@ -9,6 +9,12 @@ export const baseEnvSchema = z.object({
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  // Ch6.5: shared symmetric secret for self-minted service-to-service HS256
+  // tokens - DEDICATED, separate from the user-auth RS256 keypair (never
+  // reuse JWT_PRIVATE_KEY/JWT_PUBLIC_KEY here). The SAME value across every
+  // service (a shared internal-network credential, not a per-service key).
+  SERVICE_JWT_SECRET: z.string().min(32),
+  SERVICE_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(300),
 });
 
 /**
@@ -38,6 +44,8 @@ export interface Config {
   databaseUrl: string;
   redisUrl: string;
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 /**
@@ -55,5 +63,7 @@ export function loadConfig(
     databaseUrl: parsed.DATABASE_URL,
     redisUrl: parsed.REDIS_URL,
     logLevel: parsed.LOG_LEVEL,
+    serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+    serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
   });
 }

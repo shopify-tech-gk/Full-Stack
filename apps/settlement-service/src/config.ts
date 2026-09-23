@@ -102,6 +102,8 @@ export interface SettlementServiceConfig {
   tdsEnabled: boolean;
   tdsPercent: string;
   settlementScheduleCron: string;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<SettlementServiceConfig> = Object.freeze({
@@ -125,4 +127,6 @@ export const config: Readonly<SettlementServiceConfig> = Object.freeze({
   tdsEnabled: parsed.TDS_ENABLED,
   tdsPercent: parsed.TDS_PERCENT,
   settlementScheduleCron: parsed.SETTLEMENT_SCHEDULE_CRON,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

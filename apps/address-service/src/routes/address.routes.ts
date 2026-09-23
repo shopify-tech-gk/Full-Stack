@@ -9,7 +9,7 @@ import {
   setDefaultAddress,
   getAddressForOrder,
 } from '../address/address.service';
-import { requireAuth } from '../authMiddleware';
+import { requireAuth, requireServiceAuth } from '../authMiddleware';
 import { requireUserId } from '../authToken';
 
 export const addressRouter: Router = Router();
@@ -19,13 +19,14 @@ export const addressRouter: Router = Router();
 // is always the logged-in user's own; a client-supplied userId is never
 // trusted (there isn't one - it always comes from `req.auth.userId`).
 
-// Internal, service-to-service read (order-service checkout, Ch6.1).
-// Registered BEFORE '/:id' so "internal" is never swallowed as an :id.
-// The caller forwards the end-user's own bearer token (no separate
-// service-token mechanism exists yet, same documented stop-gap as every
-// other internal endpoint in this repo).
-addressRouter.get('/internal/for-order', requireAuth, async (req, res) => {
-  const userId = requireUserId(req);
+// SERVICE-ONLY (Ch6.5) - order-service checkout calls this to validate +
+// snapshot a SPECIFIC user's address. The service token authenticates the
+// CALLER (that it really is order-service); `userId` identifies the
+// SUBJECT, passed explicitly as a query param (no forwarded user token to
+// derive it from anymore). Registered BEFORE '/:id' so "internal" is
+// never swallowed as an :id.
+addressRouter.get('/internal/for-order', requireServiceAuth, async (req, res) => {
+  const userId = typeof req.query.userId === 'string' ? req.query.userId : '';
   const addressId = typeof req.query.addressId === 'string' ? req.query.addressId : '';
   const snapshot = await getAddressForOrder(userId, addressId);
   res.status(200).json(snapshot);

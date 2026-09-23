@@ -27,7 +27,7 @@ import {
   getProductForIndex,
   listProductsForIndex,
 } from '../catalog/catalog.service';
-import { optionalAuth, requireAuth } from '../authMiddleware';
+import { optionalAuth, requireAuth, requireServiceAuth } from '../authMiddleware';
 import { requireCatalogManager } from '../catalogManager.middleware';
 
 export const catalogRouter: Router = Router();
@@ -37,22 +37,18 @@ export const catalogRouter: Router = Router();
 // here, unlike Express 4.
 
 // --- internal indexing endpoints (search-service, Ch6.3) ---
-// Deliberately UNAUTHENTICATED: search-service's queue worker (event-driven
-// reindex) and nightly full-reindex job have no end-user bearer token to
-// forward at all (same documented service-to-service credential gap as
-// settlement-service's scheduler, Ch5.3/6) - requiring auth here would
-// simply make every reindex silently fail. The data exposed (product
-// title/price/category/images, plus DRAFT/ARCHIVED status for products
-// that aren't yet/no-longer publicly listed) is a minor, launch-acceptable
-// disclosure for what is effectively an internal-network endpoint - a real
-// service-to-service credential should gate this once one exists (Ch6/7).
-catalogRouter.get('/internal/products/:id', async (req, res) => {
+// SERVICE-ONLY (Ch6.5) - search-service's queue worker (event-driven
+// reindex) and nightly full-reindex job now mint + attach a short-lived
+// service token (they have no end-user bearer token to forward at all;
+// this is what actually closes that documented gap, replacing the
+// previously-unauthenticated stop-gap).
+catalogRouter.get('/internal/products/:id', requireServiceAuth, async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const product = await getProductForIndex(id);
   res.status(200).json({ product });
 });
 
-catalogRouter.get('/internal/products-for-index', async (req, res) => {
+catalogRouter.get('/internal/products-for-index', requireServiceAuth, async (req, res) => {
   const query = PaginationQuery.parse(req.query);
   const result = await listProductsForIndex(query);
   res.status(200).json(result);

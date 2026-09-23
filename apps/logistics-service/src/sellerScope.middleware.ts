@@ -1,7 +1,7 @@
 import type { Request, RequestHandler } from 'express';
 import { AppError } from '@youmart/errors';
 import { sellerClient } from './serviceClients';
-import { extractBearerToken } from './authToken';
+import { requireUserId } from './authToken';
 
 // Ambient augmentation, same technique @youmart/auth-middleware uses for
 // `req.auth` - makes `req.sellerId` available on Express's Request type.
@@ -26,10 +26,10 @@ declare global {
  * marketplace opens, with no code change needed then.
  */
 export const requireActiveSeller: RequestHandler = (req, _res, next) => {
-  const authToken = extractBearerToken(req);
+  const userId = requireUserId(req);
 
   sellerClient
-    .getByOwnerMe(authToken)
+    .getByOwner(userId)
     .then((identity) => {
       if (!identity.active) {
         next(new AppError('FORBIDDEN', 403, 'seller not active'));

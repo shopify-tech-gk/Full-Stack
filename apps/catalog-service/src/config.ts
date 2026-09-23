@@ -77,6 +77,8 @@ export interface CatalogServiceConfig {
   adminUserIds: string[];
   sellerServiceUrl: string;
   serviceHttpTimeoutMs: number;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<CatalogServiceConfig> = Object.freeze({
@@ -95,4 +97,6 @@ export const config: Readonly<CatalogServiceConfig> = Object.freeze({
   adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

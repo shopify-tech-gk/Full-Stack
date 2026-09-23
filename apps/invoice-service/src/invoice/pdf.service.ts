@@ -120,10 +120,15 @@ export async function renderInvoicePdf(invoiceId: string, data: InvoicePdfData):
     doc.text(`GSTIN: ${data.businessGstin}`);
     doc.moveDown(0.5);
 
-    doc.font('Helvetica-Bold').fontSize(9).text(`Invoice No: ${data.invoiceNumber}`, { continued: true });
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .text(`Invoice No: ${data.invoiceNumber}`, { continued: true });
     doc.text(`      Invoice Date: ${data.invoiceDate.toISOString().slice(0, 10)}`);
     doc.text(`Place of Supply: ${data.placeOfSupply}`);
-    doc.text(`Tax Type: ${data.taxType === 'CGST_SGST' ? 'CGST + SGST (Intra-state)' : 'IGST (Inter-state)'}`);
+    doc.text(
+      `Tax Type: ${data.taxType === 'CGST_SGST' ? 'CGST + SGST (Intra-state)' : 'IGST (Inter-state)'}`,
+    );
     doc.moveDown(0.5);
 
     doc.font('Helvetica-Bold').fontSize(9).text('Bill To:');
@@ -136,7 +141,10 @@ export async function renderInvoicePdf(invoiceId: string, data: InvoicePdfData):
 
     let y = doc.y + 5;
     y = drawLineTableHeader(doc, y);
-    doc.moveTo(40, y - 2).lineTo(560, y - 2).stroke();
+    doc
+      .moveTo(40, y - 2)
+      .lineTo(560, y - 2)
+      .stroke();
     data.lines.forEach((line, index) => {
       y = drawLineRow(doc, y, index, line);
     });
@@ -144,7 +152,10 @@ export async function renderInvoicePdf(invoiceId: string, data: InvoicePdfData):
     y += 10;
 
     doc.font('Helvetica-Bold').fontSize(9);
-    doc.text(`Subtotal (Taxable Value): ${data.subtotalTaxable}`, 350, y, { width: 210, align: 'right' });
+    doc.text(`Subtotal (Taxable Value): ${data.subtotalTaxable}`, 350, y, {
+      width: 210,
+      align: 'right',
+    });
     y += 14;
     if (data.taxType === 'CGST_SGST') {
       doc.text(`CGST: ${data.totalCgst}`, 350, y, { width: 210, align: 'right' });

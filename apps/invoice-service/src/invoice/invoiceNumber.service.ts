@@ -55,7 +55,10 @@ export async function reserveNextInvoiceNumber(financialYear: string): Promise<n
         await prisma.invoiceCounter.create({ data: { financialYear, nextNumber: 2 } });
         return 1;
       } catch (createErr) {
-        if (createErr instanceof Prisma.PrismaClientKnownRequestError && createErr.code === 'P2002') {
+        if (
+          createErr instanceof Prisma.PrismaClientKnownRequestError &&
+          createErr.code === 'P2002'
+        ) {
           // Lost a race to another concurrent first-of-FY request - the row
           // now exists, so the update path is guaranteed to succeed.
           return reserveNextInvoiceNumber(financialYear);

@@ -28,25 +28,6 @@ export interface RazorpayOrderResult {
 }
 
 /**
- * Ephemeral, process-local cache of the end-user's bearer token, keyed by
- * OUR OWN `orderId` (known as soon as the order/ownership checks pass,
- * regardless of whether the Razorpay API call itself succeeds), populated
- * when the Razorpay order is created and consulted later when the webhook
- * (which has NO user/auth context at all - Razorpay calls it, not a
- * logged-in user) needs to call `orderClient.confirmOrder`/`cancelOrder`.
- *
- * This is a deliberate, documented stop-gap: there is no service-to-service
- * auth token system yet (flagged repeatedly across Ch4.4-4.5), and the
- * webhook path has no token to forward at all. Known limitations: (1) lost
- * on process restart; (2) if the access token has expired by the time the
- * webhook arrives (access tokens live 900s), the confirm/cancel call will
- * 401 and the order is left un-confirmed pending manual reconciliation. A
- * real service-to-service credential (e.g. a client-credentials token for
- * inter-service calls) should replace this in a later chapter.
- */
-const pendingAuthTokens = new Map<string, { authToken: string; userId: string }>();
-
-/**
  * Creates (or reuses) a Razorpay order for a PENDING_PAYMENT order.
  * Reusing an existing CREATED payment avoids creating a duplicate Razorpay
  * order on retries/page-refreshes (idempotent-ish, not a full idempotency
@@ -56,9 +37,8 @@ const pendingAuthTokens = new Map<string, { authToken: string; userId: string }>
 export async function createRazorpayOrder(
   userId: string,
   orderId: string,
-  authToken: string,
 ): Promise<RazorpayOrderResult> {
-  const order = await orderClient.getInternalOrder(orderId, authToken);
+  const order = await orderClient.getInternalOrder(orderId);
 
   if (order.userId !== userId) {
     // Never reveal that the order exists but belongs to someone else.
@@ -67,11 +47,6 @@ export async function createRazorpayOrder(
   if (order.status !== 'PENDING_PAYMENT') {
     throw new AppError('CONFLICT', 409, `Cannot pay for an order in status ${order.status}`);
   }
-
-  // Cached as soon as we know the order/ownership checks passed - not
-  // gated on Razorpay itself succeeding, so a retried create-order call or
-  // a transient Razorpay outage doesn't strand the webhook without a token.
-  pendingAuthTokens.set(orderId, { authToken, userId });
 
   const amountPaise = moneyToPaise(order.grandTotal);
 
@@ -378,31 +353,20 @@ export async function handleWebhook(input: HandleWebhookInput): Promise<void> {
     );
   }
 
-  const cached = pendingAuthTokens.get(payment.orderId);
-
   if (payload.event === 'payment.captured') {
     await prisma.payment.update({
       where: { id: payment.id },
       data: { status: 'CAPTURED', razorpayPaymentId: paymentEntity.id },
     });
-    if (cached) {
-      await orderClient.confirmOrder(payment.orderId, cached.authToken);
-    } else {
-      // eslint-disable-next-line no-console
-      console.error(
-        `no cached auth token for order ${payment.orderId} - could not confirm order, needs manual reconciliation`,
-      );
-    }
+    // Ch6.5: order-service's internal endpoints are now SERVICE-ONLY
+    // (requireServiceAuth) - the client mints its own short-lived service
+    // token per call, closing the "webhook has no user token" gap that
+    // previously required caching one (see git history for the old
+    // `pendingAuthTokens` stop-gap this replaced).
+    await orderClient.confirmOrder(payment.orderId);
   } else if (payload.event === 'payment.failed') {
     await prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } });
-    if (cached) {
-      await orderClient.cancelOrder(payment.orderId, cached.authToken);
-    } else {
-      // eslint-disable-next-line no-console
-      console.error(
-        `no cached auth token for order ${payment.orderId} - could not cancel order, needs manual reconciliation`,
-      );
-    }
+    await orderClient.cancelOrder(payment.orderId);
   }
 
   await prisma.paymentWebhookEvent.update({

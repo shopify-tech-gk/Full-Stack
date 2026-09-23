@@ -58,6 +58,8 @@ export interface OrderServiceConfig {
   addressServiceUrl: string;
   authServiceUrl: string;
   serviceHttpTimeoutMs: number;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<OrderServiceConfig> = Object.freeze({
@@ -77,4 +79,6 @@ export const config: Readonly<OrderServiceConfig> = Object.freeze({
   addressServiceUrl: parsed.ADDRESS_SERVICE_URL,
   authServiceUrl: parsed.AUTH_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

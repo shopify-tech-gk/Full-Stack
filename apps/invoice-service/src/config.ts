@@ -86,6 +86,8 @@ export interface InvoiceServiceConfig {
   defaultHsnCode: string | null;
   invoiceNumberPrefix: string;
   invoiceStorageDir: string;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<InvoiceServiceConfig> = Object.freeze({
@@ -114,4 +116,6 @@ export const config: Readonly<InvoiceServiceConfig> = Object.freeze({
   // requires an absolute path, and every other consumer benefits from a
   // single, unambiguous storage location regardless of process cwd.
   invoiceStorageDir: path.resolve(__dirname, '../../..', parsed.INVOICE_STORAGE_DIR),
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

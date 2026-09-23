@@ -1,5 +1,10 @@
 import type { RequestHandler } from 'express';
-import { createAuthMiddleware, type AuthMiddleware } from '@youmart/auth-middleware';
+import {
+  createAuthMiddleware,
+  createServiceAuthMiddleware,
+  type AuthMiddleware,
+  type ServiceAuthMiddleware,
+} from '@youmart/auth-middleware';
 import { config } from './config';
 
 const authMiddleware: AuthMiddleware = createAuthMiddleware({
@@ -10,3 +15,13 @@ const authMiddleware: AuthMiddleware = createAuthMiddleware({
 
 export const requireAuth: RequestHandler = authMiddleware.requireAuth;
 export const optionalAuth: RequestHandler = authMiddleware.optionalAuth;
+
+// Ch6.5 - service-to-service auth (SEPARATE secret/alg from the user RS256
+// keypair above; see @youmart/auth-middleware's serviceAuth.ts doc comment).
+const serviceAuthMiddleware: ServiceAuthMiddleware = createServiceAuthMiddleware({
+  serviceSecret: config.serviceJwtSecret,
+});
+
+export const requireServiceAuth: RequestHandler = serviceAuthMiddleware.requireServiceAuth;
+export const requireServiceOrUser: RequestHandler =
+  serviceAuthMiddleware.requireServiceOrUser(requireAuth);
