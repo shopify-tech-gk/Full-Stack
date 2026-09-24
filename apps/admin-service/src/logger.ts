@@ -5,4 +5,4 @@ import { config } from './config';
 // otherwise the last few lines of the shutdown trace are silently lost.
 const destination = pino.destination({ sync: true });
 
-export const logger = pino({ level: config.logLevel }, destination);
+export const logger = pino({ level: config.logLevel, name: 'admin' }, destination);

@@ -14,6 +14,7 @@
     "@youmart/config": "workspace:*",
     "@youmart/db": "workspace:*",
     "@youmart/errors": "workspace:*",
+    "@youmart/request-context": "workspace:*",
     "@youmart/service-client": "workspace:*",
     "@youmart/notifications-client": "workspace:*",
     "@youmart/invoice-client": "workspace:*",

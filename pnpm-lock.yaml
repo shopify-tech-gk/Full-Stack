@@ -47,6 +47,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
@@ -99,6 +102,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -212,6 +218,9 @@ importers:
       '@youmart/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -270,6 +279,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
@@ -322,6 +334,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/search-reindex-client':
         specifier: workspace:*
         version: link:../../packages/search-reindex-client
@@ -377,6 +392,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -432,6 +450,9 @@ importers:
       '@youmart/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
@@ -496,6 +517,9 @@ importers:
       '@youmart/notifications-client':
         specifier: workspace:*
         version: link:../../packages/notifications-client
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
@@ -548,6 +572,9 @@ importers:
       '@youmart/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -600,6 +627,9 @@ importers:
       '@youmart/notifications-client':
         specifier: workspace:*
         version: link:../../packages/notifications-client
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
@@ -655,6 +685,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
@@ -713,6 +746,9 @@ importers:
       '@youmart/notifications-client':
         specifier: workspace:*
         version: link:../../packages/notifications-client
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
@@ -765,6 +801,9 @@ importers:
       '@youmart/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/search-reindex-client':
         specifier: workspace:*
         version: link:../../packages/search-reindex-client
@@ -820,6 +859,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
@@ -875,6 +917,9 @@ importers:
       '@youmart/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../../packages/request-context
       '@youmart/service-client':
         specifier: workspace:*
         version: link:../../packages/service-client
@@ -1021,6 +1066,16 @@ importers:
         specifier: 4.5.4
         version: 4.5.4
 
+  packages/request-context:
+    dependencies:
+      express:
+        specifier: ^5.0.0
+        version: 5.2.1
+    devDependencies:
+      '@types/express':
+        specifier: 5.0.6
+        version: 5.0.6
+
   packages/search-reindex-client:
     dependencies:
       '@youmart/queue':
@@ -1038,6 +1093,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../errors
+      '@youmart/request-context':
+        specifier: workspace:*
+        version: link:../request-context
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../shared-types

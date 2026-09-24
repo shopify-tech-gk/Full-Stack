@@ -13,6 +13,7 @@
     "@youmart/auth-middleware": "workspace:*",
     "@youmart/config": "workspace:*",
     "@youmart/errors": "workspace:*",
+    "@youmart/request-context": "workspace:*",
     "@youmart/queue": "workspace:*",
     "@youmart/search-reindex-client": "workspace:*",
     "@youmart/service-client": "workspace:*",

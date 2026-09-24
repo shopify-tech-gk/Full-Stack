@@ -11,6 +11,7 @@
   "dependencies": {
     "@youmart/auth-middleware": "workspace:*",
     "@youmart/errors": "workspace:*",
+    "@youmart/request-context": "workspace:*",
     "@youmart/shared-types": "workspace:*",
     "zod": "4.5.4"
   }

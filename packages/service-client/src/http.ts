@@ -1,5 +1,6 @@
 import { AppError } from '@youmart/errors';
 import { ApiError } from '@youmart/shared-types';
+import { getRequestId } from '@youmart/request-context';
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
@@ -73,6 +74,14 @@ export async function request<T>(options: RequestOptions): Promise<T> {
   }
   if (authToken) {
     requestHeaders['Authorization'] = `Bearer ${authToken}`;
+  }
+  // Ch7.3: propagate the SAME request-id the caller's own inbound request
+  // carried (read from AsyncLocalStorage, set by requestIdMiddleware) so a
+  // customer request stays traceable across gateway -> this service ->
+  // whatever it calls next, purely via logs (no business-logic change).
+  const requestId = getRequestId();
+  if (requestId && !requestHeaders['x-request-id']) {
+    requestHeaders['x-request-id'] = requestId;
   }
 
   let response: Response;

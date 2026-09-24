@@ -15,6 +15,7 @@
     "@youmart/config": "workspace:*",
     "@youmart/db": "workspace:*",
     "@youmart/errors": "workspace:*",
+    "@youmart/request-context": "workspace:*",
     "@youmart/service-client": "workspace:*",
     "@youmart/search-reindex-client": "workspace:*",
     "@youmart/shared-types": "workspace:*",

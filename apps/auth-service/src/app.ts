@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
+import { requestIdMiddleware, genRequestId } from '@youmart/request-context';
 import { AppError, createErrorHandler } from '@youmart/errors';
 import { logger } from './logger';
 import { prisma } from './db';
@@ -23,7 +24,8 @@ export function createApp(): Express {
   app.use(cors()); // dev defaults; prod origins get locked down at deploy
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
-  app.use(pinoHttp({ logger }));
+  app.use(requestIdMiddleware);
+  app.use(pinoHttp({ logger, genReqId: genRequestId }));
 
   // Liveness: must never touch the DB, so the process stays "up" during a
   // transient DB blip instead of getting killed by an orchestrator.
