@@ -21,11 +21,10 @@ const sellerServiceEnvSchema = baseEnvSchema.extend({
   JWT_PUBLIC_KEY: z.string().min(1),
   JWT_ISSUER: z.string().default('youmart-auth'),
   JWT_AUDIENCE: z.string().default('youmart'),
-  // Injected for now because sellers_svc cannot read admin.marketplace_settings
-  // (cross-schema isolation). Ch6's admin service replaces this with a real
-  // source of truth once it exists - today it's always DISABLED (hard-off),
-  // so self-registration is blocked and only the seeded default seller sells.
-  MARKETPLACE_MODE: z.enum(['ENABLED', 'DISABLED']).default('DISABLED'),
+  // Ch6.7b: the hard-off gate now reads marketplace_mode from admin-
+  // service's authoritative settings row (via @youmart/service-client's
+  // settings client, cached) - no longer this service's own env var.
+  ADMIN_SERVICE_URL: z.string().url(),
   // Default commission applied to a newly-registered (non-default) seller,
   // as a "0.00".."100.00" decimal string - Decimal(5,2) at the DB layer.
   DEFAULT_COMMISSION_PERCENT: z
@@ -55,7 +54,7 @@ export interface SellerServiceConfig {
   jwtPublicKey: string;
   jwtIssuer: string;
   jwtAudience: string;
-  marketplaceMode: 'ENABLED' | 'DISABLED';
+  adminServiceUrl: string;
   defaultCommissionPercent: string;
   bankAccountHashSecret: string;
   serviceJwtSecret: string;
@@ -72,7 +71,7 @@ export const config: Readonly<SellerServiceConfig> = Object.freeze({
   jwtPublicKey: decodeBase64Pem(parsed.JWT_PUBLIC_KEY),
   jwtIssuer: parsed.JWT_ISSUER,
   jwtAudience: parsed.JWT_AUDIENCE,
-  marketplaceMode: parsed.MARKETPLACE_MODE,
+  adminServiceUrl: parsed.ADMIN_SERVICE_URL,
   defaultCommissionPercent: parsed.DEFAULT_COMMISSION_PERCENT,
   bankAccountHashSecret: parsed.BANK_ACCOUNT_HASH_SECRET,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,

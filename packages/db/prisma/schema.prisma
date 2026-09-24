@@ -124,14 +124,23 @@ model RolePermission {
   @@schema("admin")
 }
 
-/// Single-row config table; governs multivendor on/off. DISABLED = hard-off
-/// (sellers cannot register). This is the platform's chosen default.
+/// Single-row config table; governs multivendor on/off AND the platform's
+/// commission/TCS/TDS rules (Ch6.7b) - ONE settings row is the single
+/// source of truth every service reads (cached) instead of its own env
+/// copy. DISABLED = hard-off (sellers cannot register). This is the
+/// platform's chosen default.
 model MarketplaceSettings {
-  id              String          @id @default(uuid(7))
-  marketplaceMode MarketplaceMode @default(DISABLED) @map("marketplace_mode")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
-  deletedAt       DateTime?       @map("deleted_at")
+  id                       String          @id @default(uuid(7))
+  marketplaceMode          MarketplaceMode @default(DISABLED) @map("marketplace_mode")
+  commissionEnabled        Boolean         @default(true) @map("commission_enabled")
+  commissionDefaultPercent Decimal         @default(10.00) @db.Decimal(5, 2) @map("commission_default_percent")
+  tcsEnabled               Boolean         @default(true) @map("tcs_enabled")
+  tcsPercent               Decimal         @default(1.00) @db.Decimal(5, 2) @map("tcs_percent")
+  tdsEnabled               Boolean         @default(false) @map("tds_enabled")
+  tdsPercent               Decimal         @default(0.00) @db.Decimal(5, 2) @map("tds_percent")
+  createdAt                DateTime        @default(now()) @map("created_at")
+  updatedAt                DateTime        @updatedAt @map("updated_at")
+  deletedAt                DateTime?       @map("deleted_at")
 
   @@map("marketplace_settings")
   @@schema("admin")

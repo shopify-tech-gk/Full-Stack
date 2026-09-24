@@ -817,6 +817,9 @@ importers:
       '@youmart/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@youmart/service-client':
+        specifier: workspace:*
+        version: link:../../packages/service-client
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types

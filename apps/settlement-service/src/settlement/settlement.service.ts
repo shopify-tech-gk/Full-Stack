@@ -3,8 +3,7 @@ import type { Money } from '@youmart/shared-types';
 import { add, subtract, sum, percentageOf, compare } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
 import { prisma } from '../db';
-import { config } from '../config';
-import { orderClient, sellerClient } from '../serviceClients';
+import { orderClient, sellerClient, settingsClient } from '../serviceClients';
 import { logger } from '../logger';
 
 function decimalToMoney(value: Prisma.Decimal): Money {
@@ -81,22 +80,28 @@ export interface SettlementRules {
 }
 
 /**
- * Returns the CURRENT settlement rule settings. Env-backed today (a
- * TEMPORARY source, same pattern as MARKETPLACE_MODE) - Ch6's admin
- * dashboard is expected to replace the BODY of this function with a real
- * settings-table lookup (+ a toggle UI) WITHOUT changing this shape or any
- * of computeSettlement's usage of it. Routing every rule read through this
- * one function (instead of scattering `config.x` reads through the engine)
- * is what makes that swap a one-function change later.
+ * Returns the CURRENT settlement rule settings - Ch6.7b: reads from
+ * admin-service's authoritative platform settings row via
+ * `settingsClient` (cached client-side, default 30s TTL - see
+ * `createSettingsClient`'s doc comment). Routing every rule read through
+ * this one function (instead of scattering `config.x` reads through the
+ * engine) is what made THIS swap (env -> real settings service) a
+ * one-function change with zero edits to `computeSettlement`'s call site.
+ *
+ * FAIL-CLOSED: if admin-service is unreachable AND the client has no
+ * cached value at all (first call ever, or a very long outage past the
+ * TTL with zero prior successful fetches), this THROWS rather than
+ * guessing a commission/TCS/TDS rate - a settlement run must never
+ * silently use a wrong/stale-beyond-recovery rate. The caller (the manual
+ * `/run` endpoint and the scheduled job) surfaces that failure instead of
+ * settling money at an unknown rate.
  */
-export function getSettlementRules(): SettlementRules {
+export async function getSettlementRules(): Promise<SettlementRules> {
+  const settings = await settingsClient.getSettings();
   return {
-    commission: {
-      enabled: config.commissionEnabled,
-      defaultPercent: config.commissionDefaultPercent,
-    },
-    tcs: { enabled: config.tcsEnabled, percent: config.tcsPercent },
-    tds: { enabled: config.tdsEnabled, percent: config.tdsPercent },
+    commission: settings.commission,
+    tcs: settings.tcs,
+    tds: settings.tds,
   };
 }
 
@@ -171,7 +176,7 @@ export async function computeSettlement(
   }
 
   const gross = sum(unsettled.map((item) => item.lineTotal));
-  const rules = getSettlementRules();
+  const rules = await getSettlementRules();
 
   let commission: Money = '0.00' as Money;
   if (rules.commission.enabled) {

@@ -8,6 +8,8 @@ import { prisma } from './db';
 import { config } from './config';
 import { authRouter } from './routes/auth.routes';
 import { adminManagementRouter } from './routes/admin.routes';
+import { settingsRouter } from './routes/settings.routes';
+import { internalSettingsRouter } from './routes/internal.routes';
 
 /**
  * Builds the Express app without listening - mirrors the template every
@@ -46,6 +48,8 @@ export function createApp(): Express {
 
   app.use('/admin', authRouter);
   app.use('/admin/admins', adminManagementRouter);
+  app.use('/admin/settings', settingsRouter);
+  app.use('/admin/internal', internalSettingsRouter);
 
   app.use((_req, _res, next) => {
     next(new AppError('NOT_FOUND', 404, 'Route not found'));

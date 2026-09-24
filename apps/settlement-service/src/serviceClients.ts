@@ -1,6 +1,7 @@
 import {
   createOrderClient,
   createSellerClient,
+  createSettingsClient,
   type ServiceAuthOptions,
 } from '@youmart/service-client';
 import { config } from './config';
@@ -27,6 +28,14 @@ export const orderClient = createOrderClient({
 
 export const sellerClient = createSellerClient({
   baseUrl: config.sellerServiceUrl,
+  timeoutMs: config.serviceHttpTimeoutMs,
+  serviceAuth,
+});
+
+// Ch6.7b - commission/TCS/TDS rules (getSettlementRules()) now come from
+// here instead of env - cached client-side (default 30s TTL).
+export const settingsClient = createSettingsClient({
+  baseUrl: config.adminServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
   serviceAuth,
 });

@@ -33,10 +33,6 @@ const catalogServiceEnvSchema = baseEnvSchema.extend({
   // injected via env rather than looked up - looked up once via the owner
   // role, see apps/catalog-service/README.md.
   DEFAULT_SELLER_ID: z.string().uuid(),
-  // Injected for now because catalog_svc cannot read admin.marketplace_settings.
-  // Ch6 replaces this with a real lookup/cache once the admin schema and
-  // seller registration exist - today it's always DISABLED (hard-off).
-  MARKETPLACE_MODE: z.enum(['ENABLED', 'DISABLED']).default('DISABLED'),
   // catalog_svc cannot read the sellers schema (cross-schema isolation) -
   // "is the caller an active seller, and which one" is resolved over HTTP
   // against seller-service (Ch5.2's seller-scoped product endpoints).
@@ -62,7 +58,6 @@ export interface CatalogServiceConfig {
   jwtAudience: string;
   cdnBaseUrl: string;
   defaultSellerId: string;
-  marketplaceMode: 'ENABLED' | 'DISABLED';
   sellerServiceUrl: string;
   serviceHttpTimeoutMs: number;
   serviceJwtSecret: string;
@@ -81,7 +76,6 @@ export const config: Readonly<CatalogServiceConfig> = Object.freeze({
   jwtAudience: parsed.JWT_AUDIENCE,
   cdnBaseUrl: parsed.CDN_BASE_URL,
   defaultSellerId: parsed.DEFAULT_SELLER_ID,
-  marketplaceMode: parsed.MARKETPLACE_MODE,
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
