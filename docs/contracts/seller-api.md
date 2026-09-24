@@ -1,6 +1,7 @@
 # Seller API Contract
 
-**FROZEN as of `chapter-5-complete` (2026-09-21).** This is the stable
+**FROZEN as of `chapter-6-complete` (2026-09-24), originally frozen at
+`chapter-5-complete`.** This is the stable
 surface other services and the frontend build against. Changes after this
 freeze must be additive where possible (new optional fields, new endpoints)
 or require a version bump communicated to all consumers - do not silently
@@ -20,13 +21,19 @@ defaults for unmatched routes / validation failures / internal errors.
 ## The marketplace hard-off gate
 
 Self-registration (`POST /sellers/register`) is gated by
-`assertMarketplaceOpen()` (`marketplace-gate.ts`), driven by the shared
-`MARKETPLACE_MODE` env var (see
-[cross-cutting-notes.md](./cross-cutting-notes.md)). Launch default is
-`DISABLED` (single-vendor) - in that mode the endpoint always returns
-`403 FORBIDDEN` with message `"Seller registration is currently disabled"`,
-verified live: real integration test, `MARKETPLACE_MODE=DISABLED`, real
-token, real `403` response. Admin-driven seller management
+`assertMarketplaceOpen()` (`marketplace-gate.ts`), which reads
+`marketplace_mode` from admin-service's authoritative settings row via
+`@youmart/service-client`'s cached settings client (Ch6.7b - replaces the
+retired `MARKETPLACE_MODE` env var; see
+[admin-api.md](./admin-api.md)/[cross-cutting-notes.md](./cross-cutting-notes.md)).
+Launch default is `DISABLED` (single-vendor) - in that mode the endpoint
+always returns `403 FORBIDDEN` with message `"Seller registration is
+currently disabled"`, verified live multiple times (Ch5, re-confirmed
+Ch6.7b and Ch6.8): real `PATCH /admin/settings` toggle, real token, real
+`403`/`201` responses in both directions, with NO env change or redeploy.
+**Fails CLOSED** (`DISABLED`) if the settings row is truly unreachable and
+no cached value exists - verified live (Ch6.7b). Admin-driven seller
+management
 (approve/reject/suspend/reinstate/KYC) is **not** gated by this toggle - an
 admin can manage any already-existing seller regardless of whether
 self-registration is currently open.
@@ -35,14 +42,16 @@ self-registration is currently open.
 
 A seller is considered **active** (usable to sell - list products, receive
 orders) only when **both**:
+
 - `seller.status === 'APPROVED'`, and
 - `seller.kycStatus === 'VERIFIED'`
 
 This is the single source of truth other services rely on via
 `GET /sellers/internal/:id/active` and `GET /sellers/internal/by-owner/me`
+
 - catalog-service's `requireActiveSeller` middleware and order-service's
-seller-scoped routes both resolve seller identity this way, never by
-trusting a client-supplied `sellerId`.
+  seller-scoped routes both resolve seller identity this way, never by
+  trusting a client-supplied `sellerId`.
 
 ## Endpoints
 
@@ -114,7 +123,12 @@ intentionally public-within-the-platform information, not sensitive).
 
 - **200**:
   ```json
-  { "active": true, "status": "APPROVED", "kycStatus": "VERIFIED", "commissionRatePercent": "10.00" }
+  {
+    "active": true,
+    "status": "APPROVED",
+    "kycStatus": "VERIFIED",
+    "commissionRatePercent": "10.00"
+  }
   ```
 - **404** `NOT_FOUND`: no such seller
 
@@ -138,10 +152,11 @@ is true.
 
 ## Admin endpoints (`/admin/sellers/*`)
 
-Every route requires `requireAuth` + the TEMPORARY `requireSellerAdmin`
-gate (`ADMIN_USER_IDS` allow-list, see
-[cross-cutting-notes.md](./cross-cutting-notes.md)) - **not** the
-marketplace hard-off gate.
+Every route requires `requireAdmin('sellers.approve')` (Ch6.7a real RBAC -
+**DORMANT MULTIVENDOR permission**, granted to `SUPER_ADMIN` only, not
+exercised at single-vendor launch) except the two KYC routes below, which
+require the separate `sellers.kyc` permission - **not** the marketplace
+hard-off gate.
 
 ### `GET /admin/sellers`
 
@@ -181,5 +196,11 @@ override, consulted by settlement-service's rule resolution (see
 
 A real end-to-end run (`chapter-5-complete` closing integration test)
 exercised, with real tokens against live services:
+
 1. Hard-off gate: `MARKETPLACE_MODE=DISABLED` -> `POST /sellers/register` -> real `403 FORBIDDEN`.
 2. Full onboarding with `MARKETPLACE_MODE=ENABLED`: register -> `PENDING`, KYC submit -> `PENDING`, admin approve -> `APPROVED`, admin KYC verify -> `VERIFIED`, `GET /sellers/internal/:id/active` -> `{ active: true }`.
+
+(`MARKETPLACE_MODE` was later retired, Ch6.7b - the SAME toggle behavior
+above now comes from `PATCH /admin/settings {marketplaceMode}`, not an env
+var; re-verified with real requests in the `chapter-6-complete` closing
+integration test.)

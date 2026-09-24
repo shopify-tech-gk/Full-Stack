@@ -1,6 +1,7 @@
 # Settlement API Contract
 
-**FROZEN as of `chapter-5-complete` (2026-09-21).** This is the stable
+**FROZEN as of `chapter-6-complete` (2026-09-24), originally frozen at
+`chapter-5-complete`.** This is the stable
 surface other services and the frontend build against. Changes after this
 freeze must be additive where possible (new optional fields, new endpoints)
 or require a version bump communicated to all consumers - do not silently
@@ -15,16 +16,24 @@ Settlement service (`@youmart/settlement-service`), port **4008** in dev
 
 Same `ApiError` shape as [auth-api.md](./auth-api.md).
 
-## Settlement rules (env-backed today, designed for a future settings table)
+## Settlement rules (Ch6.7b: admin-service's authoritative settings row)
 
-`getSettlementRules()` reads today from env vars:
-- `COMMISSION_ENABLED` / `COMMISSION_DEFAULT_PERCENT` (a per-seller override via `commissionRatePercent`, set by seller-service's `POST /admin/sellers/:id/commission`, takes precedence when present)
-- `TCS_ENABLED` / `TCS_PERCENT`
-- `TDS_ENABLED` / `TDS_PERCENT`
+`getSettlementRules()` reads live from admin-service's platform settings
+row via `@youmart/service-client`'s cached settings client (~30s TTL) -
+replaces the retired `COMMISSION_ENABLED`/`COMMISSION_DEFAULT_PERCENT`/
+`TCS_ENABLED`/`TCS_PERCENT`/`TDS_ENABLED`/`TDS_PERCENT` env vars:
 
-This shape is deliberately designed so a later chapter can swap in a real,
-per-seller/per-period settings table without changing `computeSettlement`'s
-engine - only `getSettlementRules`'s implementation would change.
+- `commission.enabled`/`commission.defaultPercent` (a per-seller override via `commissionRatePercent`, set by seller-service's `POST /admin/sellers/:id/commission`, takes precedence when present)
+- `tcs.enabled`/`tcs.percent`
+- `tds.enabled`/`tds.percent`
+
+**FAIL-CLOSED**: if the settings row is truly unreachable (no cache
+exists), `getSettlementRules()` rethrows rather than guessing a rate - a
+settlement run must never silently use a wrong/stale-beyond-recovery rate.
+Verified live (Ch6.7b): changing `tcsPercent`/`tdsPercent` via
+`PATCH /admin/settings` and re-running a real settlement against real
+pre-existing delivered items produced `tcsAmount`/`tdsAmount` that exactly
+matched the new rates.
 
 ## Exact money math
 
@@ -72,8 +81,9 @@ Same shape as [auth-api.md](./auth-api.md) (`service: "settlement"`;
 
 ### `POST /admin/settlements/run`
 
-Requires `requireAuth` + `requireSettlementAdmin` (`ADMIN_USER_IDS`
-allow-list). Runs settlement for one seller (if `sellerId` given) or every
+Requires `requireAdmin('settlements.manage')` (Ch6.7a real RBAC - separate
+from `settlements.view`, which gates the read-only list/detail endpoints
+below). Runs settlement for one seller (if `sellerId` given) or every
 APPROVED+VERIFIED active seller (if omitted).
 
 Request body: `{ periodStart: string (ISO datetime), periodEnd: string (ISO datetime), sellerId?: string (uuid) }`

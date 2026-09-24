@@ -1,6 +1,7 @@
 # Order API Contract
 
-**FROZEN as of `chapter-4-complete` (2026-09-21).** This is the stable
+**FROZEN as of `chapter-6-complete` (2026-09-24), originally frozen at
+`chapter-4-complete`.** This is the stable
 surface other services and the frontend build against. Changes after this
 freeze must be additive where possible (new optional fields, new endpoints)
 or require a version bump communicated to all consumers - do not silently
@@ -50,7 +51,7 @@ No request body.
 
 **Duplicate-click guard (best-effort, not a full idempotency-key system):**
 if the caller already has a `PENDING_PAYMENT` order created within the last
-30 seconds, checkout returns *that* order instead of creating a new one and
+30 seconds, checkout returns _that_ order instead of creating a new one and
 reserving stock again. This is a documented limitation, not a client-
 supplied idempotency key.
 

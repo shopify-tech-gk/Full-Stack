@@ -1,6 +1,7 @@
 # Catalog API Contract
 
-**FROZEN as of `chapter-4-complete` (2026-09-21).** This is the stable
+**FROZEN as of `chapter-6-complete` (2026-09-24), originally frozen at
+`chapter-4-complete`.** This is the stable
 surface other services and the frontend build against. Changes after this
 freeze must be additive where possible (new optional fields, new endpoints)
 or require a version bump communicated to all consumers - do not silently
@@ -27,9 +28,10 @@ validation failure → `400` `VALIDATION_ERROR` (includes `details: issues[]`).
 Unknown/internal errors → `500` `INTERNAL_ERROR` (generic message in
 production, real message in dev).
 
-See [cross-cutting-notes.md](./cross-cutting-notes.md) for the temporary
-`ADMIN_USER_IDS`/`MARKETPLACE_MODE` authorization model used by the write
-endpoints below.
+See [cross-cutting-notes.md](./cross-cutting-notes.md) for the (now
+RETIRED, Ch6.7a/b) history of the `ADMIN_USER_IDS`/`MARKETPLACE_MODE`
+stop-gaps the write endpoints below used to rely on - they now use real
+RBAC (`requireAdmin('catalog.manage')`).
 
 ## Endpoints
 
@@ -137,11 +139,11 @@ it returns `active: false` so a caller can distinguish "doesn't exist" from
   catalog schema directly.
 - **404** `NOT_FOUND`: SKU doesn't exist or is soft-deleted
 
-### Write endpoints (`requireAuth` + temporary `requireCatalogManager` gate)
+### Write endpoints (`requireAdmin('catalog.manage')`, Ch6.7a real RBAC)
 
-All of the following require a valid bearer token **and** that the token's
-`userId` is listed in `ADMIN_USER_IDS` (see
-[cross-cutting-notes.md](./cross-cutting-notes.md)) - otherwise `403 FORBIDDEN`.
+All of the following require a valid ADMIN RS256 token whose role grants
+the `catalog.manage` permission (see [admin-api.md](./admin-api.md)) -
+otherwise `401`/`403`.
 
 #### `POST /products`
 
