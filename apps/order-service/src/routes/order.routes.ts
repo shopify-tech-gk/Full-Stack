@@ -12,10 +12,11 @@ import {
   getInternalOrderItem,
   setSellerItemStatusInternal,
 } from '../order/order.service';
+import { adminUpdateSellerItemStatus } from '../order/seller-order.service';
 import { SettleableItemsQuery } from '../order/settleable.schema';
 import { SetSellerItemStatusBody } from '../order/item-status.schema';
 import { CheckoutBody } from '../order/checkout.schema';
-import { requireAuth, requireServiceAuth } from '../authMiddleware';
+import { requireAuth, requireServiceAuth, requireAdmin } from '../authMiddleware';
 import { requireUserId } from '../authToken';
 
 export const orderRouter: Router = Router();
@@ -109,6 +110,20 @@ orderRouter.post('/internal/:orderId/cancel', requireServiceAuth, async (req, re
   await cancelOrderForPaymentFailure(orderId);
   res.status(200).json({ cancelled: true });
 });
+
+// Ch7.1 fix: ADMIN-driven CONFIRMED->PACKED (see adminUpdateSellerItemStatus's
+// doc comment - the default seller has no owning user, so this is the ONLY
+// way its items can ever be packed/shipped/delivered/settled).
+orderRouter.patch(
+  '/admin/items/:orderItemId/status',
+  requireAdmin('orders.manage'),
+  async (req, res) => {
+    const orderItemId = typeof req.params.orderItemId === 'string' ? req.params.orderItemId : '';
+    const body = SetSellerItemStatusBody.parse(req.body);
+    const item = await adminUpdateSellerItemStatus(orderItemId, body.status);
+    res.status(200).json(item);
+  },
+);
 
 orderRouter.get('/', requireAuth, async (req, res) => {
   const userId = requireUserId(req);
