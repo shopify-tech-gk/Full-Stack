@@ -48,7 +48,7 @@ async function getOrCreateActiveCart(userId: string) {
  * ONE call per line (N+1). Acceptable for now given small cart sizes; a
  * batch "get many SKUs" endpoint could replace this if carts grow large.
  */
-async function buildCartView(cart: { id: string }, authToken: string): Promise<CartView> {
+async function buildCartView(cart: { id: string }): Promise<CartView> {
   const rows = await prisma.cartItem.findMany({
     where: { cartId: cart.id, deletedAt: null },
     orderBy: { createdAt: 'asc' },
@@ -56,7 +56,7 @@ async function buildCartView(cart: { id: string }, authToken: string): Promise<C
 
   const items: CartLineItem[] = await Promise.all(
     rows.map(async (row) => {
-      const sku = await catalogClient.getSku(row.skuId, authToken);
+      const sku = await catalogClient.getSku(row.skuId);
       const priceSnapshot = decimalToMoney(row.priceSnapshot);
       return {
         cartItemId: row.id,
@@ -77,12 +77,12 @@ async function buildCartView(cart: { id: string }, authToken: string): Promise<C
   return { cartId: cart.id, items, subtotal, itemCount };
 }
 
-export async function getCart(userId: string, authToken: string): Promise<CartView> {
+export async function getCart(userId: string): Promise<CartView> {
   const cart = await findActiveCart(userId);
   if (!cart) {
     return EMPTY_CART;
   }
-  return buildCartView(cart, authToken);
+  return buildCartView(cart);
 }
 
 /**
@@ -92,17 +92,12 @@ export async function getCart(userId: string, authToken: string): Promise<CartVi
  * lock (Ch4.3/4.5). Two users could both pass this check for the last unit;
  * only one of them will actually get it at checkout.
  */
-export async function addItem(
-  userId: string,
-  skuId: string,
-  quantity: number,
-  authToken: string,
-): Promise<CartView> {
+export async function addItem(userId: string, skuId: string, quantity: number): Promise<CartView> {
   if (quantity < 1) {
     throw new AppError('VALIDATION_ERROR', 400, 'quantity must be at least 1');
   }
 
-  const sku = await catalogClient.getSku(skuId, authToken);
+  const sku = await catalogClient.getSku(skuId);
   if (!sku.active) {
     // Product decision (documented in 4.4b report): adding an
     // inactive/unavailable SKU is a 409 CONFLICT, not a 400 - the request
@@ -118,7 +113,7 @@ export async function addItem(
   });
   const requestedTotalQuantity = (existingItem?.quantity ?? 0) + quantity;
 
-  const stock = await inventoryClient.getStock(skuId, authToken);
+  const stock = await inventoryClient.getStock(skuId);
   if (stock.available < requestedTotalQuantity) {
     throw new AppError('CONFLICT', 409, 'Insufficient stock', {
       skuId,
@@ -143,7 +138,7 @@ export async function addItem(
     });
   }
 
-  return buildCartView(cart, authToken);
+  return buildCartView(cart);
 }
 
 async function findOwnedCartItem(userId: string, cartItemId: string) {
@@ -161,7 +156,6 @@ export async function updateItem(
   userId: string,
   cartItemId: string,
   quantity: number,
-  authToken: string,
 ): Promise<CartView> {
   if (quantity < 1) {
     throw new AppError(
@@ -177,7 +171,7 @@ export async function updateItem(
   }
   const { cart, item } = found;
 
-  const stock = await inventoryClient.getStock(item.skuId, authToken);
+  const stock = await inventoryClient.getStock(item.skuId);
   if (stock.available < quantity) {
     throw new AppError('CONFLICT', 409, 'Insufficient stock', {
       skuId: item.skuId,
@@ -188,14 +182,10 @@ export async function updateItem(
 
   await prisma.cartItem.update({ where: { id: item.id }, data: { quantity } });
 
-  return buildCartView(cart, authToken);
+  return buildCartView(cart);
 }
 
-export async function removeItem(
-  userId: string,
-  cartItemId: string,
-  authToken: string,
-): Promise<CartView> {
+export async function removeItem(userId: string, cartItemId: string): Promise<CartView> {
   const found = await findOwnedCartItem(userId, cartItemId);
   if (!found) {
     throw new AppError('NOT_FOUND', 404, 'Cart item not found');
@@ -204,10 +194,10 @@ export async function removeItem(
 
   await prisma.cartItem.update({ where: { id: item.id }, data: { deletedAt: new Date() } });
 
-  return buildCartView(cart, authToken);
+  return buildCartView(cart);
 }
 
-export async function clearCart(userId: string, authToken: string): Promise<CartView> {
+export async function clearCart(userId: string): Promise<CartView> {
   const cart = await findActiveCart(userId);
   if (!cart) {
     return EMPTY_CART;
@@ -218,7 +208,7 @@ export async function clearCart(userId: string, authToken: string): Promise<Cart
     data: { deletedAt: new Date() },
   });
 
-  return buildCartView(cart, authToken);
+  return buildCartView(cart);
 }
 
 export interface ConvertCartResult {

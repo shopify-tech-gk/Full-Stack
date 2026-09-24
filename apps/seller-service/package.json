@@ -14,6 +14,7 @@
     "@youmart/config": "workspace:*",
     "@youmart/db": "workspace:*",
     "@youmart/errors": "workspace:*",
+    "@youmart/service-client": "workspace:*",
     "@youmart/shared-types": "workspace:*",
     "@youmart/shared-utils": "workspace:*",
     "zod": "4.5.4",

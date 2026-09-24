@@ -1,7 +1,7 @@
 import type { Request, RequestHandler } from 'express';
 import { AppError } from '@youmart/errors';
 import { sellerClient } from './serviceClients';
-import { extractBearerToken } from './authToken';
+import { requireUserId } from './authToken';
 
 // Ambient augmentation, same technique @youmart/auth-middleware uses for
 // `req.auth` - makes `req.sellerId` available on Express's Request type.
@@ -29,12 +29,17 @@ declare global {
  * particular the default seller's, in hard-off mode); this gate is for a
  * seller managing ONLY their own. Real platform-admin RBAC is still Ch6
  * work - this prompt only introduces seller-ownership scoping.
+ *
+ * Ch6.5: `sellerClient.getByOwner` now authenticates the CALL itself with
+ * a self-minted service token; `userId` (this request's OWN verified
+ * user, from `requireAuth`) is passed explicitly as the SUBJECT - no
+ * token forwarding involved.
  */
 export const requireActiveSeller: RequestHandler = (req, _res, next) => {
-  const authToken = extractBearerToken(req);
+  const userId = requireUserId(req);
 
   sellerClient
-    .getByOwnerMe(authToken)
+    .getByOwner(userId)
     .then((identity) => {
       if (!identity.active) {
         next(new AppError('FORBIDDEN', 403, 'seller not active'));

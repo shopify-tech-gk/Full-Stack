@@ -10,10 +10,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@youmart/auth-middleware": "workspace:*",
     "@youmart/config": "workspace:*",
     "@youmart/db": "workspace:*",
     "@youmart/errors": "workspace:*",
     "@youmart/queue": "workspace:*",
+    "@youmart/notifications-client": "workspace:*",
     "@youmart/shared-types": "workspace:*",
     "zod": "4.5.4",
     "express": "5.2.1",

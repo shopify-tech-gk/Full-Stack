@@ -3,7 +3,7 @@ import { AppError } from '@youmart/errors';
 import { getShipmentByOrderItem, getTracking } from '../logistics/logistics.service';
 import { orderClient } from '../serviceClients';
 import { requireAuth } from '../authMiddleware';
-import { extractBearerToken, requireUserId } from '../authToken';
+import { requireUserId } from '../authToken';
 
 export const customerLogisticsRouter: Router = Router();
 
@@ -14,10 +14,9 @@ export const customerLogisticsRouter: Router = Router();
 // from doesn't exist" discipline used everywhere else in this codebase.
 customerLogisticsRouter.get('/order-item/:orderItemId', requireAuth, async (req, res) => {
   const userId = requireUserId(req);
-  const authToken = extractBearerToken(req);
   const orderItemId = typeof req.params.orderItemId === 'string' ? req.params.orderItemId : '';
 
-  const item = await orderClient.getInternalOrderItem(orderItemId, authToken);
+  const item = await orderClient.getInternalOrderItem(orderItemId);
   if (item.userId !== userId) {
     throw new AppError('NOT_FOUND', 404, 'Order item not found');
   }

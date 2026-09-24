@@ -1,5 +1,13 @@
-import { createSellerClient } from '@youmart/service-client';
+import { createSellerClient, type ServiceAuthOptions } from '@youmart/service-client';
 import { config } from './config';
+
+// Ch6.5 - self-minted short-lived service token attached to every internal
+// call below (never a forwarded user token).
+const serviceAuth: ServiceAuthOptions = {
+  callerServiceName: 'catalog-service',
+  serviceSecret: config.serviceJwtSecret,
+  ttlSeconds: config.serviceTokenTtlSeconds,
+};
 
 /**
  * catalog_svc cannot read the sellers schema (cross-schema isolation) -
@@ -8,4 +16,5 @@ import { config } from './config';
 export const sellerClient = createSellerClient({
   baseUrl: config.sellerServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
+  serviceAuth,
 });

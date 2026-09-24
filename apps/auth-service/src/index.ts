@@ -2,13 +2,9 @@ import { createApp } from './app';
 import { config } from './config';
 import { logger } from './logger';
 import { close } from './db';
-import { startOtpSendWorker, closeOtpSendWorker } from './otp/otp.queue';
 import { closeConnection } from '@youmart/queue';
 
 const app = createApp();
-
-startOtpSendWorker();
-logger.info({ queue: 'otp-send' }, 'otp-send worker registered');
 
 const server = app.listen(config.port, () => {
   logger.info(
@@ -34,13 +30,11 @@ function shutdown(signal: string): void {
       logger.info('http server closed');
     }
 
-    // Order matters: stop the worker before closing the shared queue
-    // connection it depends on, then release the db pool.
-    closeOtpSendWorker()
-      .then(() => {
-        logger.info('otp-send worker closed');
-        return closeConnection();
-      })
+    // OTP sending is now notification-service's job (Ch6.2) - auth-service
+    // only ENQUEUES via @youmart/notifications-client, it has no worker of
+    // its own to stop; still closes its own queue connection (used to
+    // enqueue) before the db pool.
+    closeConnection()
       .then(() => {
         logger.info('queue connection closed');
         return close();

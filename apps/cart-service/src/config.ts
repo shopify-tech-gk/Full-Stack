@@ -40,6 +40,8 @@ export interface CartServiceConfig {
   catalogServiceUrl: string;
   inventoryServiceUrl: string;
   serviceHttpTimeoutMs: number;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<CartServiceConfig> = Object.freeze({
@@ -55,4 +57,6 @@ export const config: Readonly<CartServiceConfig> = Object.freeze({
   catalogServiceUrl: parsed.CATALOG_SERVICE_URL,
   inventoryServiceUrl: parsed.INVENTORY_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

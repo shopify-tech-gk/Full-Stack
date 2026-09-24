@@ -20,12 +20,11 @@ const returnsServiceEnvSchema = baseEnvSchema.extend({
   ORDER_SERVICE_URL: z.string().url(),
   PAYMENT_SERVICE_URL: z.string().url(),
   INVENTORY_SERVICE_URL: z.string().url(),
+  // returns_svc cannot read the auth schema either (cross-schema
+  // isolation) - resolving the buyer's email for the refund-processed
+  // notification (Ch6.2c) goes over HTTP too.
+  AUTH_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
-  // TEMPORARY dev-only admin authorization gate for the return-management
-  // endpoints - same pattern (and, in dev, the same list) as every other
-  // service's ADMIN_USER_IDS. For launch (single-vendor), admin handles
-  // every return - see returns.service.ts's seller-side foundation note.
-  ADMIN_USER_IDS: z.string().default(''),
   // A DELIVERED item is returnable only within this many days of delivery
   // (delivered timestamp approximated by order_item.updated_at, same
   // proxy used by settlement-service's DELIVERED-detection, Ch5.3).
@@ -36,13 +35,6 @@ const parsed = loadConfigWith(returnsServiceEnvSchema);
 
 function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
-}
-
-function parseAdminUserIds(value: string): string[] {
-  return value
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
 }
 
 export interface ReturnsServiceConfig {
@@ -58,9 +50,11 @@ export interface ReturnsServiceConfig {
   orderServiceUrl: string;
   paymentServiceUrl: string;
   inventoryServiceUrl: string;
+  authServiceUrl: string;
   serviceHttpTimeoutMs: number;
-  adminUserIds: string[];
   returnWindowDays: number;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<ReturnsServiceConfig> = Object.freeze({
@@ -76,7 +70,9 @@ export const config: Readonly<ReturnsServiceConfig> = Object.freeze({
   orderServiceUrl: parsed.ORDER_SERVICE_URL,
   paymentServiceUrl: parsed.PAYMENT_SERVICE_URL,
   inventoryServiceUrl: parsed.INVENTORY_SERVICE_URL,
+  authServiceUrl: parsed.AUTH_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
-  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
   returnWindowDays: parsed.RETURN_WINDOW_DAYS,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

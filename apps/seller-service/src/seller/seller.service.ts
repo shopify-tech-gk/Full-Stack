@@ -99,7 +99,7 @@ export async function registerSeller(
   userId: string,
   input: RegisterSellerBody,
 ): Promise<SellerView> {
-  assertMarketplaceOpen();
+  await assertMarketplaceOpen();
 
   const existingByOwner = await findActiveSellerByOwner(userId);
   if (existingByOwner) {

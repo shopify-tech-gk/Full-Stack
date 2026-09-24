@@ -1,7 +1,8 @@
 import { AppError } from '@youmart/errors';
+import { enqueueNotification } from '@youmart/notifications-client';
 import { prisma } from '../db';
 import { config } from '../config';
-import { orderClient } from '../serviceClients';
+import { orderClient, authClient } from '../serviceClients';
 import { getProvider } from '../providers/registry';
 import type { FulfillmentMode } from '../providers/provider.interface';
 import type { CreateShipmentBody } from './logistics.schema';
@@ -124,7 +125,6 @@ const ALLOWED_SHIPMENT_TRANSITIONS: Record<ShipmentStatusValue, ShipmentStatusVa
 async function applyShipmentStatus(
   shipmentId: string,
   nextStatus: ShipmentStatusValue,
-  authToken: string,
   eventLocation?: string,
   occurredAt?: Date,
 ): Promise<ShipmentView> {
@@ -158,10 +158,51 @@ async function applyShipmentStatus(
   });
 
   if (nextStatus === 'DELIVERED') {
-    await orderClient.setSellerItemStatus(shipment.orderItemId, 'DELIVERED', authToken);
+    await orderClient.setSellerItemStatus(shipment.orderItemId, 'DELIVERED');
+    await enqueueOrderDeliveredNotification(shipment.orderItemId);
   }
 
   return toShipmentView(updated);
+}
+
+/**
+ * Order-delivered notification (Ch6.2c) - BEST-EFFORT, NEVER blocks or
+ * fails the DELIVERED transition itself. Resolves `orderNumber` and
+ * `customerName` (from the order's own snapshotted ship_full_name, Ch6.1)
+ * via `orderClient.getInternalOrder`, and the buyer's email via
+ * `authClient` (cross-schema isolation - logistics_svc cannot read the
+ * auth schema directly).
+ */
+async function enqueueOrderDeliveredNotification(orderItemId: string): Promise<void> {
+  try {
+    const item = await orderClient.getInternalOrderItem(orderItemId);
+    const orderView = await orderClient.getInternalOrder(item.orderId);
+    const customerName = orderView.shippingAddress?.fullName ?? 'there';
+    const notifyData = { customerName, orderNumber: orderView.orderNumber };
+
+    if (orderView.shippingAddress?.phone) {
+      await enqueueNotification({
+        channel: 'WHATSAPP',
+        to: orderView.shippingAddress.phone,
+        templateKey: 'ORDER_DELIVERED',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+    const contact = await authClient.getUserContact(orderView.userId);
+    if (contact.email) {
+      await enqueueNotification({
+        channel: 'EMAIL',
+        to: contact.email,
+        templateKey: 'ORDER_DELIVERED',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+  } catch (notifyErr: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('failed to enqueue order-delivered notification(s)', notifyErr);
+  }
 }
 
 /**
@@ -183,10 +224,9 @@ async function applyShipmentStatus(
  */
 export async function createShipment(
   input: CreateShipmentBody,
-  authToken: string,
   actorSellerId?: string,
 ): Promise<ShipmentView> {
-  const item = await orderClient.getInternalOrderItem(input.orderItemId, authToken);
+  const item = await orderClient.getInternalOrderItem(input.orderItemId);
 
   if (actorSellerId && item.sellerId !== actorSellerId) {
     throw new AppError('NOT_FOUND', 404, 'Order item not found');
@@ -236,7 +276,48 @@ export async function createShipment(
     return shipment;
   });
 
-  await orderClient.setSellerItemStatus(input.orderItemId, 'SHIPPED', authToken);
+  await orderClient.setSellerItemStatus(input.orderItemId, 'SHIPPED');
+
+  // Order-shipped notification (Ch6.2, channels WhatsApp+email since
+  // Ch6.2b, template names aligned Ch6.2c to the final approved
+  // "youmart_order_shipped") - BEST-EFFORT, NEVER blocks or fails
+  // shipment creation: a notification problem must never undo a real
+  // fulfillment action. `customerName` comes from the order's own
+  // snapshotted ship_full_name (Ch6.1); email (buyer's email, resolved
+  // via authClient - cross-schema isolation, logistics_svc cannot read
+  // the auth schema directly) is the second leg.
+  try {
+    const orderView = await orderClient.getInternalOrder(item.orderId);
+    const customerName = orderView.shippingAddress?.fullName ?? 'there';
+    const notifyData = {
+      customerName,
+      orderNumber: orderView.orderNumber,
+      awb: input.awbNumber ?? providerResult.providerRef ?? 'N/A',
+      carrier: input.carrier ?? 'N/A',
+    };
+    if (orderView.shippingAddress?.phone) {
+      await enqueueNotification({
+        channel: 'WHATSAPP',
+        to: orderView.shippingAddress.phone,
+        templateKey: 'ORDER_SHIPPED',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+    const contact = await authClient.getUserContact(orderView.userId);
+    if (contact.email) {
+      await enqueueNotification({
+        channel: 'EMAIL',
+        to: contact.email,
+        templateKey: 'ORDER_SHIPPED',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+  } catch (notifyErr: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('failed to enqueue order-shipped notification(s)', notifyErr);
+  }
 
   return toShipmentView(created);
 }
@@ -257,14 +338,13 @@ export async function createShipment(
 export async function addTrackingEvent(
   shipmentId: string,
   input: { status: string; location?: string; occurredAt?: Date },
-  authToken: string,
 ): Promise<ShipmentDetailView> {
   await findActiveShipment(shipmentId);
 
   const mapped = mapTrackingStatus(input.status);
 
   if (mapped) {
-    await applyShipmentStatus(shipmentId, mapped, authToken, input.location, input.occurredAt);
+    await applyShipmentStatus(shipmentId, mapped, input.location, input.occurredAt);
   } else {
     await prisma.trackingEvent.create({
       data: {
@@ -288,14 +368,13 @@ export async function addTrackingEvent(
 export async function updateShipmentStatus(
   shipmentId: string,
   status: ShipmentStatusValue,
-  authToken: string,
 ): Promise<ShipmentView> {
-  return applyShipmentStatus(shipmentId, status, authToken);
+  return applyShipmentStatus(shipmentId, status);
 }
 
 /** Convenience wrapper - "mark this shipment DELIVERED right now". */
-export async function markDelivered(shipmentId: string, authToken: string): Promise<ShipmentView> {
-  return applyShipmentStatus(shipmentId, 'DELIVERED', authToken);
+export async function markDelivered(shipmentId: string): Promise<ShipmentView> {
+  return applyShipmentStatus(shipmentId, 'DELIVERED');
 }
 
 export async function getShipmentByOrderItem(orderItemId: string): Promise<ShipmentView> {

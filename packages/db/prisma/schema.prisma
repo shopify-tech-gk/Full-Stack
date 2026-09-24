@@ -6,7 +6,7 @@ generator client {
 // URL now lives in prisma.config.ts (see that file next to this one).
 datasource db {
   provider = "postgresql"
-  schemas  = ["admin", "auth", "sellers", "catalog", "inventory", "cart", "orders", "payments", "logistics", "tracking", "returns", "notifications", "promotions", "reviews", "settlements", "recommendations"]
+  schemas  = ["admin", "auth", "sellers", "catalog", "inventory", "cart", "addresses", "orders", "payments", "logistics", "tracking", "returns", "notifications", "promotions", "reviews", "settlements", "recommendations", "invoices"]
 }
 
 // ---------------------------------------------------------------------------
@@ -23,12 +23,13 @@ datasource db {
 // performance. Look for a "/// enforced via partial unique index" comment on any
 // such field/model.
 //
-// Only the `admin`, `auth`, `sellers`, `catalog`, `inventory`, `cart`, `orders`,
-// `payments`, `logistics`, `tracking`, `returns`, `notifications`,
-// `promotions`, `reviews`, and `settlements` schemas have tables so far.
-// `recommendations` is declared upfront so multiSchema doesn't need
-// reconfiguring later, but stays empty - it belongs to a separate Python
-// recommendation service in a later chapter.
+// Only the `admin`, `auth`, `sellers`, `catalog`, `inventory`, `cart`,
+// `addresses`, `orders`, `payments`, `logistics`, `tracking`, `returns`,
+// `notifications`, `promotions`, `reviews`, and `settlements` schemas have
+// tables so far (`addresses` added Ch6.1 - the first schema addition since
+// the initial Ch2 migrations). `recommendations` is declared upfront so
+// multiSchema doesn't need reconfiguring later, but stays empty - it
+// belongs to a separate Python recommendation service in a later chapter.
 //
 // Cross-schema references (e.g. catalog.Product.sellerId -> sellers.Seller,
 // orders.Order.userId -> auth.User) are SOFT REFERENCES ONLY: a plain indexed
@@ -123,14 +124,23 @@ model RolePermission {
   @@schema("admin")
 }
 
-/// Single-row config table; governs multivendor on/off. DISABLED = hard-off
-/// (sellers cannot register). This is the platform's chosen default.
+/// Single-row config table; governs multivendor on/off AND the platform's
+/// commission/TCS/TDS rules (Ch6.7b) - ONE settings row is the single
+/// source of truth every service reads (cached) instead of its own env
+/// copy. DISABLED = hard-off (sellers cannot register). This is the
+/// platform's chosen default.
 model MarketplaceSettings {
-  id              String          @id @default(uuid(7))
-  marketplaceMode MarketplaceMode @default(DISABLED) @map("marketplace_mode")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
-  deletedAt       DateTime?       @map("deleted_at")
+  id                       String          @id @default(uuid(7))
+  marketplaceMode          MarketplaceMode @default(DISABLED) @map("marketplace_mode")
+  commissionEnabled        Boolean         @default(true) @map("commission_enabled")
+  commissionDefaultPercent Decimal         @default(10.00) @db.Decimal(5, 2) @map("commission_default_percent")
+  tcsEnabled               Boolean         @default(true) @map("tcs_enabled")
+  tcsPercent               Decimal         @default(1.00) @db.Decimal(5, 2) @map("tcs_percent")
+  tdsEnabled               Boolean         @default(false) @map("tds_enabled")
+  tdsPercent               Decimal         @default(0.00) @db.Decimal(5, 2) @map("tds_percent")
+  createdAt                DateTime        @default(now()) @map("created_at")
+  updatedAt                DateTime        @updatedAt @map("updated_at")
+  deletedAt                DateTime?       @map("deleted_at")
 
   @@map("marketplace_settings")
   @@schema("admin")
@@ -362,18 +372,27 @@ model Category {
 /// same-schema relation to Category (a real FK is fine here). `attributes` is
 /// jsonb, holding variable per-category specs (our flexible-attribute approach).
 model Product {
-  id          String        @id @default(uuid(7))
-  title       String
-  slug        String
-  description String?       @db.Text
-  sellerId    String        @map("seller_id")
-  categoryId  String        @map("category_id")
-  category    Category      @relation(fields: [categoryId], references: [id])
-  attributes  Json          @map("attributes")
-  status      ProductStatus @default(DRAFT)
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  deletedAt   DateTime?     @map("deleted_at")
+  id             String        @id @default(uuid(7))
+  title          String
+  slug           String
+  description    String?       @db.Text
+  sellerId       String        @map("seller_id")
+  categoryId     String        @map("category_id")
+  category       Category      @relation(fields: [categoryId], references: [id])
+  attributes     Json          @map("attributes")
+  status         ProductStatus @default(DRAFT)
+  /// GST HSN/SAC code for the tax invoice (Ch6.4) - nullable; invoice-service
+  /// falls back to its configured DEFAULT_HSN_CODE when unset.
+  hsnCode        String?       @map("hsn_code")
+  /// GST rate percent for the tax invoice (Ch6.4), e.g. "18.00" - nullable;
+  /// invoice-service falls back to its configured DEFAULT_GST_RATE_PERCENT
+  /// when unset. A hybrid per-product-with-platform-default design so the
+  /// invoice works for every product day one and gets precise as sellers
+  /// fill in real HSN/rates.
+  gstRatePercent Decimal?      @db.Decimal(5, 2) @map("gst_rate_percent")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  deletedAt      DateTime?     @map("deleted_at")
 
   skus   Sku[]
   images ProductImage[]
@@ -564,17 +583,39 @@ enum OrderItemStatus {
 /// indexed column, no database foreign key. `orderNumber` (human-facing id)
 /// uniqueness is enforced via a partial unique index (WHERE deleted_at IS
 /// NULL), hand-added in migration SQL - not a Prisma @unique.
+///
+/// `ship*` columns (Ch6.1) are a SNAPSHOT of the chosen addresses.Address at
+/// checkout time - deliberately NOT just a foreign key to addresses.address,
+/// so the order preserves the delivery address exactly as it was at
+/// purchase even if the user later edits or deletes that saved address.
+/// `shippingAddressId` is kept alongside purely as a soft-reference
+/// provenance pointer (which saved address this came from) - it is never
+/// read back to re-derive the ship_* fields. All ship_* columns are
+/// nullable at the DB level only because they were added in a later,
+/// additive migration (pre-existing rows have none) - `checkout()` always
+/// populates every one of them for every new order; a shipping address is
+/// mandatory going forward.
 model Order {
-  id            String      @id @default(uuid(7))
-  userId        String      @map("user_id")
-  orderNumber   String      @map("order_number")
-  status        OrderStatus @default(PENDING_PAYMENT)
-  subtotal      Decimal     @db.Decimal(12, 2)
-  shippingTotal Decimal     @default(0.00) @db.Decimal(12, 2) @map("shipping_total")
-  grandTotal    Decimal     @db.Decimal(12, 2) @map("grand_total")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
-  deletedAt     DateTime?   @map("deleted_at")
+  id                String      @id @default(uuid(7))
+  userId            String      @map("user_id")
+  orderNumber       String      @map("order_number")
+  status            OrderStatus @default(PENDING_PAYMENT)
+  subtotal          Decimal     @db.Decimal(12, 2)
+  shippingTotal     Decimal     @default(0.00) @db.Decimal(12, 2) @map("shipping_total")
+  grandTotal        Decimal     @db.Decimal(12, 2) @map("grand_total")
+  shippingAddressId String?     @map("shipping_address_id")
+  shipFullName      String?     @map("ship_full_name")
+  shipPhone         String?     @map("ship_phone")
+  shipLine1         String?     @map("ship_line1")
+  shipLine2         String?     @map("ship_line2")
+  shipLandmark      String?     @map("ship_landmark")
+  shipCity          String?     @map("ship_city")
+  shipState         String?     @map("ship_state")
+  shipPincode       String?     @map("ship_pincode")
+  shipCountry       String?     @map("ship_country")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  deletedAt         DateTime?   @map("deleted_at")
 
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
@@ -632,6 +673,53 @@ model OrderStatusHistory {
   @@index([orderId])
   @@map("order_status_history")
   @@schema("orders")
+}
+
+// ---------------------------------------------------------------------------
+// addresses schema - saved shipping addresses. DATA LAYER ONLY. First
+// schema added since the initial Ch2 migrations (Ch6.1).
+// ---------------------------------------------------------------------------
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+
+  @@schema("addresses")
+}
+
+/// A user's saved shipping address (Amazon/Flipkart style - multiple per
+/// user, one marked default). `userId` is a SOFT reference to auth.user.id
+/// (different Postgres schema) - plain indexed column, no database foreign
+/// key, same isolation model as every other cross-schema reference in this
+/// file. `isDefault` has its own partial unique index guaranteeing at most
+/// one active default address per user (WHERE is_default = true AND
+/// deleted_at IS NULL), hand-added in migration SQL - this is the actual
+/// guarantee against a race producing two defaults; the service layer's
+/// transactional unset-others logic is a courtesy for a clean read path,
+/// not the sole enforcement. `pincode` is validated as a 6-digit Indian
+/// PIN code at the API layer (address.schema.ts) - not enforced by the DB.
+model Address {
+  id          String      @id @default(uuid(7))
+  userId      String      @map("user_id")
+  fullName    String      @map("full_name")
+  phone       String
+  line1       String
+  line2       String?
+  landmark    String?
+  city        String
+  state       String
+  pincode     String
+  country     String      @default("India")
+  addressType AddressType @default(HOME) @map("address_type")
+  isDefault   Boolean     @default(false) @map("is_default")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
+
+  @@index([userId])
+  @@map("address")
+  @@schema("addresses")
 }
 
 // ---------------------------------------------------------------------------
@@ -1001,6 +1089,120 @@ model SettlementLine {
   @@index([orderItemId])
   @@map("settlement_line")
   @@schema("settlements")
+}
+
+// ---------------------------------------------------------------------------
+// invoices schema - GST tax invoices per CONFIRMED order (Ch6.4). DATA LAYER
+// ONLY: no GST calculation/PDF-rendering logic here.
+// ---------------------------------------------------------------------------
+
+enum InvoiceTaxType {
+  CGST_SGST
+  IGST
+
+  @@schema("invoices")
+}
+
+/// A GST-compliant tax invoice for one CONFIRMED order. `orderId` is a SOFT
+/// reference to orders.order.id (different Postgres schema) - plain indexed
+/// column, no database foreign key, and unique (at most one invoice per
+/// order - enforced via a partial unique index, WHERE deleted_at IS NULL,
+/// hand-added in migration SQL). `invoiceNumber` (sequential per financial
+/// year, e.g. "YM/2026-27/00001") uniqueness is likewise enforced via a
+/// partial unique index, not a Prisma @unique - see invoiceNumber.service.ts
+/// for the concurrency-safe generator; this index is only the DB-level
+/// backstop. Buyer/business fields are a SNAPSHOT captured at generation
+/// time (same principle as the order's ship_* address snapshot, Ch6.1) so a
+/// later config/address change never alters an already-issued invoice.
+model Invoice {
+  id                String         @id @default(uuid(7))
+  orderId           String         @map("order_id")
+  /// SOFT reference to auth.user.id - the order's OWN buyer, denormalized
+  /// onto the invoice so invoice-service can enforce "download YOUR OWN
+  /// order's invoice only" (404 otherwise) purely within its own schema,
+  /// with no per-request round trip to order-service.
+  userId            String         @map("user_id")
+  invoiceNumber     String         @map("invoice_number")
+  invoiceDate       DateTime       @map("invoice_date")
+  buyerName         String         @map("buyer_name")
+  buyerAddress      String         @map("buyer_address") @db.Text
+  buyerState        String         @map("buyer_state")
+  buyerGstin        String?        @map("buyer_gstin")
+  businessName      String         @map("business_name")
+  businessGstin     String         @map("business_gstin")
+  businessAddress   String         @map("business_address") @db.Text
+  businessState     String         @map("business_state")
+  subtotalTaxable   Decimal        @db.Decimal(12, 2) @map("subtotal_taxable")
+  totalCgst         Decimal        @db.Decimal(12, 2) @default(0.00) @map("total_cgst")
+  totalSgst         Decimal        @db.Decimal(12, 2) @default(0.00) @map("total_sgst")
+  totalIgst         Decimal        @db.Decimal(12, 2) @default(0.00) @map("total_igst")
+  totalTax          Decimal        @db.Decimal(12, 2) @map("total_tax")
+  grandTotal        Decimal        @db.Decimal(12, 2) @map("grand_total")
+  pdfPath           String         @map("pdf_path")
+  placeOfSupply     String         @map("place_of_supply")
+  taxType           InvoiceTaxType @map("tax_type")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  deletedAt         DateTime?      @map("deleted_at")
+
+  lines InvoiceLine[]
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([invoiceNumber])
+  @@map("invoice")
+  @@schema("invoices")
+}
+
+/// One line of an Invoice. `invoiceId` is a same-schema relation to Invoice
+/// (a real FK is fine here). `productId`/`skuId` are SOFT references to
+/// catalog.product.id/catalog.sku.id (different Postgres schema) - plain
+/// indexed columns, no database foreign keys. `titleSnapshot` and every
+/// money/rate field are captured at generation time, independent of any
+/// later catalog change.
+model InvoiceLine {
+  id             String    @id @default(uuid(7))
+  invoiceId      String    @map("invoice_id")
+  invoice        Invoice   @relation(fields: [invoiceId], references: [id])
+  productId      String    @map("product_id")
+  skuId          String    @map("sku_id")
+  titleSnapshot  String    @map("title_snapshot")
+  hsnCode        String    @map("hsn_code")
+  quantity       Int
+  unitPrice      Decimal   @db.Decimal(12, 2) @map("unit_price")
+  taxableValue   Decimal   @db.Decimal(12, 2) @map("taxable_value")
+  gstRatePercent Decimal   @db.Decimal(5, 2) @map("gst_rate_percent")
+  cgstAmount     Decimal   @db.Decimal(12, 2) @default(0.00) @map("cgst_amount")
+  sgstAmount     Decimal   @db.Decimal(12, 2) @default(0.00) @map("sgst_amount")
+  igstAmount     Decimal   @db.Decimal(12, 2) @default(0.00) @map("igst_amount")
+  lineTotal      Decimal   @db.Decimal(12, 2) @map("line_total")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  @@index([invoiceId])
+  @@index([productId])
+  @@map("invoice_line")
+  @@schema("invoices")
+}
+
+/// Concurrency-safe atomic counter backing sequential-per-financial-year
+/// invoice numbering (invoiceNumber.service.ts) - ONE row per financial year
+/// (e.g. "2026-27"). Deliberately has NO deletedAt/soft-delete: this is an
+/// internal atomic counter, not a domain record that is ever "deleted" -
+/// the standing soft-delete convention doesn't apply here. `financialYear`
+/// is a real Prisma @unique (safe here precisely because there is no soft
+/// delete to conflict with it), which is what lets a single
+/// `update(...increment...)` call be the atomic operation.
+model InvoiceCounter {
+  id            String   @id @default(uuid(7))
+  financialYear String   @unique @map("financial_year")
+  nextNumber    Int      @default(1) @map("next_number")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("invoice_counter")
+  @@schema("invoices")
 }
 
 

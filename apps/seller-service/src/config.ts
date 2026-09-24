@@ -21,16 +21,10 @@ const sellerServiceEnvSchema = baseEnvSchema.extend({
   JWT_PUBLIC_KEY: z.string().min(1),
   JWT_ISSUER: z.string().default('youmart-auth'),
   JWT_AUDIENCE: z.string().default('youmart'),
-  // Injected for now because sellers_svc cannot read admin.marketplace_settings
-  // (cross-schema isolation). Ch6's admin service replaces this with a real
-  // source of truth once it exists - today it's always DISABLED (hard-off),
-  // so self-registration is blocked and only the seeded default seller sells.
-  MARKETPLACE_MODE: z.enum(['ENABLED', 'DISABLED']).default('DISABLED'),
-  // TEMPORARY dev-only admin authorization gate for the seller-approval
-  // endpoints - the SAME pattern (and, in dev, the same list) as
-  // catalog-service/inventory-service's ADMIN_USER_IDS. There is no
-  // admin/role claim on access tokens yet - real RBAC replaces this in Ch6.
-  ADMIN_USER_IDS: z.string().default(''),
+  // Ch6.7b: the hard-off gate now reads marketplace_mode from admin-
+  // service's authoritative settings row (via @youmart/service-client's
+  // settings client, cached) - no longer this service's own env var.
+  ADMIN_SERVICE_URL: z.string().url(),
   // Default commission applied to a newly-registered (non-default) seller,
   // as a "0.00".."100.00" decimal string - Decimal(5,2) at the DB layer.
   DEFAULT_COMMISSION_PERCENT: z
@@ -50,13 +44,6 @@ function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
 }
 
-function parseAdminUserIds(value: string): string[] {
-  return value
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
-}
-
 export interface SellerServiceConfig {
   nodeEnv: 'development' | 'test' | 'production';
   databaseUrl: string;
@@ -67,10 +54,11 @@ export interface SellerServiceConfig {
   jwtPublicKey: string;
   jwtIssuer: string;
   jwtAudience: string;
-  marketplaceMode: 'ENABLED' | 'DISABLED';
-  adminUserIds: string[];
+  adminServiceUrl: string;
   defaultCommissionPercent: string;
   bankAccountHashSecret: string;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<SellerServiceConfig> = Object.freeze({
@@ -83,8 +71,9 @@ export const config: Readonly<SellerServiceConfig> = Object.freeze({
   jwtPublicKey: decodeBase64Pem(parsed.JWT_PUBLIC_KEY),
   jwtIssuer: parsed.JWT_ISSUER,
   jwtAudience: parsed.JWT_AUDIENCE,
-  marketplaceMode: parsed.MARKETPLACE_MODE,
-  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
+  adminServiceUrl: parsed.ADMIN_SERVICE_URL,
   defaultCommissionPercent: parsed.DEFAULT_COMMISSION_PERCENT,
   bankAccountHashSecret: parsed.BANK_ACCOUNT_HASH_SECRET,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { RegisterSellerBody, SubmitKycBody } from './seller.schema';
 import { registerSeller, getMySeller, submitKyc, getMySellerIdentity } from './seller.service';
 import { isSellerActive, listActiveSellers } from './admin.service';
-import { requireAuth } from '../authMiddleware';
+import { requireAuth, requireServiceAuth } from '../authMiddleware';
 import { requireUserId } from '../authToken';
 
 export const sellerRouter: Router = Router();
@@ -37,29 +37,30 @@ sellerRouter.post('/me/kyc', requireAuth, async (req, res) => {
   res.status(200).json(kyc);
 });
 
-// Internal, service-to-service read (for catalog/order once marketplace
-// mode is enabled) - requireAuth + a forwarded token for now, same
-// temporary pattern as every other service's internal endpoints.
-sellerRouter.get('/internal/:id/active', requireAuth, async (req, res) => {
+// SERVICE-ONLY (Ch6.5) - for catalog/order once marketplace mode is
+// enabled.
+sellerRouter.get('/internal/:id/active', requireServiceAuth, async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const result = await isSellerActive(id);
   res.status(200).json(result);
 });
 
-// Internal, service-to-service read - "who is the CALLER's own seller, and
-// are they active" (Ch5.2). Resolves via the forwarded token's userId, not
-// a path param - a caller can only ever ask about themselves. Backs
-// @youmart/service-client's `sellerClient.getByOwnerMe`.
-sellerRouter.get('/internal/by-owner/me', requireAuth, async (req, res) => {
-  const userId = requireUserId(req);
+// SERVICE-ONLY (Ch6.5) - "who is THIS user's own seller, and are they
+// active". `userId` is now an EXPLICIT path param (Ch6.5's caller-vs-
+// subject design) rather than implied by a forwarded user token - the
+// service token authenticates the CALLER (catalog/order/logistics/
+// settlement-service), `userId` identifies the SUBJECT. Backs
+// @youmart/service-client's `sellerClient.getByOwner`.
+sellerRouter.get('/internal/by-owner/:userId', requireServiceAuth, async (req, res) => {
+  const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
   const identity = await getMySellerIdentity(userId);
   res.status(200).json(identity);
 });
 
-// Internal, service-to-service read - every APPROVED+VERIFIED seller
-// (Ch5.3), used by settlement-service's runSettlementForAllSellers to
-// iterate sellers without ever querying the sellers schema directly.
-sellerRouter.get('/internal/active-list', requireAuth, async (_req, res) => {
+// SERVICE-ONLY (Ch6.5) - every APPROVED+VERIFIED seller (Ch5.3), used by
+// settlement-service's runSettlementForAllSellers to iterate sellers
+// without ever querying the sellers schema directly.
+sellerRouter.get('/internal/active-list', requireServiceAuth, async (_req, res) => {
   const items = await listActiveSellers();
   res.status(200).json({ items });
 });

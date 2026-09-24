@@ -1,6 +1,7 @@
 # Auth API Contract
 
-**FROZEN as of `chapter-3-complete` (2026-09-18).** This is the stable
+**FROZEN as of `chapter-6-complete` (2026-09-24), originally frozen at
+`chapter-3-complete`.** This is the stable
 surface other services and the frontend build against. Changes after this
 freeze must be additive where possible (new optional fields, new endpoints)
 or require a version bump communicated to all consumers - do not silently

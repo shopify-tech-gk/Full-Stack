@@ -1,6 +1,7 @@
 # Returns API Contract
 
-**FROZEN as of `chapter-5-complete` (2026-09-21).** This is the stable
+**FROZEN as of `chapter-6-complete` (2026-09-24), originally frozen at
+`chapter-5-complete`.** This is the stable
 surface other services and the frontend build against. Changes after this
 freeze must be additive where possible (new optional fields, new endpoints)
 or require a version bump communicated to all consumers - do not silently
@@ -23,8 +24,9 @@ REQUESTED -> APPROVED -> PICKED_UP -> REFUNDED
 ```
 
 `BLOCKING_RETURN_STATUSES = ['REQUESTED', 'APPROVED', 'PICKED_UP', 'REFUNDED']`
+
 - a buyer cannot open a second return on the same order_item while one is
-in any of these states; only after a `REJECTED` outcome can they resubmit.
+  in any of these states; only after a `REJECTED` outcome can they resubmit.
 
 ## `requestReturn` guards
 
@@ -57,8 +59,8 @@ Order of operations (deliberate, documented):
    `status: "FAILED", razorpayRefundId: null, blocked: true`.
 2. **Then** `inventoryClient.restock` + `orderClient.setSellerItemStatus('RETURNED')`
    - retryable internal steps, applied **regardless** of whether step 1
-   actually moved money, so the platform-side state (stock, order status)
-   stays consistent even when the payment provider is down.
+     actually moved money, so the platform-side state (stock, order status)
+     stays consistent even when the payment provider is down.
 3. Return status is set to `REFUNDED` last.
 
 Idempotency: rejects (`409 CONFLICT`) if `status` is already `'REFUNDED'` -
@@ -97,7 +99,10 @@ Caller's own returns, paginated / by id.
 
 ### `POST /admin/returns/:id/approve`
 
-Requires `requireAuth` + `requireReturnsAdmin`. Body: `{ refundAmount?: string }` (an empty JSON object `{}` is a valid body - `refundAmount` is optional and defaults to the line total).
+Requires `requireAdmin('returns.manage')` (Ch6.7a real RBAC - workflow
+actions; the separate `process-refund` endpoint below requires
+`refunds.manage` instead, so an OPS admin can run the workflow without
+being able to trigger money movement). Body: `{ refundAmount?: string }` (an empty JSON object `{}` is a valid body - `refundAmount` is optional and defaults to the line total).
 
 - **200**: return detail, `status: "APPROVED"`, `refundAmount` populated
 

@@ -4,12 +4,6 @@ import { baseEnvSchema, loadConfigWith } from '@youmart/config';
 
 process.loadEnvFile(path.resolve(__dirname, '../../../.env'));
 
-// Percent strings, not numbers - fed straight into @youmart/shared-utils'
-// percentageOf(amount, ratePercent), which validates them itself; kept as
-// plain z.string() here (no numeric coercion) so "10.00" round-trips
-// exactly rather than through a JS number.
-const PercentString = z.string().min(1);
-
 const settlementServiceEnvSchema = baseEnvSchema.extend({
   // Named SETTLEMENT_PORT (not PORT): one shared root .env across services.
   SETTLEMENT_PORT: z.coerce.number().int().positive().default(4008),
@@ -25,43 +19,12 @@ const settlementServiceEnvSchema = baseEnvSchema.extend({
   // over HTTP via @youmart/service-client.
   ORDER_SERVICE_URL: z.string().url(),
   SELLER_SERVICE_URL: z.string().url(),
+  // Ch6.7b: commission/TCS/TDS rules now come from admin-service (the
+  // authoritative platform settings row), via @youmart/service-client's
+  // settings client (cached) - no longer this service's own env vars.
+  ADMIN_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
-  // TEMPORARY dev-only admin authorization gate for the settlement-run/list
-  // endpoints - same pattern (and, in dev, the same list) as every other
-  // service's ADMIN_USER_IDS. Real RBAC replaces this in Ch6.
-  ADMIN_USER_IDS: z.string().default(''),
 
-  // --- Settlement rules (Ch5.3) - TEMPORARY env-backed settings. Each
-  // component is an independent enabled/disabled TOGGLE + a PERCENTAGE,
-  // read via getSettlementRules() (settlement.service.ts) rather than
-  // scattered `config.x` reads directly in the engine - this indirection
-  // is what lets Ch6's admin dashboard swap the SOURCE (a real settings
-  // table + toggle UI) for these env vars without changing a single line
-  // of the settlement math itself.
-  //
-  // NOTE on booleans: z.coerce.boolean() is NOT used - it calls JS
-  // `Boolean(value)`, so the STRING "false" would coerce to `true` (any
-  // non-empty string is truthy). Comparing against the literal string
-  // "true" instead (same pattern as auth-service's COOKIE_SECURE).
-  COMMISSION_ENABLED: z
-    .string()
-    .default('true')
-    .transform((v) => v === 'true'),
-  // Applied only when the seller has no resolvable rate of their own -
-  // in practice every seller always has one (default 10.00 at
-  // registration, see 5.1), so this is a defensive platform-wide fallback,
-  // not the normal path.
-  COMMISSION_DEFAULT_PERCENT: PercentString.default('10.00'),
-  TCS_ENABLED: z
-    .string()
-    .default('true')
-    .transform((v) => v === 'true'),
-  TCS_PERCENT: PercentString.default('1.00'),
-  TDS_ENABLED: z
-    .string()
-    .default('false')
-    .transform((v) => v === 'true'),
-  TDS_PERCENT: PercentString.default('0.00'),
   // Cron pattern (BullMQ/node-cron syntax) for the repeatable weekly
   // settlement-run job - config-driven so dev can use a short interval
   // without a code change. Default: every Monday at 00:00.
@@ -72,13 +35,6 @@ const parsed = loadConfigWith(settlementServiceEnvSchema);
 
 function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
-}
-
-function parseAdminUserIds(value: string): string[] {
-  return value
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
 }
 
 export interface SettlementServiceConfig {
@@ -93,15 +49,11 @@ export interface SettlementServiceConfig {
   jwtAudience: string;
   orderServiceUrl: string;
   sellerServiceUrl: string;
+  adminServiceUrl: string;
   serviceHttpTimeoutMs: number;
-  adminUserIds: string[];
-  commissionEnabled: boolean;
-  commissionDefaultPercent: string;
-  tcsEnabled: boolean;
-  tcsPercent: string;
-  tdsEnabled: boolean;
-  tdsPercent: string;
   settlementScheduleCron: string;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<SettlementServiceConfig> = Object.freeze({
@@ -116,13 +68,9 @@ export const config: Readonly<SettlementServiceConfig> = Object.freeze({
   jwtAudience: parsed.JWT_AUDIENCE,
   orderServiceUrl: parsed.ORDER_SERVICE_URL,
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
+  adminServiceUrl: parsed.ADMIN_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
-  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
-  commissionEnabled: parsed.COMMISSION_ENABLED,
-  commissionDefaultPercent: parsed.COMMISSION_DEFAULT_PERCENT,
-  tcsEnabled: parsed.TCS_ENABLED,
-  tcsPercent: parsed.TCS_PERCENT,
-  tdsEnabled: parsed.TDS_ENABLED,
-  tdsPercent: parsed.TDS_PERCENT,
   settlementScheduleCron: parsed.SETTLEMENT_SCHEDULE_CRON,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

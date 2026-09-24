@@ -3,7 +3,7 @@ import { PaginationQuery } from '@youmart/shared-types';
 import { RequestReturnBody } from '../returns/returns.schema';
 import { requestReturn, getMyReturns, getReturn } from '../returns/returns.service';
 import { requireAuth } from '../authMiddleware';
-import { extractBearerToken, requireUserId } from '../authToken';
+import { requireUserId } from '../authToken';
 
 export const customerReturnsRouter: Router = Router();
 
@@ -13,9 +13,8 @@ export const customerReturnsRouter: Router = Router();
 
 customerReturnsRouter.post('/', requireAuth, async (req, res) => {
   const userId = requireUserId(req);
-  const authToken = extractBearerToken(req);
   const body = RequestReturnBody.parse(req.body);
-  const returnRequest = await requestReturn(userId, body, authToken);
+  const returnRequest = await requestReturn(userId, body);
   res.status(201).json(returnRequest);
 });
 

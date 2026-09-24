@@ -1,0 +1,30 @@
+{
+  "name": "@youmart/api-gateway",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@youmart/config": "workspace:*",
+    "@youmart/errors": "workspace:*",
+    "@youmart/shared-types": "workspace:*",
+    "zod": "4.5.4",
+    "express": "5.2.1",
+    "http-proxy-middleware": "3.0.7",
+    "express-rate-limit": "8.7.0",
+    "helmet": "8.3.0",
+    "cors": "2.8.6",
+    "pino": "10.3.1",
+    "pino-http": "11.0.0"
+  },
+  "devDependencies": {
+    "tsx": "4.23.13",
+    "@types/express": "5.0.6",
+    "@types/cors": "2.8.19"
+  }
+}

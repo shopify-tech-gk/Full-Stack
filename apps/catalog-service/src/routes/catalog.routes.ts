@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { PaginationQuery } from '@youmart/shared-types';
 import {
   ListProductsQuery,
   CreateProductBody,
@@ -23,15 +24,34 @@ import {
   softDeleteImage,
   createCategory,
   updateCategory,
+  getProductForIndex,
+  listProductsForIndex,
 } from '../catalog/catalog.service';
-import { optionalAuth, requireAuth } from '../authMiddleware';
-import { requireCatalogManager } from '../catalogManager.middleware';
+import { optionalAuth, requireServiceAuth, requireAdmin } from '../authMiddleware';
 
 export const catalogRouter: Router = Router();
 
 // Express 5 auto-forwards rejected promises from async handlers to the
 // central error handler (app.ts) - no explicit try/catch + next(err) needed
 // here, unlike Express 4.
+
+// --- internal indexing endpoints (search-service, Ch6.3) ---
+// SERVICE-ONLY (Ch6.5) - search-service's queue worker (event-driven
+// reindex) and nightly full-reindex job now mint + attach a short-lived
+// service token (they have no end-user bearer token to forward at all;
+// this is what actually closes that documented gap, replacing the
+// previously-unauthenticated stop-gap).
+catalogRouter.get('/internal/products/:id', requireServiceAuth, async (req, res) => {
+  const id = typeof req.params.id === 'string' ? req.params.id : '';
+  const product = await getProductForIndex(id);
+  res.status(200).json({ product });
+});
+
+catalogRouter.get('/internal/products-for-index', requireServiceAuth, async (req, res) => {
+  const query = PaginationQuery.parse(req.query);
+  const result = await listProductsForIndex(query);
+  res.status(200).json(result);
+});
 
 // --- public read endpoints (unchanged from Ch4.1) ---
 
@@ -63,62 +83,62 @@ catalogRouter.get('/skus/:skuId', optionalAuth, async (req, res) => {
 });
 
 // --- write endpoints (Ch4.2) ---
-// requireAuth + requireCatalogManager (TEMPORARY dev-only gate - replaced by
-// real RBAC in Ch6, see catalogManager.middleware.ts).
+// Ch6.7a: real RBAC - requireAdmin('catalog.manage') replaces the retired
+// ADMIN_USER_IDS gate (requireCatalogManager).
 
-catalogRouter.post('/products', requireAuth, requireCatalogManager, async (req, res) => {
+catalogRouter.post('/products', requireAdmin('catalog.manage'), async (req, res) => {
   const body = CreateProductBody.parse(req.body);
   const product = await createProduct(body);
   res.status(201).json(product);
 });
 
-catalogRouter.patch('/products/:id', requireAuth, requireCatalogManager, async (req, res) => {
+catalogRouter.patch('/products/:id', requireAdmin('catalog.manage'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const body = UpdateProductBody.parse(req.body);
   const product = await updateProduct(id, body);
   res.status(200).json(product);
 });
 
-catalogRouter.delete('/products/:id', requireAuth, requireCatalogManager, async (req, res) => {
+catalogRouter.delete('/products/:id', requireAdmin('catalog.manage'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   await softDeleteProduct(id);
   res.status(204).send();
 });
 
-catalogRouter.post('/products/:id/skus', requireAuth, requireCatalogManager, async (req, res) => {
+catalogRouter.post('/products/:id/skus', requireAdmin('catalog.manage'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const body = AddSkuBody.parse(req.body);
   const product = await addSku(id, body);
   res.status(201).json(product);
 });
 
-catalogRouter.patch('/skus/:id', requireAuth, requireCatalogManager, async (req, res) => {
+catalogRouter.patch('/skus/:id', requireAdmin('catalog.manage'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const body = UpdateSkuBody.parse(req.body);
   const product = await updateSku(id, body);
   res.status(200).json(product);
 });
 
-catalogRouter.post('/products/:id/images', requireAuth, requireCatalogManager, async (req, res) => {
+catalogRouter.post('/products/:id/images', requireAdmin('catalog.manage'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const body = AddImageBody.parse(req.body);
   const product = await addImage(id, body);
   res.status(201).json(product);
 });
 
-catalogRouter.delete('/images/:id', requireAuth, requireCatalogManager, async (req, res) => {
+catalogRouter.delete('/images/:id', requireAdmin('catalog.manage'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   await softDeleteImage(id);
   res.status(204).send();
 });
 
-catalogRouter.post('/categories', requireAuth, requireCatalogManager, async (req, res) => {
+catalogRouter.post('/categories', requireAdmin('catalog.manage'), async (req, res) => {
   const body = CreateCategoryBody.parse(req.body);
   const category = await createCategory(body);
   res.status(201).json(category);
 });
 
-catalogRouter.patch('/categories/:id', requireAuth, requireCatalogManager, async (req, res) => {
+catalogRouter.patch('/categories/:id', requireAdmin('catalog.manage'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const body = UpdateCategoryBody.parse(req.body);
   const category = await updateCategory(id, body);

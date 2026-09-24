@@ -49,6 +49,8 @@ export interface PaymentServiceConfig {
   razorpayKeySecret: string;
   razorpayWebhookSecret: string;
   serviceHttpTimeoutMs: number;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<PaymentServiceConfig> = Object.freeze({
@@ -66,4 +68,6 @@ export const config: Readonly<PaymentServiceConfig> = Object.freeze({
   razorpayKeySecret: parsed.RAZORPAY_KEY_SECRET,
   razorpayWebhookSecret: parsed.RAZORPAY_WEBHOOK_SECRET,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

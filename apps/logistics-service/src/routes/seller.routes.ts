@@ -3,7 +3,6 @@ import { CreateShipmentBody } from '../logistics/logistics.schema';
 import { createShipment } from '../logistics/logistics.service';
 import { requireAuth } from '../authMiddleware';
 import { requireActiveSeller, requireSellerId } from '../sellerScope.middleware';
-import { extractBearerToken } from '../authToken';
 
 export const sellerLogisticsRouter: Router = Router();
 
@@ -15,12 +14,7 @@ export const sellerLogisticsRouter: Router = Router();
 // marketplace opens, sellers can self-fulfill with no code change.
 sellerLogisticsRouter.post('/shipments', requireAuth, requireActiveSeller, async (req, res) => {
   const sellerId = requireSellerId(req);
-  const authToken = extractBearerToken(req);
   const body = CreateShipmentBody.parse(req.body);
-  const shipment = await createShipment(
-    { ...body, fulfillmentMode: 'SELLER' },
-    authToken,
-    sellerId,
-  );
+  const shipment = await createShipment({ ...body, fulfillmentMode: 'SELLER' }, sellerId);
   res.status(201).json(shipment);
 });

@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@youmart/auth-middleware": "workspace:*",
     "@youmart/errors": "workspace:*",
     "@youmart/shared-types": "workspace:*",
     "zod": "4.5.4"

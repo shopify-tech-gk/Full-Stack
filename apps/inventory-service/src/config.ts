@@ -15,22 +15,12 @@ const inventoryServiceEnvSchema = baseEnvSchema.extend({
   JWT_PUBLIC_KEY: z.string().min(1),
   JWT_ISSUER: z.string().default('youmart-auth'),
   JWT_AUDIENCE: z.string().default('youmart'),
-  // TEMPORARY dev-only catalog/inventory-write authorization gate, same
-  // pattern as catalog-service's ADMIN_USER_IDS - replaced by real RBAC in Ch6.
-  ADMIN_USER_IDS: z.string().default(''),
 });
 
 const parsed = loadConfigWith(inventoryServiceEnvSchema);
 
 function decodeBase64Pem(value: string): string {
   return Buffer.from(value, 'base64').toString('utf8');
-}
-
-function parseAdminUserIds(value: string): string[] {
-  return value
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id.length > 0);
 }
 
 export interface InventoryServiceConfig {
@@ -43,7 +33,8 @@ export interface InventoryServiceConfig {
   jwtPublicKey: string;
   jwtIssuer: string;
   jwtAudience: string;
-  adminUserIds: string[];
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<InventoryServiceConfig> = Object.freeze({
@@ -56,5 +47,6 @@ export const config: Readonly<InventoryServiceConfig> = Object.freeze({
   jwtPublicKey: decodeBase64Pem(parsed.JWT_PUBLIC_KEY),
   jwtIssuer: parsed.JWT_ISSUER,
   jwtAudience: parsed.JWT_AUDIENCE,
-  adminUserIds: parseAdminUserIds(parsed.ADMIN_USER_IDS),
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

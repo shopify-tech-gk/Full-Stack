@@ -1,6 +1,7 @@
 # Logistics API Contract
 
-**FROZEN as of `chapter-5-complete` (2026-09-21).** This is the stable
+**FROZEN as of `chapter-6-complete` (2026-09-24), originally frozen at
+`chapter-5-complete`.** This is the stable
 surface other services and the frontend build against. Changes after this
 freeze must be additive where possible (new optional fields, new endpoints)
 or require a version bump communicated to all consumers - do not silently
@@ -86,10 +87,10 @@ Request body: `{ orderItemId: string (uuid), carrier?: string, awbNumber?: strin
 
 ### `POST /logistics/shipments` (admin, `PLATFORM` fulfillment path)
 
-Same shape as the seller route above, gated by `requireLogisticsAdmin`
-(`ADMIN_USER_IDS`) instead of seller ownership - for launch (single-vendor),
-YouMart itself ships every order, so this **is** the launch fulfillment
-path.
+Same shape as the seller route above, gated by
+`requireAdmin('fulfillment.manage')` (Ch6.7a real RBAC) instead of seller
+ownership - for launch (single-vendor), YouMart itself ships every order,
+so this **is** the launch fulfillment path.
 
 ### `PATCH /logistics/shipments/:id/status`
 

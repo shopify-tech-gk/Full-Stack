@@ -2,10 +2,11 @@ import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { compare } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
+import { enqueueNotification } from '@youmart/notifications-client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { logger } from '../logger';
-import { orderClient, paymentClient, inventoryClient } from '../serviceClients';
+import { orderClient, paymentClient, inventoryClient, authClient } from '../serviceClients';
 import type { RefundResult } from '@youmart/service-client';
 import type { RequestReturnBody, ListReturnsQuery } from './returns.schema';
 
@@ -83,12 +84,8 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  * existing active return for this order_item (409 - see
  * BLOCKING_RETURN_STATUSES).
  */
-export async function requestReturn(
-  userId: string,
-  input: RequestReturnBody,
-  authToken: string,
-): Promise<ReturnView> {
-  const item = await orderClient.getInternalOrderItem(input.orderItemId, authToken);
+export async function requestReturn(userId: string, input: RequestReturnBody): Promise<ReturnView> {
+  const item = await orderClient.getInternalOrderItem(input.orderItemId);
 
   if (item.userId !== userId) {
     throw new AppError('NOT_FOUND', 404, 'Order item not found');
@@ -187,14 +184,13 @@ export async function getReturn(userId: string, id: string): Promise<ReturnView>
 export async function approveReturn(
   id: string,
   refundAmountOverride: Money | undefined,
-  authToken: string,
 ): Promise<ReturnView> {
   const existing = await findActiveReturn(id);
   if (existing.status !== 'REQUESTED') {
     throw new AppError('CONFLICT', 409, `Cannot approve a return in status ${existing.status}`);
   }
 
-  const item = await orderClient.getInternalOrderItem(existing.orderItemId, authToken);
+  const item = await orderClient.getInternalOrderItem(existing.orderItemId);
   const refundAmount = refundAmountOverride ?? item.lineTotal;
 
   if (compare(refundAmount, item.lineTotal) > 0) {
@@ -276,7 +272,7 @@ export interface ProcessRefundResult {
  * comment) means re-calling this function again is always safe, even
  * after a real refund already succeeded.
  */
-export async function processRefund(id: string, authToken: string): Promise<ProcessRefundResult> {
+export async function processRefund(id: string): Promise<ProcessRefundResult> {
   const existing = await findActiveReturn(id);
 
   if (existing.status === 'REFUNDED') {
@@ -293,16 +289,11 @@ export async function processRefund(id: string, authToken: string): Promise<Proc
     throw new AppError('CONFLICT', 409, 'This return has no refund amount set');
   }
 
-  const item = await orderClient.getInternalOrderItem(existing.orderItemId, authToken);
+  const item = await orderClient.getInternalOrderItem(existing.orderItemId);
   const refundAmount = decimalToMoney(existing.refundAmount);
 
   // STEP 1 - IRREVERSIBLE EXTERNAL STEP. Never reversed below.
-  const refund = await paymentClient.createRefund(
-    item.orderId,
-    refundAmount,
-    authToken,
-    existing.reason,
-  );
+  const refund = await paymentClient.createRefund(item.orderId, refundAmount, existing.reason);
   if (refund.blocked) {
     logger.warn(
       { returnId: id, orderId: item.orderId },
@@ -311,18 +302,52 @@ export async function processRefund(id: string, authToken: string): Promise<Proc
   }
 
   // STEPS 2+3 - RETRYABLE INTERNAL steps.
-  const restocked = await inventoryClient.restock(
-    item.skuId,
-    item.quantity,
-    authToken,
-    `return ${id}`,
-  );
-  await orderClient.setSellerItemStatus(existing.orderItemId, 'RETURNED', authToken);
+  const restocked = await inventoryClient.restock(item.skuId, item.quantity, `return ${id}`);
+  await orderClient.setSellerItemStatus(existing.orderItemId, 'RETURNED');
 
   const updated = await prisma.returnRequest.update({
     where: { id },
     data: { status: 'REFUNDED' },
   });
+
+  // Refund-processed notification (Ch6.2c) - BEST-EFFORT, NEVER blocks or
+  // fails the refund flow itself (already fully committed above by this
+  // point, including when Razorpay itself was BLOCKED-on-creds).
+  // `customerName` comes from the order's own snapshotted ship_full_name
+  // (Ch6.1); email (buyer's email, resolved via authClient - cross-schema
+  // isolation, returns_svc cannot read the auth schema directly).
+  try {
+    const orderView = await orderClient.getInternalOrder(item.orderId);
+    const customerName = orderView.shippingAddress?.fullName ?? 'there';
+    const notifyData = {
+      customerName,
+      amount: refundAmount,
+      orderNumber: orderView.orderNumber,
+    };
+
+    if (orderView.shippingAddress?.phone) {
+      await enqueueNotification({
+        channel: 'WHATSAPP',
+        to: orderView.shippingAddress.phone,
+        templateKey: 'REFUND_PROCESSED',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+    const contact = await authClient.getUserContact(orderView.userId);
+    if (contact.email) {
+      await enqueueNotification({
+        channel: 'EMAIL',
+        to: contact.email,
+        templateKey: 'REFUND_PROCESSED',
+        data: notifyData,
+        userId: orderView.userId,
+      });
+    }
+  } catch (notifyErr: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('failed to enqueue refund-processed notification(s)', notifyErr);
+  }
 
   return { return: toReturnView(updated), refund, restocked };
 }

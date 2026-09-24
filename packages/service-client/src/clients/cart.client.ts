@@ -1,5 +1,6 @@
 import type { Money } from '@youmart/shared-types';
 import { request } from '../http';
+import { mintCallerServiceToken, type ServiceAuthOptions } from '../serviceAuth';
 
 export interface CartLineItem {
   cartItemId: string;
@@ -22,6 +23,9 @@ export interface CartView {
 export interface CreateCartClientOptions {
   baseUrl: string;
   timeoutMs?: number;
+  /** SERVICE-ONLY endpoints (Ch6.5) - a service token is minted fresh per
+   * call, never a forwarded user token. */
+  serviceAuth: ServiceAuthOptions;
 }
 
 export interface ConvertCartResult {
@@ -30,35 +34,43 @@ export interface ConvertCartResult {
 }
 
 export interface CartClient {
-  /** Backed by `GET /cart/internal/me` (Ch4.5a) - always the caller's OWN
-   * cart, derived from the forwarded `authToken`. */
-  getMyCart(authToken: string): Promise<CartView>;
-  /** Backed by `POST /cart/internal/convert` (Ch4.5b) - marks the caller's
-   * OWN active cart CONVERTED after a successful checkout. A benign no-op
-   * if there's no active cart. */
-  convertCart(authToken: string): Promise<ConvertCartResult>;
+  /** Backed by `GET /cart/internal/me` (Ch4.5a) - a SPECIFIC user's cart.
+   * The service token authenticates the CALLER; `userId` identifies the
+   * SUBJECT (Ch6.5 caller-vs-subject design), passed as an explicit query
+   * param. */
+  getMyCart(userId: string): Promise<CartView>;
+  /** Backed by `POST /cart/internal/convert` (Ch4.5b) - marks `userId`'s
+   * ACTIVE cart CONVERTED after a successful checkout. A benign no-op if
+   * there's no active cart. */
+  convertCart(userId: string): Promise<ConvertCartResult>;
 }
 
 /** `baseUrl` (e.g. `CART_SERVICE_URL`) is injected by the caller - this
  * package never reads `process.env` itself. */
-export function createCartClient({ baseUrl, timeoutMs }: CreateCartClientOptions): CartClient {
+export function createCartClient({
+  baseUrl,
+  timeoutMs,
+  serviceAuth,
+}: CreateCartClientOptions): CartClient {
   return {
-    getMyCart(authToken) {
+    getMyCart(userId) {
+      const query = new URLSearchParams({ userId }).toString();
       return request<CartView>({
         baseUrl,
-        path: '/cart/internal/me',
+        path: `/cart/internal/me?${query}`,
         method: 'GET',
-        authToken,
+        authToken: mintCallerServiceToken(serviceAuth),
         timeoutMs,
       });
     },
 
-    convertCart(authToken) {
+    convertCart(userId) {
       return request<ConvertCartResult>({
         baseUrl,
         path: '/cart/internal/convert',
         method: 'POST',
-        authToken,
+        body: { userId },
+        authToken: mintCallerServiceToken(serviceAuth),
         timeoutMs,
       });
     },
