@@ -21,6 +21,7 @@
     "@youmart/shared-utils": "workspace:*",
     "zod": "4.5.4",
     "express": "5.2.1",
+    "express-rate-limit": "8.7.0",
     "helmet": "8.3.0",
     "cors": "2.8.6",
     "pino": "10.3.1",

@@ -54,6 +54,17 @@ export async function listSellers(query: ListSellersQuery): Promise<PaginatedSel
 }
 
 /**
+ * Ch7.2 hardening: admin previously had NO direct single-seller lookup -
+ * only the list endpoint above (would need a full scan/filter to find one
+ * seller, e.g. the default seller by id). Reuses the same
+ * findActiveSellerById helper as every write op in this file.
+ */
+export async function getSellerById(sellerId: string): Promise<SellerView> {
+  const seller = await findActiveSellerById(sellerId);
+  return toSellerView(seller);
+}
+
+/**
  * APPROVE-VS-KYC RULE (locked, documented): account approval and KYC
  * verification are two INDEPENDENT gates, not a single combined step.
  * `approveSeller` only requires the seller to currently be PENDING - it

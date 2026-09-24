@@ -1,6 +1,7 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { PaginationQuery } from '@youmart/shared-types';
-import { AppError } from '@youmart/errors';
+import { AppError, buildApiError } from '@youmart/errors';
 import {
   checkout,
   getOrder,
@@ -12,7 +13,8 @@ import {
   getInternalOrderItem,
   setSellerItemStatusInternal,
 } from '../order/order.service';
-import { adminUpdateSellerItemStatus } from '../order/seller-order.service';
+import { adminUpdateSellerItemStatus, listSellerItems } from '../order/seller-order.service';
+import { ListSellerItemsQuery } from '../order/seller-order.schema';
 import { SettleableItemsQuery } from '../order/settleable.schema';
 import { SetSellerItemStatusBody } from '../order/item-status.schema';
 import { CheckoutBody } from '../order/checkout.schema';
@@ -25,6 +27,25 @@ export const orderRouter: Router = Router();
 // central error handler (app.ts). Every route requires auth - an order is
 // always the logged-in user's own.
 
+// Ch7.2 hardening: a light PER-USER limit on checkout attempts (on top of
+// the existing 30s double-submit guard in order.service.ts, which is an
+// idempotency measure, not an abuse guard) - keyed by the authenticated
+// userId (never IP, so it can't be defeated/shared by NAT'd users, and
+// can't punish other users behind the same IP). Registered AFTER
+// requireAuth so req.auth.userId is already populated.
+const checkoutRateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.auth?.userId ?? req.ip ?? 'unknown',
+  handler: (_req, res) => {
+    res
+      .status(429)
+      .json(buildApiError('RATE_LIMITED', 'Too many checkout attempts, try again later'));
+  },
+});
+
 // CHECKOUT SECURITY PRINCIPLE (locked): this handler NEVER reads items or
 // prices from req.body - any a client sends here are silently ignored.
 // The cart is read server-side and every price is re-derived from catalog
@@ -34,7 +55,7 @@ export const orderRouter: Router = Router();
 // addresses to ship to. Parsed with safeParse (not .parse()) so ANY
 // validation failure (missing, wrong type, malformed uuid) surfaces as the
 // exact same message, rather than zod's generic "Validation failed".
-orderRouter.post('/checkout', requireAuth, async (req, res) => {
+orderRouter.post('/checkout', requireAuth, checkoutRateLimiter, async (req, res) => {
   const userId = requireUserId(req);
   const parsed = CheckoutBody.safeParse(req.body);
   if (!parsed.success) {
@@ -122,6 +143,23 @@ orderRouter.patch(
     const body = SetSellerItemStatusBody.parse(req.body);
     const item = await adminUpdateSellerItemStatus(orderItemId, body.status);
     res.status(200).json(item);
+  },
+);
+
+// Ch7.2 hardening: admin previously had NO way to VIEW which order items
+// need packing/shipping for a given seller (only the seller-owned
+// GET /orders/seller/items, unreachable for the default seller) - reuses
+// listSellerItems directly (it already takes sellerId as a plain
+// parameter; the seller-owned route just resolves it via
+// requireActiveSeller instead of a path param).
+orderRouter.get(
+  '/admin/sellers/:sellerId/items',
+  requireAdmin('orders.manage'),
+  async (req, res) => {
+    const sellerId = typeof req.params.sellerId === 'string' ? req.params.sellerId : '';
+    const query = ListSellerItemsQuery.parse(req.query);
+    const result = await listSellerItems(sellerId, query);
+    res.status(200).json(result);
   },
 );
 
