@@ -81,13 +81,30 @@ below, minus internal-only fields):
   ],
   "subtotal": "2598.00",
   "shippingTotal": "0.00",
-  "grandTotal": "2598.00"
+  "grandTotal": "2598.00",
+  "shippingAddress": {
+    "addressId": "<uuid>",
+    "fullName": "string",
+    "phone": "string",
+    "line1": "string",
+    "line2": "string | null",
+    "landmark": "string | null",
+    "city": "string",
+    "state": "string",
+    "pincode": "string",
+    "country": "string"
+  }
 }
 ```
 
 Every item carries its own `sellerId` (the multivendor split hook - see
 [cross-cutting-notes.md](./cross-cutting-notes.md)). `shippingTotal` is
 always `"0.00"` today; shipping calculation is a later chapter.
+
+**Ch7.4 correction**: `shippingAddress` was always present in the real
+response (a snapshot of the address used at checkout, per §6.1's
+address-snapshot design) but was missing from this doc until now - added
+here to match reality (no code change; verified live 2026-09-28).
 
 ### `GET /`
 
