@@ -2,3 +2,5 @@ node_modules
 dist
 build
 pnpm-lock.yaml
+# apps/web has its own Next.js ESLint config (run via `pnpm --filter @youmart/web lint`)
+apps/web

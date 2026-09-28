@@ -5,6 +5,8 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+.next/
+out/
 
 # Generated invoice PDFs (dev local storage, Ch6.4) - never committed
 storage/
