@@ -24,6 +24,18 @@ inventoryRouter.get('/:skuId', requireServiceAuth, async (req, res) => {
   res.status(200).json(stock);
 });
 
+// Ch7.2 hardening: admin had no way to VIEW current stock at all before
+// this (only the internal service-only read above, and the admin-gated
+// `/set` write below) - operationally needed to manage the default
+// seller's catalog/inventory end-to-end without a raw DB query. A 2-
+// segment path so it can never collide with the 1-segment `/:skuId` above
+// regardless of registration order.
+inventoryRouter.get('/admin/:skuId', requireAdmin('inventory.manage'), async (req, res) => {
+  const skuId = typeof req.params.skuId === 'string' ? req.params.skuId : '';
+  const stock = await getStock(skuId);
+  res.status(200).json(stock);
+});
+
 // Ch6.7a: real RBAC - requireAdmin('inventory.manage') replaces the
 // retired ADMIN_USER_IDS gate (requireInventoryManager).
 inventoryRouter.post('/:skuId/set', requireAdmin('inventory.manage'), async (req, res) => {

@@ -142,3 +142,46 @@ export async function updateSellerItemStatus(
 
   return toSellerItemView(updated);
 }
+
+/**
+ * ADMIN/PLATFORM counterpart to `updateSellerItemStatus` above - Ch7.1
+ * fix for a real gap the full-system integration test surfaced: the
+ * DEFAULT seller (the platform's own single-vendor store,
+ * `sellers.seller.owner_user_id IS NULL`) has no owning user account, so
+ * NO customer token can ever pass `requireActiveSeller` to move ITS OWN
+ * items CONFIRMED -> PACKED - every one of its orders was permanently
+ * stuck (could never ship/deliver/settle). Same allowed-transition table
+ * as the seller-driven path, but skips the ownership check entirely (an
+ * admin may pack ANY item, not just the default seller's - useful
+ * operationally regardless of whose item it is).
+ */
+export async function adminUpdateSellerItemStatus(
+  orderItemId: string,
+  nextStatus: OrderItemStatusValue,
+): Promise<SellerOrderItemView> {
+  const item = await prisma.orderItem.findFirst({
+    where: { id: orderItemId, deletedAt: null },
+    include: SELLER_ITEM_INCLUDE,
+  });
+
+  if (!item) {
+    throw new AppError('NOT_FOUND', 404, 'Order item not found');
+  }
+
+  const allowed = SELLER_ALLOWED_TRANSITIONS[item.sellerStatus] ?? [];
+  if (!allowed.includes(nextStatus)) {
+    throw new AppError(
+      'CONFLICT',
+      409,
+      `Cannot transition seller_status from ${item.sellerStatus} to ${nextStatus} - only CONFIRMED to PACKED is allowed here`,
+    );
+  }
+
+  const updated = await prisma.orderItem.update({
+    where: { id: orderItemId },
+    data: { sellerStatus: nextStatus },
+    include: SELLER_ITEM_INCLUDE,
+  });
+
+  return toSellerItemView(updated);
+}

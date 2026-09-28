@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ListSellersQuery, RejectBody, SetCommissionBody } from './seller.schema';
 import {
   listSellers,
+  getSellerById,
   approveSeller,
   rejectSeller,
   suspendSeller,
@@ -25,6 +26,16 @@ adminRouter.get('/sellers', requireAdmin('sellers.approve'), async (req, res) =>
   const query = ListSellersQuery.parse(req.query);
   const result = await listSellers(query);
   res.status(200).json(result);
+});
+
+// Ch7.2 hardening: direct single-seller lookup (previously only the list
+// endpoint above existed) - lets admin look up the default seller (or any
+// seller) by id directly, e.g. to check its current commission rate
+// before running a settlement.
+adminRouter.get('/sellers/:id', requireAdmin('sellers.approve'), async (req, res) => {
+  const id = typeof req.params.id === 'string' ? req.params.id : '';
+  const seller = await getSellerById(id);
+  res.status(200).json(seller);
 });
 
 adminRouter.post('/sellers/:id/approve', requireAdmin('sellers.approve'), async (req, res) => {

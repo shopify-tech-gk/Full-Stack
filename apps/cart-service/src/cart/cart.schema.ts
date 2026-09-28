@@ -13,3 +13,11 @@ export const UpdateItemBody = z.object({
   quantity: z.number().int().positive(),
 });
 export type UpdateItemBody = z.infer<typeof UpdateItemBody>;
+
+// Ch7.2 hardening: this was previously read via a bare `typeof` check with
+// no Zod schema - service-only (requireServiceAuth), but still worth
+// validating consistently rather than trusting the caller's shape.
+export const ConvertCartBody = z.object({
+  userId: z.string().uuid(),
+});
+export type ConvertCartBody = z.infer<typeof ConvertCartBody>;
