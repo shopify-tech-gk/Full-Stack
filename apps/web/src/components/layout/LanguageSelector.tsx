@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Caret } from '@/components/ui/Caret';
 import { UkFlag } from '@/components/ui/UkFlag';
 
 // Only English exists today; the menu structure is in place for more languages later.
@@ -41,17 +40,19 @@ export function LanguageSelector() {
         aria-expanded={open}
         aria-label="Language: English"
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-1.5 rounded-[3px] bg-white px-2 py-1 text-[13px] text-brand lg:px-2.5 lg:py-1.5 lg:text-[14px]"
+        className="flex h-[38px] items-center rounded-lang bg-white pl-[10px] pr-[15px] font-ui text-[15px] leading-[25.6px] text-brand"
       >
-        <UkFlag className="h-[13px] w-[22px]" />
-        <span>English</span>
-        <Caret className="h-[5px] w-[8px] text-ink-secondary" />
+        <UkFlag className="h-[18px] w-[24px]" />
+        <span className="ml-[3px]">English</span>
+        <span aria-hidden="true" className="ml-[5px] text-[8px] font-bold text-ink-muted">
+          ▼
+        </span>
       </button>
       {open ? (
         <ul
           role="listbox"
           aria-label="Choose language"
-          className="absolute right-0 z-40 mt-1 min-w-full rounded-[3px] bg-white py-1 shadow-menu"
+          className="absolute right-0 z-[1000] mt-1 min-w-full rounded-lang bg-white py-1 shadow-menu"
         >
           {LANGUAGES.map((language) => (
             <li
@@ -66,9 +67,9 @@ export function LanguageSelector() {
                   setOpen(false);
                 }
               }}
-              className="flex cursor-pointer items-center gap-1.5 px-2.5 py-1.5 text-[13px] text-brand hover:bg-sky-tint"
+              className="flex cursor-pointer items-center gap-[3px] px-[10px] py-1.5 font-ui text-[15px] text-brand hover:bg-page"
             >
-              <UkFlag className="h-[13px] w-[22px]" />
+              <UkFlag className="h-[18px] w-[24px]" />
               {language.label}
             </li>
           ))}

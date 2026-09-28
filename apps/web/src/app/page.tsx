@@ -4,9 +4,9 @@ import { storeCategories } from '@/lib/categories';
 
 export default function HomePage() {
   return (
-    // Mobile shows the banners above the category grid; desktop shows categories first.
-    <div className="flex flex-col bg-sky-tint lg:bg-white">
-      <div className="order-2 lg:order-1">
+    // Live order: banners above the category grid below 1025px; category strip first on desktop.
+    <div className="flex flex-col">
+      <div className="order-2 mt-[27px] lg:order-1 lg:mt-0">
         <CategoryMegaMenu categories={storeCategories} />
       </div>
       <div className="order-1 lg:order-2">

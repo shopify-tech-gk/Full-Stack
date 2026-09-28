@@ -1,27 +1,21 @@
 import type { Metadata, Viewport } from 'next';
-import { Roboto, Roboto_Slab } from 'next/font/google';
+import localFont from 'next/font/local';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { WelcomeBar } from '@/components/layout/WelcomeBar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import './globals.css';
 
-// Next 14's Roboto metadata has no 600 weight; font-semibold (600) resolves to 700.
-const roboto = Roboto({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-roboto',
-  display: 'swap',
-});
-
-const robotoSlab = Roboto_Slab({
-  subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  variable: '--font-roboto-slab',
+// The only webfont the live site loads. Self-hosted (SIL OFL, see src/fonts/OFL.txt) because Next 14's
+// Google Fonts loader fails to parse Outfit's CSS. Body text uses the live "DejaVu Sans" stack.
+const outfit = localFont({
+  src: '../fonts/Outfit-Variable.ttf',
+  weight: '100 900',
+  variable: '--font-outfit',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: 'YouMart - Online Shopping India | Shop Easy Live Better',
+  title: 'YouMart - Online Shopping India | Fast Delivery in Coimbatore, Chennai, Bangalore',
   description: 'Shop easy, live better with YouMart.',
 };
 
@@ -33,11 +27,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={`${roboto.variable} ${robotoSlab.variable}`}>
-      <body className="pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+    <html lang="en-IN" className={outfit.variable}>
+      <body className="pb-[calc(79px+env(safe-area-inset-bottom))] lg:pb-0">
         <a
           href="#content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-brand"
+          className="sr-only font-ui focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[1000] focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-brand"
         >
           Skip to content
         </a>

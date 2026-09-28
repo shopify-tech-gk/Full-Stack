@@ -5,19 +5,13 @@
 /* Same tokens as tailwind.config.ts (packages/shared-client/src/theme.ts), for non-Tailwind use. */
 :root {
   --ym-brand: #0142aa;
-  --ym-brand-600: #0d66ad;
-  --ym-brand-500: #0e6ab3;
-  --ym-brand-700: #01589e;
-  --ym-brand-900: #003366;
-  --ym-sky: #6ec1e4;
-  --ym-sky-tint: #e9f4fb;
-  --ym-green: #61ce70;
-  --ym-gold: #f9b41a;
-  --ym-text-body: #7a7a7a;
-  --ym-text-secondary: #54595f;
-  --ym-text-strong: #333333;
-  --ym-text-heading: #1a1a2e;
-  --ym-divider: #f0f0f0;
+  --ym-brand-accent: #0d66ad;
+  --ym-page: #dcf0fa;
+  --ym-strip-frame: #f1f2f4;
+  --ym-hover: #ff0000;
+  --ym-text-body: #364151;
+  --ym-text-strong: #000000;
+  --ym-menu-border: #dadada;
 }
 
 @layer base {
@@ -26,14 +20,7 @@
   }
 
   body {
-    @apply bg-white font-sans text-ink-body antialiased;
-  }
-
-  h1,
-  h2,
-  h3,
-  h4 {
-    @apply font-heading text-ink-heading;
+    @apply bg-page font-sans text-ink-body antialiased;
   }
 }
 

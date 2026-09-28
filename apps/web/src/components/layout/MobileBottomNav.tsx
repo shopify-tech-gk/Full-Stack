@@ -29,25 +29,26 @@ export function MobileBottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-divider bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(0,0,0,0.06)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 rounded-[8px] bg-white pb-[env(safe-area-inset-bottom)] pt-[3px] lg:hidden"
     >
-      <ul className="grid h-16 grid-cols-5">
+      <ul className="grid h-[76px] grid-cols-5">
         {TABS.map(({ href, label, icon: Icon, filled }) => {
           const active = isActive(pathname, href);
           return (
             <li key={href}>
+              {/* Every tab shares one baseline (the live "Buy Again" tab sits 4px low). */}
               <Link
                 href={href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium ${active ? 'text-brand' : 'text-ink-body'}`}
+                className="flex h-full flex-col items-center pt-[16px] font-ui text-[11px] leading-[20px]"
               >
                 <Icon
                   aria-hidden="true"
-                  className="size-6"
+                  className={`size-6 ${active ? 'text-brand' : 'text-nav-inactiveIcon'}`}
                   fill={filled ? 'currentColor' : 'none'}
                   strokeWidth={filled ? 1.5 : 2}
                 />
-                <span>{label}</span>
+                <span className={active ? 'text-brand' : 'text-nav-inactiveLabel'}>{label}</span>
               </Link>
             </li>
           );

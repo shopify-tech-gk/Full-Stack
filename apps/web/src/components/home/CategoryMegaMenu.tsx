@@ -3,57 +3,91 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   SUBCATEGORY_PLACEHOLDER_IMAGE,
   categoryHref,
   categoryImagePath,
-  subcategoryHref,
   type StoreCategory,
+  type StoreSubcategory,
 } from '@youmart/shared-client';
 
 interface CategoryMegaMenuProps {
   categories: readonly StoreCategory[];
 }
 
+/**
+ * Desktop (>= 1025px): wrapping strip of 60px circles with hover mega-dropdowns (+ flyouts for the
+ * third level). Below 1025px: plain grid - 4 columns of 75px circles on mobile, 5 of 158px on
+ * tablet - exactly as the live site switches layouts.
+ */
 export function CategoryMegaMenu({ categories }: CategoryMegaMenuProps) {
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
 
   return (
-    <section aria-labelledby="shop-by-category" className="px-3 py-3 lg:px-[10px] lg:py-2">
+    <section aria-labelledby="shop-by-category">
       <h2 id="shop-by-category" className="sr-only">
         Shop by category
       </h2>
-      <ul className="grid grid-cols-4 gap-x-2 gap-y-6 lg:flex lg:flex-wrap lg:justify-center lg:gap-x-0 lg:gap-y-2 lg:bg-sky-tint lg:px-2 lg:py-2">
+
+      <ul className="grid grid-cols-4 gap-y-[20px] md:grid-cols-5 lg:hidden">
         {categories.map((category) => (
-          <CategoryItem
-            key={category.slug}
-            category={category}
-            open={activeSlug === category.slug}
-            onOpen={() => setActiveSlug(category.slug)}
-            onClose={() => setActiveSlug((current) => (current === category.slug ? null : current))}
-          />
+          <li key={category.slug}>
+            <Link
+              href={categoryHref(category.slug)}
+              className="mx-auto flex w-[75px] flex-col items-center text-center md:w-[158px]"
+            >
+              <span className="relative block size-[75px] overflow-hidden rounded-full md:size-[158px]">
+                <Image
+                  src={categoryImagePath(category.slug)}
+                  alt=""
+                  fill
+                  sizes="(min-width: 768px) 158px, 75px"
+                  className="object-cover"
+                />
+              </span>
+              <span className="mt-[6px] font-sans text-[10px] font-bold leading-[13px] text-ink-body md:mt-[7px] md:text-[15px] md:leading-[23px]">
+                {category.name}
+              </span>
+            </Link>
+          </li>
         ))}
       </ul>
+
+      <div className="relative -mt-px hidden bg-strip-frame px-[10px] pb-[14px] pt-[8px] lg:block">
+        <ul className="flex flex-wrap justify-center bg-page">
+          {categories.map((category) => (
+            <DesktopCategory
+              key={category.slug}
+              category={category}
+              open={activeSlug === category.slug}
+              onOpen={() => setActiveSlug(category.slug)}
+              onClose={() =>
+                setActiveSlug((current) => (current === category.slug ? null : current))
+              }
+            />
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
 
-interface CategoryItemProps {
+interface DesktopCategoryProps {
   category: StoreCategory;
   open: boolean;
   onOpen: () => void;
   onClose: () => void;
 }
 
-function CategoryItem({ category, open, onOpen, onClose }: CategoryItemProps) {
+function DesktopCategory({ category, open, onOpen, onClose }: DesktopCategoryProps) {
   const panelId = `mega-${category.slug}`;
-  const hasSubcategories = category.subcategories.length > 0;
+  const color = open ? 'text-hover' : 'text-ink-strong';
 
   return (
     <li
-      className="relative lg:px-[9px] lg:pt-1"
-      onMouseEnter={hasSubcategories ? onOpen : undefined}
+      className="relative"
+      onMouseEnter={onOpen}
       onMouseLeave={onClose}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
@@ -66,82 +100,140 @@ function CategoryItem({ category, open, onOpen, onClose }: CategoryItemProps) {
         }
       }}
     >
-      <Link
-        href={categoryHref(category.slug)}
-        className="group flex flex-col items-center text-center"
-      >
-        <span className="relative block size-[70px] overflow-hidden rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] lg:size-[54px]">
+      <Link href={categoryHref(category.slug)} className="block px-[10px] pt-[7px] text-center">
+        <span className="relative mx-auto mb-[10px] block size-[60px] overflow-hidden rounded-full">
           <Image
             src={categoryImagePath(category.slug)}
             alt=""
             fill
-            sizes="(min-width: 1024px) 54px, 70px"
+            sizes="60px"
             className="object-cover"
           />
         </span>
         <span
-          className={`mt-2 text-[11px] font-medium leading-[1.2] lg:mt-4 lg:whitespace-nowrap lg:font-semibold ${open ? 'text-hover' : 'text-ink-strong group-hover:text-hover'}`}
+          className={`block whitespace-nowrap font-ui text-[11px] font-semibold leading-[25.6px] ${color}`}
         >
           {category.name}
         </span>
       </Link>
-
-      {hasSubcategories ? (
-        <>
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={panelId}
-            aria-label={`${open ? 'Hide' : 'Show'} ${category.name} subcategories`}
-            onClick={open ? onClose : onOpen}
-            className={`mx-auto mt-1 hidden size-5 items-center justify-center lg:flex ${open ? 'text-hover' : 'text-ink-secondary'}`}
-          >
-            <ChevronDown aria-hidden="true" className="size-4" strokeWidth={1.75} />
-          </button>
-          {open ? <SubcategoryPanel id={panelId} category={category} /> : null}
-        </>
+      <div className="flex h-[25.6px] items-center justify-end px-[20px]">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-label={`${open ? 'Hide' : 'Show'} ${category.name} subcategories`}
+          onClick={open ? onClose : onOpen}
+          className={`flex h-full items-center ${open ? 'text-hover' : 'text-ink-chevron'}`}
+        >
+          <ChevronDown aria-hidden="true" className="size-[11px]" strokeWidth={3} />
+        </button>
+      </div>
+      {open ? (
+        <MenuPanel
+          id={panelId}
+          parentPath={[category.slug]}
+          items={category.subcategories}
+          placement="below"
+        />
       ) : null}
     </li>
   );
 }
 
-function SubcategoryPanel({ id, category }: { id: string; category: StoreCategory }) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [alignRight, setAlignRight] = useState(false);
+interface MenuPanelProps {
+  id: string;
+  parentPath: string[];
+  items: StoreSubcategory[];
+  placement: 'below' | 'side';
+}
 
-  // Keep the panel inside the viewport for categories near the right edge.
+function MenuPanel({ id, parentPath, items, placement }: MenuPanelProps) {
+  const ref = useRef<HTMLUListElement>(null);
+  const [shift, setShift] = useState(0);
+  const [flip, setFlip] = useState(false);
+
+  // Dropdowns clamp to the viewport's right edge (as live); flyouts flip left, since live's
+  // third-level flyouts open off-screen at the right edge.
   useLayoutEffect(() => {
-    const rect = panelRef.current?.getBoundingClientRect();
-    if (rect && rect.right > window.innerWidth - 8) {
-      setAlignRight(true);
+    const rect = ref.current?.getBoundingClientRect();
+    const overflow = rect ? rect.right - document.documentElement.clientWidth : 0;
+    if (overflow > 0) {
+      if (placement === 'below') {
+        setShift(overflow);
+      } else {
+        setFlip(true);
+      }
     }
-  }, []);
+  }, [placement]);
+
+  const position =
+    placement === 'below' ? 'top-full left-0' : `top-0 ${flip ? 'right-full' : 'left-full'}`;
 
   return (
-    <div
-      ref={panelRef}
+    <ul
+      ref={ref}
       id={id}
-      className={`absolute top-full z-30 hidden pt-1 lg:block ${alignRight ? 'right-0' : 'left-0'}`}
+      style={shift ? { transform: `translateX(-${shift}px)` } : undefined}
+      className={`absolute z-[999] w-[220px] rounded-menu border border-line-menu bg-white py-[5px] shadow-menu ${position}`}
     >
-      <ul className="w-[195px] rounded-md bg-white py-2 shadow-menu">
-        {category.subcategories.map((sub) => (
-          <li key={sub.slug}>
-            <Link
-              href={subcategoryHref(category.slug, sub.slug)}
-              className="flex items-center gap-4 px-3 py-2 text-[11px] text-ink-strong hover:bg-sky-tint/60 hover:text-hover focus:bg-sky-tint/60 focus:outline-none"
-            >
-              <Image
-                src={SUBCATEGORY_PLACEHOLDER_IMAGE}
-                alt=""
-                width={24}
-                height={24}
-                className="size-6 shrink-0 rounded-sm object-cover"
-              />
-              {sub.name}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+      {items.map((item) => (
+        <MenuRow key={item.slug} parentPath={parentPath} item={item} />
+      ))}
+    </ul>
+  );
+}
+
+function MenuRow({ parentPath, item }: { parentPath: string[]; item: StoreSubcategory }) {
+  const [open, setOpen] = useState(false);
+  const hasChildren = item.children.length > 0;
+  const path = [...parentPath, item.slug];
+
+  return (
+    <li
+      className="relative"
+      onMouseEnter={hasChildren ? () => setOpen(true) : undefined}
+      onMouseLeave={hasChildren ? () => setOpen(false) : undefined}
+      onFocus={hasChildren ? () => setOpen(true) : undefined}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setOpen(false);
+        }
+      }}
+    >
+      <Link
+        href={categoryHref(...path)}
+        aria-haspopup={hasChildren || undefined}
+        aria-expanded={hasChildren ? open : undefined}
+        className={`group block h-[45px] pl-[10px] pt-[5px] focus:outline-none ${open ? 'text-hover' : 'text-ink-strong'}`}
+      >
+        <span className="flex h-[40px] items-center gap-[4px]">
+          <Image
+            src={SUBCATEGORY_PLACEHOLDER_IMAGE}
+            alt=""
+            width={40}
+            height={40}
+            className="size-[40px] shrink-0 object-cover"
+          />
+          <span className="font-ui text-[12px] leading-[25.6px] group-hover:text-hover group-focus-visible:text-hover group-focus-visible:underline">
+            {item.name}
+          </span>
+          {hasChildren ? (
+            <ChevronRight
+              aria-hidden="true"
+              className="ml-[6px] size-[11px] group-hover:text-hover"
+              strokeWidth={3}
+            />
+          ) : null}
+        </span>
+      </Link>
+      {hasChildren && open ? (
+        <MenuPanel
+          id={`mega-${path.join('-')}`}
+          parentPath={path}
+          items={item.children}
+          placement="side"
+        />
+      ) : null}
+    </li>
   );
 }

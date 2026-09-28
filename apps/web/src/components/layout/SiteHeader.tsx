@@ -1,115 +1,187 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import {
-  Download,
-  Headset,
-  Heart,
-  MapPin,
-  Menu,
-  MessageCircle,
-  PackageSearch,
-  ShoppingCart,
-  User,
-  type LucideIcon,
-} from 'lucide-react';
+import { Download, Heart, Menu, PackageSearch, ShoppingCart } from 'lucide-react';
 import { Logo } from './Logo';
 import { SearchBar } from './SearchBar';
 import { MobileCategoryDrawer } from './MobileCategoryDrawer';
+import { FaMapMarkerAlt, FaUser, FaWhatsapp } from '@/components/ui/FaIcons';
 import { storeCategories } from '@/lib/categories';
 
-interface HeaderAction {
+interface DesktopAction {
   href: string;
-  label: [string, string?];
-  icon: LucideIcon;
+  lines: [string, string?];
+  icon: React.ReactNode;
 }
 
-const DESKTOP_ACTIONS: HeaderAction[] = [
-  { href: '/delivery-location', label: ['Delivery', 'location'], icon: MapPin },
-  { href: '/account', label: ['My', 'Account'], icon: User },
-  { href: '/orders/track', label: ['Order', 'Track'], icon: PackageSearch },
-  { href: '/download-app', label: ['Download', 'App'], icon: Download },
-  { href: '/wishlist', label: ['My', 'Wishlist'], icon: Heart },
-  { href: '/customer-care', label: ['Customer', 'Care'], icon: MessageCircle },
-  { href: '/cart', label: ['Cart'], icon: ShoppingCart },
+const TILE_ICON = 'size-6';
+
+// Order, labels and glyphs as measured on the live desktop header.
+const DESKTOP_ACTIONS: DesktopAction[] = [
+  {
+    href: '/delivery-location',
+    lines: ['Delivery', 'location'],
+    icon: <FaMapMarkerAlt className={TILE_ICON} />,
+  },
+  { href: '/account', lines: ['My', 'Account'], icon: <FaUser className={TILE_ICON} /> },
+  {
+    href: '/orders/track',
+    lines: ['Order', 'Track'],
+    icon: <PackageSearch aria-hidden="true" className={TILE_ICON} strokeWidth={2.25} />,
+  },
+  {
+    href: '/download-app',
+    lines: ['Download', 'App'],
+    icon: <Download aria-hidden="true" className={TILE_ICON} strokeWidth={2.5} />,
+  },
+  {
+    href: '/wishlist',
+    lines: ['My', 'Wishlist'],
+    icon: <Heart aria-hidden="true" className={TILE_ICON} strokeWidth={2.5} />,
+  },
+  {
+    href: '/customer-care',
+    lines: ['Customer', 'Care'],
+    icon: <FaWhatsapp className={TILE_ICON} />,
+  },
+  {
+    href: '/cart',
+    lines: ['Cart'],
+    icon: <ShoppingCart aria-hidden="true" className={TILE_ICON} strokeWidth={2.5} />,
+  },
 ];
 
-function ActionLabel({ label }: { label: HeaderAction['label'] }) {
-  const [first, second] = label;
+function TwoLineLabel({ lines, className }: { lines: [string, string?]; className: string }) {
   return (
-    <span className="text-[12px] font-semibold leading-[1.25] text-ink-strong">
-      {first}
-      {second ? (
+    <span className={className}>
+      {lines[0]}
+      {lines[1] ? (
         <>
           <br />
-          {second}
+          {lines[1]}
         </>
       ) : null}
     </span>
   );
 }
 
+/** Small icon + stacked 10px Outfit label used by the mobile and tablet headers. */
+function CompactLink({
+  href,
+  lines,
+  icon,
+  align,
+}: {
+  href: string;
+  lines: [string, string];
+  icon: React.ReactNode;
+  align: 'left' | 'center';
+}) {
+  return (
+    <Link href={href} className="flex items-center gap-[6px]">
+      {icon}
+      <TwoLineLabel
+        lines={lines}
+        className={`font-ui text-[10px] font-semibold leading-[10.5px] text-ink-strong ${align === 'center' ? 'text-center' : 'text-left'}`}
+      />
+    </Link>
+  );
+}
+
+const trackOrderIcon = (
+  <Image src="/icons/track-order.png" alt="" width={34} height={34} className="size-[34px]" />
+);
+const customerCareIcon = (
+  <Image src="/icons/customer-care.png" alt="" width={34} height={34} className="size-[34px]" />
+);
+
 export function SiteHeader() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
+  const hamburger = (width: string) => (
+    <button
+      type="button"
+      aria-label="Open category menu"
+      aria-expanded={drawerOpen}
+      aria-controls="mobile-category-drawer"
+      onClick={() => setDrawerOpen(true)}
+      className={`flex h-[44px] shrink-0 items-center justify-center text-ink-icon ${width}`}
+    >
+      <Menu aria-hidden="true" className="h-[22px] w-[22px]" strokeWidth={2.5} />
+    </button>
+  );
+
   return (
     <header className="bg-white">
-      {/* Mobile / tablet (< 1024px) */}
-      <div className="px-3 pb-3 pt-3 lg:hidden">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label="Open category menu"
-            aria-expanded={drawerOpen}
-            aria-controls="mobile-category-drawer"
-            onClick={() => setDrawerOpen(true)}
-            className="-ml-1 flex size-10 items-center justify-center text-ink-strong"
-          >
-            <Menu aria-hidden="true" className="size-6" />
-          </button>
-          <Logo className="w-[124px]" priority />
-          <nav aria-label="Quick links" className="ml-auto">
-            <ul className="flex items-center gap-3">
-              <li>
-                <Link href="/orders/track" className="flex items-center gap-1.5">
-                  <PackageSearch
-                    aria-hidden="true"
-                    className="size-8 text-brand"
-                    strokeWidth={1.5}
-                  />
-                  <ActionLabel label={['Track', 'Order']} />
-                </Link>
-              </li>
-              <li>
-                <Link href="/customer-care" className="flex items-center gap-1.5">
-                  <Headset aria-hidden="true" className="size-8 text-brand" strokeWidth={1.5} />
-                  <ActionLabel label={['Customer', 'Care']} />
-                </Link>
-              </li>
-            </ul>
+      {/* Mobile (< 768px): logo row 75px + search row 56px */}
+      <div className="md:hidden">
+        <div className="flex h-[75px] items-center pr-[2px]">
+          {hamburger('w-[32px]')}
+          <Logo variant="mobile" className="ml-[11px] w-[138px]" priority />
+          <nav aria-label="Quick links" className="ml-auto flex items-center gap-[28px]">
+            <CompactLink
+              href="/orders/track"
+              lines={['Track', 'Order']}
+              icon={trackOrderIcon}
+              align="left"
+            />
+            <CompactLink
+              href="/customer-care"
+              lines={['Customer', 'Care']}
+              icon={customerCareIcon}
+              align="center"
+            />
           </nav>
         </div>
-        <SearchBar id="search-mobile" className="mt-3" />
+        <div className="h-[56px] px-[10px] pt-[10px]">
+          <SearchBar id="search-mobile" size="mobile" />
+        </div>
       </div>
 
-      {/* Desktop (>= 1024px) */}
-      <div className="mx-auto hidden max-w-[1180px] items-center gap-6 px-4 py-7 lg:flex">
-        <Logo className="w-[166px] shrink-0" priority />
-        <SearchBar id="search-desktop" className="w-full max-w-[457px] shrink" />
-        <nav aria-label="Account and shopping" className="ml-auto">
-          <ul className="flex items-start gap-3 xl:gap-4">
-            {DESKTOP_ACTIONS.map(({ href, label, icon: Icon }) => (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className="group flex min-w-[48px] flex-col items-center gap-1.5 text-center"
-                >
-                  <span className="flex size-[34px] items-center justify-center rounded-lg bg-brand text-white transition-colors group-hover:bg-brand-700">
-                    <Icon aria-hidden="true" className="size-5" strokeWidth={2} />
+      {/* Tablet (768-1024px): single 101px row */}
+      <div className="hidden h-[101px] items-center md:flex lg:hidden">
+        {/* Live has no tablet navigation (defect); the hamburger sits inside live's 27px logo gutter. */}
+        {hamburger('w-[27px]')}
+        <Logo className="w-[144px]" priority />
+        <SearchBar id="search-tablet" size="mobile" className="-mt-px ml-[16px] w-[41%] shrink-0" />
+        <nav aria-label="Quick links" className="ml-auto mr-[12px] flex items-center gap-[24px]">
+          <CompactLink
+            href="/delivery-location"
+            lines={['Delivery', 'Location']}
+            icon={<FaMapMarkerAlt className="h-[24px] w-[18px] text-brand" />}
+            align="center"
+          />
+          <CompactLink
+            href="/customer-care"
+            lines={['Customer', 'Care']}
+            icon={customerCareIcon}
+            align="center"
+          />
+        </nav>
+      </div>
+
+      {/* Desktop (>= 1025px): 121px row, geometry scaled exactly like the live Elementor columns */}
+      <div className="hidden h-[121px] items-center pl-[clamp(20px,calc((100vw-1025px)*0.37+24px),119px)] pr-[clamp(16px,calc((100vw-1025px)*0.22+16px),73px)] pt-[5px] lg:flex">
+        <Logo className="w-[max(120px,calc(15.3vw-39px))]" priority />
+        <SearchBar
+          id="search-desktop"
+          className="ml-[20px] w-[calc(38.4vw-75px)] min-w-[220px] shrink"
+        />
+        <nav aria-label="Account and shopping" className="ml-auto shrink-0 pl-[16px]">
+          <ul className="flex items-start gap-[14px]">
+            {DESKTOP_ACTIONS.map(({ href, lines, icon }) => (
+              <li key={href} className="last:ml-[3px]">
+                <Link href={href} className="group flex min-w-[38px] flex-col items-center">
+                  <span className="flex size-[38px] items-center justify-center rounded-tile bg-brand p-[7px] text-white">
+                    {icon}
                   </span>
-                  <ActionLabel label={label} />
+                  <TwoLineLabel
+                    lines={lines}
+                    className="mt-[1px] text-center font-ui text-[13px] font-semibold leading-[16.9px] text-ink-strong"
+                  />
                 </Link>
               </li>
             ))}
