@@ -7,5 +7,7 @@ export * from './theme';
 export * from './storefront';
 export * from './catalog';
 export * from './account';
+export * from './cart';
 export * from './demo';
 export * from './demo-account';
+export * from './demo-cart';

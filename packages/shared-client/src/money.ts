@@ -42,3 +42,9 @@ export function toPaise(value: Money): number {
   const [whole = '0', fraction = '00'] = value.split('.');
   return Number(whole) * 100 + Number(fraction);
 }
+
+/** Inverse of toPaise for non-negative integer paise (24750 -> "247.50"). */
+export function fromPaise(paise: number): Money {
+  const whole = Math.floor(paise / 100);
+  return `${whole}.${String(paise % 100).padStart(2, '0')}`;
+}

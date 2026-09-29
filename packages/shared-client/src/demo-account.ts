@@ -1,7 +1,7 @@
 // DEMO CONTENT ONLY - account/address/order data for layout work. Replace with the auth,
 // address (/api/addresses) and order (/api/orders + /api/logistics) APIs.
 import type { AccountOrder } from './account';
-import type { Address } from './types';
+import type { Address, AddressInput } from './types';
 
 /** Any 10-digit mobile + this code logs into the demo account. */
 export const DEMO_OTP_CODE = '123456';
@@ -135,4 +135,25 @@ export const DEMO_ORDERS: readonly AccountOrder[] = [
 export function findDemoOrder(orderNumber: string): AccountOrder | null {
   const wanted = orderNumber.trim().toUpperCase();
   return DEMO_ORDERS.find((order) => order.orderNumber === wanted) ?? null;
+}
+
+/** Stand-in for the Address that POST /api/addresses returns. */
+export function demoSavedAddress(input: AddressInput, id: string, now: Date): Address {
+  const stampNow = now.toISOString();
+  return {
+    id,
+    fullName: input.fullName,
+    phone: input.phone,
+    line1: input.line1,
+    line2: input.line2 ?? null,
+    landmark: input.landmark ?? null,
+    city: input.city,
+    state: input.state,
+    pincode: input.pincode,
+    country: input.country ?? 'India',
+    addressType: input.addressType ?? 'HOME',
+    isDefault: Boolean(input.isDefault),
+    createdAt: stampNow,
+    updatedAt: stampNow,
+  };
 }

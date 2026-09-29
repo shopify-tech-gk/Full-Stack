@@ -13,8 +13,10 @@ future mobile app (React Native). No React, no DOM rendering, no platform APIs b
 | `storefront.ts`   | Homepage section config + site copy: `ProductCardData` view model, rail titles, grid filter tabs, brand offers, feature cards, best-categories, footer copy/links                         |
 | `catalog.ts`      | Listing + product page logic: sort/price/rating/brand query parsing (live query names), `applyListingQuery`, pagination, `ProductDetailData` view model                                   |
 | `account.ts`      | My Account nav, phone -> E.164 (`toE164Phone`), address form <-> `AddressInput` mapping + validation mirroring address-service, order fulfilment progress from `sellerStatus`             |
+| `cart.ts`         | Cart maths on the cart-service `CartView` (paise, optimistic qty/remove), totals, payment methods (Razorpay only), checkout blockers, order-received overview                             |
 | `demo.ts`         | DEMO-only placeholder products/rails used until the catalog API is wired - delete once real data flows                                                                                    |
 | `demo-account.ts` | DEMO-only user, OTP code, addresses and orders for the account/order-track pages - delete once auth/address/order APIs are wired                                                          |
+| `demo-cart.ts`    | DEMO-only sample cart, shipping total and a fake place-order - delete once cart/checkout/payment APIs are wired                                                                           |
 | `theme.ts`        | Design tokens (colors, fonts, breakpoints) - web feeds them into Tailwind, mobile into StyleSheet                                                                                         |
 
 ## The split

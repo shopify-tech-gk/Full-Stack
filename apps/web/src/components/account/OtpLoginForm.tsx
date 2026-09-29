@@ -9,7 +9,7 @@ import {
   toE164Phone,
   toLocalPhone,
 } from '@youmart/shared-client';
-import { requestOtp, verifyOtp } from '@/app/my-account/actions';
+import { requestOtp, verifyOtp, type LoginReturnPath } from '@/app/my-account/actions';
 import { Notice } from './Notice';
 import {
   FIELD_HINT,
@@ -23,11 +23,14 @@ import {
 
 interface OtpLoginFormProps {
   mode: 'login' | 'register';
+  returnTo?: LoginReturnPath;
+  /** Checkout embeds the form without the card frame. */
+  bare?: boolean;
 }
 
 // Live's Login/Register cards (1px blue border, radius 10, 20px padding), driven by our
 // phone + WhatsApp OTP auth instead of WooCommerce username/password.
-export function OtpLoginForm({ mode }: OtpLoginFormProps) {
+export function OtpLoginForm({ mode, returnTo, bare = false }: OtpLoginFormProps) {
   const id = useId();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
@@ -63,7 +66,7 @@ export function OtpLoginForm({ mode }: OtpLoginFormProps) {
     }
     startTransition(async () => {
       setError(null);
-      const result = await verifyOtp(phone, code);
+      const result = await verifyOtp(phone, code, returnTo);
       if (result && !result.ok) setError(result.error ?? 'Verification failed.');
     });
   };
@@ -74,7 +77,7 @@ export function OtpLoginForm({ mode }: OtpLoginFormProps) {
     <form
       onSubmit={onSubmit}
       noValidate
-      className="my-[32px] rounded-[10px] border border-catalog-rule p-[20px]"
+      className={bare ? undefined : 'my-[32px] rounded-[10px] border border-catalog-rule p-[20px]'}
     >
       {error && <Notice tone="error">{error}</Notice>}
 

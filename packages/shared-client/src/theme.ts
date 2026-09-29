@@ -141,6 +141,19 @@ export const colors = {
     navText: '#333333',
     linkHover: '#015b9c',
   },
+  /** Live custom cart table (#ymc-cart-table) + WooCommerce totals/checkout panels. */
+  cart: {
+    border: '#90caf9',
+    headBg: '#e8f1fb',
+    rowBg: '#ddecf9',
+    rowHover: '#f0f7ff',
+    line: '#d4e9f7',
+    ink: '#1a1a2e',
+    brandDark: '#0135cc',
+    danger: '#e63946',
+    panelHead: '#fbfbfb',
+    payBox: '#efefef',
+  },
   // Declared in the Elementor kit but NOT observed in the homepage top section; unverified.
   kit: {
     primary: '#6EC1E4',

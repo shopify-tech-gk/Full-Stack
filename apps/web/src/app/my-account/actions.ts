@@ -10,6 +10,10 @@ export interface OtpResult {
   error?: string;
 }
 
+/** Where a successful login may return to (fixed list - never an arbitrary URL). */
+const LOGIN_RETURN_PATHS = ['/my-account', '/checkout'] as const;
+export type LoginReturnPath = (typeof LOGIN_RETURN_PATHS)[number];
+
 // DEMO: mirrors POST /api/auth/otp/request (validation + generic response). No code is sent.
 export async function requestOtp(phone: string): Promise<OtpResult> {
   return toE164Phone(phone)
@@ -18,7 +22,11 @@ export async function requestOtp(phone: string): Promise<OtpResult> {
 }
 
 // DEMO: mirrors POST /api/auth/otp/verify; accepts DEMO_OTP_CODE and sets a demo session flag.
-export async function verifyOtp(phone: string, code: string): Promise<OtpResult> {
+export async function verifyOtp(
+  phone: string,
+  code: string,
+  returnTo: LoginReturnPath = '/my-account',
+): Promise<OtpResult> {
   if (!toE164Phone(phone)) {
     return { ok: false, error: 'Please enter a valid 10-digit mobile number.' };
   }
@@ -32,7 +40,7 @@ export async function verifyOtp(phone: string, code: string): Promise<OtpResult>
     path: '/',
     maxAge: 60 * 60 * 24 * 14,
   });
-  redirect('/my-account');
+  redirect(LOGIN_RETURN_PATHS.includes(returnTo) ? returnTo : '/my-account');
 }
 
 export async function logout(): Promise<void> {

@@ -109,9 +109,12 @@ export function applyListingQuery<T extends ListingProduct>(
 
 export type PaginationItem = number | 'dots';
 
-/** Live listing progress bar: step 1 is the current category name. */
+/**
+ * Live progress bar (listing, cart, checkout): step 1 is the category name or "Shop".
+ * Live links step 1 to /shop; we have no all-products page yet, so it goes home.
+ */
 export const CHECKOUT_STEPS: readonly { label: string | null; href: string }[] = [
-  { label: null, href: '/shop' },
+  { label: null, href: '/' },
   { label: 'Cart', href: '/cart' },
   { label: 'Checkout', href: '/checkout' },
 ];

@@ -39,10 +39,13 @@ const config: Config = {
         'brand-popup': colors.brandPopup,
         'share-btn': colors.shareButton,
         woo: colors.woo,
+        cart: colors.cart,
       },
       fontFamily: {
         sans: ['var(--font-arimo)', '"Arimo Ext"', ...fonts.bodyFallback],
         ui: ['var(--font-outfit)', fonts.ui, 'sans-serif'],
+        // Live's cart table declares a system stack.
+        system: ['"Segoe UI"', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         tile: `${radii.tile}px`,
@@ -66,6 +69,7 @@ const config: Config = {
         'carousel-arrow': '0 2px 6px 0 rgba(0, 0, 0, 0.15)',
         'listing-card': '0 14px 28px 0 rgba(0, 0, 0, 0.04), 0 10px 10px 0 rgba(0, 0, 0, 0.03)',
         'account-nav': '0 4px 8px 0 rgba(0, 0, 0, 0.1)',
+        'cart-table': '0 2px 12px 0 rgba(1, 66, 170, 0.07)',
         'brand-popup': '0 10px 40px 0 rgba(0, 51, 102, 0.45)',
         'step-glow': `0 0 10px 0 ${colors.steps.glow}, 0 0 20px 0 ${colors.steps.glow}`,
       },
