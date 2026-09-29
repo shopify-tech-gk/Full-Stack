@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Download, Heart, Menu, PackageSearch, ShoppingCart } from 'lucide-react';
+import { BUSINESS } from '@youmart/shared-client';
 import { Logo } from './Logo';
 import { SearchBar } from './SearchBar';
 import { MobileCategoryDrawer } from './MobileCategoryDrawer';
@@ -18,10 +19,10 @@ interface DesktopAction {
 
 const TILE_ICON = 'size-6';
 
-// Order, labels and glyphs as measured on the live desktop header.
+// Order, labels and glyphs as measured on the live desktop header; targets as live links them.
 const DESKTOP_ACTIONS: DesktopAction[] = [
   {
-    href: '/delivery-location',
+    href: '/my-account/edit-address',
     lines: ['Delivery', 'location'],
     icon: <FaMapMarkerAlt className={TILE_ICON} />,
   },
@@ -32,7 +33,7 @@ const DESKTOP_ACTIONS: DesktopAction[] = [
     icon: <PackageSearch aria-hidden="true" className={TILE_ICON} strokeWidth={2.25} />,
   },
   {
-    href: '/download-app',
+    href: BUSINESS.appStoreHref,
     lines: ['Download', 'App'],
     icon: <Download aria-hidden="true" className={TILE_ICON} strokeWidth={2.5} />,
   },
@@ -149,7 +150,7 @@ export function SiteHeader() {
         <SearchBar id="search-tablet" size="mobile" className="-mt-px ml-[16px] w-[41%] shrink-0" />
         <nav aria-label="Quick links" className="ml-auto mr-[12px] flex items-center gap-[24px]">
           <CompactLink
-            href="/delivery-location"
+            href="/my-account/edit-address"
             lines={['Delivery', 'Location']}
             icon={<FaMapMarkerAlt className="h-[24px] w-[18px] text-brand" />}
             align="center"

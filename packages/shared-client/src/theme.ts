@@ -154,6 +154,20 @@ export const colors = {
     panelHead: '#fbfbfb',
     payBox: '#efefef',
   },
+  /** About / Contact / FAQ / Customer Care (live Elementor pages). */
+  info: {
+    heroBg: '#070614',
+    maroon: '#6e0211',
+    faqHeading: '#cf2323',
+    accordionIcon: '#ba0033',
+    accordionLine: '#ececec',
+    missionBg: '#a79d9e',
+    ctaText: '#e7f6ff',
+    muted: '#bdbdbd',
+    /** Live paints this band with a photo; its dominant crimson stands in until assets exist. */
+    ctaBand: '#a3262f',
+    whatsapp: '#60d566',
+  },
   // Declared in the Elementor kit but NOT observed in the homepage top section; unverified.
   kit: {
     primary: '#6EC1E4',

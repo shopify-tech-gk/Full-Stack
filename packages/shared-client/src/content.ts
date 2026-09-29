@@ -36,7 +36,8 @@ export const PROMO_BANNER_SLIDES: readonly (readonly [PromoBanner, PromoBanner])
       id: 'tech-deals',
       title: 'Tech Deals - Fast, reliable, best prices',
       image: '/banners/tech-deals.png',
-      href: '/product-category/mobile-accessories',
+      // Live links /product-category/mobile-accessories/, which 404s on live too.
+      href: '/product-category/electronics/mobiles',
     },
   ],
 ];

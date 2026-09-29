@@ -115,7 +115,7 @@ export interface FooterLink {
   href: string;
 }
 
-/** Live footer copy and links (paths without WordPress's trailing slash). */
+/** Live footer copy and links (clean routes; live's WordPress paths redirect to these). */
 export const FOOTER = {
   about: {
     heading: 'About us',
@@ -132,18 +132,18 @@ export const FOOTER = {
       { label: 'Shop', href: '/shop' },
       { label: 'Contact', href: '/contact' },
       { label: 'Order Track', href: '/order-track' },
-      { label: 'Order Cancel', href: '/my-account/orders' },
-      { label: 'Order Notify', href: '/ordernotify' },
+      { label: 'Order Cancel', href: '/order-cancel' },
+      { label: 'Order Notify', href: '/order-notify' },
     ] satisfies FooterLink[],
   },
   policy: {
     heading: 'Consumer policy',
     links: [
       { label: 'Privacy Policy', href: '/privacy-policy' },
-      { label: 'Terms & Conditions', href: '/terms-conditions' },
+      { label: 'Terms & Conditions', href: '/terms' },
       { label: 'Refund Policy', href: '/refund-policy' },
-      { label: 'Offers and Coupons', href: '/offers-and-coupons' },
-      { label: 'Shipping Details', href: '/shipping-details' },
+      { label: 'Offers and Coupons', href: '/offers' },
+      { label: 'Shipping Details', href: '/shipping' },
     ] satisfies FooterLink[],
   },
   mail: {

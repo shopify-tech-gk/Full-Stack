@@ -14,6 +14,8 @@ future mobile app (React Native). No React, no DOM rendering, no platform APIs b
 | `catalog.ts`      | Listing + product page logic: sort/price/rating/brand query parsing (live query names), `applyListingQuery`, pagination, `ProductDetailData` view model                                   |
 | `account.ts`      | My Account nav, phone -> E.164 (`toE164Phone`), address form <-> `AddressInput` mapping + validation mirroring address-service, order fulfilment progress from `sellerStatus`             |
 | `cart.ts`         | Cart maths on the cart-service `CartView` (paise, optimistic qty/remove), totals, payment methods (Razorpay only), checkout blockers, order-received overview                             |
+| `site-pages.ts`   | Real copy from live youmartshop.com for About / Contact / Customer Care / FAQ / policy pages / 404, business contact details, `parseInline` (**bold** + [link](href))                     |
+| `support.ts`      | Contact / order-cancel / order-notify form validation (no v1 endpoints yet)                                                                                                               |
 | `demo.ts`         | DEMO-only placeholder products/rails used until the catalog API is wired - delete once real data flows                                                                                    |
 | `demo-account.ts` | DEMO-only user, OTP code, addresses and orders for the account/order-track pages - delete once auth/address/order APIs are wired                                                          |
 | `demo-cart.ts`    | DEMO-only sample cart, shipping total and a fake place-order - delete once cart/checkout/payment APIs are wired                                                                           |

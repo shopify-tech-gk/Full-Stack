@@ -65,3 +65,13 @@ export async function getCategoryListing(
 export async function getProductDetail(slug: string): Promise<ProductDetailData | null> {
   return /^[a-z0-9-]+$/.test(slug) ? demoProductDetail(slug) : null;
 }
+
+/** DEMO title match. Wiring: api.search.products({ q }) (search-service). */
+export async function searchProducts(q: string): Promise<ListingProduct[]> {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return [];
+  return DEMO_LISTING_PRODUCTS.filter((p) => p.title.toLowerCase().includes(needle)).slice(
+    0,
+    LISTING_PAGE_SIZE,
+  );
+}

@@ -40,6 +40,7 @@ const config: Config = {
         'share-btn': colors.shareButton,
         woo: colors.woo,
         cart: colors.cart,
+        info: colors.info,
       },
       fontFamily: {
         sans: ['var(--font-arimo)', '"Arimo Ext"', ...fonts.bodyFallback],
@@ -70,6 +71,8 @@ const config: Config = {
         'listing-card': '0 14px 28px 0 rgba(0, 0, 0, 0.04), 0 10px 10px 0 rgba(0, 0, 0, 0.03)',
         'account-nav': '0 4px 8px 0 rgba(0, 0, 0, 0.1)',
         'cart-table': '0 2px 12px 0 rgba(1, 66, 170, 0.07)',
+        'info-card': '0 0 20px 0 rgba(33, 33, 33, 0.25)',
+        'info-map': '0 0 30px 0 rgba(33, 33, 33, 0.2)',
         'brand-popup': '0 10px 40px 0 rgba(0, 51, 102, 0.45)',
         'step-glow': `0 0 10px 0 ${colors.steps.glow}, 0 0 20px 0 ${colors.steps.glow}`,
       },

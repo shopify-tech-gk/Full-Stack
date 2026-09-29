@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Download, House, ShoppingBag, ShoppingCart, User, type LucideIcon } from 'lucide-react';
+import { BUSINESS } from '@youmart/shared-client';
 
 interface Tab {
   href: string;
@@ -11,10 +12,11 @@ interface Tab {
   filled: boolean;
 }
 
+// Targets as live links them ("Buy Again" opens the wishlist).
 const TABS: Tab[] = [
   { href: '/', label: 'Home', icon: House, filled: true },
-  { href: '/download-app', label: 'Install App', icon: Download, filled: false },
-  { href: '/orders/buy-again', label: 'Buy Again', icon: ShoppingBag, filled: true },
+  { href: BUSINESS.appStoreHref, label: 'Install App', icon: Download, filled: false },
+  { href: '/wishlist', label: 'Buy Again', icon: ShoppingBag, filled: true },
   { href: '/cart', label: 'Cart', icon: ShoppingCart, filled: true },
   { href: '/my-account', label: 'Account', icon: User, filled: true },
 ];
