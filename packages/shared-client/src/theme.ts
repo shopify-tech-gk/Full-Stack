@@ -40,6 +40,61 @@ export const colors = {
   overlay: 'rgba(0, 0, 0, 0.6)',
   focusGlow: 'rgba(0, 115, 170, 0.3)',
   white: '#ffffff',
+  /** Section headings, e.g. "Best Categories Today". */
+  heading: '#0f172a',
+  /** Product grid card. */
+  card: {
+    border: '#90caf9',
+    shadow: 'rgba(144, 202, 249, 0.18)',
+  },
+  /** Homepage "Pick up where you left off" style rail cards (border is brand.DEFAULT). */
+  rail: {
+    title: '#0f1111',
+    thumb: '#f7f7f7',
+  },
+  price: {
+    label: '#333333',
+    /** The two crossed lines through the MRP. */
+    strike: 'rgba(255, 0, 0, 0.9)',
+    discount: '#ff0000',
+  },
+  star: {
+    empty: '#000000',
+    filled: '#fdd039',
+  },
+  /** Active product-filter tab outline. */
+  tabActive: '#0e6ab3',
+  offerBadge: {
+    outer: '#ff3300',
+    inner: '#fcfe93',
+    text: '#7a4b00',
+  },
+  categoryCard: {
+    bg: '#eeeeee',
+    label: '#111111',
+    arrowBorder: '#dddddd',
+  },
+  feature: {
+    expertise: '#fee533',
+    quality: '#024caa',
+    guarantee: '#28b463',
+  },
+  /** Footer background is brand.DEFAULT. */
+  footer: {
+    heading: '#dadada',
+    subheading: '#cdcdcd',
+    divider: '#afafaf',
+    rule: '#454d5e',
+    separator: '#364151',
+    icon: '#fff86b',
+  },
+  social: {
+    youtube: '#cd201f',
+    facebook: '#3b5998',
+    share: '#1664c8',
+    /** Gradient stops, to right bottom. */
+    instagram: ['#f9ce34', '#ee2a7b', '#6228d7'],
+  },
   // Declared in the Elementor kit but NOT observed in the homepage top section; unverified.
   kit: {
     primary: '#6EC1E4',
@@ -68,6 +123,13 @@ export const radii = {
   menu: 10,
   language: 5,
   bottomNav: 8,
+  productCard: 16,
+  railCard: 8,
+  railThumb: 4,
+  brandTile: 30,
+  categoryCard: 14,
+  featureCard: 10,
+  button: 8,
 } as const;
 
 export const breakpoints = {

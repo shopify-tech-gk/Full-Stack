@@ -4,3 +4,5 @@ export * from './api-client';
 export * from './categories';
 export * from './content';
 export * from './theme';
+export * from './storefront';
+export * from './demo';

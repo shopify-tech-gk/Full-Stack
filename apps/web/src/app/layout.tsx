@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { WelcomeBar } from '@/components/layout/WelcomeBar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import './globals.css';
 
 // Self-hosted (SIL OFL, see src/fonts/*OFL.txt): Next 14's Google Fonts loader fails to parse Outfit's CSS.
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader />
         <WelcomeBar />
         <main id="content">{children}</main>
+        <SiteFooter />
         <MobileBottomNav />
       </body>
     </html>

@@ -21,7 +21,10 @@ export function formatMoney(value: Money): string {
   return inrFormatter.format(Number(value));
 }
 
-/** Whole-number discount percentage for badges, e.g. mrp "1499.00", selling "1299.00" -> 13. */
+/**
+ * Whole-number discount percentage for badges, rounded half-up like live
+ * (mrp "1861.11", selling "1474.00" -> 21).
+ */
 export function discountPercent(mrp: Money, sellingPrice: Money): number {
   if (!isMoney(mrp) || !isMoney(sellingPrice)) {
     return 0;
@@ -31,7 +34,7 @@ export function discountPercent(mrp: Money, sellingPrice: Money): number {
   if (mrpPaise <= 0 || sellingPaise >= mrpPaise) {
     return 0;
   }
-  return Math.floor(((mrpPaise - sellingPaise) * 100) / mrpPaise);
+  return Math.floor(((mrpPaise - sellingPaise) * 200 + mrpPaise) / (mrpPaise * 2));
 }
 
 /** Exact integer conversion by splitting on "." - no float multiplication. */
