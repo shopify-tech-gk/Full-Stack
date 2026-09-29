@@ -554,6 +554,25 @@ model CartItem {
   @@schema("cart")
 }
 
+/// W1: a customer's saved-for-later SKU. Lives in the cart schema (owned by cart-service) because
+/// it has the same shape and dependencies as a cart line. `userId`/`skuId`/`productId` are SOFT
+/// references (auth.user, catalog.sku, catalog.product). One active row per (user, sku) is a
+/// hand-added partial unique index (WHERE deleted_at IS NULL).
+model WishlistItem {
+  id        String    @id @default(uuid(7))
+  userId    String    @map("user_id")
+  skuId     String    @map("sku_id")
+  productId String    @map("product_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([userId])
+  @@index([skuId])
+  @@map("wishlist_item")
+  @@schema("cart")
+}
+
 // ---------------------------------------------------------------------------
 // orders schema - orders, order lines, status history. DATA LAYER ONLY: no
 // order-number generation logic, no price calculation lives here.
@@ -619,6 +638,9 @@ model Order {
 
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
+  // W1 back-relations (no columns on this table).
+  cancelRequests OrderCancelRequest[]
+  notifyPreferences OrderNotifyPreference[]
 
   @@index([userId])
   @@index([status])
@@ -672,6 +694,57 @@ model OrderStatusHistory {
 
   @@index([orderId])
   @@map("order_status_history")
+  @@schema("orders")
+}
+
+enum CancelRequestStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+
+  @@schema("orders")
+}
+
+/// W1: a customer's request to cancel a CONFIRMED (paid) order, resolved by an admin. Unpaid
+/// (PENDING_PAYMENT) orders are cancelled directly and never create a row here. At most one
+/// REQUESTED row per order is a hand-added partial unique index.
+model OrderCancelRequest {
+  id             String              @id @default(uuid(7))
+  orderId        String              @map("order_id")
+  order          Order               @relation(fields: [orderId], references: [id])
+  userId         String              @map("user_id")
+  reason         String
+  comment        String?
+  status         CancelRequestStatus @default(REQUESTED)
+  resolutionNote String?             @map("resolution_note")
+  resolvedAt     DateTime?           @map("resolved_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  deletedAt      DateTime?           @map("deleted_at")
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+  @@map("order_cancel_request")
+  @@schema("orders")
+}
+
+/// W1: which channels the customer wants order updates on, per order. One active row per order
+/// (hand-added partial unique index); no row = the defaults (WhatsApp on, SMS off).
+model OrderNotifyPreference {
+  id        String    @id @default(uuid(7))
+  orderId   String    @map("order_id")
+  order     Order     @relation(fields: [orderId], references: [id])
+  userId    String    @map("user_id")
+  whatsapp  Boolean   @default(true)
+  sms       Boolean   @default(false)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([orderId])
+  @@index([userId])
+  @@map("order_notify_preference")
   @@schema("orders")
 }
 
@@ -948,6 +1021,33 @@ model NotificationLog {
   @@index([channel])
   @@index([status])
   @@map("notification_log")
+  @@schema("notifications")
+}
+
+enum SupportMessageStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+
+  @@schema("notifications")
+}
+
+/// W1: an inbound customer contact/support message (public contact form). Stored here and
+/// forwarded to the store's support inbox as an EMAIL notification job.
+model SupportMessage {
+  id        String               @id @default(uuid(7))
+  name      String
+  phone     String
+  email     String?
+  message   String
+  status    SupportMessageStatus @default(NEW)
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+  deletedAt DateTime?            @map("deleted_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("support_message")
   @@schema("notifications")
 }
 

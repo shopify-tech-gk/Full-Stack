@@ -170,8 +170,10 @@ reissued) on every successful `/auth/refresh` call.
    min)** by default. There is no server-side revocation of access tokens
    before expiry - a client must call `/auth/refresh` to get a new one.
 5. Refresh happens via the `ym_rt` httpOnly cookie against the auth service
-   itself (`POST /auth/refresh`), scoped to `path=/auth` - other services
-   never see or handle the refresh cookie.
+   itself (`POST /api/auth/refresh` through the gateway), scoped to
+   `path=/api/auth` (v1.1; configurable via `REFRESH_COOKIE_PATH`) - other
+   services never see or handle the refresh cookie. v1.0 used `path=/auth`,
+   which browsers never sent to the gateway-prefixed refresh URL.
 
 ## JWT claims (access token)
 

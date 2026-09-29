@@ -8,6 +8,8 @@
  */
 const REDACTED_FIELDS_BY_TEMPLATE: Partial<Record<string, string[]>> = {
   OTP: ['code'],
+  // W1: the message itself lives in notifications.support_message - the log keeps only the reference.
+  SUPPORT_MESSAGE: ['name', 'phone', 'email', 'message'],
 };
 
 export function redactJobDataForLog(

@@ -41,6 +41,9 @@ const authServiceEnvSchema = baseEnvSchema.extend({
     .default('false')
     .transform((v) => v === 'true'),
   COOKIE_DOMAIN: z.string().optional(),
+  // W1: browsers reach this service only through the api-gateway's /api/auth/* - a cookie
+  // scoped to this service's own /auth path was never sent back to /api/auth/refresh.
+  REFRESH_COOKIE_PATH: z.string().startsWith('/').default('/api/auth'),
 });
 
 const parsed = loadConfigWith(authServiceEnvSchema);
@@ -71,6 +74,7 @@ export interface AuthServiceConfig {
   refreshCookieName: string;
   cookieSecure: boolean;
   cookieDomain: string | undefined;
+  refreshCookiePath: string;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
 }
@@ -97,6 +101,7 @@ export const config: Readonly<AuthServiceConfig> = Object.freeze({
   refreshCookieName: parsed.REFRESH_COOKIE_NAME,
   cookieSecure: parsed.COOKIE_SECURE,
   cookieDomain: parsed.COOKIE_DOMAIN,
+  refreshCookiePath: parsed.REFRESH_COOKIE_PATH,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

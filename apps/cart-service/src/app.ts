@@ -8,6 +8,7 @@ import { logger } from './logger';
 import { prisma } from './db';
 import { config } from './config';
 import { cartRouter } from './routes/cart.routes';
+import { wishlistRouter } from './routes/wishlist.routes';
 
 /**
  * Builds the Express app without listening - mirrors the auth/catalog/
@@ -46,6 +47,8 @@ export function createApp(): Express {
   });
 
   app.use('/cart', cartRouter);
+  // W1: wishlist shares the cart schema, catalog client and auth setup - see wishlist.service.ts.
+  app.use('/wishlist', wishlistRouter);
 
   app.use((_req, _res, next) => {
     next(new AppError('NOT_FOUND', 404, 'Route not found'));

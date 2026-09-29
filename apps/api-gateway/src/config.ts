@@ -54,6 +54,10 @@ const apiGatewayEnvSchema = z.object({
   // auth-service's per-phone OTP rate limit, Ch3, is unaffected/untouched).
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+  // W1: much stricter per-IP limit for the unauthenticated form endpoints (guest order-track,
+  // contact form) - each service adds its own per-order / per-phone limit behind this.
+  PUBLIC_FORM_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
+  PUBLIC_FORM_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
 });
 
 const parsed = loadConfigWith(apiGatewayEnvSchema);
@@ -89,6 +93,8 @@ export interface ApiGatewayConfig {
   corsAllowedOrigins: string[];
   rateLimitWindowMs: number;
   rateLimitMax: number;
+  publicFormRateLimitWindowMs: number;
+  publicFormRateLimitMax: number;
 }
 
 export const config: Readonly<ApiGatewayConfig> = Object.freeze({
@@ -115,4 +121,6 @@ export const config: Readonly<ApiGatewayConfig> = Object.freeze({
   corsAllowedOrigins: parseOrigins(parsed.CORS_ALLOWED_ORIGINS),
   rateLimitWindowMs: parsed.RATE_LIMIT_WINDOW_MS,
   rateLimitMax: parsed.RATE_LIMIT_MAX,
+  publicFormRateLimitWindowMs: parsed.PUBLIC_FORM_RATE_LIMIT_WINDOW_MS,
+  publicFormRateLimitMax: parsed.PUBLIC_FORM_RATE_LIMIT_MAX,
 });

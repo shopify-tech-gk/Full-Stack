@@ -18,6 +18,21 @@ import { ListSellerItemsQuery } from '../order/seller-order.schema';
 import { SettleableItemsQuery } from '../order/settleable.schema';
 import { SetSellerItemStatusBody } from '../order/item-status.schema';
 import { CheckoutBody } from '../order/checkout.schema';
+import { GuestTrackBody } from '../order/guest-track.schema';
+import { trackOrderAsGuest } from '../order/guest-track.service';
+import {
+  CancelOrderBody,
+  ListCancelRequestsQuery,
+  ResolveCancelRequestBody,
+} from '../order/cancel.schema';
+import {
+  approveCancelRequest,
+  cancelOrderAsCustomer,
+  listCancelRequests,
+  rejectCancelRequest,
+} from '../order/cancel.service';
+import { NotifyPreferenceBody } from '../order/notify-preference.schema';
+import { getNotifyPreference, setNotifyPreference } from '../order/notify-preference.service';
 import { requireAuth, requireServiceAuth, requireAdmin } from '../authMiddleware';
 import { requireUserId } from '../authToken';
 
@@ -63,6 +78,33 @@ orderRouter.post('/checkout', requireAuth, checkoutRateLimiter, async (req, res)
   }
   const order = await checkout(userId, parsed.data.addressId);
   res.status(201).json(order);
+});
+
+// W1: PUBLIC guest order tracking. Keyed per ORDER NUMBER (not IP): however many IPs an attacker
+// rotates through, one order number gets at most 10 phone guesses per 15 minutes. The gateway adds
+// its own per-IP limit on top. Body is read here only for the key; it's validated in the handler.
+const guestTrackRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const raw: unknown = (req.body as { orderNumber?: unknown } | undefined)?.orderNumber;
+    return typeof raw === 'string' ? `track:${raw.trim().toUpperCase().slice(0, 40)}` : 'track:-';
+  },
+  handler: (_req, res) => {
+    res
+      .status(429)
+      .json(buildApiError('RATE_LIMITED', 'Too many tracking attempts, try again later'));
+  },
+});
+
+orderRouter.post('/track', guestTrackRateLimiter, async (req, res) => {
+  const parsed = GuestTrackBody.safeParse(req.body);
+  if (!parsed.success) {
+    throw new AppError('NOT_FOUND', 404, 'No order matches that order number and phone number');
+  }
+  res.status(200).json(await trackOrderAsGuest(parsed.data.orderNumber, parsed.data.phone));
 });
 
 // --- Internal/service endpoints (called by payment-service, invoice-
@@ -162,6 +204,55 @@ orderRouter.get(
     res.status(200).json(result);
   },
 );
+
+// W1: admin review of customer cancel requests for PAID orders.
+orderRouter.get('/admin/cancel-requests', requireAdmin('orders.manage'), async (req, res) => {
+  const query = ListCancelRequestsQuery.parse(req.query);
+  res.status(200).json(await listCancelRequests(query));
+});
+
+orderRouter.post(
+  '/admin/cancel-requests/:id/approve',
+  requireAdmin('refunds.manage'),
+  async (req, res) => {
+    const id = typeof req.params.id === 'string' ? req.params.id : '';
+    const body = ResolveCancelRequestBody.parse(req.body ?? {});
+    res.status(200).json(await approveCancelRequest(id, body.note));
+  },
+);
+
+orderRouter.post(
+  '/admin/cancel-requests/:id/reject',
+  requireAdmin('orders.manage'),
+  async (req, res) => {
+    const id = typeof req.params.id === 'string' ? req.params.id : '';
+    const body = ResolveCancelRequestBody.parse(req.body ?? {});
+    res.status(200).json({ cancelRequest: await rejectCancelRequest(id, body.note) });
+  },
+);
+
+// W1: customer cancel (unpaid -> cancelled now; paid -> cancel request) - see cancel.service.ts.
+orderRouter.post('/:id/cancel', requireAuth, async (req, res) => {
+  const userId = requireUserId(req);
+  const id = typeof req.params.id === 'string' ? req.params.id : '';
+  const body = CancelOrderBody.parse(req.body);
+  const result = await cancelOrderAsCustomer(userId, id, body);
+  res.status(result.outcome === 'CANCEL_REQUESTED' ? 202 : 200).json(result);
+});
+
+// W1: per-order notification channels (WhatsApp / SMS).
+orderRouter.get('/:id/notify', requireAuth, async (req, res) => {
+  const userId = requireUserId(req);
+  const id = typeof req.params.id === 'string' ? req.params.id : '';
+  res.status(200).json(await getNotifyPreference(userId, id));
+});
+
+orderRouter.put('/:id/notify', requireAuth, async (req, res) => {
+  const userId = requireUserId(req);
+  const id = typeof req.params.id === 'string' ? req.params.id : '';
+  const body = NotifyPreferenceBody.parse(req.body);
+  res.status(200).json(await setNotifyPreference(userId, id, body));
+});
 
 orderRouter.get('/', requireAuth, async (req, res) => {
   const userId = requireUserId(req);

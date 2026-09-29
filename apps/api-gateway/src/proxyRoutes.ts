@@ -12,9 +12,8 @@ import { logger } from './logger';
  * `/api/catalog/products` reaches catalog-service's real
  * `/catalog/products` unchanged.
  *
- * `notification-service` is DELIBERATELY NOT routed here at all - it
- * exposes no HTTP surface whatsoever (pure BullMQ consumer), nothing for
- * a frontend to call. `inventory-service` (4003) IS routed as of Ch6.7a:
+ * `notification-service` is routed ONLY for `/api/support` (W1: the public
+ * contact form) - its queue worker has no other HTTP surface. `inventory-service` (4003) IS routed as of Ch6.7a:
  * its one admin endpoint (`POST /:skuId/set`) is now real-RBAC-gated
  * (`requireAdmin('inventory.manage')`) and an admin dashboard needs to
  * reach it; its OTHER route (`GET /:skuId`) stays SERVICE-ONLY
@@ -40,6 +39,8 @@ const ROUTES: Array<{ prefix: string; target: string }> = [
   { prefix: '/api/catalog', target: config.services.catalog },
   { prefix: '/api/inventory', target: config.services.inventory },
   { prefix: '/api/cart', target: config.services.cart },
+  // W1: wishlist is served by cart-service (cart schema) at its own /wishlist mount.
+  { prefix: '/api/wishlist', target: config.services.cart },
   { prefix: '/api/orders', target: config.services.order },
   { prefix: '/api/payments', target: config.services.payment },
   { prefix: '/api/sellers', target: config.services.seller },
@@ -49,6 +50,7 @@ const ROUTES: Array<{ prefix: string; target: string }> = [
   { prefix: '/api/search', target: config.services.search },
   { prefix: '/api/invoices', target: config.services.invoice },
   { prefix: '/api/settlements', target: config.services.settlement },
+  { prefix: '/api/support', target: config.services.notification },
   { prefix: '/api/admin/sellers', target: config.services.seller },
   { prefix: '/api/admin/settlements', target: config.services.settlement },
   { prefix: '/api/admin/returns', target: config.services.returns },
@@ -88,6 +90,7 @@ function blockInternalPaths(req: Request, res: Response, next: NextFunction): vo
 const ALWAYS_AUTHENTICATED_PREFIXES = [
   '/api/orders',
   '/api/cart',
+  '/api/wishlist',
   '/api/addresses',
   '/api/inventory',
   '/api/admin/sellers',
@@ -96,8 +99,14 @@ const ALWAYS_AUTHENTICATED_PREFIXES = [
   '/api/admin/invoices',
 ];
 
+/** W1: the one public endpoint under an otherwise always-authenticated prefix (guest
+ * order-track, POST only) - order-service enforces its own orderNumber+phone check. */
+const PUBLIC_EXCEPTIONS = [{ method: 'POST', path: '/api/orders/track' }];
+
 function fastFailMissingAuth(req: Request, res: Response, next: NextFunction): void {
-  const needsAuth = ALWAYS_AUTHENTICATED_PREFIXES.some((prefix) => req.path.startsWith(prefix));
+  const isPublic = PUBLIC_EXCEPTIONS.some((e) => e.method === req.method && e.path === req.path);
+  const needsAuth =
+    !isPublic && ALWAYS_AUTHENTICATED_PREFIXES.some((prefix) => req.path.startsWith(prefix));
   if (needsAuth && !req.headers.authorization) {
     res.status(401).json(buildApiError('UNAUTHORIZED', 'Invalid or missing authentication token'));
     return;

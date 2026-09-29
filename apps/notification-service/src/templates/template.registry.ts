@@ -2,10 +2,33 @@ import { config } from '../config';
 import type { RenderedMessage } from '../providers/provider.interface';
 
 export type TemplateKey =
-  'OTP' | 'ORDER_PLACED' | 'ORDER_SHIPPED' | 'ORDER_DELIVERED' | 'REFUND_PROCESSED';
+  | 'OTP'
+  | 'ORDER_PLACED'
+  | 'ORDER_SHIPPED'
+  | 'ORDER_DELIVERED'
+  | 'REFUND_PROCESSED'
+  | 'SUPPORT_MESSAGE';
 type RenderableChannel = 'SMS' | 'WHATSAPP' | 'EMAIL';
 
 type ChannelRenderer = (data: Record<string, unknown>) => RenderedMessage;
+
+/** For customer-typed text placed into an HTML email. */
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** For customer-typed text placed into a plain-text header such as the subject. */
+function singleLine(value: unknown, max = 80): string {
+  return String(value ?? '')
+    .replace(/[\r\n\t]+/g, ' ')
+    .trim()
+    .slice(0, max);
+}
 
 /**
  * One entry per notification event; each entry maps the channels IT
@@ -160,6 +183,20 @@ const templates: Record<TemplateKey, Partial<Record<RenderableChannel, ChannelRe
       )} for order <strong>${String(
         data.orderNumber,
       )}</strong> has been processed. It will reflect in 5-7 business days.</p>`,
+    }),
+  },
+
+  // W1: public contact-form message forwarded to the store's support inbox (EMAIL only). Every
+  // field is customer-typed, so all of it is HTML-escaped.
+  SUPPORT_MESSAGE: {
+    EMAIL: (data) => ({
+      channel: 'EMAIL',
+      subject: `Contact form ${singleLine(data.reference)} from ${singleLine(data.name)}`,
+      html: `<p><strong>Reference:</strong> ${escapeHtml(data.reference)}</p><p><strong>Name:</strong> ${escapeHtml(
+        data.name,
+      )}<br><strong>Phone:</strong> ${escapeHtml(data.phone)}<br><strong>Email:</strong> ${escapeHtml(
+        data.email ?? '-',
+      )}</p><p style="white-space:pre-wrap">${escapeHtml(data.message)}</p>`,
     }),
   },
 };

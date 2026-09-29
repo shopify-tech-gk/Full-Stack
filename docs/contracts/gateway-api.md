@@ -25,13 +25,15 @@ already mounts its own routers at a path matching this prefix.
 | `/api/catalog`           | catalog-service (4002)    | public browse + seller/admin writes                                                                                      |
 | `/api/inventory`         | inventory-service (4003)  | admin stock-set op only; its other route stays SERVICE-ONLY even though reachable by path                                |
 | `/api/cart`              | cart-service (4004)       |                                                                                                                          |
-| `/api/orders`            | order-service (4005)      | ALWAYS-AUTHENTICATED at the gateway (fast-fail 401 if no token at all)                                                   |
+| `/api/wishlist`          | cart-service (4004)       | v1.1; ALWAYS-AUTHENTICATED at the gateway                                                                                |
+| `/api/orders`            | order-service (4005)      | ALWAYS-AUTHENTICATED at the gateway (fast-fail 401 if no token at all), except public `POST /api/orders/track` (v1.1)    |
 | `/api/payments`          | payment-service (4006)    | includes the Razorpay webhook - raw body preserved (see below)                                                           |
 | `/api/sellers`           | seller-service (4007)     | includes the marketplace hard-off gate                                                                                   |
 | `/api/logistics`         | logistics-service (4009)  |                                                                                                                          |
 | `/api/returns`           | returns-service (4010)    |                                                                                                                          |
 | `/api/addresses`         | address-service (4011)    | ALWAYS-AUTHENTICATED at the gateway                                                                                      |
 | `/api/search`            | search-service (4013)     | public, unauthenticated                                                                                                  |
+| `/api/support`           | notification-service (4012) | v1.1; public contact form (`POST /api/support/messages`) - the service's only public route                             |
 | `/api/invoices`          | invoice-service (4014)    |                                                                                                                          |
 | `/api/settlements`       | settlement-service (4008) |                                                                                                                          |
 | `/api/admin/sellers`     | seller-service (4007)     | admin sub-router, mounted at `/admin/sellers` on the backend                                                             |
@@ -40,8 +42,8 @@ already mounts its own routers at a path matching this prefix.
 | `/api/admin/invoices`    | invoice-service (4014)    | admin sub-router, mounted at `/admin/invoices`                                                                           |
 | `/api/admin`             | admin-service (4015)      | registered LAST - never swallows the 4 more specific `/api/admin/<x>` prefixes above; login/me/admin-management/settings |
 
-`notification-service` (4012) is NOT routed at all - it has no HTTP
-surface (pure BullMQ consumer), nothing for a frontend to call.
+`notification-service` (4012) is routed ONLY for `/api/support` (v1.1);
+its BullMQ consumer internals have no HTTP surface.
 
 ## `/internal/*` exclusion
 
@@ -60,7 +62,11 @@ own `404 {"code":"NOT_FOUND"}`, never reaching the real service.
 - **CORS**: centralized (`CORS_ALLOWED_ORIGINS` env), allowed origins get
   `Access-Control-Allow-Origin`, others don't.
 - **Rate limiting**: coarse IP-level backstop (`express-rate-limit`,
-  default 300/60s), 429 with a `RATE_LIMITED` `ApiError` envelope.
+  default 300/60s), 429 with a `RATE_LIMITED` `ApiError` envelope. v1.1
+  adds a stricter per-IP limiter shared by the public form POSTs
+  (`/api/orders/track`, `/api/support/messages`; default 20/15min via
+  `PUBLIC_FORM_RATE_LIMIT_MAX` / `PUBLIC_FORM_RATE_LIMIT_WINDOW_MS`) - it
+  lives here because services behind the proxy don't see client IPs.
 - **Request tracing**: `x-request-id` generated if absent, forwarded
   downstream unchanged, echoed back to the client - correlates gateway and
   service logs for one request (grep the same id across both).
@@ -76,9 +82,11 @@ own `404 {"code":"NOT_FOUND"}`, never reaching the real service.
   signed payload sent directly to payment-service vs. through the gateway
   both verify and process identically.
 - **Auth**: hybrid. Gateway fast-fails (401, no token at all) on
-  `/api/orders`, `/api/cart`, `/api/addresses`, `/api/inventory`, and the 4
+  `/api/orders`, `/api/cart`, `/api/wishlist`, `/api/addresses`,
+  `/api/inventory`, and the 4
   admin-scoped `/api/admin/<x>` prefixes - every route under those has no
-  public/optional-auth path. Every other prefix is pure routing (mixed
+  public/optional-auth path (sole explicit exception: `POST
+  /api/orders/track`, v1.1). Every other prefix is pure routing (mixed
   public/protected routes coexist there) - the service's own
   `requireAuth`/`optionalAuth`/`requireAdmin` remains the real boundary.
 

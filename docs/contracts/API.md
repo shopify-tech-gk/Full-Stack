@@ -1,6 +1,7 @@
-# YouMart Public API Contract (v1)
+# YouMart Public API Contract (v1.1)
 
-**STATUS: FROZEN as of chapter-7-complete (2026-09-28).**
+**STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
+revision 2026-09-29 (W1 — see §17 change log).**
 
 This is the single, authoritative, consolidated contract for the **public
 gateway API** — everything a frontend web app or mobile client calls. It
@@ -15,11 +16,12 @@ Every endpoint documented here has been verified against the real running
 system as of this freeze (see "Verification" note per section where
 relevant, and the full verification log in the Ch7.4 commit).
 
-**Versioning policy**: this is v1 of the contract. Changes after this
+**Versioning policy**: this is v1.1 of the contract. Changes after the
 freeze must be additive/backward-compatible (new optional fields, new
-endpoints) wherever possible. Any breaking change (removed/renamed field,
-changed status code, changed auth requirement) requires a new major
-version and an explicit migration note here.
+endpoints) wherever possible; each additive revision bumps the MINOR
+version (v1.1, v1.2, ...) and is listed in §17. Any breaking change
+(removed/renamed field, changed status code, changed auth requirement)
+requires a new major version and an explicit migration note here.
 
 **The client talks to the gateway ONLY** — `http://<host>:4000` in dev, a
 single public origin in production. Every path below is prefixed `/api/`
@@ -119,7 +121,7 @@ All timestamps are ISO 8601 UTC strings, e.g. `"2026-09-28T06:30:28.845Z"`.
 | Token                  | Alg                         | TTL                                        | Carried via                           | Claims of interest                      |
 | ---------------------- | --------------------------- | ------------------------------------------ | ------------------------------------- | --------------------------------------- |
 | Customer access token  | RS256                       | 900s (15 min)                              | `Authorization: Bearer`               | `sub` (userId), `typ:"access"`, `phone` |
-| Customer refresh token | opaque (hashed server-side) | 1,209,600s (14 days), rotated on every use | `ym_rt` httpOnly cookie, `Path=/auth` | n/a (not a JWT)                         |
+| Customer refresh token | opaque (hashed server-side) | 1,209,600s (14 days), rotated on every use | `ym_rt` httpOnly cookie, `Path=/api/auth` | n/a (not a JWT)                     |
 | Admin access token     | RS256                       | 28,800s (8h)                               | `Authorization: Bearer`               | `sub` (adminId), `typ:"admin"`, `role`  |
 
 There is **no refresh token for admins** — staff re-login when the 8h
@@ -156,7 +158,8 @@ verifying tokens itself) — documented for completeness/mobile edge cases.
 
 - **Auth**: public
 - **Body**: `{ phone: string, code: string (6 digits), purpose?: "LOGIN" | "PHONE_VERIFY" }`
-- **200**: `{ "accessToken": string, "expiresIn": 900, "user": { "id": Uuid, "phone": string, "isPhoneVerified": true } }` + `Set-Cookie: ym_rt=...; HttpOnly; Path=/auth; SameSite=Lax; Max-Age=1209600`
+- **200**: `{ "accessToken": string, "expiresIn": 900, "user": { "id": Uuid, "phone": string, "isPhoneVerified": true } }` + `Set-Cookie: ym_rt=...; HttpOnly; Path=/api/auth; SameSite=Lax; Max-Age=1209600` (+ `Secure` in production)
+- **v1.1 fix**: v1.0 set `Path=/auth`, which a browser never sends to `/api/auth/refresh` (the path the client actually calls through the gateway), so refresh silently failed. The path is now `/api/auth` (configurable server-side via `REFRESH_COOKIE_PATH`). Cookies issued before the fix are orphaned — affected users simply log in again.
 - **Errors**: `400 VALIDATION_ERROR` (wrong/expired code — generic message, never reveals which); `429 RATE_LIMITED` (5 wrong attempts on one challenge); `403 FORBIDDEN` (account BLOCKED)
 - **Verified live** (2026-09-28): exact match, incl. cookie flags.
 
@@ -337,6 +340,44 @@ proxying.
 
 ---
 
+## 6a. Wishlist domain (`/api/wishlist`) — v1.1
+
+All routes require a customer bearer token; gateway fast-fails `401`
+with no token. Every wishlist is scoped to the caller. Owned by
+cart-service. Product details are resolved LIVE from the catalog on
+every read (never snapshotted) — a wishlist shows today's price.
+
+`WishlistView`:
+
+```json
+{
+  "items": [{ "wishlistItemId": "Uuid", "skuId": "Uuid", "productId": "Uuid", "productSlug": "string | null", "title": "string | null", "sellingPrice": "Money | null", "mrp": "Money | null", "available": boolean, "addedAt": "ISO" }],
+  "itemCount": number
+}
+```
+
+`available:false` with `null` product fields means the product was
+removed/deactivated (or the catalog was briefly unreachable) — show it
+as "no longer available" and let the user remove it. Newest first.
+
+### `GET /api/wishlist`
+
+- **200**: `WishlistView` (never `404` — empty wishlist is `{items:[], itemCount:0}`)
+
+### `POST /api/wishlist/items`
+
+- **Body**: `{ skuId: Uuid }`
+- **200**: updated `WishlistView`
+- **Errors**: `400 VALIDATION_ERROR`; `404 NOT_FOUND` (unknown SKU); `409 CONFLICT` (`"Your wishlist is full (maximum 200 items)"`)
+- **Notes**: idempotent — adding a SKU already on the wishlist returns `200` with no duplicate.
+
+### `DELETE /api/wishlist/items/:wishlistItemId`
+
+- **200**: updated `WishlistView`
+- **Errors**: `404` (`"Wishlist item not found"` — also for another user's item)
+
+---
+
 ## 7. Address domain (`/api/addresses`)
 
 All routes require a customer bearer token; gateway fast-fails `401`
@@ -388,7 +429,8 @@ to read/modify anyone else's.
 ## 8. Order domain (`/api/orders`)
 
 All routes require a customer bearer token; gateway fast-fails `401`
-with no token. Every order is scoped to the caller.
+with no token. Every order is scoped to the caller. **Single exception
+(v1.1)**: `POST /api/orders/track` is public.
 
 ### `POST /api/orders/checkout`
 
@@ -417,6 +459,38 @@ with no token. Every order is scoped to the caller.
 
 - **200**: `OrderView` (same shape as checkout's response)
 - **Errors**: `404` (not caller's own, or doesn't exist)
+
+### `POST /api/orders/track` — v1.1, guest order tracking
+
+- **Auth**: public (no token needed; a token is ignored)
+- **Body**: `{ orderNumber: string, phone: string }` — `orderNumber` is case-insensitive; `phone` is the order's DELIVERY phone, accepted as `+91XXXXXXXXXX`, `91XXXXXXXXXX`, `0XXXXXXXXXX` or `XXXXXXXXXX` (spaces/dashes ignored)
+- **200** (safe subset only — no ids, prices, names, street address or phone):
+  ```json
+  {
+    "orderNumber": "string", "status": "PENDING_PAYMENT | CONFIRMED | CANCELLED", "placedAt": "ISO",
+    "shipTo": { "city": "string", "state": "string" },
+    "items": [{ "title": "string", "quantity": number, "sellerStatus": "...", "shipment": { "status": "string", "carrier": "string | null", "awbNumber": "string | null", "events": [{ "status": "string", "location": "string | null", "occurredAt": "ISO" }] } }],
+    "timeline": [{ "status": "string", "at": "ISO" }]
+  }
+  ```
+  `shipTo` may be `null`; `shipment` is `null` until the item has shipped.
+- **Errors**: `404 NOT_FOUND` `"No order matches that order number and phone number"` — returned IDENTICALLY for unknown order number, wrong phone, and malformed input (no enumeration); `429 RATE_LIMITED` (§14)
+
+### `POST /api/orders/:id/cancel` — v1.1
+
+- **Body**: `{ reason: string (3-200), comment?: string (<=1000) }`
+- **200** `{ outcome: "CANCELLED", order: OrderView, cancelRequest: null }` — order was `PENDING_PAYMENT` (unpaid): cancelled immediately, all items `CANCELLED`, held stock released. Idempotent: an already-`CANCELLED` order returns the same `200`.
+- **202** `{ outcome: "CANCEL_REQUESTED", order: OrderView, cancelRequest: CancelRequestView }` — order is `CONFIRMED` (paid) and nothing has shipped: a cancel REQUEST is recorded for staff review; the order is unchanged until an admin approves (refund + restock, see §13) or rejects it. Asking again while a request is open returns the SAME request.
+- `CancelRequestView`: `{ cancelRequestId, orderId, status: "REQUESTED"|"APPROVED"|"REJECTED", reason, comment: string|null, resolutionNote: string|null, createdAt, resolvedAt: ISO|null }`
+- **Errors**: `400 VALIDATION_ERROR`; `404` (not caller's order); `409 CONFLICT` (`"This order has already shipped and can no longer be cancelled - please request a return instead"`, or the order changed state mid-request)
+- **Notes**: requires login — there is no guest cancel (a phone number alone is not strong enough to authorise a state change).
+
+### `GET /api/orders/:id/notify` / `PUT /api/orders/:id/notify` — v1.1
+
+- **PUT body**: `{ whatsapp: boolean, sms: boolean }`
+- **200** (both): `{ orderId, whatsapp: boolean, sms: boolean, updatedAt: ISO | null }` — `GET` with no saved preference returns the defaults `{whatsapp:true, sms:false, updatedAt:null}`
+- **Errors**: `400`; `404` (not caller's order)
+- **Notes**: v1.1 STORES the per-order preference only; outbound senders do not yet consult it, and SMS is not an active channel yet.
 
 ---
 
@@ -598,6 +672,13 @@ null` is expected/correct for the platform's own single-vendor seller.
 | --------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `PATCH /api/orders/admin/items/:orderItemId/status` | `{ status: "PACKED" }`                   | `200` item — admin-driven pack, the only path that can ever pack the default (unowned) seller's items (Ch7.1) |
 | `GET /api/orders/admin/sellers/:sellerId/items`     | — (`cursor?`, `limit?`, `sellerStatus?`) | `200 Paginated<SellerOrderItemView>` — what a given seller (incl. the default one) needs fulfilled (Ch7.2)    |
+| `GET /api/orders/admin/cancel-requests` (v1.1)      | — (`status?`, `cursor?`, `limit?`)       | `200 Paginated<CancelRequestView>` (§8), newest first                                                         |
+| `POST /api/orders/admin/cancel-requests/:id/approve` (v1.1, **`refunds.manage`**) | `{ note?: string }` | `200` `{ cancelRequest, refund: {refundId, paymentId, amount, status, razorpayRefundId, blocked} }` — refunds the full `grandTotal` FIRST, then restocks and cancels every unshipped item, then marks the order `CANCELLED`; `409` if already resolved or anything shipped meanwhile |
+| `POST /api/orders/admin/cancel-requests/:id/reject` (v1.1) | `{ note?: string }`               | `200` `{ cancelRequest }` with `status:"REJECTED"`; order untouched                                           |
+
+v1.1 cancel note: an invoice already issued for an approved-cancel
+order is NOT reversed (credit notes are not built yet) — finance handles
+that manually for now.
 
 ### Inventory management (requires `inventory.manage`) — mounted at `/api/inventory`
 
@@ -651,6 +732,18 @@ truth and may not map 1:1 to the table above in the future.
 
 ---
 
+## 13a. Support / contact domain (`/api/support`) — v1.1
+
+### `POST /api/support/messages`
+
+- **Auth**: public
+- **Body**: `{ name: string (1-200), phone: string (same formats as §8 track), email?: string (valid email), message: string (10-2000) }`
+- **201**: `{ "messageId": "Uuid", "reference": "SUP-XXXXXXXX", "receivedAt": "ISO" }` — show `reference` to the user
+- **Errors**: `400 VALIDATION_ERROR` (incl. unrecognised phone); `429 RATE_LIMITED` (§14)
+- **Notes**: the message is stored for staff and an email is queued to the support inbox. The contact's personal fields are redacted in notification logs.
+
+---
+
 ## 14. Rate limits (client-relevant)
 
 | Surface                      | Limit                                                | Response on exceed |
@@ -660,6 +753,9 @@ truth and may not map 1:1 to the table above in the future.
 | `POST /api/auth/otp/verify`  | 5 wrong attempts per challenge, then must re-request | `429 RATE_LIMITED` |
 | `POST /api/admin/login`      | 10 attempts/15min per IP                             | `429 RATE_LIMITED` |
 | `POST /api/orders/checkout`  | 20 attempts/10min per logged-in user                 | `429 RATE_LIMITED` |
+| `POST /api/orders/track` + `POST /api/support/messages` (v1.1) | 20 combined/15min per IP (gateway) | `429 RATE_LIMITED` |
+| `POST /api/orders/track` (v1.1) | 10/15min per order number                         | `429 RATE_LIMITED` |
+| `POST /api/support/messages` (v1.1) | 5/hour per phone number                       | `429 RATE_LIMITED` |
 
 A client should treat `429` as "back off and retry later" (not a bug) —
 show a clear "too many attempts" message, don't auto-retry immediately.
@@ -679,8 +775,9 @@ show a clear "too many attempts" message, don't auto-retry immediately.
 - **Background/scheduled jobs** (nightly search reindex, weekly
   settlement scheduler) — no HTTP surface at all, not reachable by any
   client.
-- **`notification-service`** — has no HTTP surface whatsoever (pure
-  BullMQ consumer); not in the gateway's routing table at all.
+- **`notification-service`** internals — the BullMQ consumer has no
+  HTTP surface. Its ONLY public route is `POST /api/support/messages`
+  (v1.1, §13a).
 
 ---
 
@@ -694,3 +791,18 @@ regression to fix in code (reality must keep matching THIS doc, not the
 other way around) — unless a deliberate, versioned contract change is
 being made, in which case: bump to v2, keep v1 endpoints working
 unchanged wherever possible (additive), and document the migration here.
+Purely additive changes bump the minor version instead (§17).
+
+---
+
+## 17. Change log
+
+### v1.1 — 2026-09-29 (W1, additive)
+
+- **Fixed**: refresh cookie `ym_rt` is now `Path=/api/auth` (was `/auth`, never sent to `/api/auth/refresh` through the gateway) — §2.2, §3.
+- **Added**: `POST /api/orders/track` (public guest tracking), `POST /api/orders/:id/cancel`, `GET|PUT /api/orders/:id/notify` — §8.
+- **Added**: admin `GET /api/orders/admin/cancel-requests`, `POST .../:id/approve`, `POST .../:id/reject` — §13.
+- **Added**: `GET /api/wishlist`, `POST /api/wishlist/items`, `DELETE /api/wishlist/items/:wishlistItemId` — §6a.
+- **Added**: `POST /api/support/messages` — §13a.
+- **Added**: rate limits for the new public endpoints — §14.
+- No existing field, status code or auth requirement changed.

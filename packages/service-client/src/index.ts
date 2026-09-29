@@ -9,3 +9,4 @@ export * from './clients/payment.client';
 export * from './clients/address.client';
 export * from './clients/auth.client';
 export * from './clients/settings.client';
+export * from './clients/logistics.client';

@@ -8,12 +8,12 @@ import { getConnection } from '@youmart/queue';
 import { logger } from './logger';
 import { prisma } from './db';
 import { config } from './config';
+import { supportRouter } from './routes/support.routes';
 
 /**
  * Builds the Express app without listening - mirrors the template every
- * service in this repo copies. notification-service has no protected HTTP
- * surface today (it is a queue worker, not a request-driven API) - only
- * health/ready are exposed.
+ * service in this repo copies. Besides the queue worker, the only HTTP surface is
+ * health/ready and (W1) the public contact form at /support.
  */
 export function createApp(): Express {
   const app = express();
@@ -48,6 +48,8 @@ export function createApp(): Express {
         next(new AppError('INTERNAL_ERROR', 503, 'Database or Redis is not reachable'));
       });
   });
+
+  app.use('/support', supportRouter);
 
   app.use((_req, _res, next) => {
     next(new AppError('NOT_FOUND', 404, 'Route not found'));

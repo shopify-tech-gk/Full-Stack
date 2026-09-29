@@ -363,7 +363,28 @@ export async function handleWebhook(input: HandleWebhookInput): Promise<void> {
     // token per call, closing the "webhook has no user token" gap that
     // previously required caching one (see git history for the old
     // `pendingAuthTokens` stop-gap this replaced).
-    await orderClient.confirmOrder(payment.orderId);
+    try {
+      await orderClient.confirmOrder(payment.orderId);
+    } catch (err: unknown) {
+      // W1: the customer cancelled the unpaid order (stock already released) but the capture
+      // still arrived - refund it in full instead of failing every Razorpay retry.
+      const order =
+        err instanceof AppError && err.httpStatus === 409
+          ? await orderClient.getInternalOrder(payment.orderId)
+          : null;
+      if (order?.status !== 'CANCELLED') {
+        throw err;
+      }
+      const refund = await createRefund({
+        orderId: payment.orderId,
+        amount: decimalToMoney(payment.amount),
+        reason: 'Payment captured after the order was cancelled',
+      });
+      logger.warn(
+        { orderId: payment.orderId, refundId: refund.refundId, blocked: refund.blocked },
+        'payment captured for a cancelled order - auto-refunded',
+      );
+    }
   } else if (payload.event === 'payment.failed') {
     await prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } });
     await orderClient.cancelOrder(payment.orderId);

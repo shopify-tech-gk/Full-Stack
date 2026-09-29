@@ -465,21 +465,30 @@ export async function confirmOrder(orderId: string): Promise<void> {
   // (seller-order.service.ts). Never touches a line already past PENDING
   // (e.g. a re-entrant call after a partial failure) - same idempotent
   // spirit as the rest of this function.
-  await prisma.$transaction([
-    prisma.order.update({ where: { id: orderId }, data: { status: 'CONFIRMED' } }),
-    prisma.orderItem.updateMany({
+  // W1: the status flip is CONDITIONAL on still being PENDING_PAYMENT - a customer cancel
+  // (cancel.service.ts) that lands between the read above and this write wins, and the
+  // resulting 409 lets payment-service refund the capture instead of confirming.
+  await prisma.$transaction(async (tx) => {
+    const claimed = await tx.order.updateMany({
+      where: { id: orderId, status: 'PENDING_PAYMENT', deletedAt: null },
+      data: { status: 'CONFIRMED' },
+    });
+    if (claimed.count === 0) {
+      throw new AppError('CONFLICT', 409, 'Order is no longer awaiting payment');
+    }
+    await tx.orderItem.updateMany({
       where: { orderId, sellerStatus: 'PENDING', deletedAt: null },
       data: { sellerStatus: 'CONFIRMED' },
-    }),
-    prisma.orderStatusHistory.create({
+    });
+    await tx.orderStatusHistory.create({
       data: {
         orderId,
         fromStatus: 'PENDING_PAYMENT',
         toStatus: 'CONFIRMED',
         note: 'Payment captured',
       },
-    }),
-  ]);
+    });
+  });
 
   // Order-placed notification (Ch6.2, template names aligned Ch6.2c) -
   // BEST-EFFORT, NEVER blocks or fails order confirmation itself: a

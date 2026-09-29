@@ -5,6 +5,8 @@ import {
   createSellerClient,
   createAddressClient,
   createAuthClient,
+  createPaymentClient,
+  createLogisticsClient,
   type ServiceAuthOptions,
 } from '@youmart/service-client';
 import { config } from './config';
@@ -57,6 +59,21 @@ export const addressClient = createAddressClient({
 // (Ch6.2) goes over HTTP instead.
 export const authClient = createAuthClient({
   baseUrl: config.authServiceUrl,
+  timeoutMs: config.serviceHttpTimeoutMs,
+  serviceAuth,
+});
+
+// W1: refunds when an admin approves a customer's cancel request (same internal refund endpoint
+// returns-service uses).
+export const paymentClient = createPaymentClient({
+  baseUrl: config.paymentServiceUrl,
+  timeoutMs: config.serviceHttpTimeoutMs,
+  serviceAuth,
+});
+
+// W1: shipment tracking events for the public guest order-track view.
+export const logisticsClient = createLogisticsClient({
+  baseUrl: config.logisticsServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
   serviceAuth,
 });

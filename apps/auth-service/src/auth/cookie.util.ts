@@ -16,6 +16,6 @@ export const REFRESH_COOKIE_OPTIONS: CookieOptions = {
   // Native mobile clients don't use a browser cookie jar at all, so this
   // choice only affects the web client.
   sameSite: 'lax',
-  path: '/auth',
+  path: config.refreshCookiePath,
   domain: config.cookieDomain || undefined,
 };

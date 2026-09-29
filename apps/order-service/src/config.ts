@@ -32,6 +32,10 @@ const orderServiceEnvSchema = baseEnvSchema.extend({
   // resolving the buyer's email for the order-confirmation notification
   // (Ch6.2) goes over HTTP too.
   AUTH_SERVICE_URL: z.string().url(),
+  // W1: refunds for approved cancel requests (payment-service) and shipment tracking for the
+  // guest order-track view (logistics-service) - both over HTTP, cross-schema isolation.
+  PAYMENT_SERVICE_URL: z.string().url(),
+  LOGISTICS_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
@@ -57,6 +61,8 @@ export interface OrderServiceConfig {
   sellerServiceUrl: string;
   addressServiceUrl: string;
   authServiceUrl: string;
+  paymentServiceUrl: string;
+  logisticsServiceUrl: string;
   serviceHttpTimeoutMs: number;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
@@ -78,6 +84,8 @@ export const config: Readonly<OrderServiceConfig> = Object.freeze({
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
   addressServiceUrl: parsed.ADDRESS_SERVICE_URL,
   authServiceUrl: parsed.AUTH_SERVICE_URL,
+  paymentServiceUrl: parsed.PAYMENT_SERVICE_URL,
+  logisticsServiceUrl: parsed.LOGISTICS_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,

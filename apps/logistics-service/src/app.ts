@@ -11,6 +11,7 @@ import './providers/registry';
 import { adminLogisticsRouter } from './routes/admin.routes';
 import { sellerLogisticsRouter } from './routes/seller.routes';
 import { customerLogisticsRouter } from './routes/customer.routes';
+import { internalLogisticsRouter } from './routes/internal.routes';
 
 /**
  * Builds the Express app without listening - mirrors the template every
@@ -52,6 +53,7 @@ export function createApp(): Express {
 
   app.use('/logistics/seller', sellerLogisticsRouter);
   app.use('/logistics/track', customerLogisticsRouter);
+  app.use('/logistics/internal', internalLogisticsRouter);
   app.use('/logistics', adminLogisticsRouter);
 
   app.use((_req, _res, next) => {

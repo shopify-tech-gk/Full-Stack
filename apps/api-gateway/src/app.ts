@@ -6,7 +6,7 @@ import { buildApiError } from '@youmart/errors';
 import { config } from './config';
 import { logger } from './logger';
 import { requestIdMiddleware } from './requestId';
-import { rateLimiter } from './rateLimiter';
+import { publicFormRateLimiter, rateLimiter } from './rateLimiter';
 import { gatewayHealth, servicesHealth } from './health';
 import { registerProxyRoutes } from './proxyRoutes';
 
@@ -48,6 +48,7 @@ export function createApp(): Express {
   app.get('/health/services', servicesHealth);
 
   app.use(rateLimiter);
+  app.use(publicFormRateLimiter);
 
   registerProxyRoutes(app);
 

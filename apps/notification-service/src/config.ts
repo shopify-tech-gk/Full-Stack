@@ -72,6 +72,9 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
   // original request but required by Zoho Mail's actual API; documented in
   // the Ch6.2 report as a decision made to fill that gap.
   ZOHO_ACCOUNT_ID: z.string().min(1),
+
+  // W1: where public contact-form messages are forwarded (EMAIL). Not a secret.
+  SUPPORT_INBOX_EMAIL: z.string().email().default('info@youmart.in'),
 });
 
 const parsed = loadConfigWith(notificationServiceEnvSchema);
@@ -108,6 +111,7 @@ export interface NotificationServiceConfig {
   zohoFromEmail: string;
   zohoAccountRegion: string;
   zohoAccountId: string;
+  supportInboxEmail: string;
 }
 
 export const config: Readonly<NotificationServiceConfig> = Object.freeze({
@@ -138,4 +142,5 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   zohoFromEmail: parsed.ZOHO_FROM_EMAIL,
   zohoAccountRegion: parsed.ZOHO_ACCOUNT_REGION,
   zohoAccountId: parsed.ZOHO_ACCOUNT_ID,
+  supportInboxEmail: parsed.SUPPORT_INBOX_EMAIL,
 });
