@@ -95,6 +95,42 @@ export const colors = {
     /** Gradient stops, to right bottom. */
     instagram: ['#f9ce34', '#ee2a7b', '#6228d7'],
   },
+  /** Category listing + product page (WooCommerce templates). */
+  catalog: {
+    /** Pure-blue 1px rules: sidebar divider, loop cards, tabs line, form fields. */
+    rule: '#0000ff',
+    starFill: '#ffcc33',
+    tab: '#515151',
+    reviewBorder: '#e1dde7',
+    reviewMeta: '#777777',
+    muted: '#333333',
+    qtyBorder: '#01589e',
+  },
+  filter: {
+    panel: '#6ec1e4',
+    apply: '#003f82',
+    applyHover: '#002d5e',
+    thumb: '#1a3c6e',
+    track: '#c8c8c8',
+    text: '#111111',
+  },
+  steps: {
+    line: '#cccccc',
+    idle: '#e0e0e0',
+    glow: '#00cfff',
+    dark: '#000d1a',
+  },
+  brandPopup: {
+    bg: '#e3f2fd',
+    title: '#01589e',
+    border: '#c9dff0',
+  },
+  shareButton: {
+    facebook: '#0765fe',
+    x: '#2a2a2a',
+    whatsapp: '#55eb4c',
+    more: '#ee8e2d',
+  },
   // Declared in the Elementor kit but NOT observed in the homepage top section; unverified.
   kit: {
     primary: '#6EC1E4',

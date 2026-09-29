@@ -14,6 +14,8 @@ import {
 
 interface CategoryMegaMenuProps {
   categories: readonly StoreCategory[];
+  /** Inner pages (listing/product) show only the desktop strip, as live does. */
+  mobileGrid?: boolean;
 }
 
 /**
@@ -21,7 +23,7 @@ interface CategoryMegaMenuProps {
  * third level). Below 1025px: plain grid - 4 columns of 75px circles on mobile, 5 of 158px on
  * tablet - exactly as the live site switches layouts.
  */
-export function CategoryMegaMenu({ categories }: CategoryMegaMenuProps) {
+export function CategoryMegaMenu({ categories, mobileGrid = true }: CategoryMegaMenuProps) {
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
 
   return (
@@ -30,29 +32,31 @@ export function CategoryMegaMenu({ categories }: CategoryMegaMenuProps) {
         Shop by category
       </h2>
 
-      <ul className="grid grid-cols-4 gap-y-[20px] md:grid-cols-5 lg:hidden">
-        {categories.map((category) => (
-          <li key={category.slug}>
-            <Link
-              href={categoryHref(category.slug)}
-              className="mx-auto flex w-[75px] flex-col items-center text-center md:w-[158px]"
-            >
-              <span className="relative block size-[75px] overflow-hidden rounded-full md:size-[158px]">
-                <Image
-                  src={categoryImagePath(category.slug)}
-                  alt=""
-                  fill
-                  sizes="(min-width: 768px) 158px, 75px"
-                  className="object-cover"
-                />
-              </span>
-              <span className="mt-[6px] font-sans text-[10px] font-bold leading-[13px] text-ink-body md:mt-[7px] md:text-[15px] md:leading-[23px]">
-                {category.name}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {mobileGrid && (
+        <ul className="grid grid-cols-4 gap-y-[20px] md:grid-cols-5 lg:hidden">
+          {categories.map((category) => (
+            <li key={category.slug}>
+              <Link
+                href={categoryHref(category.slug)}
+                className="mx-auto flex w-[75px] flex-col items-center text-center md:w-[158px]"
+              >
+                <span className="relative block size-[75px] overflow-hidden rounded-full md:size-[158px]">
+                  <Image
+                    src={categoryImagePath(category.slug)}
+                    alt=""
+                    fill
+                    sizes="(min-width: 768px) 158px, 75px"
+                    className="object-cover"
+                  />
+                </span>
+                <span className="mt-[6px] font-sans text-[10px] font-bold leading-[13px] text-ink-body md:mt-[7px] md:text-[15px] md:leading-[23px]">
+                  {category.name}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="relative -mt-px hidden bg-strip-frame px-[10px] pb-[14px] pt-[8px] lg:block">
         <ul className="flex flex-wrap justify-center bg-page">

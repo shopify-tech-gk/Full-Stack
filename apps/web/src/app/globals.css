@@ -45,3 +45,48 @@
     display: none;
   }
 }
+
+/* Two overlaid range inputs = live's dual-thumb price slider; only the thumbs take pointer input. */
+@layer components {
+  .dual-range {
+    @apply pointer-events-none absolute inset-x-0 m-0 h-full w-full appearance-none bg-transparent;
+  }
+  .dual-range::-webkit-slider-runnable-track {
+    height: 4px;
+    background: transparent;
+  }
+  .dual-range::-webkit-slider-thumb {
+    pointer-events: auto;
+    width: 17px;
+    height: 17px;
+    margin-top: -6.5px;
+    appearance: none;
+    cursor: pointer;
+    border-radius: 9999px;
+    background: theme('colors.filter.thumb');
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+  .dual-range::-moz-range-track {
+    height: 4px;
+    border: 0;
+    background: transparent;
+  }
+  .dual-range::-moz-range-thumb {
+    pointer-events: auto;
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    border: 0;
+    border-radius: 9999px;
+    background: theme('colors.filter.thumb');
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+  .dual-range:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid theme('colors.brand.DEFAULT');
+    outline-offset: 2px;
+  }
+  .dual-range:focus-visible::-moz-range-thumb {
+    outline: 2px solid theme('colors.brand.DEFAULT');
+    outline-offset: 2px;
+  }
+}

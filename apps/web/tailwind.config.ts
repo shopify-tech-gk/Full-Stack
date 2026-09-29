@@ -33,6 +33,11 @@ const config: Config = {
           facebook: colors.social.facebook,
           share: colors.social.share,
         },
+        catalog: colors.catalog,
+        filter: colors.filter,
+        steps: colors.steps,
+        'brand-popup': colors.brandPopup,
+        'share-btn': colors.shareButton,
       },
       fontFamily: {
         sans: ['var(--font-arimo)', '"Arimo Ext"', ...fonts.bodyFallback],
@@ -58,6 +63,9 @@ const config: Config = {
         'rail-card': '0 2px 5px 0 rgba(0, 0, 0, 0.05)',
         'category-card': '0 2px 8px 0 rgba(0, 0, 0, 0.12)',
         'carousel-arrow': '0 2px 6px 0 rgba(0, 0, 0, 0.15)',
+        'listing-card': '0 14px 28px 0 rgba(0, 0, 0, 0.04), 0 10px 10px 0 rgba(0, 0, 0, 0.03)',
+        'brand-popup': '0 10px 40px 0 rgba(0, 51, 102, 0.45)',
+        'step-glow': `0 0 10px 0 ${colors.steps.glow}, 0 0 20px 0 ${colors.steps.glow}`,
       },
       backgroundImage: {
         instagram: `linear-gradient(to right bottom, ${colors.social.instagram.join(', ')})`,

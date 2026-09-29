@@ -5,4 +5,5 @@ export * from './categories';
 export * from './content';
 export * from './theme';
 export * from './storefront';
+export * from './catalog';
 export * from './demo';

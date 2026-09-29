@@ -11,6 +11,7 @@ future mobile app (React Native). No React, no DOM rendering, no platform APIs b
 | `categories.ts` | The storefront category list (site order) + subcategories, URL/asset path conventions, and `buildCategoryTree` / `resolveStoreCategories` for the live `GET /api/catalog/categories` tree |
 | `content.ts`    | Shared static content: promo banners, welcome text, search placeholder                                                                                                                    |
 | `storefront.ts` | Homepage section config + site copy: `ProductCardData` view model, rail titles, grid filter tabs, brand offers, feature cards, best-categories, footer copy/links                         |
+| `catalog.ts`    | Listing + product page logic: sort/price/rating/brand query parsing (live query names), `applyListingQuery`, pagination, `ProductDetailData` view model                                   |
 | `demo.ts`       | DEMO-only placeholder products/rails used until the catalog API is wired - delete once real data flows                                                                                    |
 | `theme.ts`      | Design tokens (colors, fonts, breakpoints) - web feeds them into Tailwind, mobile into StyleSheet                                                                                         |
 
