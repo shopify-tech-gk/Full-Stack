@@ -16,7 +16,7 @@ const TABS: Tab[] = [
   { href: '/download-app', label: 'Install App', icon: Download, filled: false },
   { href: '/orders/buy-again', label: 'Buy Again', icon: ShoppingBag, filled: true },
   { href: '/cart', label: 'Cart', icon: ShoppingCart, filled: true },
-  { href: '/account', label: 'Account', icon: User, filled: true },
+  { href: '/my-account', label: 'Account', icon: User, filled: true },
 ];
 
 function isActive(pathname: string, href: string): boolean {

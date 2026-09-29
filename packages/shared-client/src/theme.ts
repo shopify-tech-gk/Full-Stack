@@ -131,6 +131,16 @@ export const colors = {
     whatsapp: '#55eb4c',
     more: '#ee8e2d',
   },
+  /** WooCommerce notices + account pages (live CSS; info/message borders use brand). */
+  woo: {
+    noticeBg: '#f7f6f7',
+    noticeText: '#515151',
+    error: '#b81c23',
+    success: '#8fae1b',
+    required: '#ff0000',
+    navText: '#333333',
+    linkHover: '#015b9c',
+  },
   // Declared in the Elementor kit but NOT observed in the homepage top section; unverified.
   kit: {
     primary: '#6EC1E4',

@@ -6,4 +6,6 @@ export * from './content';
 export * from './theme';
 export * from './storefront';
 export * from './catalog';
+export * from './account';
 export * from './demo';
+export * from './demo-account';

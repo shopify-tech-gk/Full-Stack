@@ -25,9 +25,9 @@ const DESKTOP_ACTIONS: DesktopAction[] = [
     lines: ['Delivery', 'location'],
     icon: <FaMapMarkerAlt className={TILE_ICON} />,
   },
-  { href: '/account', lines: ['My', 'Account'], icon: <FaUser className={TILE_ICON} /> },
+  { href: '/my-account', lines: ['My', 'Account'], icon: <FaUser className={TILE_ICON} /> },
   {
-    href: '/orders/track',
+    href: '/order-track',
     lines: ['Order', 'Track'],
     icon: <PackageSearch aria-hidden="true" className={TILE_ICON} strokeWidth={2.25} />,
   },
@@ -123,7 +123,7 @@ export function SiteHeader() {
           <Logo variant="mobile" className="ml-[11px] w-[138px]" priority />
           <nav aria-label="Quick links" className="ml-auto flex items-center gap-[28px]">
             <CompactLink
-              href="/orders/track"
+              href="/order-track"
               lines={['Track', 'Order']}
               icon={trackOrderIcon}
               align="left"
