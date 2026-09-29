@@ -51,10 +51,12 @@ export const colors = {
 
 export const fonts = {
   /**
-   * Live body stack. "DejaVu Sans" is declared but never loaded, so every platform renders its
-   * default sans-serif (Arial on Windows) - using the identical stack reproduces that exactly.
+   * Arimo: metric-compatible with Arial (what live renders on Windows via its never-loading
+   * "DejaVu Sans" stack), so it looks the same and every device gets the same font.
    */
-  body: '"DejaVu Sans", sans-serif',
+  body: 'Arimo',
+  /** Arial-metric fallbacks: identical line breaks while Arimo loads. */
+  bodyFallback: ['Arial', 'Liberation Sans', 'Helvetica', 'sans-serif'],
   /** The only UI webfont the live site loads (400/600/700): labels, tabs, menus, language pill. */
   ui: 'Outfit',
 } as const;

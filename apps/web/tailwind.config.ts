@@ -20,7 +20,7 @@ const config: Config = {
         line: colors.border,
       },
       fontFamily: {
-        sans: [fonts.body],
+        sans: ['var(--font-arimo)', '"Arimo Ext"', ...fonts.bodyFallback],
         ui: ['var(--font-outfit)', fonts.ui, 'sans-serif'],
       },
       borderRadius: {

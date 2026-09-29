@@ -5,13 +5,23 @@ import { WelcomeBar } from '@/components/layout/WelcomeBar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import './globals.css';
 
-// The only webfont the live site loads. Self-hosted (SIL OFL, see src/fonts/OFL.txt) because Next 14's
-// Google Fonts loader fails to parse Outfit's CSS. Body text uses the live "DejaVu Sans" stack.
+// Self-hosted (SIL OFL, see src/fonts/*OFL.txt): Next 14's Google Fonts loader fails to parse Outfit's CSS.
 const outfit = localFont({
   src: '../fonts/Outfit-Variable.ttf',
   weight: '100 900',
   variable: '--font-outfit',
   display: 'swap',
+});
+
+// Body font, Latin subset (20 KB). Latin-ext (incl. ₹) is the on-demand "Arimo Ext" face in globals.css.
+// No generated fallback: it would render ₹ in Arial before reaching "Arimo Ext", and Arimo already
+// shares Arial's metrics.
+const arimo = localFont({
+  src: '../fonts/Arimo-latin.woff2',
+  weight: '400 700',
+  variable: '--font-arimo',
+  display: 'swap',
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
@@ -27,7 +37,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={outfit.variable}>
+    <html lang="en-IN" className={`${arimo.variable} ${outfit.variable}`}>
       <body className="pb-[calc(79px+env(safe-area-inset-bottom))] lg:pb-0">
         <a
           href="#content"

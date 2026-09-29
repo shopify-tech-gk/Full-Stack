@@ -23,6 +23,42 @@ function parse(list: string): StoreSubcategory[] {
     });
 }
 
+const MINOR_WORDS = new Set([
+  'a',
+  'an',
+  'and',
+  'as',
+  'at',
+  'by',
+  'for',
+  'in',
+  'of',
+  'on',
+  'or',
+  'the',
+  'to',
+  'with',
+]);
+
+/**
+ * Title Case for category labels: capitalises each word and hyphen part, lower-cases minor words
+ * after the first, and never lower-cases letters (keeps LED, PVC, USB, 3D).
+ */
+export function toTitleCase(label: string): string {
+  return label
+    .trim()
+    .split(/\s+/)
+    .map((word, index) =>
+      index > 0 && MINOR_WORDS.has(word.toLowerCase())
+        ? word.toLowerCase()
+        : word.replace(
+            /(^|-)([^A-Za-z]*)([a-z])/g,
+            (_, sep: string, lead: string, ch: string) => sep + lead + ch.toUpperCase(),
+          ),
+    )
+    .join(' ');
+}
+
 export function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -31,9 +67,9 @@ export function slugify(value: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-// Captured from the live youmartshop.com menu (2026-09-28): names, order and slugs verbatim, so
-// every link keeps the exact WooCommerce URL. Only corrections: duplicate "Party Popper" removed
-// and "Skate | Board" -> "Skate Board" (both flagged as live-data defects).
+// Captured from the live youmartshop.com menu (2026-09-28): order and slugs verbatim, so every link
+// keeps the exact WooCommerce URL. Names are cleaned to toTitleCase() (live casing is inconsistent),
+// duplicate "Party Popper" removed and "Skate | Board" -> "Skate Board".
 const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> = [
   [
     'lawn-and-gardening',
@@ -43,7 +79,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'arts-and-crafts',
     'Arts and Crafts',
-    'art-sets=Art Sets;beeds=Beads;boards=Boards;card-stocks=Card Stocks;clay-arts-and-crafts=Clay;coloured-paper=Coloured Paper;craft-kit=Craft Kits;drawing-materials=Drawing Materials;magnets=Magnets;painting-craft-kits=Painting Craft kits;painting-materials=Painting Materials;paper=Paper;paper-craft=Paper Craft;pim-pom=Pom Pom;stones=Stones;thread=Thread;writing-supplies=Writing Supplies',
+    'art-sets=Art Sets;beeds=Beads;boards=Boards;card-stocks=Card Stocks;clay-arts-and-crafts=Clay;coloured-paper=Coloured Paper;craft-kit=Craft Kits;drawing-materials=Drawing Materials;magnets=Magnets;painting-craft-kits=Painting Craft Kits;painting-materials=Painting Materials;paper=Paper;paper-craft=Paper Craft;pim-pom=Pom Pom;stones=Stones;thread=Thread;writing-supplies=Writing Supplies',
   ],
   [
     'artifical-flowers-and-plants',
@@ -63,12 +99,12 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'bath-fittings',
     'Bath Fittings',
-    'closet=Closet;glass-shelf=Glass Shelf;kitchen-sinks=Kitchen sinks;plumbing-hardware=Plumbing Hardware;rain-shower=Rain Shower;abs-unbreakable=Soap holder;stop-cock=Stop cock;table-top-basin=Table top basin;taps-bath-fittings=Taps;towel-ring=Towel Ring',
+    'closet=Closet;glass-shelf=Glass Shelf;kitchen-sinks=Kitchen Sinks;plumbing-hardware=Plumbing Hardware;rain-shower=Rain Shower;abs-unbreakable=Soap Holder;stop-cock=Stop Cock;table-top-basin=Table Top Basin;taps-bath-fittings=Taps;towel-ring=Towel Ring',
   ],
   [
     'cleaning-products',
     'Cleaning Products',
-    'brooms=Brooms;brush=Brush;detergents-cleaners=Detergents & Cleaners;dishwash=Dishwash;duster=Duster;dust-pan=Dust pan;mops=Mops;scrubbers-sponges=Scrubbers & sponges;rope=Rope',
+    'brooms=Brooms;brush=Brush;detergents-cleaners=Detergents & Cleaners;dishwash=Dishwash;duster=Duster;dust-pan=Dust Pan;mops=Mops;scrubbers-sponges=Scrubbers & Sponges;rope=Rope',
   ],
   [
     'cosmetics',
@@ -89,7 +125,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'electrical-and-lights',
     'Electrical and Lights',
-    'cables-wiring=Cables & Wiring;door-chimes-bells=Door bells;lights=Lights;electrical-accessories=Electrical Accessories;mosquito-killer-racket=Mosquito killer racket',
+    'cables-wiring=Cables & Wiring;door-chimes-bells=Door Bells;lights=Lights;electrical-accessories=Electrical Accessories;mosquito-killer-racket=Mosquito Killer Racket',
   ],
   [
     'furniture',
@@ -101,11 +137,11 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
     'Fashion Jewellery',
     'anklet=Anklet;bracelet=Bracelet;bangle=Bangle;brooch=Brooch;earrings=Earrings;head-jewellery=Head Jewellery;jewellery-set=Jewellery Set;mangalsutra=Mangalsutra;necklace-and-chains=Necklace and Chains;nosepin=Nosepin;pendant=Pendant;ring=Ring;saree-accessories=Saree Accessories',
   ],
-  ['footwear', 'Footwear', 'kids-footwear=Kids Footwear;men=Men;women=women'],
+  ['footwear', 'Footwear', 'kids-footwear=Kids Footwear;men=Men;women=Women'],
   [
     'gifts',
     'Gifts & Frames',
-    'ceramics-gifts=Ceramics-gifts;dream-catches=Dream catches;gift-sets=Ceramic Gift Sets;gift-lamps=Gift Lamps;gift-tray=Gift Tray;message-bottle=Message Bottle;metal-gift-box=Metal Gift Box;metal-wall-decor=Metal Wall Decor;statue-gift=Statue Gift;wind-chain=Wind Chain;wall-photo-frame=Wall photo frame;water-fountain=Water Fountain;wooden-gift-box=Wooden Gift Box',
+    'ceramics-gifts=Ceramics-Gifts;dream-catches=Dream Catches;gift-sets=Ceramic Gift Sets;gift-lamps=Gift Lamps;gift-tray=Gift Tray;message-bottle=Message Bottle;metal-gift-box=Metal Gift Box;metal-wall-decor=Metal Wall Decor;statue-gift=Statue Gift;wind-chain=Wind Chain;wall-photo-frame=Wall Photo Frame;water-fountain=Water Fountain;wooden-gift-box=Wooden Gift Box',
   ],
   [
     'hardwares',
@@ -120,12 +156,12 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'home-furnishing',
     'Home Furnishing',
-    'bath-linen=Bath Linen;bedsheets=Bedsheets;curtain-accessories=Curtain & Accessories;cushion-covers=Cushion Covers;carpets=Carpets;door-mats=Door mats;fabric=Fabric;heavy-bed=Mattress;pillow-covers=Pillow Covers;quilts=Quilts;ready-made-curtains=Ready Made Curtains;rugs=Rugs;sheer-curtains=Sheer Curtains;sofa-covers=Sofa Covers;sofa-headrests=Sofa Headrests;string-curtains=String Curtains;table-linen=Table Linen;table-mat=Table Mat;towel=Towel',
+    'bath-linen=Bath Linen;bedsheets=Bedsheets;curtain-accessories=Curtain & Accessories;cushion-covers=Cushion Covers;carpets=Carpets;door-mats=Door Mats;fabric=Fabric;heavy-bed=Mattress;pillow-covers=Pillow Covers;quilts=Quilts;ready-made-curtains=Ready Made Curtains;rugs=Rugs;sheer-curtains=Sheer Curtains;sofa-covers=Sofa Covers;sofa-headrests=Sofa Headrests;string-curtains=String Curtains;table-linen=Table Linen;table-mat=Table Mat;towel=Towel',
   ],
   [
     'stainless-steel-vessels',
     'Kitchenware',
-    'water-bottle=Bottle and Flask;casserole=Casserole;cookware=Cookware;electric-tiffin=Electric Tiffin;stainless-vessels=stainless vessels;hot-cold-flask=Hot & Cold Flask;hot-box=Hot Box;ice-packs-and-pails=Ice Packs and Pails;lunch-box=Lunch Box;jugs=Jugs and Purifier;kettle=Kettle;kitchen-utensils=Kitchen Utensils;pots-and-pans=Pots & Pans;smart-range=Smart Range;storage-jar=Storage Jar;storage-containers=Storage Containers;tableware=Tableware;tiffin-box=Tiffin Box',
+    'water-bottle=Bottle and Flask;casserole=Casserole;cookware=Cookware;electric-tiffin=Electric Tiffin;stainless-vessels=Stainless Vessels;hot-cold-flask=Hot & Cold Flask;hot-box=Hot Box;ice-packs-and-pails=Ice Packs and Pails;lunch-box=Lunch Box;jugs=Jugs and Purifier;kettle=Kettle;kitchen-utensils=Kitchen Utensils;pots-and-pans=Pots & Pans;smart-range=Smart Range;storage-jar=Storage Jar;storage-containers=Storage Containers;tableware=Tableware;tiffin-box=Tiffin Box',
   ],
   [
     'musical-instruments',
@@ -135,44 +171,44 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'party-decorations',
     'Party Decorations',
-    'anniversary=Anniversary Decoration;baby-shower=Baby Shower Decoration;birthday-banners=Banners;birthday-caps=Caps;snow-spary=Snow Spray;balloon-decoration-accessories=Balloon Decoration Accessories;baloon-pump=Balloon Pump;birthday-sash=Sash;birthday-photo-banner=Photo Banner;party-popper=Party Popper;birthday-decoration-set=Decoration Set;balloons=Balloons;birthday=Birthday;butterfly-wings=Butterfly Wings;bride-to-be=Bride To Be Decoration;cake-toper=Cake Toper;candles=Candles;chinees-doom=Chinese Dome;chinese-visiri=Chinese Visiri;crown=Crown;eye-mask=Eye Mask;face-beard=Face Beard;face-mask=Face Mask;fancy-umbrella=Fancy Umbrella;foil-fringe-curtain=Foil Fringe Curtain;foil-balloons=Foil Balloons;hand-gloves=Hand Gloves;maalai=Maalai;naming-ceremony=Naming Ceremony Decoration;net-cloth=Net Cloth;paper-cutting=Paper Cutting;party-caps=Party Caps;photo-prop=Photo Prop;reception-maalai=Reception Maalai;ribbon=Ribbon;screen=Screen;sky-lantern=Sky Lantern;strings=Strings;thermocol-design=Thermocol Design;thoranam=Thoranam;wigs=Wigs;zoomer=Zoomer',
+    'anniversary=Anniversary Decoration;baby-shower=Baby Shower Decoration;birthday-banners=Banners;birthday-caps=Caps;snow-spary=Snow Spray;balloon-decoration-accessories=Balloon Decoration Accessories;baloon-pump=Balloon Pump;birthday-sash=Sash;birthday-photo-banner=Photo Banner;party-popper=Party Popper;birthday-decoration-set=Decoration Set;balloons=Balloons;birthday=Birthday;butterfly-wings=Butterfly Wings;bride-to-be=Bride to Be Decoration;cake-toper=Cake Toper;candles=Candles;chinees-doom=Chinese Dome;chinese-visiri=Chinese Visiri;crown=Crown;eye-mask=Eye Mask;face-beard=Face Beard;face-mask=Face Mask;fancy-umbrella=Fancy Umbrella;foil-fringe-curtain=Foil Fringe Curtain;foil-balloons=Foil Balloons;hand-gloves=Hand Gloves;maalai=Maalai;naming-ceremony=Naming Ceremony Decoration;net-cloth=Net Cloth;paper-cutting=Paper Cutting;party-caps=Party Caps;photo-prop=Photo Prop;reception-maalai=Reception Maalai;ribbon=Ribbon;screen=Screen;sky-lantern=Sky Lantern;strings=Strings;thermocol-design=Thermocol Design;thoranam=Thoranam;wigs=Wigs;zoomer=Zoomer',
   ],
   ['pet-products', 'Pet Supplies', 'birds=Birds;dogs=Dogs;fish=Fish;cat=Cat'],
   [
     'plastic-household',
     'Plastic Household',
-    'bathroom-accessory-sets=Bathroom Accessory Sets;bathroom-cabinet=Bathroom Cabinet;dustbin=Dustbin;laundry-basket=Laundry Basket;multi-purpose=Multi-purpose;organizer=Organizer',
+    'bathroom-accessory-sets=Bathroom Accessory Sets;bathroom-cabinet=Bathroom Cabinet;dustbin=Dustbin;laundry-basket=Laundry Basket;multi-purpose=Multi-Purpose;organizer=Organizer',
   ],
   [
     'sports-fitness',
     'Sports & Fitness',
-    'badminton=Badminton;basketball=Basketball;carrom=Carrom;cricket=Cricket;fitness-product=Fitness Product;sports-shoes-sports-goods=Sports shoes;football=Football;indoor-sports=Indoor Sports;tennis=Tennis;skate-board=Skate Board;sports-ball=Sports Ball;sports-kit-bag=Sports Kit Bag;squash=Squash;yoga=Yoga;swimming=Swimming;trophy=Trophy;volleyball=Volleyball',
+    'badminton=Badminton;basketball=Basketball;carrom=Carrom;cricket=Cricket;fitness-product=Fitness Product;sports-shoes-sports-goods=Sports Shoes;football=Football;indoor-sports=Indoor Sports;tennis=Tennis;skate-board=Skate Board;sports-ball=Sports Ball;sports-kit-bag=Sports Kit Bag;squash=Squash;yoga=Yoga;swimming=Swimming;trophy=Trophy;volleyball=Volleyball',
   ],
   [
     'stationary',
     'Stationary',
-    'a3-a4-drawing-note=A3 & A4 Drawing Note;a4-white-paper=A4 White Paper;acrylic-paint=Acrylic Paint;calculator=Calculator;pen=Pen;pencil=pencil;eraser=Eraser;pen-stand=Pen Stand;paper-weight=Paper weight;resin-arts=Resin Arts;spray-paint=spray paint;sticky-notes=Sticky notes;taps=Tapes;chart-paper=Chart Paper;colour-pencil=Colour Pencil;correction-pen=Correction Pen;correction-tape=Correction Tape;cotton=Cotton;crayons=Crayons;drawing-board=Drawing Board;files=Files;geometry-box=Geometry Box;glue-gun-and-stick=Glue Gun and Stick;highlighter=Highlighter;marker-ink=Marker;mechanical-pencil=Mechanical Pencil;magnifier-lens=Magnifier Lens;note-book=Note Book;oil-pastels=Oil Pastels;pastel-paint=Pastel Paint;permanent-marker=Permanent Marker;pin=Pin;poster-colour=Poster Colour;premium-poster-colour=Premium Poster Colour;scissors=Scissors;sketch-paper=Sketch Paper;soft-pastel=Soft Pastel;study-table=Study Table;watercolour-tube=Watercolour Tube;whiteboard-marker=Whiteboard Marker;pen-holder=Pen holder;reading-magnifiers=Reading magnifiers;rotary-desk-organiser=Rotary desk organiser;whiteboard-eraser=Whiteboard eraser;bouquet-sheet=Bouquet Sheet;bubble-wrap=Bubble Wrap;colour-paper=Colour Paper;crepe-paper=Crepe Paper;felt-sheet=Felt Sheet;foam-sheet=Foam Sheet;gift-sheet=Gift Sheet;thermocol-sheet=Thermocol Sheet',
+    'a3-a4-drawing-note=A3 & A4 Drawing Note;a4-white-paper=A4 White Paper;acrylic-paint=Acrylic Paint;calculator=Calculator;pen=Pen;pencil=Pencil;eraser=Eraser;pen-stand=Pen Stand;paper-weight=Paper Weight;resin-arts=Resin Arts;spray-paint=Spray Paint;sticky-notes=Sticky Notes;taps=Tapes;chart-paper=Chart Paper;colour-pencil=Colour Pencil;correction-pen=Correction Pen;correction-tape=Correction Tape;cotton=Cotton;crayons=Crayons;drawing-board=Drawing Board;files=Files;geometry-box=Geometry Box;glue-gun-and-stick=Glue Gun and Stick;highlighter=Highlighter;marker-ink=Marker;mechanical-pencil=Mechanical Pencil;magnifier-lens=Magnifier Lens;note-book=Note Book;oil-pastels=Oil Pastels;pastel-paint=Pastel Paint;permanent-marker=Permanent Marker;pin=Pin;poster-colour=Poster Colour;premium-poster-colour=Premium Poster Colour;scissors=Scissors;sketch-paper=Sketch Paper;soft-pastel=Soft Pastel;study-table=Study Table;watercolour-tube=Watercolour Tube;whiteboard-marker=Whiteboard Marker;pen-holder=Pen Holder;reading-magnifiers=Reading Magnifiers;rotary-desk-organiser=Rotary Desk Organiser;whiteboard-eraser=Whiteboard Eraser;bouquet-sheet=Bouquet Sheet;bubble-wrap=Bubble Wrap;colour-paper=Colour Paper;crepe-paper=Crepe Paper;felt-sheet=Felt Sheet;foam-sheet=Foam Sheet;gift-sheet=Gift Sheet;thermocol-sheet=Thermocol Sheet',
   ],
   [
     'surgical-instruments',
     'Surgical Instruments',
-    'needle-holder=Needle Holder;medical-forceps=medical forceps',
+    'needle-holder=Needle Holder;medical-forceps=Medical Forceps',
   ],
   ['tailoring-materials', 'Tailoring Materials', 'sewing-measuring-kit=Sewing Measuring Kit'],
   [
     'tools',
     'Tools',
-    'carpenters-tools=Carpenters Tools;construction-tools=Construction Tools;cutters=Cutters;gardening-tools=Gardening Tools;hand-tools=Hand tools;power-tools=Power tools',
+    'carpenters-tools=Carpenters Tools;construction-tools=Construction Tools;cutters=Cutters;gardening-tools=Gardening Tools;hand-tools=Hand Tools;power-tools=Power Tools',
   ],
   [
     'toys',
     'Toys & Games',
-    'baby-toddler-toys=plush Toys;animal-toys=Animal Toys;baby-toys=Baby Toys;specialty-lighting=Specialty Lighting;sportsoutdoor=Outdoor Toys;remote-cars=Remote Toys;science-toys-kits=Learning Toys;dolls=Dolls;games=Games;kids-cycle=Kids Cycle;modeling-clay=Modeling Clay;rubber-toys=Rubber Toys;saving-bank=Saving Bank;talking-bird=Talking Bird',
+    'baby-toddler-toys=Plush Toys;animal-toys=Animal Toys;baby-toys=Baby Toys;specialty-lighting=Specialty Lighting;sportsoutdoor=Outdoor Toys;remote-cars=Remote Toys;science-toys-kits=Learning Toys;dolls=Dolls;games=Games;kids-cycle=Kids Cycle;modeling-clay=Modeling Clay;rubber-toys=Rubber Toys;saving-bank=Saving Bank;talking-bird=Talking Bird',
   ],
   [
     'travel-accessories',
     'Travel & Accessories',
-    'backpack=Backpack;belt=Belt;breifcase=Briefcase;duffle-bag=Duffle Bag;hand-bag=Hand bag;laptop-backpacks=Laptop Backpacks;laptop-sleeves=Laptop Sleeves;lock=Lock;luggage-cover=Luggage Cover;lunch-bag=Lunch Bag;neck-pouches=Neck Pouches;rucksacks=Rucksacks;shoulder-bags=Shoulder Bags;sling-bag=Sling Bag;sleep-masks=Sleep Masks;straps=Straps;suitcase=Suitcase;toiletry-bags=Toiletry Bags;travel-pillow=Travel Pillow;travel-tote-bags=Travel Tote Bags;trolly=Trolley;umbrella=Umbrella;wallet=Wallet',
+    'backpack=Backpack;belt=Belt;breifcase=Briefcase;duffle-bag=Duffle Bag;hand-bag=Hand Bag;laptop-backpacks=Laptop Backpacks;laptop-sleeves=Laptop Sleeves;lock=Lock;luggage-cover=Luggage Cover;lunch-bag=Lunch Bag;neck-pouches=Neck Pouches;rucksacks=Rucksacks;shoulder-bags=Shoulder Bags;sling-bag=Sling Bag;sleep-masks=Sleep Masks;straps=Straps;suitcase=Suitcase;toiletry-bags=Toiletry Bags;travel-pillow=Travel Pillow;travel-tote-bags=Travel Tote Bags;trolly=Trolley;umbrella=Umbrella;wallet=Wallet',
   ],
   [
     'wall-clock',
@@ -184,29 +220,29 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
 /** Third menu level, keyed `categorySlug/subcategorySlug` (live desktop flyouts). */
 const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'bath-fittings/taps-bath-fittings':
-    'flexo-ebony-series=Flexo-ebony series;flexo-series=Flexo series;plastic-taps=Plastic Taps',
-  'cleaning-products/brooms': 'floor-brooms=Floor brooms',
+    'flexo-ebony-series=Flexo-Ebony Series;flexo-series=Flexo Series;plastic-taps=Plastic Taps',
+  'cleaning-products/brooms': 'floor-brooms=Floor Brooms',
   'cleaning-products/brush':
-    'bottle-brush=Bottle brush;antibacterial-series=Hockey Brush;sink-brush=Sink brush;steel-electrical-brush=Steel brush;tiotel-brush=Toilet brush',
+    'bottle-brush=Bottle Brush;antibacterial-series=Hockey Brush;sink-brush=Sink Brush;steel-electrical-brush=Steel Brush;tiotel-brush=Toilet Brush',
   'cleaning-products/mops':
-    'bucket-mops=Bucket mops;cotton-mops=Cotton mops;pva-mop=PVA mop;wiper-mops=Wiper mops',
+    'bucket-mops=Bucket Mops;cotton-mops=Cotton Mops;pva-mop=PVA Mop;wiper-mops=Wiper Mops',
   'cosmetics/both-and-body':
     'face-cream=Face Cream;face-serum=Face Serum;facial-wipes=Facial Wipes;hand-wash=Hand Wash;soaps=Soaps;toner=Toner',
   'cosmetics/hair': 'conditioner=Conditioner;cream=Cream;henna=Henna;oil=Oil;shampoo=Shampoo',
   'crockery/serving-dining':
-    'dinner-set=Dinner Set;jar-gift-sets=Jar & gift sets;jugs-jug-sets=Jugs & Jug Sets;serving-set=Serving set;glass-crockery=Glass;juice-set=Juice Set',
+    'dinner-set=Dinner Set;jar-gift-sets=Jar & Gift Sets;jugs-jug-sets=Jugs & Jug Sets;serving-set=Serving Set;glass-crockery=Glass;juice-set=Juice Set',
   'crockery/bowls': 'mixing-bowl=Mixing Bowl;soup-bowl=Soup Bowl;ice-cream-bowl=Ice Cream Bowl',
   'crockery/drinkware':
-    'coffee-sets=Coffee sets;cup-sauser=Cup & Saucer;mugs-teacups=Mugs & Teacups',
+    'coffee-sets=Coffee Sets;cup-sauser=Cup & Saucer;mugs-teacups=Mugs & Teacups',
   'electronics/mobiles':
-    'air-pods=Air Pods;back-case=Back Case;charger=Charger;ear-phones=Ear phones;head-phone=Head Phone;selfie-stick=Selfie Stick;power-bank=Power Bank;neckband=Neckband;temper-glass=Temper Glass;mobile-stand=Mobile Stand;usb-cable=USB cable',
+    'air-pods=Air Pods;back-case=Back Case;charger=Charger;ear-phones=Ear Phones;head-phone=Head Phone;selfie-stick=Selfie Stick;power-bank=Power Bank;neckband=Neckband;temper-glass=Temper Glass;mobile-stand=Mobile Stand;usb-cable=USB Cable',
   'electronics/computers':
-    'cpu=CPU;keyboard=Keyboard;laptop-bag=Laptop bag;monitor=Monitor;mouse=Mouse;quick-scanner=Quick scanner;webcam=Webcam',
+    'cpu=CPU;keyboard=Keyboard;laptop-bag=Laptop Bag;monitor=Monitor;mouse=Mouse;quick-scanner=Quick Scanner;webcam=Webcam',
   'electrical-and-lights/cables-wiring': 'wire=Wire',
   'electrical-and-lights/lights':
-    'inverter-bulb=Inverter bulb;emergency-light=Emergency light;floor-lamp=Floor Lamp;serial-lights=Serial Lights;touch-light=Torch light;solar-led-street-light=Solar LED street light;wall-lights=Wall lights',
+    'inverter-bulb=Inverter Bulb;emergency-light=Emergency Light;floor-lamp=Floor Lamp;serial-lights=Serial Lights;touch-light=Torch Light;solar-led-street-light=Solar LED Street Light;wall-lights=Wall Lights',
   'electrical-and-lights/electrical-accessories':
-    'adaptor-plug=Adaptor Plug;extension-cords=Extension cords;lamp-holder=Lamp holder;light-socket=Light socket;breakers-fuses=Breakers & Fuses;electrical-hardware=Electrical Hardware;regulators=Regulators;enclosure-metal=Enclosure Metal;socket=Socket;switch=Switch',
+    'adaptor-plug=Adaptor Plug;extension-cords=Extension Cords;lamp-holder=Lamp Holder;light-socket=Light Socket;breakers-fuses=Breakers & Fuses;electrical-hardware=Electrical Hardware;regulators=Regulators;enclosure-metal=Enclosure Metal;socket=Socket;switch=Switch',
   'footwear/men':
     'mens-bounceez=Bounceez;mens-flip-flops=Flip-Flops;slippers-footwear=Men\u2019s Slippers;mens-sandals-clogs=Sandals & Clogs;mens-sneakers=Sneakers',
   'footwear/women':
@@ -214,9 +250,9 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'gifts/metal-wall-decor':
     '3d-frame=3D Frame;aluminium-frame=Aluminium Frame;aluminium-slim-frame=Aluminium Slim Frame;charkol-d-frame=Charkol D Frame;charkol-frames=Charkol Frames;lamination-pictures=Lamination Pictures;led-light-aluminium-frame=LED Light Aluminium Frame;pvc-slim-frame=PVC Slim Frame;wooden-frames=Wooden Frames',
   'party-decorations/ribbon':
-    'gross-grain-ribbon=Gross Grain Ribbon;organza-ribbon=Organza Ribbon;plastic-ribbon=Plastic Ribbon;satin-ribbon-ribbon=Satin Ribbon;ribbon-bow-ribbon=Ribbon Bow;velvet-ribbon=velvet Ribbon',
+    'gross-grain-ribbon=Gross Grain Ribbon;organza-ribbon=Organza Ribbon;plastic-ribbon=Plastic Ribbon;satin-ribbon-ribbon=Satin Ribbon;ribbon-bow-ribbon=Ribbon Bow;velvet-ribbon=Velvet Ribbon',
   'pet-products/birds':
-    'bird-feeders=Bird Feeders;birds-health-supplies=Birds health supplies;bird-foods=Bird foods;nests=Nests',
+    'bird-feeders=Bird Feeders;birds-health-supplies=Birds Health Supplies;bird-foods=Bird Foods;nests=Nests',
   'pet-products/dogs':
     'dry-bath=Dry Bath;hair-oil=Hair Oil;shampoo-pet-products=Shampoo;pet-perfumes=Pet Perfumes',
   'pet-products/fish':
@@ -254,16 +290,21 @@ export const SUBCATEGORY_PLACEHOLDER_IMAGE = '/categories/subcategory-placeholde
 
 /**
  * Builds the category tree from `GET /api/catalog/categories` (flat list with `parentId`, any
- * depth; the storefront uses three levels). Roots keep API order.
+ * depth; the storefront uses three levels). Roots keep API order. Names go through toTitleCase()
+ * so catalog data renders exactly like the static list; catalog names should be stored clean too.
  */
 export function buildCategoryTree(items: readonly ApiCategory[]): StoreCategory[] {
   const childrenOf = (parentId: string): StoreSubcategory[] =>
     items
       .filter((c) => c.parentId === parentId)
-      .map((c) => ({ slug: c.slug, name: c.name, children: childrenOf(c.id) }));
+      .map((c) => ({ slug: c.slug, name: toTitleCase(c.name), children: childrenOf(c.id) }));
   return items
     .filter((c) => c.parentId === null)
-    .map((root) => ({ slug: root.slug, name: root.name, subcategories: childrenOf(root.id) }));
+    .map((root) => ({
+      slug: root.slug,
+      name: toTitleCase(root.name),
+      subcategories: childrenOf(root.id),
+    }));
 }
 
 /**
