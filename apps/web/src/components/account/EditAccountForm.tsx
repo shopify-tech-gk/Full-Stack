@@ -1,7 +1,8 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { toLocalPhone } from '@youmart/shared-client';
+import { formatPhone, type AuthUser } from '@youmart/shared-client';
+import { useSession } from '@/lib/session';
 import { Notice } from './Notice';
 import {
   FIELD_HINT,
@@ -12,15 +13,17 @@ import {
   FORM_ROW,
 } from './formStyles';
 
-interface EditAccountFormProps {
-  user: { name: string; email: string; phone: string };
+export function EditAccountForm() {
+  const session = useSession();
+  return session.status === 'authenticated' ? <AccountDetailsForm user={session.user} /> : null;
 }
 
-// DEMO: WooCommerce "Account details" minus the password section (login is phone OTP).
-export function EditAccountForm({ user }: EditAccountFormProps) {
+// WooCommerce "Account details" minus the password section (login is passwordless OTP). The
+// signed-in identity is real; saving is still DEMO (no profile-update endpoint yet).
+function AccountDetailsForm({ user }: { user: AuthUser }) {
   const id = useId();
-  const [name, setName] = useState(user.name);
-  const [email, setEmail] = useState(user.email);
+  const [name, setName] = useState(user.name ?? '');
+  const [email, setEmail] = useState(user.email ?? '');
   const [status, setStatus] = useState<'idle' | 'saved' | 'invalid'>('idle');
 
   const onSubmit = (event: FormEvent) => {
@@ -57,8 +60,15 @@ export function EditAccountForm({ user }: EditAccountFormProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
+          disabled={user.isEmailVerified}
+          aria-describedby={user.isEmailVerified ? `${id}-email-note` : undefined}
           className={FORM_INPUT}
         />
+        {user.isEmailVerified && (
+          <span id={`${id}-email-note`} className={FIELD_HINT}>
+            Verified by OTP. You can log in with this email.
+          </span>
+        )}
       </p>
       <p className={FORM_ROW}>
         <label htmlFor={`${id}-phone`} className={FORM_LABEL}>
@@ -66,13 +76,15 @@ export function EditAccountForm({ user }: EditAccountFormProps) {
         </label>
         <input
           id={`${id}-phone`}
-          value={`+91 ${toLocalPhone(user.phone)}`}
+          value={user.phone ? formatPhone(user.phone) : 'Not added'}
           disabled
           aria-describedby={`${id}-phone-note`}
           className={FORM_INPUT}
         />
         <span id={`${id}-phone-note`} className={FIELD_HINT}>
-          Verified by OTP. This is the number you log in with.
+          {user.phone
+            ? 'Verified by OTP. You can log in with this number.'
+            : 'You signed up with your email. Mobile login is a separate account for now.'}
         </span>
       </p>
       <p className="mx-[3px]">

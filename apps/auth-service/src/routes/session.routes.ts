@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { config } from '../config';
 import { AppError } from '@youmart/errors';
-import { rotateSession, revokeSession } from '../auth/session.service';
+import { getSessionUser, rotateSession, revokeSession } from '../auth/session.service';
 import { REFRESH_COOKIE_OPTIONS } from '../auth/cookie.util';
+import { requireAuth } from '../authMiddleware';
 
 export const sessionRouter: Router = Router();
 
@@ -20,10 +21,20 @@ sessionRouter.post('/refresh', async (req, res) => {
     maxAge: config.refreshTokenTtlSeconds * 1000,
   });
 
+  // v1.2: `user` lets a reloaded client restore who is logged in from this one call.
   res.status(200).json({
     accessToken: session.accessToken,
     expiresIn: session.accessTokenExpiresIn,
+    user: session.user,
   });
+});
+
+sessionRouter.get('/me', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  res.status(200).json(await getSessionUser(userId));
 });
 
 sessionRouter.post('/logout', async (req, res) => {

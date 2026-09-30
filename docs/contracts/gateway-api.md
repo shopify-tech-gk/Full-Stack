@@ -60,7 +60,11 @@ own `404 {"code":"NOT_FOUND"}`, never reaching the real service.
 ## Cross-cutting behavior
 
 - **CORS**: centralized (`CORS_ALLOWED_ORIGINS` env), allowed origins get
-  `Access-Control-Allow-Origin`, others don't.
+  `Access-Control-Allow-Origin` + `Access-Control-Allow-Credentials: true`,
+  others don't. v1.2: downstream services' own `Access-Control-*` headers
+  (their `cors()` default, `Allow-Origin: *`) are stripped from proxied
+  responses - otherwise they replaced the gateway's headers and browsers
+  blocked every credentialed call (login/refresh) from the storefront.
 - **Rate limiting**: coarse IP-level backstop (`express-rate-limit`,
   default 300/60s), 429 with a `RATE_LIMITED` `ApiError` envelope. v1.1
   adds a stricter per-IP limiter shared by the public form POSTs

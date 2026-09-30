@@ -11,6 +11,7 @@ import {
 import { Notice } from '@/components/account/Notice';
 import { FIELD_HINT, TEXT_LINK } from '@/components/account/formStyles';
 import { useCart } from '@/lib/cart';
+import { useSession } from '@/lib/session';
 import { CartLines } from './CartLines';
 import { CartTotals } from './CartTotals';
 
@@ -42,11 +43,13 @@ export function EmptyCart({ onRestoreDemo }: { onRestoreDemo?: () => void }) {
 }
 
 interface CartViewProps {
+  /** State of the default saved address - shown only to a signed-in customer. */
   destination: string | null;
 }
 
 export function CartView({ destination }: CartViewProps) {
   const { cart, setQuantity, remove, restore, reset } = useCart();
+  const signedIn = useSession().status === 'authenticated';
   const [removed, setRemoved] = useState<{ line: CartLine; index: number } | null>(null);
 
   if (!cart) {
@@ -95,7 +98,10 @@ export function CartView({ destination }: CartViewProps) {
         }}
         onRemove={onRemove}
       />
-      <CartTotals totals={cartTotals(cart, DEMO_SHIPPING_TOTAL)} destination={destination} />
+      <CartTotals
+        totals={cartTotals(cart, DEMO_SHIPPING_TOTAL)}
+        destination={signedIn ? destination : null}
+      />
     </>
   );
 }

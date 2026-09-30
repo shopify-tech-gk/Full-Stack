@@ -1,4 +1,30 @@
+import { ApiError } from './api-client';
 import type { Address, AddressInput, OrderView, SellerItemStatus } from './types';
+
+/** Where a successful login may return to - same-origin paths under these prefixes only. */
+export const LOGIN_RETURN_PATHS = ['/my-account', '/checkout', '/order-notify', '/wishlist'];
+
+/** Customer-facing text for an OTP request/verify failure (ApiError envelope from auth-service). */
+export function otpErrorMessage(error: unknown, step: 'request' | 'verify'): string {
+  if (!(error instanceof ApiError)) {
+    return 'We could not reach YouMart. Check your connection and try again.';
+  }
+  if (error.code === 'FORBIDDEN') {
+    return 'This account is blocked. Please contact customer care.';
+  }
+  if (error.code === 'RATE_LIMITED') {
+    if (step === 'verify') return 'Too many incorrect attempts. Please request a new code.';
+    return error.message.startsWith('Please wait')
+      ? 'Please wait a minute before requesting another code.'
+      : 'Too many code requests. Please try again later.';
+  }
+  if (error.code === 'VALIDATION_ERROR') {
+    return step === 'verify'
+      ? 'The code is incorrect or has expired. Please try again.'
+      : 'Please enter a valid mobile number or email address.';
+  }
+  return 'Something went wrong. Please try again.';
+}
 
 // --- Account navigation (live WooCommerce My Account menu + YouMart extras) ---
 export type AccountSection =
@@ -32,6 +58,57 @@ export function toE164Phone(input: string): string | null {
 export function toLocalPhone(e164: string): string {
   const local = e164.startsWith('+91') ? e164.slice(3) : e164;
   return local.length === 10 ? `${local.slice(0, 5)} ${local.slice(5)}` : local;
+}
+
+/** "+919876500000" -> "+91 98765 00000"; other countries unchanged. */
+export function formatPhone(e164: string): string {
+  return e164.startsWith('+91') ? `+91 ${toLocalPhone(e164)}` : e164;
+}
+
+// --- Login identifier (API v1.2: one field, mobile number OR email) ---
+export type LoginIdentifier = { type: 'PHONE'; value: string } | { type: 'EMAIL'; value: string };
+
+/** Mirror of auth-service's detection: `@` means email, otherwise an Indian/E.164 mobile. */
+export function detectIdentifier(input: string): LoginIdentifier | null {
+  const value = input.trim();
+  if (value.includes('@')) {
+    return /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)*\.[a-z]{2,}$/i.test(value)
+      ? { type: 'EMAIL', value: value.toLowerCase() }
+      : null;
+  }
+  const phone = toE164Phone(value);
+  return phone ? { type: 'PHONE', value: phone } : null;
+}
+
+/** What the user appears to be typing, for the live hint before the value is complete. */
+export function identifierKind(input: string): LoginIdentifier['type'] | null {
+  const value = input.trim();
+  if (!value) return null;
+  return /^[+\d\s()-]+$/.test(value) ? 'PHONE' : 'EMAIL';
+}
+
+export function identifierLabel(identifier: LoginIdentifier): string {
+  return identifier.type === 'PHONE' ? formatPhone(identifier.value) : identifier.value;
+}
+
+/** How the signed-in customer is named in the UI: name, else login phone, else login email. */
+export function authUserLabel(user: {
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+}): string {
+  return user.name ?? (user.phone ? formatPhone(user.phone) : (user.email ?? 'Customer'));
+}
+
+export function safeReturnTo(value: unknown): string {
+  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) {
+    return '/my-account';
+  }
+  const path = value.split(/[?#]/)[0] ?? '';
+  const allowed =
+    !path.includes('\\') &&
+    LOGIN_RETURN_PATHS.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+  return allowed ? path : '/my-account';
 }
 
 // --- Addresses (address-service CreateAddressBody) ---

@@ -4,9 +4,10 @@ import { AppError } from '@youmart/errors';
 import { enqueueNotification } from '@youmart/notifications-client';
 import { generateOtp, hashOtp, verifyOtp } from './otp.util';
 import type { OtpPurpose } from './otp.schema';
+import { targetKey, type OtpTarget } from './otp.target';
 
 export interface RequestOtpInput {
-  phone: string;
+  target: OtpTarget;
   purpose: OtpPurpose;
 }
 
@@ -16,17 +17,19 @@ export interface RequestOtpResult {
 }
 
 /**
- * Same response shape regardless of whether `phone` maps to an existing
- * user - never lets a caller enumerate registered numbers.
+ * Same response shape regardless of whether the phone/email maps to an existing
+ * user - never lets a caller enumerate registered accounts. Cooldown, hourly cap
+ * and TTL apply per identifier, identically for both channels.
  */
-export async function requestOtp({ phone, purpose }: RequestOtpInput): Promise<RequestOtpResult> {
+export async function requestOtp({ target, purpose }: RequestOtpInput): Promise<RequestOtpResult> {
+  const key = targetKey(target);
   const now = new Date();
   const cooldownSince = new Date(now.getTime() - config.otpResendCooldownSeconds * 1000);
   const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
   const recentChallenge = await prisma.otpChallenge.findFirst({
     where: {
-      phone,
+      ...key,
       purpose,
       deletedAt: null,
       consumedAt: null,
@@ -41,7 +44,7 @@ export async function requestOtp({ phone, purpose }: RequestOtpInput): Promise<R
 
   const challengeCountLastHour = await prisma.otpChallenge.count({
     where: {
-      phone,
+      ...key,
       purpose,
       deletedAt: null,
       createdAt: { gte: hourAgo },
@@ -57,8 +60,20 @@ export async function requestOtp({ phone, purpose }: RequestOtpInput): Promise<R
   const expiresAt = new Date(now.getTime() + config.otpTtlSeconds * 1000);
 
   await prisma.otpChallenge.create({
-    data: { phone, codeHash, purpose, expiresAt, attemptCount: 0 },
+    data: { ...key, codeHash, purpose, expiresAt, attemptCount: 0 },
   });
+
+  if (target.type === 'EMAIL') {
+    // v1.2 email channel: same template, same queue, same redaction - only the channel differs.
+    await enqueueNotification({
+      channel: 'EMAIL',
+      to: target.email,
+      templateKey: 'OTP',
+      data: { code, minutes: Math.round(config.otpTtlSeconds / 60) },
+    });
+    return { status: 'otp_sent', expiresInSeconds: config.otpTtlSeconds };
+  }
+  const { phone } = target;
 
   // Best-effort, read-only, INTERNAL lookup only - never influences the
   // client-visible response shape (still identical whether or not `phone`
@@ -97,7 +112,7 @@ export async function requestOtp({ phone, purpose }: RequestOtpInput): Promise<R
 }
 
 export interface VerifyOtpInput {
-  phone: string;
+  target: OtpTarget;
   purpose: OtpPurpose;
   code: string;
 }
@@ -110,17 +125,20 @@ export interface VerifyOtpResult {
 /**
  * All failure paths return the same generic message - the caller can't
  * distinguish "no challenge", "expired", or "wrong code" from the response.
+ * The first successful verify for a phone/email creates that account; a phone
+ * and an email are separate accounts (no linking yet).
  */
 export async function verifyOtpCode({
-  phone,
+  target,
   purpose,
   code,
 }: VerifyOtpInput): Promise<VerifyOtpResult> {
+  const key = targetKey(target);
   const now = new Date();
 
   const challenge = await prisma.otpChallenge.findFirst({
     where: {
-      phone,
+      ...key,
       purpose,
       deletedAt: null,
       consumedAt: null,
@@ -152,21 +170,25 @@ export async function verifyOtpCode({
     });
 
     const existingUser = await tx.user.findFirst({
-      where: { phone, deletedAt: null },
+      where: { ...key, deletedAt: null },
     });
+    const verifiedFlag =
+      target.type === 'PHONE' ? { isPhoneVerified: true } : { isEmailVerified: true };
 
     if (existingUser) {
-      if (!existingUser.isPhoneVerified) {
+      const alreadyVerified =
+        target.type === 'PHONE' ? existingUser.isPhoneVerified : existingUser.isEmailVerified;
+      if (!alreadyVerified) {
         await tx.user.update({
           where: { id: existingUser.id },
-          data: { isPhoneVerified: true },
+          data: verifiedFlag,
         });
       }
       return existingUser.id;
     }
 
     const newUser = await tx.user.create({
-      data: { phone, isPhoneVerified: true, status: 'ACTIVE' },
+      data: { ...key, ...verifiedFlag, status: 'ACTIVE' },
     });
     return newUser.id;
   });

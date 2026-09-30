@@ -1,3 +1,4 @@
+import type { IncomingMessage } from 'node:http';
 import type { Express, Request, Response, NextFunction } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { buildApiError } from '@youmart/errors';
@@ -127,6 +128,20 @@ function onProxyError(err: unknown, req: Request, res: Response): void {
   }
 }
 
+/**
+ * W2: the gateway is the only CORS boundary. Services answer with their own `cors()` default
+ * (`Access-Control-Allow-Origin: *`), which the proxy would copy over the gateway's origin-specific
+ * credentialed headers - and browsers reject `*` on `credentials: 'include'` requests, so the
+ * storefront could never log in. Dropping them here (before headers are copied) fixes every route.
+ */
+function stripDownstreamCors(proxyRes: IncomingMessage): void {
+  for (const header of Object.keys(proxyRes.headers)) {
+    if (header.startsWith('access-control-')) {
+      delete proxyRes.headers[header];
+    }
+  }
+}
+
 export function registerProxyRoutes(app: Express): void {
   app.use(blockInternalPaths);
   app.use(fastFailMissingAuth);
@@ -150,6 +165,7 @@ export function registerProxyRoutes(app: Express): void {
         pathRewrite: { '^/api': '' },
         on: {
           error: onProxyError as never,
+          proxyRes: stripDownstreamCors,
         },
       }),
     );

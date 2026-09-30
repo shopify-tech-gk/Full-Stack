@@ -4,7 +4,8 @@ import { mintCallerServiceToken, type ServiceAuthOptions } from '../serviceAuth'
 /** Backed by `GET /auth/internal/users/:userId/contact` (Ch6.2). */
 export interface UserContactView {
   userId: string;
-  phone: string;
+  /** Null for email-only accounts (API v1.2). */
+  phone: string | null;
   email: string | null;
 }
 

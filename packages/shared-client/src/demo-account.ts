@@ -1,17 +1,7 @@
-// DEMO CONTENT ONLY - account/address/order data for layout work. Replace with the auth,
-// address (/api/addresses) and order (/api/orders + /api/logistics) APIs.
+// DEMO CONTENT ONLY - address/order data for the account pages' layout. Login is real (W2); replace
+// these with the address (/api/addresses) and order (/api/orders + /api/logistics) APIs.
 import type { AccountOrder } from './account';
 import type { Address, AddressInput } from './types';
-
-/** Any 10-digit mobile + this code logs into the demo account. */
-export const DEMO_OTP_CODE = '123456';
-
-export const DEMO_USER = {
-  id: 'demo-user',
-  name: 'Demo Customer',
-  phone: '+919876500000',
-  email: 'demo.customer@example.com',
-} as const;
 
 const stamp = '2026-09-01T10:00:00.000Z';
 

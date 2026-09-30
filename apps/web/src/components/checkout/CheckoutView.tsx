@@ -7,30 +7,30 @@ import { ChevronDown } from 'lucide-react';
 import {
   CHECKOUT_BLOCKER_MESSAGE,
   DEMO_SHIPPING_TOTAL,
+  authUserLabel,
   cartTotals,
   checkoutBlocker,
   defaultCheckoutAddress,
   demoPlaceOrder,
   formatMoney,
-  toLocalPhone,
   type Address,
   type OrderView,
   type PaymentMethodId,
 } from '@youmart/shared-client';
-import { logout } from '@/app/my-account/actions';
+import { LogoutButton } from '@/components/account/LogoutButton';
 import { Notice } from '@/components/account/Notice';
 import { OtpLoginForm } from '@/components/account/OtpLoginForm';
 import { BODY_TEXT, TEXT_LINK } from '@/components/account/formStyles';
 import { CheckoutSteps } from '@/components/listing/CheckoutSteps';
 import { useCart } from '@/lib/cart';
+import { useSession } from '@/lib/session';
 import { AddressPicker } from './AddressPicker';
 import { OrderPanel, OrderReviewTable } from './OrderReview';
 import { OrderReceived } from './OrderReceived';
 import { PaymentMethods } from './PaymentMethods';
 
 interface CheckoutViewProps {
-  loggedIn: boolean;
-  phone: string | null;
+  /** DEMO saved addresses until the address API is wired; shown only when signed in. */
   addresses: readonly Address[];
 }
 
@@ -41,8 +41,10 @@ const SECTION_TITLE =
 // One page, three blocks in order of need: who you are (OTP), where it goes (saved addresses),
 // how you pay (Razorpay) - replacing live's 10-field billing form, account/ship-to toggles
 // and order notes, none of which the order API accepts.
-export function CheckoutView({ loggedIn, phone, addresses: initial }: CheckoutViewProps) {
+export function CheckoutView({ addresses: initial }: CheckoutViewProps) {
   const router = useRouter();
+  const session = useSession();
+  const loggedIn = session.status === 'authenticated';
   const { cart, clear } = useCart();
   const [addresses, setAddresses] = useState<Address[]>([...initial]);
   const [addressId, setAddressId] = useState(defaultCheckoutAddress(initial)?.id ?? null);
@@ -59,7 +61,7 @@ export function CheckoutView({ loggedIn, phone, addresses: initial }: CheckoutVi
   }
 
   const steps = <CheckoutSteps current="Shop" active={2} centered />;
-  if (!cart || cart.items.length === 0) {
+  if (!cart || cart.items.length === 0 || session.status === 'loading') {
     return (
       <>
         {steps}
@@ -116,20 +118,16 @@ export function CheckoutView({ loggedIn, phone, addresses: initial }: CheckoutVi
               <h2 id="checkout-account" className={SECTION_TITLE}>
                 Account
               </h2>
-              {loggedIn ? (
+              {session.status === 'authenticated' ? (
                 <div className={`${BODY_TEXT} flex flex-wrap items-center gap-x-[6px]`}>
-                  Logged in as <strong>+91 {phone ? toLocalPhone(phone) : ''}</strong>.
-                  <form action={logout}>
-                    <button type="submit" className={TEXT_LINK}>
-                      Not you? Log out
-                    </button>
-                  </form>
+                  Logged in as <strong>{authUserLabel(session.user)}</strong>.
+                  <LogoutButton className={TEXT_LINK}>Not you? Log out</LogoutButton>
                 </div>
               ) : (
                 <>
                   <p className={`${BODY_TEXT} mb-[15px]`}>
-                    Log in with your mobile number to continue - new customers get an account
-                    automatically. Your cart is kept.
+                    Log in with your mobile number or email to continue - new customers get an
+                    account automatically. Your cart is kept.
                   </p>
                   <OtpLoginForm mode="login" returnTo="/checkout" bare />
                 </>

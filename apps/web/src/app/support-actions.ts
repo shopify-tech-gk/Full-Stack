@@ -9,7 +9,6 @@ import {
   type OrderCancelValues,
   type OrderNotifyValues,
 } from '@youmart/shared-client';
-import { getSession } from '@/lib/session';
 
 export interface SupportResult<K extends string> {
   ok: boolean;
@@ -53,11 +52,11 @@ export async function requestOrderCancel(
   return { ok: true, reference: demoReference('YM-CXL') };
 }
 
-// DEMO. Wiring = notification-service preferences (it has no HTTP surface in API v1).
+// DEMO. Wiring = PUT /api/orders/:id/notify (API v1.1) from the browser with the customer token;
+// the page only renders this form for a signed-in customer.
 export async function subscribeOrderNotify(
   input: OrderNotifyValues,
 ): Promise<SupportResult<keyof OrderNotifyValues>> {
-  if (!getSession()) return { ok: false, message: 'Please log in to set order reminders.' };
   const { data, errors } = validateOrderNotify(strings(input, ['orderNumber', 'channel']));
   if (!data) return { ok: false, errors };
   return { ok: true, reference: data.orderNumber };

@@ -13,7 +13,8 @@
     "typecheck": "pnpm -r --if-present run typecheck",
     "infra:up": "docker compose -f docker/docker-compose.yml --env-file .env up -d",
     "infra:down": "docker compose -f docker/docker-compose.yml --env-file .env down",
-    "infra:logs": "docker compose -f docker/docker-compose.yml --env-file .env logs -f"
+    "infra:logs": "docker compose -f docker/docker-compose.yml --env-file .env logs -f",
+    "dev:otp": "node scripts/dev-otp.mjs"
   },
   "devDependencies": {
     "@types/node": "20.19.43",

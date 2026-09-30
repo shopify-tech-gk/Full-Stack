@@ -4,6 +4,7 @@ import type {
   ApiCategory,
   ApiErrorBody,
   ApiErrorCode,
+  AuthUser,
   CartView,
   OrderListItem,
   OrderView,
@@ -44,9 +45,17 @@ export interface ApiClientOptions {
   baseUrl: string;
   /** Returns the in-memory customer/admin access token, if any. */
   getAccessToken?: () => string | null | undefined;
+  /**
+   * Called once when an authenticated call gets 401: refresh the session and resolve `true`
+   * to retry the call with the new token, `false` to surface the 401.
+   */
+  onUnauthorized?: () => Promise<boolean>;
   /** Override for environments without a global fetch. */
   fetchImpl?: typeof fetch;
 }
+
+/** Session endpoints never trigger the refresh-and-retry (it would recurse or mask a bad code). */
+const NO_REFRESH_RETRY = /^\/auth\/(?:refresh|logout|otp\/)/;
 
 type QueryValue = string | number | boolean | undefined;
 type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -84,22 +93,34 @@ export function createApiClient(options: ApiClientOptions) {
   const doFetch = options.fetchImpl ?? fetch;
 
   async function send(method: Method, path: string, opts: RequestOptions = {}): Promise<Response> {
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (opts.body !== undefined) {
-      headers['Content-Type'] = 'application/json';
-    }
-    const token = options.getAccessToken?.();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    const attempt = (token: string | null | undefined) => {
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (opts.body !== undefined) {
+        headers['Content-Type'] = 'application/json';
+      }
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      // `include` so the httpOnly `ym_rt` refresh cookie travels with auth calls.
+      return doFetch(`${baseUrl}${path}${buildQuery(opts.query)}`, {
+        method,
+        headers,
+        body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+        credentials: 'include',
+      });
+    };
 
-    // `include` so the httpOnly `ym_rt` refresh cookie travels with auth calls.
-    const response = await doFetch(`${baseUrl}${path}${buildQuery(opts.query)}`, {
-      method,
-      headers,
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-      credentials: 'include',
-    });
+    const token = options.getAccessToken?.();
+    let response = await attempt(token);
+    if (
+      response.status === 401 &&
+      token &&
+      options.onUnauthorized &&
+      !NO_REFRESH_RETRY.test(path) &&
+      (await options.onUnauthorized())
+    ) {
+      response = await attempt(options.getAccessToken?.());
+    }
 
     if (!response.ok) {
       const text = await response.text();
@@ -130,12 +151,17 @@ export function createApiClient(options: ApiClientOptions) {
 
   return {
     auth: {
-      requestOtp: (body: OtpRequestBody) =>
-        json<OtpRequestResponse>('POST', '/auth/otp/request', { body }),
-      verifyOtp: (body: OtpVerifyBody) =>
-        json<OtpVerifyResponse>('POST', '/auth/otp/verify', { body }),
+      requestOtp: (identifier: string) =>
+        json<OtpRequestResponse>('POST', '/auth/otp/request', {
+          body: { identifier } satisfies OtpRequestBody,
+        }),
+      verifyOtp: (identifier: string, code: string) =>
+        json<OtpVerifyResponse>('POST', '/auth/otp/verify', {
+          body: { identifier, code } satisfies OtpVerifyBody,
+        }),
       refresh: () => json<RefreshResponse>('POST', '/auth/refresh'),
       logout: () => json<{ status: 'logged_out' }>('POST', '/auth/logout'),
+      me: () => json<AuthUser>('GET', '/auth/me'),
     },
     catalog: {
       listProducts: (query?: ProductListQuery) =>

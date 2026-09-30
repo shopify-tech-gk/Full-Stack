@@ -10,14 +10,14 @@ export const OtpPurpose = z.enum(['LOGIN', 'PHONE_VERIFY']);
 export type OtpPurpose = z.infer<typeof OtpPurpose>;
 
 export const OtpRequestBody = z.object({
-  phone: Phone,
+  // v1.2: a mobile number OR an email; see otp.target.ts. `phone` is the v1 field.
+  identifier: z.string().max(254).optional(),
+  phone: Phone.optional(),
   purpose: OtpPurpose.default('LOGIN'),
 });
 export type OtpRequestBody = z.infer<typeof OtpRequestBody>;
 
-export const OtpVerifyBody = z.object({
-  phone: Phone,
-  purpose: OtpPurpose.default('LOGIN'),
+export const OtpVerifyBody = OtpRequestBody.extend({
   code: z.string().regex(/^\d+$/, 'Code must be numeric'),
 });
 export type OtpVerifyBody = z.infer<typeof OtpVerifyBody>;

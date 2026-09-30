@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Heart, House, LogOut, MapPin, ShoppingBasket, Truck, UserRound } from 'lucide-react';
 import { ACCOUNT_NAV, type AccountSection } from '@youmart/shared-client';
-import { logout } from '@/app/my-account/actions';
+import { LogoutButton } from './LogoutButton';
 
 const ICONS: Record<AccountSection, typeof House> = {
   dashboard: House,
@@ -44,12 +44,10 @@ export function AccountShell({ active, children }: AccountShellProps) {
             return (
               <li key={item.key} className="mb-[10px] last:mb-0">
                 {item.key === 'logout' ? (
-                  <form action={logout}>
-                    <button type="submit" className={`${LINK} ${tone}`}>
-                      {icon}
-                      {item.label}
-                    </button>
-                  </form>
+                  <LogoutButton className={`${LINK} ${tone}`}>
+                    {icon}
+                    {item.label}
+                  </LogoutButton>
                 ) : (
                   <Link
                     href={item.href}

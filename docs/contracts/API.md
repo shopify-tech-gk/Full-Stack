@@ -1,7 +1,8 @@
-# YouMart Public API Contract (v1.1)
+# YouMart Public API Contract (v1.2)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
-revision 2026-09-29 (W1 — see §17 change log).**
+revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2) — see
+§17 change log.**
 
 This is the single, authoritative, consolidated contract for the **public
 gateway API** — everything a frontend web app or mobile client calls. It
@@ -16,7 +17,7 @@ Every endpoint documented here has been verified against the real running
 system as of this freeze (see "Verification" note per section where
 relevant, and the full verification log in the Ch7.4 commit).
 
-**Versioning policy**: this is v1.1 of the contract. Changes after the
+**Versioning policy**: this is v1.2 of the contract. Changes after the
 freeze must be additive/backward-compatible (new optional fields, new
 endpoints) wherever possible; each additive revision bumps the MINOR
 version (v1.1, v1.2, ...) and is listed in §17. Any breaking change
@@ -97,30 +98,38 @@ All timestamps are ISO 8601 UTC strings, e.g. `"2026-09-28T06:30:28.845Z"`.
 
 ## 2. Auth model
 
-### 2.1 Customer login (OTP over WhatsApp)
+### 2.1 Customer login (passwordless OTP — mobile number over WhatsApp, or email)
 
-1. `POST /api/auth/otp/request` with `{ phone }` — server sends a 6-digit
-   code via WhatsApp (production) / logs it in dev only.
+1. `POST /api/auth/otp/request` with `{ identifier }` — ONE field holding a
+   mobile number OR an email (v1.2). The server detects which: a value
+   containing `@` is an email (code sent by email), anything else must be
+   a mobile number (code sent on WhatsApp). No SMS.
 2. User receives the code, client calls `POST /api/auth/otp/verify` with
-   `{ phone, code }`.
+   `{ identifier, code }`. The FIRST successful verify for a phone/email
+   creates that account — there is no separate sign-up.
 3. Response body: `{ accessToken, expiresIn, user }`. Response also sets
    an `httpOnly` cookie `ym_rt` (the refresh token) — **never appears in
    the JSON body**.
 4. Client stores `accessToken` **in memory only** (not localStorage — it's
    short-lived by design) and attaches it on every subsequent call:
    `Authorization: Bearer <accessToken>`.
-5. When a call returns `401 UNAUTHORIZED` (token expired), call
-   `POST /api/auth/refresh` (browser sends the `ym_rt` cookie
-   automatically — no body needed) to get a fresh `accessToken` + rotated
-   cookie, then retry the original call once.
+5. On page load, and whenever a call returns `401 UNAUTHORIZED` (token
+   expired), call `POST /api/auth/refresh` (browser sends the `ym_rt`
+   cookie automatically — no body needed) to get a fresh `accessToken` +
+   `user` + rotated cookie, then retry the original call once. Run at most
+   ONE refresh at a time: the cookie rotates on every use.
 6. `POST /api/auth/logout` clears the cookie server-side; client also
    discards its in-memory `accessToken`.
+
+**Accounts (v1.2)**: a phone and an email are SEPARATE accounts — logging
+in by email never finds the account created by phone, and vice versa.
+Account linking/merging is a planned refinement, not part of v1.2.
 
 ### 2.2 Token facts
 
 | Token                  | Alg                         | TTL                                        | Carried via                           | Claims of interest                      |
 | ---------------------- | --------------------------- | ------------------------------------------ | ------------------------------------- | --------------------------------------- |
-| Customer access token  | RS256                       | 900s (15 min)                              | `Authorization: Bearer`               | `sub` (userId), `typ:"access"`, `phone` |
+| Customer access token  | RS256                       | 900s (15 min)                              | `Authorization: Bearer`               | `sub` (userId), `typ:"access"`, `phone` (absent for email-only accounts, v1.2) |
 | Customer refresh token | opaque (hashed server-side) | 1,209,600s (14 days), rotated on every use | `ym_rt` httpOnly cookie, `Path=/api/auth` | n/a (not a JWT)                     |
 | Admin access token     | RS256                       | 28,800s (8h)                               | `Authorization: Bearer`               | `sub` (adminId), `typ:"admin"`, `role`  |
 
@@ -149,16 +158,18 @@ verifying tokens itself) — documented for completeness/mobile edge cases.
 ### `POST /api/auth/otp/request`
 
 - **Auth**: public
-- **Body**: `{ phone: string (E.164, e.g. "+919876500000"), purpose?: "LOGIN" | "PHONE_VERIFY" }` (`purpose` defaults `"LOGIN"`)
-- **200**: `{ "status": "otp_sent", "expiresInSeconds": 300 }`
-- **Errors**: `400 VALIDATION_ERROR` (malformed phone); `429 RATE_LIMITED` (resend cooldown 60s, or 5/hour cap)
-- **Notes**: identical response whether or not the phone has an account (no enumeration). Code never appears in the response.
+- **Body (v1.2)**: `{ identifier: string, purpose?: "LOGIN" | "PHONE_VERIFY" }` (`purpose` defaults `"LOGIN"`). `identifier` is a mobile number (`9876543210`, `+91 98765 43210`, `09876543210`, `919876543210` or any E.164) or an email (compared lower-cased). `PHONE_VERIFY` requires a mobile number.
+  - **v1 body still accepted**: `{ phone: string (E.164) }` — `identifier` wins if both are sent.
+- **200**: `{ "status": "otp_sent", "expiresInSeconds": 300 }` — the code goes on WhatsApp (mobile) or by email (email)
+- **Errors**: `400 VALIDATION_ERROR` `"Enter a valid mobile number or email address"`; `429 RATE_LIMITED` (`"Please wait before requesting another code"` — 60s resend cooldown; `"Too many code requests, try again later"` — 5/hour per identifier; or the gateway's per-IP public-form limit, §14)
+- **Notes**: identical response whether or not the phone/email has an account (no enumeration). Code never appears in any response or log.
 
 ### `POST /api/auth/otp/verify`
 
 - **Auth**: public
-- **Body**: `{ phone: string, code: string (6 digits), purpose?: "LOGIN" | "PHONE_VERIFY" }`
-- **200**: `{ "accessToken": string, "expiresIn": 900, "user": { "id": Uuid, "phone": string, "isPhoneVerified": true } }` + `Set-Cookie: ym_rt=...; HttpOnly; Path=/api/auth; SameSite=Lax; Max-Age=1209600` (+ `Secure` in production)
+- **Body (v1.2)**: `{ identifier: string, code: string (6 digits), purpose?: "LOGIN" | "PHONE_VERIFY" }` (v1 `{ phone, code }` still accepted)
+- **200**: `{ "accessToken": string, "expiresIn": 900, "user": AuthUser }` + `Set-Cookie: ym_rt=...; HttpOnly; Path=/api/auth; SameSite=Lax; Max-Age=1209600` (+ `Secure` in production)
+- `AuthUser` (v1.2): `{ "id": Uuid, "phone": string | null, "email": string | null, "name": string | null, "isPhoneVerified": boolean, "isEmailVerified": boolean }` — `phone` is `null` for an account created by email login (v1.0 clients that assumed a non-null `phone` must handle this; `id`/`phone`/`isPhoneVerified` are otherwise unchanged).
 - **v1.1 fix**: v1.0 set `Path=/auth`, which a browser never sends to `/api/auth/refresh` (the path the client actually calls through the gateway), so refresh silently failed. The path is now `/api/auth` (configurable server-side via `REFRESH_COOKIE_PATH`). Cookies issued before the fix are orphaned — affected users simply log in again.
 - **Errors**: `400 VALIDATION_ERROR` (wrong/expired code — generic message, never reveals which); `429 RATE_LIMITED` (5 wrong attempts on one challenge); `403 FORBIDDEN` (account BLOCKED)
 - **Verified live** (2026-09-28): exact match, incl. cookie flags.
@@ -166,8 +177,14 @@ verifying tokens itself) — documented for completeness/mobile edge cases.
 ### `POST /api/auth/refresh`
 
 - **Auth**: `ym_rt` cookie (browser sends automatically; no bearer token, no body)
-- **200**: `{ "accessToken": string, "expiresIn": 900 }` + new rotated `Set-Cookie: ym_rt=...`
+- **200**: `{ "accessToken": string, "expiresIn": 900, "user": AuthUser }` (`user` added v1.2 — restores who is signed in after a page reload in one call) + new rotated `Set-Cookie: ym_rt=...`
 - **Errors**: `401 UNAUTHORIZED` (missing/invalid/already-rotated cookie); `403 FORBIDDEN` (account BLOCKED)
+
+### `GET /api/auth/me` — v1.2
+
+- **Auth**: customer bearer token
+- **200**: `AuthUser` (the caller's own profile)
+- **Errors**: `401` (missing/expired token — refresh and retry); `403` (account BLOCKED)
 
 ### `POST /api/auth/logout`
 
@@ -749,11 +766,11 @@ truth and may not map 1:1 to the table above in the future.
 | Surface                      | Limit                                                | Response on exceed |
 | ---------------------------- | ---------------------------------------------------- | ------------------ |
 | Every gateway request (IP)   | 300/60s                                              | `429 RATE_LIMITED` |
-| `POST /api/auth/otp/request` | 1/60s cooldown + 5/hour, per phone                   | `429 RATE_LIMITED` |
+| `POST /api/auth/otp/request` | 1/60s cooldown + 5/hour, per phone or email          | `429 RATE_LIMITED` |
 | `POST /api/auth/otp/verify`  | 5 wrong attempts per challenge, then must re-request | `429 RATE_LIMITED` |
 | `POST /api/admin/login`      | 10 attempts/15min per IP                             | `429 RATE_LIMITED` |
 | `POST /api/orders/checkout`  | 20 attempts/10min per logged-in user                 | `429 RATE_LIMITED` |
-| `POST /api/orders/track` + `POST /api/support/messages` (v1.1) | 20 combined/15min per IP (gateway) | `429 RATE_LIMITED` |
+| `POST /api/orders/track` + `POST /api/support/messages` + `POST /api/auth/otp/request` (v1.2) | 20 combined/15min per IP (gateway) | `429 RATE_LIMITED` |
 | `POST /api/orders/track` (v1.1) | 10/15min per order number                         | `429 RATE_LIMITED` |
 | `POST /api/support/messages` (v1.1) | 5/hour per phone number                       | `429 RATE_LIMITED` |
 
@@ -796,6 +813,15 @@ Purely additive changes bump the minor version instead (§17).
 ---
 
 ## 17. Change log
+
+### v1.2 — 2026-09-30 (W2, additive)
+
+- **Added**: passwordless login by mobile number OR email through one `identifier` field on `POST /api/auth/otp/request|verify` (v1 `{ phone }` still accepted). Email codes go by email; mobile codes on WhatsApp — §2.1, §3.
+- **Added**: `AuthUser` gains `email`, `name`, `isEmailVerified`; `phone` is `null` for email-created accounts; the access token omits the `phone` claim for them — §2.2, §3.
+- **Added**: `user` in the `POST /api/auth/refresh` response; `GET /api/auth/me` — §3.
+- **Added**: OTP requests share the gateway's per-IP public-form limit — §14.
+- **Fixed**: the gateway now strips downstream services' `Access-Control-*` headers so its own origin-specific, credentialed CORS applies. Before, services' `Access-Control-Allow-Origin: *` reached the browser and every credentialed call from the storefront (login, refresh) was blocked.
+- A phone and an email are separate accounts (no linking yet).
 
 ### v1.1 — 2026-09-29 (W1, additive)
 

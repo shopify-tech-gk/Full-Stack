@@ -172,12 +172,12 @@ enum OAuthProvider {
   @@schema("auth")
 }
 
-/// Customer account. `phone` (primary identity for OTP login) and `email` (when
-/// present) uniqueness are each enforced via partial unique indexes
+/// Customer account, identified by `phone` and/or `email` (v1.2: an email-only account has no
+/// phone; a CHECK keeps at least one). Uniqueness of each is enforced via partial unique indexes
 /// (WHERE deleted_at IS NULL), hand-added in migration SQL - not a Prisma @unique.
 model User {
   id              String     @id @default(uuid(7))
-  phone           String
+  phone           String?
   email           String?
   name            String?
   isPhoneVerified Boolean    @default(false) @map("is_phone_verified")
@@ -196,10 +196,12 @@ model User {
   @@schema("auth")
 }
 
-/// Issued OTP record. `codeHash` stores a hash, never the raw OTP code.
+/// Issued OTP record. `codeHash` stores a hash, never the raw OTP code. Keyed by exactly one of
+/// `phone` (WhatsApp) or `email` (v1.2), enforced by a CHECK in migration SQL.
 model OtpChallenge {
   id           String     @id @default(uuid(7))
-  phone        String
+  phone        String?
+  email        String?
   codeHash     String     @map("code_hash")
   purpose      OtpPurpose
   expiresAt    DateTime   @map("expires_at")
@@ -210,6 +212,7 @@ model OtpChallenge {
   deletedAt    DateTime?  @map("deleted_at")
 
   @@index([phone, purpose])
+  @@index([email, purpose])
   @@map("otp_challenge")
   @@schema("auth")
 }

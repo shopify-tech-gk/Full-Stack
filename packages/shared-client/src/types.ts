@@ -1,4 +1,4 @@
-// Types mirroring the FROZEN public API contract v1 (docs/contracts/API.md).
+// Types mirroring the FROZEN public API contract v1.2 (docs/contracts/API.md).
 // Keep in lockstep with that document - it is the source of truth.
 
 export type Uuid = string;
@@ -29,9 +29,9 @@ export interface PaginationQuery {
   limit?: number;
 }
 
-// --- Auth ---
+// --- Auth (v1.2: one `identifier` = mobile number OR email) ---
 export interface OtpRequestBody {
-  phone: string;
+  identifier: string;
   purpose?: 'LOGIN' | 'PHONE_VERIFY';
 }
 export interface OtpRequestResponse {
@@ -43,8 +43,12 @@ export interface OtpVerifyBody extends OtpRequestBody {
 }
 export interface AuthUser {
   id: Uuid;
-  phone: string;
+  /** Null for an account created by email login. */
+  phone: string | null;
+  email: string | null;
+  name: string | null;
   isPhoneVerified: boolean;
+  isEmailVerified: boolean;
 }
 export interface OtpVerifyResponse {
   accessToken: string;
@@ -54,6 +58,7 @@ export interface OtpVerifyResponse {
 export interface RefreshResponse {
   accessToken: string;
   expiresIn: number;
+  user: AuthUser;
 }
 
 // --- Catalog ---

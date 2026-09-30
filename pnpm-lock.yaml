@@ -224,6 +224,9 @@ importers:
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
+      '@youmart/shared-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       cookie-parser:
         specifier: 1.4.7
         version: 1.4.7

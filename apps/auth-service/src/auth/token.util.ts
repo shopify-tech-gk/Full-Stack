@@ -9,7 +9,8 @@ export interface AccessTokenClaims {
   iat: number;
   exp: number;
   typ: 'access';
-  phone: string;
+  /** Absent for email-only accounts (v1.2). */
+  phone?: string;
 }
 
 export interface SignedAccessToken {
@@ -22,9 +23,10 @@ export interface SignedAccessToken {
  * other service (and this one, for its own /auth/refresh flow) verifies
  * with the public key only - no other service ever holds a signing secret.
  */
-export function signAccessToken(user: { id: string; phone: string }): SignedAccessToken {
+export function signAccessToken(user: { id: string; phone: string | null }): SignedAccessToken {
   const expiresIn = config.accessTokenTtlSeconds;
-  const token = jwt.sign({ typ: 'access', phone: user.phone }, config.jwtPrivateKey, {
+  const claims = user.phone ? { typ: 'access', phone: user.phone } : { typ: 'access' };
+  const token = jwt.sign(claims, config.jwtPrivateKey, {
     algorithm: 'RS256',
     subject: user.id,
     issuer: config.jwtIssuer,

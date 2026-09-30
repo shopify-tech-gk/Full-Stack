@@ -49,6 +49,15 @@ Readiness - runs `SELECT 1` against Postgres as the `auth_svc` role.
 
 ### `POST /auth/otp/request`
 
+> **v1.2 (W2)**: the body also takes `identifier` - a mobile number OR an email, detected
+> server-side (`src/otp/otp.target.ts`); an email gets the SAME OTP machinery (CSPRNG code, HMAC
+> hash, 60s cooldown, 5/hour cap, 5-attempt cap, 5-min TTL) and is sent through the SAME `OTP`
+> notification template on the `EMAIL` channel instead of `WHATSAPP`. `otp_challenge` rows hold
+> exactly one of `phone`/`email` (CHECK constraint); an email login finds/creates a user by
+> `email` (phone `null`). The `phone` field below stays accepted. Also new: `user` in the
+> `/auth/refresh` response and `GET /auth/me` (requireAuth). Authoritative shapes:
+> [API.md](./API.md) §2-3.
+
 Request an OTP for phone login/verification. Same response shape whether
 or not the phone maps to an existing user - no enumeration.
 

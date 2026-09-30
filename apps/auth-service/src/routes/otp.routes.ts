@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { config } from '../config';
 import { OtpRequestBody, OtpVerifyBody } from '../otp/otp.schema';
 import { requestOtp, verifyOtpCode } from '../otp/otp.service';
+import { resolveOtpTarget } from '../otp/otp.target';
 import { issueSession } from '../auth/session.service';
 import { REFRESH_COOKIE_OPTIONS } from '../auth/cookie.util';
 
@@ -13,13 +14,17 @@ export const otpRouter: Router = Router();
 
 otpRouter.post('/otp/request', async (req, res) => {
   const body = OtpRequestBody.parse(req.body);
-  const result = await requestOtp(body);
+  const result = await requestOtp({ target: resolveOtpTarget(body), purpose: body.purpose });
   res.status(200).json(result);
 });
 
 otpRouter.post('/otp/verify', async (req, res) => {
   const body = OtpVerifyBody.parse(req.body);
-  const { userId } = await verifyOtpCode(body);
+  const { userId } = await verifyOtpCode({
+    target: resolveOtpTarget(body),
+    purpose: body.purpose,
+    code: body.code,
+  });
 
   const session = await issueSession(userId, req.headers['user-agent']);
 

@@ -5,14 +5,11 @@ import { CheckoutSteps } from '@/components/listing/CheckoutSteps';
 import { CartView } from '@/components/cart/CartView';
 import { storeCategories } from '@/lib/categories';
 import { getAddresses } from '@/lib/account';
-import { getSession } from '@/lib/session';
 
 export const metadata: Metadata = { title: 'Cart - You Mart' };
 
 export default async function CartPage() {
-  const destination = getSession()
-    ? (defaultCheckoutAddress(await getAddresses())?.state ?? null)
-    : null;
+  const destination = defaultCheckoutAddress(await getAddresses())?.state ?? null;
 
   return (
     <>

@@ -2,14 +2,19 @@
 
 import { useEffect, useId, useState, useTransition, type FormEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  DEMO_OTP_CODE,
   OTP_LENGTH,
   OTP_RESEND_SECONDS,
-  toE164Phone,
-  toLocalPhone,
+  detectIdentifier,
+  identifierKind,
+  identifierLabel,
+  otpErrorMessage,
+  safeReturnTo,
+  type LoginIdentifier,
 } from '@youmart/shared-client';
-import { requestOtp, verifyOtp, type LoginReturnPath } from '@/app/my-account/actions';
+import { api } from '@/lib/api';
+import { loginWithOtp } from '@/lib/session';
 import { Notice } from './Notice';
 import {
   FIELD_HINT,
@@ -23,18 +28,35 @@ import {
 
 interface OtpLoginFormProps {
   mode: 'login' | 'register';
-  returnTo?: LoginReturnPath;
+  /** Validated against the allowlist in safeReturnTo before use. */
+  returnTo?: string;
   /** Checkout embeds the form without the card frame. */
   bare?: boolean;
 }
 
-// Live's Login/Register cards (1px blue border, radius 10, 20px padding), driven by our
-// phone + WhatsApp OTP auth instead of WooCommerce username/password.
+function inputHint(value: string): string {
+  const kind = identifierKind(value);
+  const detected = detectIdentifier(value);
+  if (!kind) return 'Use your mobile number or email - no password needed.';
+  if (kind === 'PHONE') {
+    return detected
+      ? `Mobile number detected - we'll send the code on WhatsApp to ${identifierLabel(detected)}.`
+      : 'Mobile number - enter all 10 digits.';
+  }
+  return detected
+    ? `Email detected - we'll email the code to ${detected.value}.`
+    : 'Email address - enter the full address, e.g. name@example.com.';
+}
+
+// Live's Login/Register cards (1px blue border, radius 10, 20px padding) driven by passwordless
+// OTP: one field takes a mobile number (code on WhatsApp) or an email (code by email). The first
+// successful code creates the account, so Login and Register run the same flow.
 export function OtpLoginForm({ mode, returnTo, bare = false }: OtpLoginFormProps) {
   const id = useId();
-  const [phone, setPhone] = useState('');
+  const router = useRouter();
+  const [value, setValue] = useState('');
   const [code, setCode] = useState('');
-  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<LoginIdentifier | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [pending, startTransition] = useTransition();
@@ -45,33 +67,48 @@ export function OtpLoginForm({ mode, returnTo, bare = false }: OtpLoginFormProps
     return () => window.clearTimeout(timer);
   }, [cooldown]);
 
-  const send = () =>
+  const send = (target: LoginIdentifier) => {
+    setError(null);
     startTransition(async () => {
-      setError(null);
-      const result = await requestOtp(phone);
-      if (!result.ok) {
-        setError(result.error ?? 'Could not send the code.');
-        return;
+      try {
+        await api.auth.requestOtp(target.value);
+        setSentTo(target);
+        setCode('');
+        setCooldown(OTP_RESEND_SECONDS);
+      } catch (err) {
+        setError(otpErrorMessage(err, 'request'));
       }
-      setSentTo(toE164Phone(phone));
-      setCode('');
-      setCooldown(OTP_RESEND_SECONDS);
     });
+  };
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!sentTo) {
-      send();
+      const target = detectIdentifier(value);
+      if (!target) {
+        setError('Please enter a valid 10-digit mobile number or an email address.');
+        return;
+      }
+      send(target);
       return;
     }
+    if (!new RegExp(`^\\d{${OTP_LENGTH}}$`).test(code)) {
+      setError(`Please enter the ${OTP_LENGTH}-digit code.`);
+      return;
+    }
+    setError(null);
     startTransition(async () => {
-      setError(null);
-      const result = await verifyOtp(phone, code, returnTo);
-      if (result && !result.ok) setError(result.error ?? 'Verification failed.');
+      try {
+        await loginWithOtp(sentTo.value, code);
+        router.replace(safeReturnTo(returnTo));
+      } catch (err) {
+        setError(otpErrorMessage(err, 'verify'));
+      }
     });
   };
 
   const verb = mode === 'login' ? 'Log in' : 'Register';
+  const channel = sentTo?.type === 'EMAIL' ? 'email' : 'WhatsApp';
 
   return (
     <form
@@ -81,65 +118,69 @@ export function OtpLoginForm({ mode, returnTo, bare = false }: OtpLoginFormProps
     >
       {error && <Notice tone="error">{error}</Notice>}
 
-      <p className={FORM_ROW}>
-        <label htmlFor={`${id}-phone`} className={FORM_LABEL}>
-          Mobile number <span className={FORM_REQUIRED}>*</span>
-        </label>
-        <input
-          id={`${id}-phone`}
-          type="tel"
-          inputMode="numeric"
-          autoComplete="tel-national"
-          placeholder="10-digit mobile number"
-          value={phone}
-          onChange={(event) => setPhone(event.target.value)}
-          disabled={Boolean(sentTo)}
-          aria-invalid={Boolean(error && !sentTo)}
-          className={FORM_INPUT}
-        />
-      </p>
-
-      {sentTo && (
+      {!sentTo ? (
+        <p className={FORM_ROW}>
+          <label htmlFor={`${id}-identifier`} className={FORM_LABEL}>
+            Mobile number or email <span className={FORM_REQUIRED}>*</span>
+          </label>
+          <input
+            id={`${id}-identifier`}
+            type="text"
+            inputMode={identifierKind(value) === 'PHONE' ? 'tel' : 'email'}
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder="Enter mobile number or email"
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            aria-invalid={Boolean(error)}
+            aria-describedby={`${id}-identifier-hint`}
+            className={FORM_INPUT}
+          />
+          <span id={`${id}-identifier-hint`} aria-live="polite" className={FIELD_HINT}>
+            {inputHint(value)}
+          </span>
+        </p>
+      ) : (
         <>
-          <p className="mb-[15px] font-ui text-[15px] leading-[1.5] text-ink-body">
-            Enter the {OTP_LENGTH}-digit code sent on WhatsApp to +91 {toLocalPhone(sentTo)}.{' '}
+          <p role="status" className="mb-[15px] font-ui text-[15px] leading-[1.5] text-ink-body">
+            OTP sent to your {channel}: <strong>{identifierLabel(sentTo)}</strong>.{' '}
             <button
               type="button"
               onClick={() => {
                 setSentTo(null);
+                setCode('');
                 setError(null);
               }}
               className={TEXT_LINK}
             >
-              Change number
+              Change
             </button>
           </p>
           <p className={FORM_ROW}>
             <label htmlFor={`${id}-code`} className={FORM_LABEL}>
-              OTP <span className={FORM_REQUIRED}>*</span>
+              Enter the {OTP_LENGTH}-digit OTP <span className={FORM_REQUIRED}>*</span>
             </label>
             <input
               id={`${id}-code`}
               inputMode="numeric"
               autoComplete="one-time-code"
+              autoFocus
               maxLength={OTP_LENGTH}
               value={code}
               onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
-              aria-describedby={`${id}-demo`}
+              aria-invalid={Boolean(error)}
               className={`${FORM_INPUT} tracking-[0.3em]`}
             />
-            {/* DEMO hint - remove when the real OTP service is wired. */}
-            <span id={`${id}-demo`} className={FIELD_HINT}>
-              Demo mode: use code {DEMO_OTP_CODE}.
-            </span>
           </p>
         </>
       )}
 
       {mode === 'register' && (
         <p className="mb-[25.6px] font-ui text-[16px] leading-[25.6px] text-ink-body">
-          Your personal data will be used to support your experience throughout this website, to
-          manage access to your account, and for other purposes described in our{' '}
+          New here? Your account is created when you verify the code. Your personal data will be
+          used to support your experience throughout this website, to manage access to your account,
+          and for other purposes described in our{' '}
           <Link href="/privacy-policy" className={TEXT_LINK}>
             privacy policy
           </Link>
@@ -158,7 +199,12 @@ export function OtpLoginForm({ mode, returnTo, bare = false }: OtpLoginFormProps
           {cooldown > 0 ? (
             <span className="text-ink-muted">Resend OTP in {cooldown}s</span>
           ) : (
-            <button type="button" onClick={send} disabled={pending} className={TEXT_LINK}>
+            <button
+              type="button"
+              onClick={() => send(sentTo)}
+              disabled={pending}
+              className={TEXT_LINK}
+            >
               Resend OTP
             </button>
           )}

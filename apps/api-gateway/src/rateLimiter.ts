@@ -22,8 +22,15 @@ export const rateLimiter = rateLimit({
   },
 });
 
-/** W1: the unauthenticated POST forms - the only public writes/lookups without an account. */
-export const PUBLIC_FORM_PATHS = ['/api/orders/track', '/api/support/messages'];
+/**
+ * W1: the unauthenticated POST forms. v1.2 adds OTP requests - an OTP can now be sent to any
+ * email address, so a per-IP cap sits on top of auth-service's per-identifier limits.
+ */
+export const PUBLIC_FORM_PATHS = [
+  '/api/orders/track',
+  '/api/support/messages',
+  '/api/auth/otp/request',
+];
 
 const publicFormLimiter = rateLimit({
   windowMs: config.publicFormRateLimitWindowMs,

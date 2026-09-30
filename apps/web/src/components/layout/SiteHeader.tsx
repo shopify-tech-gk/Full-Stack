@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Download, Heart, Menu, PackageSearch, ShoppingCart } from 'lucide-react';
 import { BUSINESS } from '@youmart/shared-client';
+import { useSession } from '@/lib/session';
 import { Logo } from './Logo';
 import { SearchBar } from './SearchBar';
 import { MobileCategoryDrawer } from './MobileCategoryDrawer';
@@ -101,6 +102,11 @@ const customerCareIcon = (
 export function SiteHeader() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const session = useSession();
+  // Same tile as live's "My Account"; once signed in it greets the customer instead.
+  const firstName = session.user?.name?.split(' ')[0];
+  const accountLines: [string, string] =
+    session.status === 'authenticated' ? ['Hi,', firstName ?? 'there'] : ['My', 'Account'];
 
   const hamburger = (width: string) => (
     <button
@@ -175,12 +181,20 @@ export function SiteHeader() {
           <ul className="flex items-start gap-[14px]">
             {DESKTOP_ACTIONS.map(({ href, lines, icon }) => (
               <li key={href} className="last:ml-[3px]">
-                <Link href={href} className="group flex min-w-[38px] flex-col items-center">
+                <Link
+                  href={href}
+                  aria-label={
+                    href === '/my-account' && session.status === 'authenticated'
+                      ? 'My account (signed in)'
+                      : undefined
+                  }
+                  className="group flex min-w-[38px] flex-col items-center"
+                >
                   <span className="flex size-[38px] items-center justify-center rounded-tile bg-brand p-[7px] text-white">
                     {icon}
                   </span>
                   <TwoLineLabel
-                    lines={lines}
+                    lines={href === '/my-account' ? accountLines : lines}
                     className="mt-[1px] text-center font-ui text-[13px] font-semibold leading-[16.9px] text-ink-strong"
                   />
                 </Link>

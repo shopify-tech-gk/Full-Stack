@@ -120,6 +120,22 @@ logged - OTP codes are hashed before persistence and redacted
 template; admin/auth login never logs the password, only a generic
 "Invalid email or password" on failure.
 
+### Getting a login OTP locally (dev only)
+
+With `NOTIFICATIONS_ENABLED=false` (the local default) WhatsApp and email
+sends are simulated and the code is `[REDACTED]` everywhere, so there is
+nothing to read in logs. After requesting a code in the web app, run:
+
+```
+pnpm dev:otp 9876543210          # or: pnpm dev:otp you@example.com
+```
+
+`scripts/dev-otp.mjs` reads the pending challenge's hash from the local
+Postgres container and recovers the code with `OTP_HASH_SECRET` from your
+local `.env`. No service code path emits a code, so production is
+unaffected; the script refuses to run with `NODE_ENV=production` and is
+useless without both database access and the hash secret.
+
 ## 7. Graceful shutdown
 
 Every service registers `SIGINT`/`SIGTERM` handlers that: stop accepting

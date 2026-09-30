@@ -3,7 +3,7 @@ import { prisma } from '../db';
 
 export interface UserContactView {
   userId: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
 }
 

@@ -5,8 +5,11 @@ import { signAccessToken, generateRefreshToken, hashRefreshToken } from './token
 
 export interface SessionUser {
   id: string;
-  phone: string;
+  phone: string | null;
+  email: string | null;
+  name: string | null;
   isPhoneVerified: boolean;
+  isEmailVerified: boolean;
 }
 
 export interface SessionResult {
@@ -25,8 +28,20 @@ async function loadActiveUser(userId: string) {
   return user;
 }
 
-function toSessionUser(user: { id: string; phone: string; isPhoneVerified: boolean }): SessionUser {
-  return { id: user.id, phone: user.phone, isPhoneVerified: user.isPhoneVerified };
+function toSessionUser(user: SessionUser): SessionUser {
+  return {
+    id: user.id,
+    phone: user.phone,
+    email: user.email,
+    name: user.name,
+    isPhoneVerified: user.isPhoneVerified,
+    isEmailVerified: user.isEmailVerified,
+  };
+}
+
+/** GET /auth/me - the caller's own profile (same shape as the login response's `user`). */
+export async function getSessionUser(userId: string): Promise<SessionUser> {
+  return toSessionUser(await loadActiveUser(userId));
 }
 
 export async function issueSession(userId: string, userAgent?: string): Promise<SessionResult> {
