@@ -110,19 +110,36 @@ Processing order:
 5. **Apply the event**:
    - `payment.captured` → payment row set `CAPTURED` (+ `razorpayPaymentId`
      recorded) → `orderClient.confirmOrder` (commits stock, confirms order)
-   - `payment.failed` → payment row set `FAILED` → `orderClient.cancelOrder`
-     (releases stock, cancels order)
+   - `payment.failed` → recorded only (W5): the order stays `PENDING_PAYMENT`
+     with its stock held and the payment row stays `CREATED`, because Razorpay
+     Checkout lets the customer retry the same Razorpay order. (Before W5 this
+     cancelled the order, so "declined, then paid" ended as a refunded capture.)
    - An unrecognized `razorpay_order_id` (not one this service created) is
      marked processed with no further action.
-   - If no cached auth token is found for the order (see the
-     `pendingAuthTokens` limitation above), the confirm/cancel call is
-     skipped and an error is logged for manual reconciliation - the webhook
-     itself still returns `200` (Razorpay must not retry forever for a
-     condition retries can't fix).
+   - The confirm call authenticates with a self-minted service token (Ch6.5;
+     the old cached-user-token stop-gap is gone).
 
-Both the payment-row update and the order confirm/cancel calls are
+Both the payment-row update and the order confirm call are
 themselves idempotent, so a retry that re-enters this handler (e.g. a crash
 before the event was marked processed) is safe.
 
 - **200**: `{ "received": true }` (always, once signature verification passes and the payload parses)
 - **400** `VALIDATION_ERROR`: invalid/missing signature, malformed payload, or amount mismatch
+
+## Local webhooks (W5)
+
+Razorpay can't reach `localhost`, so a local stack gets the webhook in one of two ways:
+
+1. **Tunnel (real delivery)**. Expose the gateway, e.g. `cloudflared tunnel --url http://localhost:4000`
+   (or `ngrok http 4000`). In the Razorpay dashboard (Test mode → Settings → Webhooks) add
+   `https://<tunnel-host>/api/payments/webhook` with the **same secret** as `RAZORPAY_WEBHOOK_SECRET`
+   and the events `payment.captured` and `payment.failed`. Razorpay then signs and delivers every
+   test payment's events itself. The tunnel URL changes on every restart unless it's a named tunnel.
+2. **Local relay (no tunnel)**. After paying with a test card, run
+   `pnpm dev:razorpay-webhook <razorpay_order_id>`. It fetches the REAL payment from the Razorpay
+   TEST API and posts the matching `payment.captured` / `payment.failed` event to the local webhook,
+   signed with `RAZORPAY_WEBHOOK_SECRET` exactly as Razorpay signs it (same handler, same checks).
+   Test keys only; it refuses `NODE_ENV=production`, and never prints a secret.
+
+Either way the storefront is unchanged: it polls `GET /api/orders/:id` until the order is
+`CONFIRMED` and never treats Razorpay's browser callback as proof of payment.

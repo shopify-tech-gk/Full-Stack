@@ -1,6 +1,7 @@
 // Cart + checkout logic shared by web and mobile. Shapes are the cart-service CartView and the
 // order-service OrderView; nothing here talks to the network.
 import { formatMoney, fromPaise, toPaise } from './money';
+import { orderStatusLabel } from './account';
 import type { Address, CartLine, CartView, Money, OrderView } from './types';
 
 export const EMPTY_CART: CartView = { cartId: null, items: [], subtotal: '0.00', itemCount: 0 };
@@ -102,7 +103,7 @@ export function checkoutBlocker(input: {
 }
 
 export const CHECKOUT_BLOCKER_MESSAGE: Record<CheckoutBlocker, string> = {
-  login: 'Please log in with your mobile number to place the order.',
+  login: 'Please log in with your mobile number or email to place the order.',
   address: 'Please choose a delivery address.',
   empty: 'Your cart is empty.',
 };
@@ -114,6 +115,10 @@ export function orderOverview(
 ): { label: string; value: string }[] {
   return [
     { label: 'Order number', value: order.orderNumber },
+    {
+      label: 'Status',
+      value: order.status === 'CONFIRMED' ? 'Paid \u00b7 Confirmed' : orderStatusLabel(order),
+    },
     {
       label: 'Date',
       value: new Intl.DateTimeFormat('en-IN', {

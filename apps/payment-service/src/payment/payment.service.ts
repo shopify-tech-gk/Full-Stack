@@ -295,8 +295,8 @@ export interface HandleWebhookInput {
  * 4. Amount validation: the captured amount must match the payment's own
  *    expected amount (guards against a mismatched/tampered amount).
  * 5. Apply the event (payment.captured -> CAPTURED + confirm order;
- *    payment.failed -> FAILED + cancel order) - both the payment update and
- *    the order confirm/cancel calls are themselves idempotent, so a retry
+ *    payment.failed -> recorded only, the order stays payable - W5) - the
+ *    payment update and the order confirm call are themselves idempotent, so a retry
  *    that re-enters this branch (e.g. a crash before `processedAt` was set)
  *    is still safe.
  */
@@ -386,8 +386,15 @@ export async function handleWebhook(input: HandleWebhookInput): Promise<void> {
       );
     }
   } else if (payload.event === 'payment.failed') {
-    await prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } });
-    await orderClient.cancelOrder(payment.orderId);
+    // W5: one failed ATTEMPT is not a failed order - Razorpay Checkout lets the customer retry the
+    // same Razorpay order (another card/UPI), so the order stays PENDING_PAYMENT with its stock held
+    // and the payment row stays CREATED (reused by the next razorpay-order call). Cancelling here
+    // used to turn "declined, then paid" into a capture on a cancelled order (auto-refunded).
+    // The event itself is kept in payment_webhook_event for the audit trail.
+    logger.info(
+      { orderId: payment.orderId, razorpayOrderId: paymentEntity.order_id },
+      'payment attempt failed - order stays payable',
+    );
   }
 
   await prisma.paymentWebhookEvent.update({

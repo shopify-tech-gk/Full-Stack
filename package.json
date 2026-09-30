@@ -15,6 +15,7 @@
     "infra:down": "docker compose -f docker/docker-compose.yml --env-file .env down",
     "infra:logs": "docker compose -f docker/docker-compose.yml --env-file .env logs -f",
     "dev:otp": "node scripts/dev-otp.mjs",
+    "dev:razorpay-webhook": "node scripts/dev-razorpay-webhook.mjs",
     "dev:seed-catalog": "node scripts/dev-seed-catalog.mjs"
   },
   "devDependencies": {

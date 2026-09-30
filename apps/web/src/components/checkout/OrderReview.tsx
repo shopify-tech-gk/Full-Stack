@@ -1,10 +1,19 @@
 import Link from 'next/link';
-import { formatMoney, shippingLabel, type CartLine, type CartTotals } from '@youmart/shared-client';
+import { formatMoney, shippingLabel, type CartTotals, type Money } from '@youmart/shared-client';
 import { TEXT_LINK } from '@/components/account/formStyles';
 
+export interface ReviewRow {
+  key: string;
+  title: string;
+  quantity: number;
+  lineTotal: Money;
+}
+
 interface OrderReviewTableProps {
-  items: readonly CartLine[];
+  rows: readonly ReviewRow[];
   totals: CartTotals;
+  /** The cart can still change before the order is placed; the placed order can't. */
+  editable: boolean;
 }
 
 const HEAD = 'border-b border-catalog-rule py-[11.2px] pr-[16px] font-bold';
@@ -14,10 +23,10 @@ const FOOT_TD = 'border-b border-catalog-rule py-[14px] pr-[10px] text-right';
 
 // Live review table (Product / Quantity / Subtotal, 1px blue rules). Read-only here: live's
 // 20px steppers + "Johnson Travo Brass Angle..." truncation move to the cart page.
-export function OrderReviewTable({ items, totals }: OrderReviewTableProps) {
+export function OrderReviewTable({ rows, totals, editable }: OrderReviewTableProps) {
   return (
     <>
-      <table className="w-full border-separate border-spacing-0 font-sans text-[14.6px] leading-[25.6px] text-ink-body lg:text-[16px]">
+      <table className="w-full border-separate border-spacing-0 font-sans text-[14.6px] leading-[25.6px] tabular-nums text-ink-body lg:text-[16px]">
         <thead>
           <tr>
             <th scope="col" className={`${HEAD} text-left`}>
@@ -32,8 +41,8 @@ export function OrderReviewTable({ items, totals }: OrderReviewTableProps) {
           </tr>
         </thead>
         <tbody>
-          {items.map((line) => (
-            <tr key={line.cartItemId}>
+          {rows.map((line) => (
+            <tr key={line.key}>
               <th scope="row" className={`${CELL} text-left font-normal`}>
                 <span className="line-clamp-2 font-ui text-[13px] font-semibold leading-[1.4] text-cart-ink">
                   {line.title}
@@ -71,19 +80,25 @@ export function OrderReviewTable({ items, totals }: OrderReviewTableProps) {
           </tr>
         </tfoot>
       </table>
-      <p className="mt-[10px] text-right font-ui text-[14.6px] lg:text-[15px]">
-        <Link href="/cart" className={TEXT_LINK}>
-          Edit cart
-        </Link>
-      </p>
+      {editable && (
+        <p className="mt-[10px] text-right font-ui text-[14.6px] lg:text-[15px]">
+          <Link href="/cart" className={TEXT_LINK}>
+            Edit cart
+          </Link>
+        </p>
+      )}
     </>
   );
 }
 
 /** Live #order_review_heading + #order_review: 2px blue top frame, 1px blue body frame. */
+// POLISH (W5, flagged): white panel with the cart table's soft blue shadow.
 export function OrderPanel({ children }: { children: React.ReactNode }) {
   return (
-    <section aria-labelledby="order-review-title">
+    <section
+      aria-labelledby="order-review-title"
+      className="rounded-[10px] bg-white shadow-cart-table"
+    >
       <h2
         id="order-review-title"
         className="rounded-t-[10px] border-2 border-b-0 border-catalog-rule px-[26.3px] pb-[17.5px] pt-[26.3px] font-ui text-[17.5px] font-bold leading-[1.3] text-heading lg:px-[28.8px] lg:pb-[19.2px] lg:pt-[28.8px] lg:text-[19.2px]"

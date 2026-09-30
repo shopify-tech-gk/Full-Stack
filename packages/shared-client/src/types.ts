@@ -304,6 +304,16 @@ export interface RazorpayOrder {
   orderId: Uuid;
 }
 
+// --- Invoices ---
+/** The fields of GET /api/invoices/order/:orderId the storefront uses (the response has more). */
+export interface InvoiceSummary {
+  id: Uuid;
+  orderId: Uuid;
+  invoiceNumber: string;
+  invoiceDate: IsoDateTime;
+  grandTotal: Money;
+}
+
 // --- Returns ---
 export type ReturnStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PICKED_UP' | 'REFUNDED';
 export interface ReturnView {

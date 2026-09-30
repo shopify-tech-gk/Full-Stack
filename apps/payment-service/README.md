@@ -26,8 +26,8 @@ RAZORPAY_WEBHOOK_SECRET)` compared to the `X-Razorpay-Signature` header
 3. **Amount validation** - the captured amount (paise) must match the
    payment's own expected amount; a mismatch is rejected.
 4. **Event handling** - `payment.captured` -> payment `CAPTURED` + `orderClient.confirmOrder`
-   (which commits stock); `payment.failed` -> payment `FAILED` + `orderClient.cancelOrder`
-   (which releases stock).
+   (which commits stock); `payment.failed` -> recorded only, the order stays payable (W5:
+   Razorpay lets the customer retry the same order after a declined attempt).
 
 Kept synchronous and lean per Razorpay's expectation of a fast `200`; a job
 queue for the confirm/commit fan-out would be a reasonable future upgrade

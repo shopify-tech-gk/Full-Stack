@@ -15,11 +15,11 @@ future mobile app (React Native). No React, no DOM rendering, no platform APIs b
 | `account.ts`      | My Account nav, login identifier detection (mobile or email), OTP error messages, safe login return paths, phone -> E.164, address form <-> `AddressInput` mapping + validation, order fulfilment progress |
 | `cart.ts`         | Cart maths on the cart-service `CartView` (paise, optimistic qty/remove), totals + shipping preview, payment methods (Razorpay only), checkout blockers, order-received overview                           |
 | `guest-cart.ts`   | Signed-out guest cart (same add semantics as cart-service), stock-409 messages, and the merge-on-login rules (`mergeGuestCart` + `mergeNotice`; storage/network injected)                                  |
+| `checkout.ts`     | The money path: Razorpay Checkout options (server ids only), `pollOrderStatus` (the webhook confirms, the client only polls), place-order/payment error messages                                         |
 | `site-pages.ts`   | Real copy from live youmartshop.com for About / Contact / Customer Care / FAQ / policy pages / 404, business contact details, `parseInline` (**bold** + [link](href))                                      |
 | `support.ts`      | Contact / order-cancel / order-notify form validation (no v1 endpoints yet)                                                                                                                                |
 | `demo.ts`         | The storefront's fallback product image (`DEMO_PRODUCT_IMAGE`; historical name)                                                                                                                            |
 | `demo-account.ts` | DEMO-only orders for the account/order-track pages (login W2, addresses W4 are real) - delete once the order APIs are wired                                                                                |
-| `demo-cart.ts`    | DEMO-only fake place-order (the cart is real since W4) - delete once checkout/payment APIs are wired                                                                                                       |
 | `theme.ts`        | Design tokens (colors, fonts, breakpoints) - web feeds them into Tailwind, mobile into StyleSheet                                                                                                          |
 
 ## The split

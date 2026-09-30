@@ -1,5 +1,6 @@
 import type {
   Address,
+  InvoiceSummary,
   AddressInput,
   ApiCategory,
   ApiErrorBody,
@@ -213,8 +214,7 @@ export function createApiClient(options: ApiClientOptions) {
         json<RazorpayOrder>('POST', '/payments/razorpay-order', { body: { orderId } }),
     },
     invoices: {
-      getForOrder: (orderId: Uuid) =>
-        json<Record<string, unknown>>('GET', `/invoices/order/${orderId}`),
+      getForOrder: (orderId: Uuid) => json<InvoiceSummary>('GET', `/invoices/order/${orderId}`),
       downloadForOrder: async (orderId: Uuid): Promise<Blob> => {
         const response = await send('GET', `/invoices/order/${orderId}/download`);
         return response.blob();

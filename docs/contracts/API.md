@@ -1,8 +1,9 @@
-# YouMart Public API Contract (v1.4)
+# YouMart Public API Contract (v1.5)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
-additive revision 2026-09-30 (W3), v1.4 additive revision 2026-10-01 (W4)
+additive revision 2026-09-30 (W3), v1.4 additive revision 2026-10-01 (W4),
+v1.5 revision 2026-10-01 (W5)
 — see §17 change log.**
 
 This is the single, authoritative, consolidated contract for the **public
@@ -18,7 +19,7 @@ Every endpoint documented here has been verified against the real running
 system as of this freeze (see "Verification" note per section where
 relevant, and the full verification log in the Ch7.4 commit).
 
-**Versioning policy**: this is v1.4 of the contract. Changes after the
+**Versioning policy**: this is v1.5 of the contract. Changes after the
 freeze must be additive/backward-compatible (new optional fields, new
 endpoints) wherever possible; each additive revision bumps the MINOR
 version (v1.1, v1.2, ...) and is listed in §17. Any breaking change
@@ -619,8 +620,10 @@ with no token. Every order is scoped to the caller. **Single exception
   ```
   **`amount` is in paise as a plain JSON number** (the one deliberate exception to the Money-string rule, since it's handed directly to the Razorpay Checkout SDK which expects paise-as-number).
 - **Errors**: `404` (not caller's order); `409 CONFLICT` (`"Cannot pay for an order in status <status>"` — order not `PENDING_PAYMENT`); `500 INTERNAL_ERROR` (Razorpay API call itself failed)
-- **Client flow**: call this, then open Razorpay's Checkout with `{key: razorpayKeyId, order_id: razorpayOrderId, amount, currency}`. Razorpay calls the server-side webhook directly when payment completes — **the client does NOT call any "confirm payment" endpoint**; it should poll/refetch `GET /api/orders/:id` (or listen for Razorpay's client-side success callback, then refetch) to see the order's status flip.
+- **Client flow**: call this, then open Razorpay's Checkout with `{key: razorpayKeyId, order_id: razorpayOrderId, currency}` (no client amount - Razorpay uses the order's). Razorpay calls the server-side webhook directly when payment completes — **the client does NOT call any "confirm payment" endpoint**; it should poll/refetch `GET /api/orders/:id` (or listen for Razorpay's client-side success callback, then refetch) to see the order's status flip. The storefront's implementation: `packages/shared-client/src/checkout.ts`.
+- **Retries** (v1.5): calling this again for the same unpaid order returns the SAME Razorpay order. A failed payment attempt (`payment.failed`) no longer cancels the order - it stays payable.
 - **Verified live** (2026-09-28): with placeholder dev credentials, correctly returns `500 INTERNAL_ERROR` (Razorpay itself rejects the fake key) — this is the expected/honest dev behavior, not a contract violation.
+- **Verified live** (2026-09-30, W5): with real Razorpay TEST keys, `201` with a real `order_...` id from the Razorpay test API, the public `rzp_test_...` key id and `amount` = the order's `grand_total` × 100 (e.g. `29900` for `299.00`); nothing else in the body.
 
 ### `POST /api/payments/webhook` — **NOT a client endpoint**
 
@@ -903,6 +906,11 @@ Purely additive changes bump the minor version instead (§17).
 ---
 
 ## 17. Change log
+
+### v1.5 — 2026-10-01 (W5, compatible behaviour change)
+
+- **Changed**: the `payment.failed` webhook no longer cancels the order or releases its stock. Razorpay Checkout lets the customer retry the same Razorpay order after a declined attempt, so the order stays `PENDING_PAYMENT` and `POST /api/payments/razorpay-order` keeps returning the same Razorpay order. Before, "declined, then paid" confirmed nothing and auto-refunded the capture. No request/response shape changed — §9, `payment-api.md`.
+- Local development without a public URL: `pnpm dev:razorpay-webhook <razorpay_order_id>` relays the real test payment's signed event (`payment-api.md`, "Local webhooks").
 
 ### v1.4 — 2026-10-01 (W4, additive)
 
