@@ -30,6 +30,8 @@ export interface ProductDocument {
    * only at the API response boundary (search.service.ts). */
   pricePaise: number;
   mrpPaise: number;
+  /** The cheapest SKU (the one priced above); '' when the product has none. */
+  skuId: string;
   /** Whole percent off MRP, for "top deals" sorting. */
   discountPct: number;
   /** 0 when the product has no rating yet. */
@@ -72,6 +74,7 @@ function buildCollectionSchema(name: string): CollectionCreateSchema {
       { name: 'primaryImageUrl', type: 'string', index: false },
       { name: 'pricePaise', type: 'int32', facet: true },
       { name: 'mrpPaise', type: 'int32', index: false },
+      { name: 'skuId', type: 'string', index: false, optional: true },
       { name: 'discountPct', type: 'int32' },
       { name: 'rating', type: 'float', facet: true },
       { name: 'ratingCount', type: 'int32' },

@@ -34,6 +34,8 @@ export interface BrowseItem {
   slug: string;
   price: string;
   mrp: string;
+  /** Cheapest SKU; null for a product indexed before W4 or without SKUs. */
+  skuId: string | null;
   imageUrl: string | null;
   rating: number | null;
   ratingCount: number;

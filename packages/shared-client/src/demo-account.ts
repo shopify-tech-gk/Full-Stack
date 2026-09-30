@@ -1,48 +1,9 @@
-// DEMO CONTENT ONLY - address/order data for the account pages' layout. Login is real (W2); replace
-// these with the address (/api/addresses) and order (/api/orders + /api/logistics) APIs.
+// DEMO CONTENT ONLY - order data for the account pages' layout. Login (W2) and addresses (W4) are
+// real; replace these with the order (/api/orders + /api/logistics) APIs.
 import type { AccountOrder } from './account';
-import type { Address, AddressInput } from './types';
 
-const stamp = '2026-09-01T10:00:00.000Z';
-
-export const DEMO_ADDRESSES: readonly Address[] = [
-  {
-    id: 'demo-address-1',
-    fullName: 'Demo Customer',
-    phone: '+919876500000',
-    line1: '12, Demo Street',
-    line2: 'Flat 3B, Demo Apartments',
-    landmark: 'Near Demo Park',
-    city: 'Chennai',
-    state: 'Tamil Nadu',
-    pincode: '600001',
-    country: 'India',
-    addressType: 'HOME',
-    isDefault: true,
-    createdAt: stamp,
-    updatedAt: stamp,
-  },
-  {
-    id: 'demo-address-2',
-    fullName: 'Demo Customer',
-    phone: '+919876500001',
-    line1: '45, Demo Business Park',
-    line2: null,
-    landmark: null,
-    city: 'Coimbatore',
-    state: 'Tamil Nadu',
-    pincode: '641001',
-    country: 'India',
-    addressType: 'WORK',
-    isDefault: false,
-    createdAt: stamp,
-    updatedAt: stamp,
-  },
-];
-
-const [home] = DEMO_ADDRESSES;
 const shipping = {
-  addressId: home?.id ?? 'demo-address-1',
+  addressId: 'demo-address-1',
   fullName: 'Demo Customer',
   phone: '+919876500000',
   line1: '12, Demo Street',
@@ -125,25 +86,4 @@ export const DEMO_ORDERS: readonly AccountOrder[] = [
 export function findDemoOrder(orderNumber: string): AccountOrder | null {
   const wanted = orderNumber.trim().toUpperCase();
   return DEMO_ORDERS.find((order) => order.orderNumber === wanted) ?? null;
-}
-
-/** Stand-in for the Address that POST /api/addresses returns. */
-export function demoSavedAddress(input: AddressInput, id: string, now: Date): Address {
-  const stampNow = now.toISOString();
-  return {
-    id,
-    fullName: input.fullName,
-    phone: input.phone,
-    line1: input.line1,
-    line2: input.line2 ?? null,
-    landmark: input.landmark ?? null,
-    city: input.city,
-    state: input.state,
-    pincode: input.pincode,
-    country: input.country ?? 'India',
-    addressType: input.addressType ?? 'HOME',
-    isDefault: Boolean(input.isDefault),
-    createdAt: stampNow,
-    updatedAt: stampNow,
-  };
 }

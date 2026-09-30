@@ -7,6 +7,7 @@ import {
   type ProductCardData,
 } from '@youmart/shared-client';
 import { skipImageOptimizer } from '@/lib/images';
+import { AddToCartButton } from './AddToCartButton';
 import { StarRating } from './StarRating';
 
 interface ProductCardProps {
@@ -93,13 +94,10 @@ export function ProductCard({
         </div>
 
         <div className="flex h-[36px] items-center justify-center">
-          <button
-            type="button"
-            data-product-id={product.id}
+          <AddToCartButton
+            product={product}
             className="flex h-[32px] w-full max-w-[105px] items-center justify-center rounded-button bg-brand px-[10px] font-sans text-[12px] font-bold leading-[1.15] tracking-[0.8px] text-white transition-opacity hover:opacity-85 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 md:max-w-[120px] md:px-[12px] md:text-[13px] lg:h-[34px] lg:px-[15px] lg:text-[14px]"
-          >
-            Add<span className="sr-only"> {product.title} to cart</span>
-          </button>
+          />
         </div>
       </div>
     </article>
@@ -168,13 +166,10 @@ function ListingCard({ product, priority, shadow }: Omit<ProductCardProps, 'vari
         </div>
 
         <div className="mt-[12px] flex h-[36px] items-center justify-center">
-          <button
-            type="button"
-            data-product-id={product.id}
+          <AddToCartButton
+            product={product}
             className="h-[34px] w-full max-w-[120px] rounded-[6px] bg-brand px-[15px] font-sans text-[14px] font-semibold leading-[1.15] text-white transition-opacity hover:opacity-85 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
-          >
-            Add<span className="sr-only"> {product.title} to cart</span>
-          </button>
+          />
         </div>
       </div>
     </article>

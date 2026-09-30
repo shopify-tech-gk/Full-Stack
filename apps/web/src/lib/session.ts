@@ -87,6 +87,15 @@ function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
+/** Non-React access for stores that follow the session (the cart switches guest <-> account). */
+export function getSession(): SessionState {
+  return state;
+}
+
+export function onSessionChange(listener: () => void): () => void {
+  return subscribe(listener);
+}
+
 /** Current session; the first mounted caller restores it from the refresh cookie (no re-OTP). */
 export function useSession(): SessionState {
   const snapshot = useSyncExternalStore(

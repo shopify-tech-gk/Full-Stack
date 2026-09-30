@@ -11,6 +11,10 @@ export interface ProductCardData {
   sellingPrice: Money;
   /** 0-5; the card fills stars proportionally. */
   rating: number;
+  /** SKU the card's "Add" button puts in the cart; absent = no add button action. */
+  skuId?: string;
+  /** Product slug (with skuId: what the cart line links to). */
+  slug?: string;
 }
 
 export interface RailItem {

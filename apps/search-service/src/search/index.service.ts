@@ -64,6 +64,7 @@ function toDocument(product: CatalogProductForIndex): ProductDocument {
     primaryImageUrl: product.primaryImageUrl ?? '',
     pricePaise,
     mrpPaise,
+    skuId: product.skuId ?? '',
     discountPct: mrpPaise > pricePaise ? Math.floor(((mrpPaise - pricePaise) * 100) / mrpPaise) : 0,
     rating: product.rating ? Number(product.rating) : 0,
     ratingCount: product.ratingCount,

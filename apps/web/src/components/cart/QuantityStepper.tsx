@@ -10,10 +10,11 @@ interface QuantityStepperProps {
 }
 
 const BUTTON =
-  'flex w-[28px] min-w-[28px] items-center justify-center bg-brand text-[16px] font-bold leading-none text-white transition-colors hover:bg-cart-brandDark focus:outline-none focus-visible:bg-cart-brandDark disabled:cursor-not-allowed disabled:opacity-40';
+  'flex w-[28px] min-w-[28px] items-center justify-center bg-brand text-[16px] font-bold leading-none text-white transition-colors hover:bg-cart-brandDark focus:outline-none focus-visible:bg-cart-brandDark active:bg-cart-brandDark disabled:cursor-not-allowed disabled:opacity-40';
 
 // Live .ymc-qbox: 100x34, 2px brand border, radius 8, brand -/+ buttons. The number is
 // typeable here (live's is readonly); removal stays on the trash button.
+// POLISH (W4, flagged): soft resting shadow, a light brand focus halo while typing, tabular digits.
 export function QuantityStepper({ title, quantity, onChange }: QuantityStepperProps) {
   const [draft, setDraft] = useState(String(quantity));
   useEffect(() => setDraft(String(quantity)), [quantity]);
@@ -28,7 +29,7 @@ export function QuantityStepper({ title, quantity, onChange }: QuantityStepperPr
   };
 
   return (
-    <div className="inline-flex h-[34px] w-[100px] overflow-hidden rounded-[8px] border-2 border-brand bg-white font-system">
+    <div className="inline-flex h-[34px] w-[100px] overflow-hidden rounded-[8px] border-2 border-brand bg-white font-system shadow-rail-card focus-within:ring-2 focus-within:ring-cart-border">
       <button
         type="button"
         onClick={() => onChange(quantity - 1)}
@@ -52,7 +53,7 @@ export function QuantityStepper({ title, quantity, onChange }: QuantityStepperPr
           }
         }}
         aria-label={`Quantity of ${title}`}
-        className="h-full w-[32px] min-w-0 flex-1 bg-white p-0 text-center text-[13px] font-bold text-cart-ink focus:outline-none focus-visible:bg-cart-rowHover"
+        className="h-full w-[32px] min-w-0 flex-1 bg-white p-0 text-center text-[13px] font-bold tabular-nums text-cart-ink focus:outline-none focus-visible:bg-cart-rowHover"
       />
       <button
         type="button"

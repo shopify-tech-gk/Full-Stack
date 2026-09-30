@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Trash2 } from 'lucide-react';
 import { formatMoney, productHref, type CartLine } from '@youmart/shared-client';
+import { skipImageOptimizer } from '@/lib/images';
 import { QuantityStepper } from './QuantityStepper';
 
 interface CartLinesProps {
@@ -15,7 +16,8 @@ interface CartLinesProps {
 
 const TH =
   'whitespace-nowrap border-b-2 border-cart-border px-[8px] py-[12px] text-left text-[11.5px] font-bold uppercase leading-[25.6px] tracking-[0.02em] text-cart-ink';
-const TD = 'border-b border-cart-line px-[8px] py-[12px] align-middle leading-[25.6px]';
+const TD =
+  'border-b border-cart-line px-[8px] py-[12px] align-middle leading-[25.6px] tabular-nums';
 const NAME =
   'line-clamp-2 font-ui text-[13px] font-semibold leading-[1.35] text-cart-ink hover:text-brand focus:outline-none focus-visible:underline';
 
@@ -27,8 +29,9 @@ function Thumb({ line, src }: { line: CartLine; src: string }) {
         alt=""
         width={52}
         height={52}
-        unoptimized={src.endsWith('.svg')}
-        className="mx-auto block size-[52px] rounded-[6px] border border-cart-line bg-white object-cover"
+        unoptimized={skipImageOptimizer(src)}
+        // POLISH (W4, flagged): 8px radius + soft shadow so photos sit on the blue rows cleanly.
+        className="mx-auto block size-[52px] rounded-[8px] border border-cart-line bg-white object-cover shadow-rail-card"
       />
     </Link>
   );
@@ -40,7 +43,7 @@ function RemoveButton({ line, onRemove }: { line: CartLine; onRemove: () => void
       type="button"
       onClick={onRemove}
       aria-label={`Remove ${line.title} from cart`}
-      className="group inline-flex size-[34px] min-w-[34px] items-center justify-center rounded-[8px] bg-cart-rowBg transition-colors hover:bg-cart-danger focus:outline-none focus-visible:bg-cart-danger"
+      className="group inline-flex size-[34px] min-w-[34px] items-center justify-center rounded-[8px] bg-cart-rowBg transition-[background-color,transform] hover:bg-cart-danger focus:outline-none focus-visible:bg-cart-danger active:scale-95 motion-reduce:active:scale-100"
     >
       <Trash2
         aria-hidden="true"

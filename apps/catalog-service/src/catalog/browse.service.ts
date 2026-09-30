@@ -166,6 +166,7 @@ export interface ListingItem {
   slug: string;
   price: Money;
   mrp: Money;
+  skuId: string | null;
   imageUrl: string | null;
   rating: number | null;
   ratingCount: number;

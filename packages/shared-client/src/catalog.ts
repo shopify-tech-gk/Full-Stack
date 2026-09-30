@@ -171,6 +171,8 @@ export function toCardData(item: ProductListItem): ProductCardData {
     mrp: item.mrp,
     sellingPrice: item.price,
     rating: item.rating ?? 0,
+    slug: item.slug,
+    ...(item.skuId ? { skuId: item.skuId } : {}),
   };
 }
 
@@ -183,6 +185,8 @@ export function searchResultToCardData(result: SearchResult): ProductCardData {
     mrp: result.mrp ?? result.price,
     sellingPrice: result.price,
     rating: result.rating ?? 0,
+    slug: result.slug,
+    ...(result.skuId ? { skuId: result.skuId } : {}),
   };
 }
 
@@ -250,6 +254,8 @@ export interface ProductDetailData {
   description: string;
   mrp: Money;
   sellingPrice: Money;
+  /** The SKU "Add to cart" / "Buy Now" buy (the cheapest); null when the product has none. */
+  skuId: string | null;
   images: readonly string[];
   categories: readonly { name: string; href: string }[];
   /** Labelled attribute rows (labels/units from the category's filter definition). */
@@ -281,6 +287,7 @@ export function toProductDetailData(
     description,
     mrp: sku?.mrp ?? '0.00',
     sellingPrice: sku?.sellingPrice ?? '0.00',
+    skuId: sku?.id ?? null,
     images: detail.images.length > 0 ? detail.images.map((i) => i.url) : [DEMO_PRODUCT_IMAGE],
     categories: detail.categoryPath.map((category, index) => ({
       name: category.name,

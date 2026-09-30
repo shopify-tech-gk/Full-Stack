@@ -1,16 +1,12 @@
 import type { Metadata } from 'next';
-import { defaultCheckoutAddress } from '@youmart/shared-client';
 import { CategoryMegaMenu } from '@/components/home/CategoryMegaMenu';
 import { CheckoutSteps } from '@/components/listing/CheckoutSteps';
 import { CartView } from '@/components/cart/CartView';
 import { storeCategories } from '@/lib/categories';
-import { getAddresses } from '@/lib/account';
 
 export const metadata: Metadata = { title: 'Cart - You Mart' };
 
-export default async function CartPage() {
-  const destination = defaultCheckoutAddress(await getAddresses())?.state ?? null;
-
+export default function CartPage() {
   return (
     <>
       <CategoryMegaMenu categories={storeCategories} mobileGrid={false} />
@@ -19,7 +15,7 @@ export default async function CartPage() {
         <CheckoutSteps current="Shop" active={1} centered />
         <h1 className="sr-only">Cart</h1>
         <div className="lg:px-[20px]">
-          <CartView destination={destination} />
+          <CartView />
         </div>
       </div>
     </>

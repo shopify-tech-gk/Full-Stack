@@ -91,7 +91,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
               )}
             </p>
 
-            <PurchasePanel productId={product.id} title={product.title} />
+            <PurchasePanel
+              title={product.title}
+              product={
+                product.skuId
+                  ? {
+                      skuId: product.skuId,
+                      productId: product.id,
+                      productSlug: product.slug,
+                      title: product.title,
+                      price: product.sellingPrice,
+                      image: product.images[0],
+                    }
+                  : null
+              }
+            />
 
             <div className="mb-[11.52px] border-t border-catalog-rule pt-[7.2px] font-sans text-[14.4px] font-medium leading-[25.6px] text-ink-body">
               Categories:{' '}

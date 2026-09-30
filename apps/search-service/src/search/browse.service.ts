@@ -91,6 +91,7 @@ function toItem(doc: ProductDocument): BrowseItem {
     slug: doc.slug,
     price: paiseToMoney(doc.pricePaise),
     mrp: paiseToMoney(doc.mrpPaise || doc.pricePaise),
+    skuId: doc.skuId || null,
     imageUrl: doc.primaryImageUrl || null,
     rating: doc.rating > 0 ? doc.rating : null,
     ratingCount: doc.ratingCount ?? 0,

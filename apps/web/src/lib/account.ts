@@ -1,16 +1,6 @@
-// Data seam for the account + order-track routes. DEMO data today; swap each body for
-// api.addresses.list(), api.orders.list()/get() and api.logistics.trackOrderItem() later.
-import {
-  DEMO_ADDRESSES,
-  DEMO_ORDERS,
-  findDemoOrder,
-  type AccountOrder,
-  type Address,
-} from '@youmart/shared-client';
-
-export async function getAddresses(): Promise<readonly Address[]> {
-  return DEMO_ADDRESSES;
-}
+// Data seam for the order routes. DEMO data until W5; swap each body for api.orders.list()/get()
+// and api.logistics.trackOrderItem(). Addresses are real (W4): api.addresses, client-side.
+import { DEMO_ORDERS, findDemoOrder, type AccountOrder } from '@youmart/shared-client';
 
 export async function getOrders(): Promise<readonly AccountOrder[]> {
   return DEMO_ORDERS;

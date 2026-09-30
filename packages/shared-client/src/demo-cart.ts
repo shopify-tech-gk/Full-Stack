@@ -1,33 +1,7 @@
-// DEMO CONTENT ONLY - cart + checkout data for layout work. Replace with the cart API
-// (/api/cart), order checkout (POST /api/orders/checkout) and Razorpay (/api/payments).
-import { cartTotals, recalcCart } from './cart';
-import { DEMO_PRODUCT_IMAGE, DEMO_PRODUCTS } from './demo';
-import type { Address, CartLine, CartView, Money, OrderView } from './types';
-
-/** Live shows "Free shipping" for every Tamil Nadu cart. */
-export const DEMO_SHIPPING_TOTAL: Money = '0.00';
-
-const line = (index: number, quantity: number): CartLine => {
-  const product = DEMO_PRODUCTS[index];
-  const n = index + 1;
-  return {
-    cartItemId: `demo-cart-item-${n}`,
-    skuId: `demo-sku-${n}`,
-    productId: `demo-product-${n}`,
-    productSlug: `demo-product-${n}`,
-    title: product?.title ?? 'Demo Product',
-    quantity,
-    priceSnapshot: product?.sellingPrice ?? '0.00',
-    lineTotal: '0.00',
-  };
-};
-
-export const DEMO_CART: CartView = recalcCart('demo-cart', [line(0, 1), line(1, 2), line(4, 1)]);
-
-/** CartLine has no image; the real web joins the catalog by productSlug. */
-export function demoCartLineImage(): string {
-  return DEMO_PRODUCT_IMAGE;
-}
+// DEMO CONTENT ONLY - placing an order. The cart is real (W4); replace this with order checkout
+// (POST /api/orders/checkout) and Razorpay (/api/payments).
+import { CART_SHIPPING_TOTAL, cartTotals } from './cart';
+import type { Address, CartView, OrderView } from './types';
 
 /** Mirrors POST /api/orders/checkout: the server derives everything from cart + addressId. */
 export function demoPlaceOrder(cart: CartView, address: Address, placedAt: Date): OrderView {
@@ -47,8 +21,8 @@ export function demoPlaceOrder(cart: CartView, address: Address, placedAt: Date)
       sellerStatus: 'PENDING',
     })),
     subtotal: cart.subtotal,
-    shippingTotal: DEMO_SHIPPING_TOTAL,
-    grandTotal: cartTotals(cart, DEMO_SHIPPING_TOTAL).total,
+    shippingTotal: CART_SHIPPING_TOTAL,
+    grandTotal: cartTotals(cart, CART_SHIPPING_TOTAL).total,
     shippingAddress: {
       addressId: address.id,
       fullName: address.fullName,

@@ -77,6 +77,8 @@ export interface ProductListItem {
   slug: string;
   price: Money;
   mrp: Money;
+  /** v1.4: the cheapest SKU (the one `price` is for) - what a card's "Add" puts in the cart. */
+  skuId: Uuid | null;
   imageUrl: string | null;
   rating: number | null;
   ratingCount: number;
@@ -181,6 +183,8 @@ export interface SearchResult {
   price: Money;
   /** v1.3 */
   mrp: Money;
+  /** v1.4 */
+  skuId: Uuid | null;
   rating: number | null;
   primaryImageUrl: string | null;
   categoryName: string;

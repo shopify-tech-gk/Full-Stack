@@ -114,7 +114,12 @@ export function OtpLoginForm({ mode, returnTo, bare = false }: OtpLoginFormProps
     <form
       onSubmit={onSubmit}
       noValidate
-      className={bare ? undefined : 'my-[32px] rounded-[10px] border border-catalog-rule p-[20px]'}
+      // POLISH (W4, flagged): white card with a soft resting shadow (was a bare outline).
+      className={
+        bare
+          ? undefined
+          : 'my-[32px] rounded-[10px] border border-catalog-rule bg-white p-[20px] shadow-rail-card'
+      }
     >
       {error && <Notice tone="error">{error}</Notice>}
 
@@ -170,7 +175,9 @@ export function OtpLoginForm({ mode, returnTo, bare = false }: OtpLoginFormProps
               value={code}
               onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
               aria-invalid={Boolean(error)}
-              className={`${FORM_INPUT} tracking-[0.3em]`}
+              // POLISH (W4, flagged): larger, evenly spaced digits read as a code at a glance.
+              placeholder={'\u2022'.repeat(OTP_LENGTH)}
+              className={`${FORM_INPUT} font-semibold tabular-nums tracking-[0.45em] placeholder:tracking-[0.45em] lg:text-[18px]`}
             />
           </p>
         </>

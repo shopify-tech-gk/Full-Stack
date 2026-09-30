@@ -16,12 +16,14 @@ const MOBILE_LABEL = 'float-left font-bold min-[922px]:hidden';
 
 // Live WooCommerce .cart_totals: 1px blue panel, #fbfbfb heading bar, 48% wide on the right from
 // 922px; below that WooCommerce's responsive table puts each label inline, left of its value.
+// POLISH (W4, flagged): white panel with the cart table's soft blue shadow, tabular amounts, and
+// a brand-blue hover lift on the Checkout pill.
 export function CartTotals({ totals, destination }: CartTotalsProps) {
   const shipping = shippingLabel(totals.shipping) ?? formatMoney(totals.shipping);
   return (
     <section
       aria-labelledby="cart-totals-title"
-      className="mb-[29.2px] rounded-[10px] border border-catalog-rule px-[20px] font-sans text-[14.6px] text-ink-body min-[922px]:ml-auto min-[922px]:w-[48%] lg:mb-[32px] lg:text-[16px]"
+      className="mb-[29.2px] rounded-[10px] border border-catalog-rule bg-white px-[20px] font-sans text-[14.6px] tabular-nums text-ink-body shadow-cart-table min-[922px]:ml-auto min-[922px]:w-[48%] lg:mb-[32px] lg:text-[16px]"
     >
       <h2
         id="cart-totals-title"
@@ -70,7 +72,7 @@ export function CartTotals({ totals, destination }: CartTotalsProps) {
       <div className="py-[16px]">
         <Link
           href="/checkout"
-          className="flex h-[36.8px] w-full items-center justify-center rounded-[30px] border-2 border-white bg-brand px-[36px] font-ui text-[16px] font-bold uppercase text-white transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 lg:text-[17.6px]"
+          className="flex h-[36.8px] w-full items-center justify-center rounded-[30px] border-2 border-white bg-brand px-[36px] font-ui text-[16px] font-bold uppercase text-white transition-[opacity,box-shadow] duration-150 hover:opacity-90 hover:shadow-brand-button focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 lg:text-[17.6px]"
         >
           Checkout
         </Link>

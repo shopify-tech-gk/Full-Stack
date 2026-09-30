@@ -8,6 +8,12 @@ export const EMPTY_CART: CartView = { cartId: null, items: [], subtotal: '0.00',
 /** PATCH /api/cart/items/:id requires an integer >= 1; removal is a separate DELETE. */
 export const MIN_LINE_QUANTITY = 1;
 
+/**
+ * Shipping the cart previews. order-service charges no shipping yet (`shippingTotal` is 0.00 on
+ * every order), which live shows as "Free shipping"; change both together.
+ */
+export const CART_SHIPPING_TOTAL: Money = '0.00';
+
 export function productHref(slug: string): string {
   return `/product/${slug}`;
 }

@@ -9,58 +9,75 @@ import {
   type Address,
   type AddressInput,
 } from '@youmart/shared-client';
+import { api } from '@/lib/api';
+import { useAddresses } from '@/lib/addresses';
 import { AddressForm } from './AddressForm';
 import { Notice } from './Notice';
 import { BODY_TEXT, FORM_BUTTON, TEXT_LINK } from './formStyles';
 
 type View = { mode: 'list' } | { mode: 'form'; id: string | null };
 
-// DEMO: edits stay in component state. Wiring later = api.addresses.create/update/delete/
-// setDefault, then refresh the list from the response.
-export function AddressBook({ initial }: { initial: readonly Address[] }) {
-  const [addresses, setAddresses] = useState<Address[]>([...initial]);
+// address-service owns the rules: one default per customer (setting one un-defaults the rest;
+// deleting the default promotes the newest), and every call is scoped to the signed-in user.
+// After each change the list is re-read so order and default flags are the server's.
+export function AddressBook() {
+  const { addresses, failed, reload } = useAddresses();
   const [view, setView] = useState<View>({ mode: 'list' });
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const withDefault = (list: Address[], defaultId: string | null) =>
-    defaultId ? list.map((a) => ({ ...a, isDefault: a.id === defaultId })) : list;
+  if (failed) {
+    return (
+      <Notice tone="error">
+        We could not load your addresses.{' '}
+        <button type="button" onClick={() => void reload()} className={TEXT_LINK}>
+          Try again
+        </button>
+      </Notice>
+    );
+  }
+  if (!addresses) {
+    return <div aria-busy="true" className="min-h-[240px]" />;
+  }
 
-  const save = (input: AddressInput) => {
-    const now = new Date().toISOString();
-    const id = view.mode === 'form' && view.id ? view.id : `local-${Date.now()}`;
-    const saved: Address = {
-      id,
-      fullName: input.fullName,
-      phone: input.phone,
-      line1: input.line1,
-      line2: input.line2 ?? null,
-      landmark: input.landmark ?? null,
-      city: input.city,
-      state: input.state,
-      pincode: input.pincode,
-      country: input.country ?? 'India',
-      addressType: input.addressType ?? 'HOME',
-      isDefault: Boolean(input.isDefault) || addresses.length === 0,
-      createdAt: addresses.find((a) => a.id === id)?.createdAt ?? now,
-      updatedAt: now,
-    };
-    const next = addresses.some((a) => a.id === id)
-      ? addresses.map((a) => (a.id === id ? saved : a))
-      : [...addresses, saved];
-    setAddresses(withDefault(next, saved.isDefault ? id : null));
+  const save = async (input: AddressInput) => {
+    const editing =
+      view.mode === 'form' && view.id ? addresses.find((a) => a.id === view.id) : null;
+    if (editing) {
+      // The default stays the default until another address is made default (never zero).
+      await api.addresses.update(editing.id, {
+        ...input,
+        isDefault: editing.isDefault || Boolean(input.isDefault),
+      });
+    } else {
+      await api.addresses.create({
+        ...input,
+        isDefault: addresses.length === 0 || Boolean(input.isDefault),
+      });
+    }
+    await reload();
     setView({ mode: 'list' });
-    setMessage('Address changed successfully.');
+    setMessage({ tone: 'success', text: 'Address changed successfully.' });
+  };
+
+  const act = async (address: Address, call: () => Promise<unknown>, done: string) => {
+    setBusyId(address.id);
+    setMessage(null);
+    try {
+      await call();
+      await reload();
+      setMessage({ tone: 'success', text: done });
+    } catch {
+      setMessage({ tone: 'error', text: 'That did not work. Please try again.' });
+      await reload();
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const remove = (address: Address) => {
     if (!window.confirm(`Delete the address for ${address.fullName}, ${address.city}?`)) return;
-    setAddresses((list) => list.filter((a) => a.id !== address.id));
-    setMessage('Address deleted.');
-  };
-
-  const makeDefault = (id: string) => {
-    setAddresses((list) => withDefault(list, id));
-    setMessage('Default address updated.');
+    void act(address, () => api.addresses.remove(address.id), 'Address deleted.');
   };
 
   if (view.mode === 'form') {
@@ -80,11 +97,11 @@ export function AddressBook({ initial }: { initial: readonly Address[] }) {
     );
   }
 
-  const action = `font-ui text-[15px] ${TEXT_LINK}`;
+  const action = `font-ui text-[15px] disabled:cursor-wait disabled:opacity-60 ${TEXT_LINK}`;
 
   return (
     <div>
-      {message && <Notice tone="success">{message}</Notice>}
+      {message && <Notice tone={message.tone}>{message.text}</Notice>}
       <p className={`${BODY_TEXT} mb-[25.6px]`}>
         The following addresses will be used on the checkout page by default.
       </p>
@@ -97,10 +114,15 @@ export function AddressBook({ initial }: { initial: readonly Address[] }) {
             const type =
               ADDRESS_TYPES.find((t) => t.value === address.addressType)?.label ??
               address.addressType;
+            const busy = busyId === address.id;
             return (
               <li
                 key={address.id}
-                className="flex flex-col rounded-[10px] border border-catalog-rule bg-white"
+                aria-busy={busy || undefined}
+                // POLISH (flagged): resting shadow + hover lift, brand-blue border on the default.
+                className={`flex flex-col rounded-[10px] border bg-white shadow-rail-card transition-shadow duration-200 hover:shadow-product-card ${
+                  address.isDefault ? 'border-cart-border' : 'border-catalog-rule'
+                } ${busy ? 'opacity-70' : ''}`}
               >
                 <header className="flex flex-wrap items-center gap-[8px] border-b border-catalog-rule px-[1em] py-[0.7em]">
                   <h3 className="font-ui text-[19.2px] font-semibold leading-[1.3] text-heading">
@@ -122,7 +144,11 @@ export function AddressBook({ initial }: { initial: readonly Address[] }) {
                 <div className="flex flex-wrap gap-x-[18px] gap-y-[6px] border-t border-catalog-rule px-[1em] py-[0.6em]">
                   <button
                     type="button"
-                    onClick={() => setView({ mode: 'form', id: address.id })}
+                    disabled={busy}
+                    onClick={() => {
+                      setMessage(null);
+                      setView({ mode: 'form', id: address.id });
+                    }}
                     className={action}
                   >
                     Edit<span className="sr-only"> {type} address</span>
@@ -130,7 +156,14 @@ export function AddressBook({ initial }: { initial: readonly Address[] }) {
                   {!address.isDefault && (
                     <button
                       type="button"
-                      onClick={() => makeDefault(address.id)}
+                      disabled={busy}
+                      onClick={() =>
+                        void act(
+                          address,
+                          () => api.addresses.setDefault(address.id),
+                          'Default address updated.',
+                        )
+                      }
                       className={action}
                     >
                       Set as default
@@ -138,8 +171,9 @@ export function AddressBook({ initial }: { initial: readonly Address[] }) {
                   )}
                   <button
                     type="button"
+                    disabled={busy}
                     onClick={() => remove(address)}
-                    className={`font-ui text-[15px] text-woo-error hover:underline focus:outline-none focus-visible:underline`}
+                    className="font-ui text-[15px] text-woo-error hover:underline focus:outline-none focus-visible:underline disabled:cursor-wait disabled:opacity-60"
                   >
                     Delete<span className="sr-only"> {type} address</span>
                   </button>

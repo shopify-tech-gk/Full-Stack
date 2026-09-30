@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Download, Heart, Menu, PackageSearch, ShoppingCart } from 'lucide-react';
 import { BUSINESS } from '@youmart/shared-client';
 import { useSession } from '@/lib/session';
+import { useCartCount } from '@/lib/cart';
+import { CartCountBadge, cartLinkLabel } from '@/components/cart/CartCountBadge';
 import { Logo } from './Logo';
 import { SearchBar } from './SearchBar';
 import { MobileCategoryDrawer } from './MobileCategoryDrawer';
@@ -103,6 +105,7 @@ export function SiteHeader() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const session = useSession();
+  const cartCount = useCartCount();
   // Same tile as live's "My Account"; once signed in it greets the customer instead.
   const firstName = session.user?.name?.split(' ')[0];
   const accountLines: [string, string] =
@@ -184,14 +187,17 @@ export function SiteHeader() {
                 <Link
                   href={href}
                   aria-label={
-                    href === '/my-account' && session.status === 'authenticated'
-                      ? 'My account (signed in)'
-                      : undefined
+                    href === '/cart'
+                      ? cartLinkLabel(cartCount)
+                      : href === '/my-account' && session.status === 'authenticated'
+                        ? 'My account (signed in)'
+                        : undefined
                   }
                   className="group flex min-w-[38px] flex-col items-center"
                 >
-                  <span className="flex size-[38px] items-center justify-center rounded-tile bg-brand p-[7px] text-white">
+                  <span className="relative flex size-[38px] items-center justify-center rounded-tile bg-brand p-[7px] text-white">
                     {icon}
+                    {href === '/cart' && <CartCountBadge count={cartCount} tone="onBrand" />}
                   </span>
                   <TwoLineLabel
                     lines={href === '/my-account' ? accountLines : lines}

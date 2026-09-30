@@ -5,15 +5,14 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import {
+  CART_SHIPPING_TOTAL,
   CHECKOUT_BLOCKER_MESSAGE,
-  DEMO_SHIPPING_TOTAL,
   authUserLabel,
   cartTotals,
   checkoutBlocker,
   defaultCheckoutAddress,
   demoPlaceOrder,
   formatMoney,
-  type Address,
   type OrderView,
   type PaymentMethodId,
 } from '@youmart/shared-client';
@@ -22,17 +21,13 @@ import { Notice } from '@/components/account/Notice';
 import { OtpLoginForm } from '@/components/account/OtpLoginForm';
 import { BODY_TEXT, TEXT_LINK } from '@/components/account/formStyles';
 import { CheckoutSteps } from '@/components/listing/CheckoutSteps';
+import { useAddresses } from '@/lib/addresses';
 import { useCart } from '@/lib/cart';
 import { useSession } from '@/lib/session';
 import { AddressPicker } from './AddressPicker';
 import { OrderPanel, OrderReviewTable } from './OrderReview';
 import { OrderReceived } from './OrderReceived';
 import { PaymentMethods } from './PaymentMethods';
-
-interface CheckoutViewProps {
-  /** DEMO saved addresses until the address API is wired; shown only when signed in. */
-  addresses: readonly Address[];
-}
 
 /** Live's section heading ("Billing details"): small Outfit semibold over a 1px blue rule. */
 const SECTION_TITLE =
@@ -41,16 +36,22 @@ const SECTION_TITLE =
 // One page, three blocks in order of need: who you are (OTP), where it goes (saved addresses),
 // how you pay (Razorpay) - replacing live's 10-field billing form, account/ship-to toggles
 // and order notes, none of which the order API accepts.
-export function CheckoutView({ addresses: initial }: CheckoutViewProps) {
+export function CheckoutView() {
   const router = useRouter();
   const session = useSession();
   const loggedIn = session.status === 'authenticated';
   const { cart, clear } = useCart();
-  const [addresses, setAddresses] = useState<Address[]>([...initial]);
-  const [addressId, setAddressId] = useState(defaultCheckoutAddress(initial)?.id ?? null);
+  const { addresses, reload: reloadAddresses } = useAddresses();
+  const [chosenId, setChosenId] = useState<string | null>(null);
   const [payment, setPayment] = useState<PaymentMethodId>('razorpay');
   const [error, setError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<{ order: OrderView; placedAt: string } | null>(null);
+
+  // The customer's pick, else the default saved address (re-evaluated as the list loads).
+  const addressId =
+    chosenId && addresses?.some((a) => a.id === chosenId)
+      ? chosenId
+      : (defaultCheckoutAddress(addresses ?? [])?.id ?? null);
 
   useEffect(() => {
     if (cart && cart.items.length === 0 && !placed) router.replace('/cart');
@@ -70,11 +71,11 @@ export function CheckoutView({ addresses: initial }: CheckoutViewProps) {
     );
   }
 
-  const totals = cartTotals(cart, DEMO_SHIPPING_TOTAL);
+  const totals = cartTotals(cart, CART_SHIPPING_TOTAL);
 
   const placeOrder = () => {
     const blocker = checkoutBlocker({ loggedIn, addressId, cart });
-    const address = addresses.find((a) => a.id === addressId);
+    const address = addresses?.find((a) => a.id === addressId);
     if (blocker || !address) {
       setError(CHECKOUT_BLOCKER_MESSAGE[blocker ?? 'address']);
       return;
@@ -138,22 +139,25 @@ export function CheckoutView({ addresses: initial }: CheckoutViewProps) {
               <h2 id="checkout-address" className={SECTION_TITLE}>
                 Delivery address
               </h2>
-              {loggedIn ? (
+              {loggedIn && addresses ? (
                 <AddressPicker
                   addresses={addresses}
                   selectedId={addressId}
                   onSelect={(id) => {
-                    setAddressId(id);
+                    setChosenId(id);
                     setError(null);
                   }}
-                  onAdded={(address) => {
-                    setAddresses((list) => [
-                      ...(address.isDefault ? list.map((a) => ({ ...a, isDefault: false })) : list),
-                      address,
-                    ]);
-                    setAddressId(address.id);
+                  onAdded={async (address) => {
+                    await reloadAddresses();
+                    setChosenId(address.id);
                     setError(null);
                   }}
+                />
+              ) : loggedIn ? (
+                <div
+                  aria-busy="true"
+                  aria-label="Loading your addresses"
+                  className="min-h-[120px]"
                 />
               ) : (
                 <p className={`${BODY_TEXT} text-ink-muted`}>

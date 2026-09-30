@@ -32,7 +32,7 @@ checks Typesense connectivity, not Postgres).
 
 Query: `{ q?, category? (uuid), minPrice?, maxPrice?, brand?, sort? ('relevance'|'price_asc'|'price_desc'|'newest'), page?, perPage? }`.
 
-Response: `{ results: [{id, title, slug, price, mrp, rating, primaryImageUrl, categoryName}], facets: {category, brand, price}, found, page, perPage }` (`mrp`/`rating` added W3; `category` matches sub-categories too).
+Response: `{ results: [{id, title, slug, price, mrp, skuId, rating, primaryImageUrl, categoryName}], facets: {category, brand, price}, found, page, perPage }` (`mrp`/`rating` added W3; `skuId` - the cheapest SKU - added W4; `category` matches sub-categories too).
 
 **Typo-tolerant** (Typesense's built-in fuzzy matching) - verified live: a
 query with a typo (`"vaccum"`) still matched "Robot Vacuum Cleaner".
@@ -55,7 +55,8 @@ Response: `{ items, found, page, perPage, facets: {<key>: {values?:[{value,count
   (`float`, faceted for min/max stats) - Typesense wildcard fields, so a
   new attribute key needs no collection change. Keys are normalised to
   `lower_snake_case`. Also indexed: `categoryIds` (category + ancestors),
-  `categorySlug`, `mrpPaise`, `discountPct`, `rating`, `ratingCount`.
+  `categorySlug`, `mrpPaise`, `discountPct`, `rating`, `ratingCount`, and
+  (W4, stored not indexed) `skuId` of the cheapest SKU.
 - Disjunctive faceting: each selected multi-select facet is recomputed
   without its own clause; all searches go in one `multi_search` call.
 - A filter on an attribute no product carries returns no results (the

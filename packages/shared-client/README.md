@@ -3,23 +3,24 @@
 Platform-agnostic client LOGIC shared by the web storefront (`apps/web`, Next.js) and the
 future mobile app (React Native). No React, no DOM rendering, no platform APIs beyond `fetch`.
 
-| Module            | What it holds                                                                                                                                                                             |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `types.ts`        | TypeScript types mirroring the frozen public API contract v1.2 (`docs/contracts/API.md`)                                                                                                  |
-| `api-client.ts`   | `createApiClient({ baseUrl, getAccessToken, onUnauthorized })` - typed calls to the api-gateway (`/api/*`), `ApiError` from the `{ error: { code, message } }` envelope, one refresh-and-retry on 401 |
-| `money.ts`        | Money-string helpers (`formatMoney`, `discountPercent`, `toPaise`) - display only, no float math                                                                                          |
-| `categories.ts`   | The storefront category list (site order) + subcategories, URL/asset path conventions, and `buildCategoryTree` / `resolveStoreCategories` for the live `GET /api/catalog/categories` tree |
-| `content.ts`      | Shared static content: promo banners, welcome text, search placeholder                                                                                                                    |
-| `storefront.ts`   | Homepage section config + site copy: `ProductCardData` view model, rail titles, grid filter tabs, brand offers, feature cards, best-categories, footer copy/links                         |
-| `catalog.ts`      | Generic listing logic: live query names (`orderby`, `min_price`, ...) + pass-through attribute filters, `catalogQuery` (URL -> API), card/product-detail mappers from the catalog API, pagination |
+| Module            | What it holds                                                                                                                                                                                              |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types.ts`        | TypeScript types mirroring the frozen public API contract v1.2 (`docs/contracts/API.md`)                                                                                                                   |
+| `api-client.ts`   | `createApiClient({ baseUrl, getAccessToken, onUnauthorized })` - typed calls to the api-gateway (`/api/*`), `ApiError` from the `{ error: { code, message } }` envelope, one refresh-and-retry on 401      |
+| `money.ts`        | Money-string helpers (`formatMoney`, `discountPercent`, `toPaise`) - display only, no float math                                                                                                           |
+| `categories.ts`   | The storefront category list (site order) + subcategories, URL/asset path conventions, and `buildCategoryTree` / `resolveStoreCategories` for the live `GET /api/catalog/categories` tree                  |
+| `content.ts`      | Shared static content: promo banners, welcome text, search placeholder                                                                                                                                     |
+| `storefront.ts`   | Homepage section config + site copy: `ProductCardData` view model, rail titles, grid filter tabs, brand offers, feature cards, best-categories, footer copy/links                                          |
+| `catalog.ts`      | Generic listing logic: live query names (`orderby`, `min_price`, ...) + pass-through attribute filters, `catalogQuery` (URL -> API), card/product-detail mappers from the catalog API, pagination          |
 | `account.ts`      | My Account nav, login identifier detection (mobile or email), OTP error messages, safe login return paths, phone -> E.164, address form <-> `AddressInput` mapping + validation, order fulfilment progress |
-| `cart.ts`         | Cart maths on the cart-service `CartView` (paise, optimistic qty/remove), totals, payment methods (Razorpay only), checkout blockers, order-received overview                             |
-| `site-pages.ts`   | Real copy from live youmartshop.com for About / Contact / Customer Care / FAQ / policy pages / 404, business contact details, `parseInline` (**bold** + [link](href))                     |
-| `support.ts`      | Contact / order-cancel / order-notify form validation (no v1 endpoints yet)                                                                                                               |
-| `demo.ts`         | DEMO-only placeholder products behind the demo cart + the storefront's fallback product image (catalog pages use the real API since W3)                                                    |
-| `demo-account.ts` | DEMO-only addresses and orders for the account/order-track pages (login is real since W2) - delete once address/order APIs are wired                                                     |
-| `demo-cart.ts`    | DEMO-only sample cart, shipping total and a fake place-order - delete once cart/checkout/payment APIs are wired                                                                           |
-| `theme.ts`        | Design tokens (colors, fonts, breakpoints) - web feeds them into Tailwind, mobile into StyleSheet                                                                                         |
+| `cart.ts`         | Cart maths on the cart-service `CartView` (paise, optimistic qty/remove), totals + shipping preview, payment methods (Razorpay only), checkout blockers, order-received overview                           |
+| `guest-cart.ts`   | Signed-out guest cart (same add semantics as cart-service), stock-409 messages, and the merge-on-login rules (`mergeGuestCart` + `mergeNotice`; storage/network injected)                                  |
+| `site-pages.ts`   | Real copy from live youmartshop.com for About / Contact / Customer Care / FAQ / policy pages / 404, business contact details, `parseInline` (**bold** + [link](href))                                      |
+| `support.ts`      | Contact / order-cancel / order-notify form validation (no v1 endpoints yet)                                                                                                                                |
+| `demo.ts`         | The storefront's fallback product image (`DEMO_PRODUCT_IMAGE`; historical name)                                                                                                                            |
+| `demo-account.ts` | DEMO-only orders for the account/order-track pages (login W2, addresses W4 are real) - delete once the order APIs are wired                                                                                |
+| `demo-cart.ts`    | DEMO-only fake place-order (the cart is real since W4) - delete once checkout/payment APIs are wired                                                                                                       |
+| `theme.ts`        | Design tokens (colors, fonts, breakpoints) - web feeds them into Tailwind, mobile into StyleSheet                                                                                                          |
 
 ## The split
 

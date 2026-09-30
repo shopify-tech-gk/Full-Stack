@@ -207,6 +207,8 @@ export interface ProductForIndex {
   price: Money | null;
   /** MRP of the cheapest SKU (the one `price` comes from). */
   mrp: Money | null;
+  /** W4: that cheapest SKU's id - what a listing card's "Add" puts in the cart. */
+  skuId: string | null;
   rating: string | null;
   ratingCount: number;
   primaryImageUrl: string | null;
@@ -254,6 +256,7 @@ function toProductForIndex(
     categoryPathIds: categoryPathIds(product.categoryId, parents),
     price: cheapest ? decimalToMoney(cheapest.sellingPrice) : null,
     mrp: cheapest ? decimalToMoney(cheapest.mrp) : null,
+    skuId: cheapest?.id ?? null,
     rating: product.rating ? product.rating.toFixed(1) : null,
     ratingCount: product.ratingCount,
     primaryImageUrl: primaryImage ? buildImageUrl(primaryImage.url) : null,

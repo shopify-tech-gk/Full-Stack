@@ -126,7 +126,8 @@ const bottles = [
   ['Borosil Hydra Trek', 'Borosil', 'Stainless Steel', 700, true, 1190, 829, 4.3],
   ['Borosil Copper Bottle', 'Borosil', 'Copper', 950, false, 1590, 1199, 4.5],
   ['Milton Copper Charge', 'Milton', 'Copper', 1000, false, 1399, 999, 4.2],
-  ['Cello Puro Classic', 'Cello', 'Plastic', 1000, false, 199, 149, 3.7],
+  // Paise price on purpose: proves cart totals stay exact (no float drift).
+  ['Cello Puro Classic', 'Cello', 'Plastic', 1000, false, 199, 149.5, 3.7],
 ].map(([title, brand, material, capacity, insulated, mrp, price, rating]) => ({
   title: `${title} ${capacity}ml`,
   category: 'water-bottle',
@@ -181,6 +182,11 @@ sql.push('COMMIT;');
 sql.push(`SELECT c.slug, count(p.id) AS products FROM catalog.category c
   LEFT JOIN catalog.product p ON p.category_id = c.id AND p.deleted_at IS NULL AND p.slug LIKE 'dev-%'
   WHERE c.slug IN (${categories.map((c) => lit(c.slug)).join(',')}) GROUP BY c.slug ORDER BY c.slug;`);
+// Sample SKUs with no stock row yet (inventory treats a missing row as 0 in stock -> every add 409s).
+sql.push(`SELECT 'STOCK', s.id, s.sku_code FROM catalog.sku s
+  WHERE s.sku_code IN (${products.map((p) => lit(`dev-${slugify(p.title)}`.toUpperCase())).join(',')})
+    AND s.deleted_at IS NULL
+    AND NOT EXISTS (SELECT 1 FROM inventory.stock_level l WHERE l.sku_id = s.id::text AND l.deleted_at IS NULL);`);
 
 const out = execFileSync(
   'docker',
@@ -204,15 +210,16 @@ const out = execFileSync(
   ],
   { cwd: root, input: sql.join('\n') },
 ).toString();
-console.log(
-  out
-    .trim()
-    .split('\n')
-    .filter((line) => line.includes('|'))
-    .join('\n'),
-);
+const rows = out.trim().split('\n');
+console.log(rows.filter((line) => line.includes('|') && !line.startsWith('STOCK|')).join('\n'));
+const unstocked = rows
+  .filter((line) => line.startsWith('STOCK|'))
+  .map((line) => {
+    const [, id, code] = line.split('|');
+    return { id, code };
+  });
 
-// --- Rebuild the search index through the real admin endpoint -------------------------------
+// --- Admin token (real admin endpoints below) ------------------------------------------------
 const b64 = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
 const now = Math.floor(Date.now() / 1000);
 const payload = {
@@ -229,8 +236,26 @@ const signature = createSign('RSA-SHA256')
   .update(unsigned)
   .sign(Buffer.from(env.JWT_PRIVATE_KEY, 'base64').toString('utf8'), 'base64url');
 const gateway = env.GATEWAY_URL || 'http://localhost:4000';
+const authorization = `Bearer ${unsigned}.${signature}`;
+
+// --- Stock (W4: the cart's soft stock check needs it) through the real admin endpoint ---------
+// Only SKUs without a stock row, so re-running never resets stock. One SKU is kept at 2 units so
+// the cart's "Insufficient stock" 409 is easy to see.
+const LOW_STOCK = 'DEV-BOROSIL-COPPER-BOTTLE-950ML';
+for (const { id, code } of unstocked) {
+  const available = code === LOW_STOCK ? 2 : 25;
+  const stock = await fetch(`${gateway}/api/inventory/${id}/set`, {
+    method: 'POST',
+    headers: { authorization, 'content-type': 'application/json' },
+    body: JSON.stringify({ available }),
+  });
+  if (!stock.ok) console.log(`stock ${code}: HTTP ${stock.status} ${await stock.text()}`);
+}
+console.log(`stock set for ${unstocked.length} sample SKU(s)`);
+
+// --- Rebuild the search index through the real admin endpoint -------------------------------
 const res = await fetch(`${gateway}/api/search/admin/reindex`, {
   method: 'POST',
-  headers: { authorization: `Bearer ${unsigned}.${signature}` },
+  headers: { authorization },
 });
 console.log(`search reindex: HTTP ${res.status} ${await res.text()}`);

@@ -1,8 +1,9 @@
-# YouMart Public API Contract (v1.3)
+# YouMart Public API Contract (v1.4)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
-additive revision 2026-09-30 (W3) — see §17 change log.**
+additive revision 2026-09-30 (W3), v1.4 additive revision 2026-10-01 (W4)
+— see §17 change log.**
 
 This is the single, authoritative, consolidated contract for the **public
 gateway API** — everything a frontend web app or mobile client calls. It
@@ -17,7 +18,7 @@ Every endpoint documented here has been verified against the real running
 system as of this freeze (see "Verification" note per section where
 relevant, and the full verification log in the Ch7.4 commit).
 
-**Versioning policy**: this is v1.3 of the contract. Changes after the
+**Versioning policy**: this is v1.4 of the contract. Changes after the
 freeze must be additive/backward-compatible (new optional fields, new
 endpoints) wherever possible; each additive revision bumps the MINOR
 version (v1.1, v1.2, ...) and is listed in §17. Any breaking change
@@ -127,11 +128,11 @@ Account linking/merging is a planned refinement, not part of v1.2.
 
 ### 2.2 Token facts
 
-| Token                  | Alg                         | TTL                                        | Carried via                           | Claims of interest                      |
-| ---------------------- | --------------------------- | ------------------------------------------ | ------------------------------------- | --------------------------------------- |
-| Customer access token  | RS256                       | 900s (15 min)                              | `Authorization: Bearer`               | `sub` (userId), `typ:"access"`, `phone` (absent for email-only accounts, v1.2) |
-| Customer refresh token | opaque (hashed server-side) | 1,209,600s (14 days), rotated on every use | `ym_rt` httpOnly cookie, `Path=/api/auth` | n/a (not a JWT)                     |
-| Admin access token     | RS256                       | 28,800s (8h)                               | `Authorization: Bearer`               | `sub` (adminId), `typ:"admin"`, `role`  |
+| Token                  | Alg                         | TTL                                        | Carried via                               | Claims of interest                                                             |
+| ---------------------- | --------------------------- | ------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------ |
+| Customer access token  | RS256                       | 900s (15 min)                              | `Authorization: Bearer`                   | `sub` (userId), `typ:"access"`, `phone` (absent for email-only accounts, v1.2) |
+| Customer refresh token | opaque (hashed server-side) | 1,209,600s (14 days), rotated on every use | `ym_rt` httpOnly cookie, `Path=/api/auth` | n/a (not a JWT)                                                                |
+| Admin access token     | RS256                       | 28,800s (8h)                               | `Authorization: Bearer`                   | `sub` (adminId), `typ:"admin"`, `role`                                         |
 
 There is **no refresh token for admins** — staff re-login when the 8h
 token expires (no persistent admin session).
@@ -229,7 +230,7 @@ doesn't grow with a Postgres scan — see §4.1.
     "items": [
       {
         "id": "Uuid", "title": "string", "slug": "string",
-        "price": "Money", "mrp": "Money", "imageUrl": "string | null",
+        "price": "Money", "mrp": "Money", "skuId": "Uuid | null", "imageUrl": "string | null",
         "rating": "number | null", "ratingCount": number,
         "category": { "id": "Uuid", "name": "string", "slug": "string" }
       }
@@ -253,14 +254,37 @@ counts follow the shopper's choices). Multi-select counts are
   ```json
   {
     "category": { "id": "Uuid", "name": "Mobiles", "slug": "mobiles", "parentId": "Uuid | null" },
-    "path": [{ "id": "Uuid", "name": "Electronics", "slug": "electronics" }, { "...": "root -> this category" }],
+    "path": [
+      { "id": "Uuid", "name": "Electronics", "slug": "electronics" },
+      { "...": "root -> this category" }
+    ],
     "definitionFrom": "mobiles",
     "total": 12,
     "price": { "min": 7999, "max": 69900 },
     "filters": [
-      { "key": "brand", "label": "Brand", "type": "multi_select", "order": 1, "values": [{ "value": "Samsung", "count": 4 }] },
-      { "key": "screen_size", "label": "Screen Size", "type": "range", "unit": "in", "order": 4, "min": 6.1, "max": 6.78 },
-      { "key": "network", "label": "Network", "type": "single_select", "order": 5, "values": [{ "value": "5G", "count": 9 }] }
+      {
+        "key": "brand",
+        "label": "Brand",
+        "type": "multi_select",
+        "order": 1,
+        "values": [{ "value": "Samsung", "count": 4 }]
+      },
+      {
+        "key": "screen_size",
+        "label": "Screen Size",
+        "type": "range",
+        "unit": "in",
+        "order": 4,
+        "min": 6.1,
+        "max": 6.78
+      },
+      {
+        "key": "network",
+        "label": "Network",
+        "type": "single_select",
+        "order": 5,
+        "values": [{ "value": "5G", "count": 9 }]
+      }
     ]
   }
   ```
@@ -273,7 +297,7 @@ counts follow the shopper's choices). Multi-select counts are
 - Postgres (`catalog`) is the source of truth; the Typesense collection is a derived, rebuildable index (event-driven upsert per product change + nightly zero-downtime full rebuild via alias swap).
 - Every product attribute is indexed generically: `attrs_<key>` (string values, faceted) and `attrn_<key>` (the number, for ranges/stats). A new attribute key needs **no schema change and no reindex**; a filter definition only selects which indexed attributes a category offers.
 - Category membership is indexed as the full ancestor path (`categoryIds`), so a parent listing is one filter, not a tree walk.
-- One listing page = one Typesense `multi_search` round trip (results + one extra facet query per *selected* multi-select filter for disjunctive counts). No per-request Postgres scan; catalog-service only reads the category row(s) to resolve the definition.
+- One listing page = one Typesense `multi_search` round trip (results + one extra facet query per _selected_ multi-select filter for disjunctive counts). No per-request Postgres scan; catalog-service only reads the category row(s) to resolve the definition.
 
 ### `GET /api/catalog/products/:slug`
 
@@ -300,7 +324,10 @@ counts follow the shopper's choices). Multi-select counts are
     "specifications": [{ "key": "ram", "label": "RAM", "value": "12", "unit": "GB" }],
     "rating": 4.6,
     "ratingCount": 990,
-    "categoryPath": [{ "id": "Uuid", "name": "Electronics", "slug": "electronics" }, { "id": "Uuid", "name": "Mobiles", "slug": "mobiles" }]
+    "categoryPath": [
+      { "id": "Uuid", "name": "Electronics", "slug": "electronics" },
+      { "id": "Uuid", "name": "Mobiles", "slug": "mobiles" }
+    ]
   }
   ```
 - `attributes`, `specifications`, `rating`, `ratingCount`, `categoryPath` are v1.3 additions. `specifications` lists every attribute with the label/unit from the category's filter definition (definition order first, others A-Z with a humanised key as label). `images[].url` is absolute: `CDN_BASE_URL` + the stored key, or the stored absolute URL.
@@ -324,17 +351,17 @@ counts follow the shopper's choices). Multi-select counts are
 All of these require `Authorization: Bearer <admin token>` with the
 `catalog.manage` permission.
 
-| Method + path                           | Body                                                                                                                             | Success                   | Errors                                               |
-| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------- |
-| `POST /api/catalog/products`            | `{ title, description?, categoryId, attributes?, skus: [{skuCode?, mrp, sellingPrice, attributes?}] (min 1), images?, status? }` | `201` full product detail | `400` (bad categoryId, sellingPrice>mrp), `403`      |
-| `PATCH /api/catalog/products/:id`       | any of `title, description, categoryId, attributes, status`                                                                      | `200` full product detail | `400` (empty body, illegal status transition), `404` |
-| `DELETE /api/catalog/products/:id`      | —                                                                                                                                | `204`                     | `404`                                                |
-| `POST /api/catalog/products/:id/skus`   | `{skuCode?, mrp, sellingPrice, attributes?}`                                                                                     | `201` full product detail | `400` (sellingPrice>mrp, duplicate skuCode), `404`   |
-| `PATCH /api/catalog/skus/:id`           | any of `mrp, sellingPrice, attributes`                                                                                           | `200` full product detail | `400`, `404`                                         |
-| `POST /api/catalog/products/:id/images` | `{url, position?}`                                                                                                               | `201` full product detail | `404`                                                |
-| `DELETE /api/catalog/images/:id`        | —                                                                                                                                | `204`                     | `404`                                                |
-| `POST /api/catalog/categories`          | `{name, parentId?, filterDefinition?}` (v1.3)                                                                                    | `201` category (+ `filterDefinition`) | `400`                                       |
-| `PATCH /api/catalog/categories/:id`     | any of `name, parentId, filterDefinition` (v1.3; `null` = inherit again)                                                         | `200` category (+ `filterDefinition`) | `400`, `404`                                |
+| Method + path                           | Body                                                                                                                             | Success                               | Errors                                               |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------- |
+| `POST /api/catalog/products`            | `{ title, description?, categoryId, attributes?, skus: [{skuCode?, mrp, sellingPrice, attributes?}] (min 1), images?, status? }` | `201` full product detail             | `400` (bad categoryId, sellingPrice>mrp), `403`      |
+| `PATCH /api/catalog/products/:id`       | any of `title, description, categoryId, attributes, status`                                                                      | `200` full product detail             | `400` (empty body, illegal status transition), `404` |
+| `DELETE /api/catalog/products/:id`      | —                                                                                                                                | `204`                                 | `404`                                                |
+| `POST /api/catalog/products/:id/skus`   | `{skuCode?, mrp, sellingPrice, attributes?}`                                                                                     | `201` full product detail             | `400` (sellingPrice>mrp, duplicate skuCode), `404`   |
+| `PATCH /api/catalog/skus/:id`           | any of `mrp, sellingPrice, attributes`                                                                                           | `200` full product detail             | `400`, `404`                                         |
+| `POST /api/catalog/products/:id/images` | `{url, position?}`                                                                                                               | `201` full product detail             | `404`                                                |
+| `DELETE /api/catalog/images/:id`        | —                                                                                                                                | `204`                                 | `404`                                                |
+| `POST /api/catalog/categories`          | `{name, parentId?, filterDefinition?}` (v1.3)                                                                                    | `201` category (+ `filterDefinition`) | `400`                                                |
+| `PATCH /api/catalog/categories/:id`     | any of `name, parentId, filterDefinition` (v1.3; `null` = inherit again)                                                         | `200` category (+ `filterDefinition`) | `400`, `404`                                         |
 
 `filterDefinition` (v1.3): array (max 30) of `{ key, label, type:
 "multi_select"|"single_select"|"range"|"boolean", unit?, order? }` —
@@ -356,7 +383,7 @@ VALIDATION_ERROR`. Product delete is soft (never hard-deleted).
 - **200**:
   ```json
   {
-    "results": [{ "id": "Uuid", "title": "string", "slug": "string", "price": "Money", "mrp": "Money", "rating": "number | null", "primaryImageUrl": "string | null", "categoryName": "string" }],
+    "results": [{ "id": "Uuid", "title": "string", "slug": "string", "price": "Money", "mrp": "Money", "skuId": "Uuid | null", "rating": "number | null", "primaryImageUrl": "string | null", "categoryName": "string" }],
     "facets": { "category": [{ "value": "string", "count": number }], "brand": [...], "price": [...] },
     "found": number, "page": number, "perPage": number
   }
@@ -748,13 +775,13 @@ null` is expected/correct for the platform's own single-vendor seller.
 
 ### Order/fulfillment management (requires `orders.manage`) — mounted at `/api/orders`
 
-| Method + path                                       | Body                                     | Success                                                                                                       |
-| --------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `PATCH /api/orders/admin/items/:orderItemId/status` | `{ status: "PACKED" }`                   | `200` item — admin-driven pack, the only path that can ever pack the default (unowned) seller's items (Ch7.1) |
-| `GET /api/orders/admin/sellers/:sellerId/items`     | — (`cursor?`, `limit?`, `sellerStatus?`) | `200 Paginated<SellerOrderItemView>` — what a given seller (incl. the default one) needs fulfilled (Ch7.2)    |
-| `GET /api/orders/admin/cancel-requests` (v1.1)      | — (`status?`, `cursor?`, `limit?`)       | `200 Paginated<CancelRequestView>` (§8), newest first                                                         |
-| `POST /api/orders/admin/cancel-requests/:id/approve` (v1.1, **`refunds.manage`**) | `{ note?: string }` | `200` `{ cancelRequest, refund: {refundId, paymentId, amount, status, razorpayRefundId, blocked} }` — refunds the full `grandTotal` FIRST, then restocks and cancels every unshipped item, then marks the order `CANCELLED`; `409` if already resolved or anything shipped meanwhile |
-| `POST /api/orders/admin/cancel-requests/:id/reject` (v1.1) | `{ note?: string }`               | `200` `{ cancelRequest }` with `status:"REJECTED"`; order untouched                                           |
+| Method + path                                                                     | Body                                     | Success                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PATCH /api/orders/admin/items/:orderItemId/status`                               | `{ status: "PACKED" }`                   | `200` item — admin-driven pack, the only path that can ever pack the default (unowned) seller's items (Ch7.1)                                                                                                                                                                        |
+| `GET /api/orders/admin/sellers/:sellerId/items`                                   | — (`cursor?`, `limit?`, `sellerStatus?`) | `200 Paginated<SellerOrderItemView>` — what a given seller (incl. the default one) needs fulfilled (Ch7.2)                                                                                                                                                                           |
+| `GET /api/orders/admin/cancel-requests` (v1.1)                                    | — (`status?`, `cursor?`, `limit?`)       | `200 Paginated<CancelRequestView>` (§8), newest first                                                                                                                                                                                                                                |
+| `POST /api/orders/admin/cancel-requests/:id/approve` (v1.1, **`refunds.manage`**) | `{ note?: string }`                      | `200` `{ cancelRequest, refund: {refundId, paymentId, amount, status, razorpayRefundId, blocked} }` — refunds the full `grandTotal` FIRST, then restocks and cancels every unshipped item, then marks the order `CANCELLED`; `409` if already resolved or anything shipped meanwhile |
+| `POST /api/orders/admin/cancel-requests/:id/reject` (v1.1)                        | `{ note?: string }`                      | `200` `{ cancelRequest }` with `status:"REJECTED"`; order untouched                                                                                                                                                                                                                  |
 
 v1.1 cancel note: an invoice already issued for an approved-cancel
 order is NOT reversed (credit notes are not built yet) — finance handles
@@ -826,16 +853,16 @@ truth and may not map 1:1 to the table above in the future.
 
 ## 14. Rate limits (client-relevant)
 
-| Surface                      | Limit                                                | Response on exceed |
-| ---------------------------- | ---------------------------------------------------- | ------------------ |
-| Every gateway request (IP)   | 300/60s                                              | `429 RATE_LIMITED` |
-| `POST /api/auth/otp/request` | 1/60s cooldown + 5/hour, per phone or email          | `429 RATE_LIMITED` |
-| `POST /api/auth/otp/verify`  | 5 wrong attempts per challenge, then must re-request | `429 RATE_LIMITED` |
-| `POST /api/admin/login`      | 10 attempts/15min per IP                             | `429 RATE_LIMITED` |
-| `POST /api/orders/checkout`  | 20 attempts/10min per logged-in user                 | `429 RATE_LIMITED` |
-| `POST /api/orders/track` + `POST /api/support/messages` + `POST /api/auth/otp/request` (v1.2) | 20 combined/15min per IP (gateway) | `429 RATE_LIMITED` |
-| `POST /api/orders/track` (v1.1) | 10/15min per order number                         | `429 RATE_LIMITED` |
-| `POST /api/support/messages` (v1.1) | 5/hour per phone number                       | `429 RATE_LIMITED` |
+| Surface                                                                                       | Limit                                                | Response on exceed |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------ |
+| Every gateway request (IP)                                                                    | 300/60s                                              | `429 RATE_LIMITED` |
+| `POST /api/auth/otp/request`                                                                  | 1/60s cooldown + 5/hour, per phone or email          | `429 RATE_LIMITED` |
+| `POST /api/auth/otp/verify`                                                                   | 5 wrong attempts per challenge, then must re-request | `429 RATE_LIMITED` |
+| `POST /api/admin/login`                                                                       | 10 attempts/15min per IP                             | `429 RATE_LIMITED` |
+| `POST /api/orders/checkout`                                                                   | 20 attempts/10min per logged-in user                 | `429 RATE_LIMITED` |
+| `POST /api/orders/track` + `POST /api/support/messages` + `POST /api/auth/otp/request` (v1.2) | 20 combined/15min per IP (gateway)                   | `429 RATE_LIMITED` |
+| `POST /api/orders/track` (v1.1)                                                               | 10/15min per order number                            | `429 RATE_LIMITED` |
+| `POST /api/support/messages` (v1.1)                                                           | 5/hour per phone number                              | `429 RATE_LIMITED` |
 
 A client should treat `429` as "back off and retry later" (not a bug) —
 show a clear "too many attempts" message, don't auto-retry immediately.
@@ -876,6 +903,11 @@ Purely additive changes bump the minor version instead (§17).
 ---
 
 ## 17. Change log
+
+### v1.4 — 2026-10-01 (W4, additive)
+
+- **Added**: `skuId` on `GET /api/catalog/products` items and `GET /api/search/products` results — the cheapest SKU (the one `price`/`mrp` describe), so a listing card can `POST /api/cart/items { skuId, quantity }` without fetching the product. `null` only for a product with no SKU (or one indexed before v1.4 — a reindex fills it) — §4, §5.
+- No other endpoint changed: the storefront cart and address book use the existing `/api/cart` and `/api/addresses` endpoints as documented. The guest cart (signed out) is client-side only; merge-on-login is a client flow over `POST /api/cart/items` (rules: `packages/shared-client/src/guest-cart.ts`).
 
 ### v1.3 — 2026-09-30 (W3, additive)
 

@@ -15,6 +15,8 @@ export interface SearchResultItem {
   price: string;
   /** v1.3 additive: what a product card also needs. */
   mrp: string;
+  /** W4: cheapest SKU, for "Add to cart" from a result card. */
+  skuId: string | null;
   rating: number | null;
   primaryImageUrl: string | null;
   categoryName: string;
@@ -66,6 +68,7 @@ export async function searchProducts(query: SearchProductsQuery): Promise<Search
       slug: item.slug,
       price: item.price,
       mrp: item.mrp,
+      skuId: item.skuId,
       rating: item.rating,
       primaryImageUrl: item.imageUrl,
       categoryName: item.category.name,
@@ -88,6 +91,7 @@ function toSuggestItem(doc: ProductDocument): SearchResultItem {
     slug: doc.slug,
     price: paiseToMoney(doc.pricePaise),
     mrp: paiseToMoney(doc.mrpPaise || doc.pricePaise),
+    skuId: doc.skuId || null,
     rating: doc.rating > 0 ? doc.rating : null,
     primaryImageUrl: doc.primaryImageUrl || null,
     categoryName: doc.categoryName,

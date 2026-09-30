@@ -25,6 +25,7 @@ export interface CatalogProductForIndex {
   categorySlug: string;
   categoryPathIds: string[];
   mrp: string | null;
+  skuId?: string | null;
   rating: string | null;
   ratingCount: number;
   price: string | null;

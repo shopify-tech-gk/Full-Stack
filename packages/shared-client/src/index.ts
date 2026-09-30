@@ -8,6 +8,7 @@ export * from './storefront';
 export * from './catalog';
 export * from './account';
 export * from './cart';
+export * from './guest-cart';
 export * from './site-pages';
 export * from './support';
 export * from './demo';

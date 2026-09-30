@@ -3,6 +3,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import {
   ADDRESS_TYPES,
+  ApiError,
   INDIAN_STATES,
   validateAddressForm,
   type AddressFormErrors,
@@ -23,7 +24,8 @@ import {
 interface AddressFormProps {
   initial: AddressFormValues;
   title: string;
-  onSave: (input: AddressInput) => void;
+  /** Saves through address-service; a rejection is shown above the form. */
+  onSave: (input: AddressInput) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -35,15 +37,30 @@ export function AddressForm({ initial, title, onSave, onCancel }: AddressFormPro
   const id = useId();
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<AddressFormErrors>({});
+  const [saving, setSaving] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
 
   const set = <K extends keyof AddressFormValues>(key: K, value: AddressFormValues[K]) =>
     setValues((current) => ({ ...current, [key]: value }));
 
-  const onSubmit = (event: FormEvent) => {
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (saving) return;
     const result = validateAddressForm(values);
     setErrors(result.errors);
-    if (result.input) onSave(result.input);
+    setFailure(null);
+    if (!result.input) return;
+    setSaving(true);
+    try {
+      await onSave(result.input);
+    } catch (error) {
+      setFailure(
+        error instanceof ApiError && error.status === 400
+          ? error.message
+          : 'We could not save this address. Please try again.',
+      );
+      setSaving(false);
+    }
   };
 
   const describedBy = (key: keyof AddressFormValues) =>
@@ -95,13 +112,14 @@ export function AddressForm({ initial, title, onSave, onCancel }: AddressFormPro
   const errorCount = Object.keys(errors).length;
 
   return (
-    <form onSubmit={onSubmit} noValidate aria-labelledby={`${id}-title`}>
+    <form onSubmit={(event) => void onSubmit(event)} noValidate aria-labelledby={`${id}-title`}>
       <h2
         id={`${id}-title`}
         className="mb-[16px] font-ui text-[20px] font-semibold leading-[26px] text-heading"
       >
         {title}
       </h2>
+      {failure && <Notice tone="error">{failure}</Notice>}
       {errorCount > 0 && (
         <Notice tone="error">
           Please correct{' '}
@@ -216,8 +234,8 @@ export function AddressForm({ initial, title, onSave, onCancel }: AddressFormPro
       </p>
 
       <p className="mx-[3px] flex flex-wrap items-center gap-[20px]">
-        <button type="submit" className={FORM_BUTTON}>
-          Save address
+        <button type="submit" disabled={saving} className={FORM_BUTTON}>
+          {saving ? 'Saving…' : 'Save address'}
         </button>
         <button type="button" onClick={onCancel} className={`font-ui text-[16px] ${TEXT_LINK}`}>
           Cancel

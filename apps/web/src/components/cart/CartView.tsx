@@ -3,20 +3,21 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  DEMO_SHIPPING_TOTAL,
+  CART_SHIPPING_TOTAL,
   cartTotals,
-  demoCartLineImage,
+  defaultCheckoutAddress,
   type CartLine,
 } from '@youmart/shared-client';
 import { Notice } from '@/components/account/Notice';
-import { FIELD_HINT, TEXT_LINK } from '@/components/account/formStyles';
-import { useCart } from '@/lib/cart';
-import { useSession } from '@/lib/session';
+import { TEXT_LINK } from '@/components/account/formStyles';
+import { useAddresses } from '@/lib/addresses';
+import { useCart, type CartNotice } from '@/lib/cart';
+import { useProductImages } from '@/lib/product-images';
 import { CartLines } from './CartLines';
 import { CartTotals } from './CartTotals';
 
 /** Live empty cart: "Your Cart is Empty" (Outfit 24/700) + a pill "Return to shop" button. */
-export function EmptyCart({ onRestoreDemo }: { onRestoreDemo?: () => void }) {
+export function EmptyCart() {
   return (
     <div className="mb-[25.6px] font-ui">
       <p className="mb-[15px] text-[24px] font-bold leading-[25.6px] text-black">
@@ -28,33 +29,60 @@ export function EmptyCart({ onRestoreDemo }: { onRestoreDemo?: () => void }) {
       >
         Return to shop
       </Link>
-      {onRestoreDemo && (
-        // DEMO only - remove when the cart API is wired.
-        <p className={`${FIELD_HINT} mt-[16px]`}>
-          Demo:{' '}
-          <button type="button" onClick={onRestoreDemo} className={TEXT_LINK}>
-            restore the sample cart
-          </button>
-          .
-        </p>
-      )}
     </div>
   );
 }
 
-interface CartViewProps {
-  /** State of the default saved address - shown only to a signed-in customer. */
-  destination: string | null;
+function StoreNotice({ notice, onDismiss }: { notice: CartNotice; onDismiss: () => void }) {
+  return (
+    <Notice tone={notice.tone}>
+      {notice.message}
+      {notice.details && notice.details.length > 0 && (
+        <ul className="mt-[4px] list-disc pl-[18px]">
+          {notice.details.map((detail) => (
+            <li key={detail}>{detail}</li>
+          ))}
+        </ul>
+      )}{' '}
+      <button type="button" onClick={onDismiss} className={TEXT_LINK}>
+        Dismiss
+      </button>
+    </Notice>
+  );
 }
 
-export function CartView({ destination }: CartViewProps) {
-  const { cart, setQuantity, remove, restore, reset } = useCart();
-  const signedIn = useSession().status === 'authenticated';
+export function CartView() {
+  const { mode, cart, notice, setQuantity, remove, restore, dismissNotice, reload } = useCart();
+  const { addresses } = useAddresses();
+  const imageFor = useProductImages(cart?.items.map((line) => line.productSlug) ?? []);
   const [removed, setRemoved] = useState<{ line: CartLine; index: number } | null>(null);
 
+  const storeNotice = notice && (
+    <div className="mt-[20px]">
+      <StoreNotice notice={notice} onDismiss={dismissNotice} />
+    </div>
+  );
+
   if (!cart) {
-    return <div aria-busy="true" className="min-h-[320px]" />;
+    // The account cart failed to load: say so and offer a retry (never an empty-looking cart).
+    if (mode === 'account' && notice?.tone === 'error') {
+      return (
+        <div className="mt-[20px]">
+          <Notice tone="error">
+            {notice.message}{' '}
+            <button type="button" onClick={reload} className={TEXT_LINK}>
+              Try again
+            </button>
+          </Notice>
+        </div>
+      );
+    }
+    return <div aria-busy="true" aria-label="Loading your cart" className="min-h-[320px]" />;
   }
+
+  // Only a signed-in customer has a saved default address to estimate delivery to.
+  const destination =
+    mode === 'account' && addresses ? (defaultCheckoutAddress(addresses)?.state ?? null) : null;
 
   const onRemove = (line: CartLine) => {
     setRemoved({ line, index: cart.items.findIndex((i) => i.cartItemId === line.cartItemId) });
@@ -80,28 +108,27 @@ export function CartView({ destination }: CartViewProps) {
   if (cart.items.length === 0) {
     return (
       <>
-        {undo}
-        <EmptyCart onRestoreDemo={reset} />
+        {storeNotice}
+        {undo && <div className="mt-[20px]">{undo}</div>}
+        <EmptyCart />
       </>
     );
   }
 
   return (
     <>
+      {storeNotice}
       {undo && <div className="mt-[20px]">{undo}</div>}
       <CartLines
         items={cart.items}
-        imageFor={demoCartLineImage}
+        imageFor={(line) => imageFor(line.productSlug)}
         onQuantity={(line, quantity) => {
           setRemoved(null);
           setQuantity(line.cartItemId, quantity);
         }}
         onRemove={onRemove}
       />
-      <CartTotals
-        totals={cartTotals(cart, DEMO_SHIPPING_TOTAL)}
-        destination={signedIn ? destination : null}
-      />
+      <CartTotals totals={cartTotals(cart, CART_SHIPPING_TOTAL)} destination={destination} />
     </>
   );
 }

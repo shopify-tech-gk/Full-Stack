@@ -6,18 +6,19 @@ import {
   ADDRESS_TYPES,
   EMPTY_ADDRESS_FORM,
   addressLines,
-  demoSavedAddress,
   type Address,
   type AddressInput,
 } from '@youmart/shared-client';
 import { AddressForm } from '@/components/account/AddressForm';
 import { TEXT_LINK } from '@/components/account/formStyles';
+import { api } from '@/lib/api';
 
 interface AddressPickerProps {
   addresses: readonly Address[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  onAdded: (address: Address) => void;
+  /** Called with the saved address once address-service has stored it. */
+  onAdded: (address: Address) => Promise<void>;
 }
 
 // Saved-address cards (address-service model) instead of live's one-off billing form; a new
@@ -25,10 +26,12 @@ interface AddressPickerProps {
 export function AddressPicker({ addresses, selectedId, onSelect, onAdded }: AddressPickerProps) {
   const [adding, setAdding] = useState(addresses.length === 0);
 
-  // DEMO: wiring = api.addresses.create(input), then select the returned Address.
-  const save = (input: AddressInput) => {
-    const now = new Date();
-    onAdded(demoSavedAddress(input, `local-${now.getTime()}`, now));
+  const save = async (input: AddressInput) => {
+    const address = await api.addresses.create({
+      ...input,
+      isDefault: addresses.length === 0 || Boolean(input.isDefault),
+    });
+    await onAdded(address);
     setAdding(false);
   };
 
