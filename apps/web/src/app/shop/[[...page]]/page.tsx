@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { listingQueryString, parseListingQuery } from '@youmart/shared-client';
 import { CategoryMegaMenu } from '@/components/home/CategoryMegaMenu';
-import { BrandSlider } from '@/components/listing/BrandSlider';
 import { CheckoutSteps } from '@/components/listing/CheckoutSteps';
 import { FilterDrawer } from '@/components/listing/FilterDrawer';
 import { Pagination } from '@/components/listing/Pagination';
@@ -39,8 +38,12 @@ export default async function ShopPage({ params, searchParams }: ShopPageProps) 
       <div className="mx-auto mt-[10px] max-w-[1240px] px-[10px] lg:mt-0 lg:px-[20px]">
         <h1 className="sr-only">Shop</h1>
         <CheckoutSteps current="Shop" />
-        <FilterDrawer key={listingQueryString(query)} basePath="/shop" query={query} />
-        <BrandSlider brands={listing.brands} basePath="/shop" query={query} />
+        <FilterDrawer
+          key={listingQueryString(query)}
+          basePath="/shop"
+          query={query}
+          filters={listing.filters}
+        />
         <ul className="mb-[16px] mt-[10px] grid grid-cols-2 gap-x-[10px] md:grid-cols-3 md:gap-x-[20px] lg:grid-cols-5">
           {listing.products.map((product, index) => (
             <li key={product.id} className="mb-[10px]">

@@ -37,6 +37,8 @@ const catalogServiceEnvSchema = baseEnvSchema.extend({
   // "is the caller an active seller, and which one" is resolved over HTTP
   // against seller-service (Ch5.2's seller-scoped product endpoints).
   SELLER_SERVICE_URL: z.string().url(),
+  // W3: public listing/filters are answered by search-service's Typesense browse engine.
+  SEARCH_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
@@ -59,6 +61,7 @@ export interface CatalogServiceConfig {
   cdnBaseUrl: string;
   defaultSellerId: string;
   sellerServiceUrl: string;
+  searchServiceUrl: string;
   serviceHttpTimeoutMs: number;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
@@ -77,6 +80,7 @@ export const config: Readonly<CatalogServiceConfig> = Object.freeze({
   cdnBaseUrl: parsed.CDN_BASE_URL,
   defaultSellerId: parsed.DEFAULT_SELLER_ID,
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
+  searchServiceUrl: parsed.SEARCH_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,

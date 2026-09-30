@@ -359,6 +359,9 @@ model Category {
   createdAt DateTime   @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
   deletedAt DateTime?  @map("deleted_at")
+  /// W3: which product attributes this category filters on, as DATA (shape: docs/catalog/IMPORT-SPEC.md).
+  /// Null = inherit the nearest ancestor's definition. Adding a filter never needs code.
+  filterDefinition Json? @map("filter_definition")
 
   products Product[]
 
@@ -393,6 +396,10 @@ model Product {
   /// invoice works for every product day one and gets precise as sellers
   /// fill in real HSN/rates.
   gstRatePercent Decimal?      @db.Decimal(5, 2) @map("gst_rate_percent")
+  /// W3: denormalised average review rating (1.0-5.0) + count, for listing filters/sort. Written by
+  /// the import / a future reviews job - the reviews schema is not readable from catalog.
+  rating         Decimal?      @db.Decimal(2, 1)
+  ratingCount    Int           @default(0) @map("rating_count")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
   deletedAt      DateTime?     @map("deleted_at")

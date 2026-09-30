@@ -7,6 +7,8 @@ import { StarRating } from './StarRating';
 
 interface ProductTabsProps {
   description: string;
+  /** Labelled attribute rows from the catalog (any category - no per-category layout). */
+  specifications?: readonly { label: string; value: string }[];
   reviews: readonly ProductReviewData[];
   title: string;
 }
@@ -18,7 +20,12 @@ const dateFormat = new Intl.DateTimeFormat('en-US', {
 });
 
 // Live WooCommerce tabs: 1px blue rule above, 3px brand bar over the active tab.
-export function ProductTabs({ description, reviews, title }: ProductTabsProps) {
+export function ProductTabs({
+  description,
+  specifications = [],
+  reviews,
+  title,
+}: ProductTabsProps) {
   const id = useId();
   const [tab, setTab] = useState<'description' | 'reviews'>('description');
   const tabs = [
@@ -63,6 +70,24 @@ export function ProductTabs({ description, reviews, title }: ProductTabsProps) {
         hidden={tab !== 'description'}
       >
         <p className="font-ui text-[16px] leading-[25.6px] text-ink-body">{description}</p>
+        {specifications.length > 0 && (
+          // WooCommerce "Additional information" table look.
+          <table className="mt-[24px] w-full max-w-[720px] border-collapse font-ui text-[15px] leading-[1.5] text-ink-body">
+            <caption className="mb-[8px] text-left font-sans text-[16px] font-bold text-heading">
+              Specifications
+            </caption>
+            <tbody>
+              {specifications.map((row) => (
+                <tr key={row.label} className="border-b border-catalog-rule">
+                  <th scope="row" className="w-[40%] py-[8px] pr-[16px] text-left font-semibold">
+                    {row.label}
+                  </th>
+                  <td className="py-[8px]">{row.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div

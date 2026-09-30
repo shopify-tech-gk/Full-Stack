@@ -6,6 +6,7 @@ import {
   truncateTitle,
   type ProductCardData,
 } from '@youmart/shared-client';
+import { skipImageOptimizer } from '@/lib/images';
 import { StarRating } from './StarRating';
 
 interface ProductCardProps {
@@ -50,7 +51,7 @@ export function ProductCard({
           width={400}
           height={400}
           priority={priority}
-          unoptimized={product.image.endsWith('.svg')}
+          unoptimized={skipImageOptimizer(product.image)}
           sizes="(min-width: 1025px) 280px, (min-width: 768px) 33vw, 50vw"
           className="size-full object-cover transition-transform duration-[450ms] group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
         />
@@ -128,7 +129,7 @@ function ListingCard({ product, priority, shadow }: Omit<ProductCardProps, 'vari
           width={400}
           height={400}
           priority={priority}
-          unoptimized={product.image.endsWith('.svg')}
+          unoptimized={skipImageOptimizer(product.image)}
           sizes="(min-width: 1025px) 285px, (min-width: 768px) 33vw, 40vw"
           className="size-full object-contain"
         />

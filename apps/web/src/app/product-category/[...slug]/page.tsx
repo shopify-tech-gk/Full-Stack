@@ -43,6 +43,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     notFound();
   }
   const basePath = categoryHref(...parts.path);
+  // `brand` is the one conventional attribute key (IMPORT-SPEC.md) - shown as live's brand strip.
+  const brandFilter = listing.filters?.filters.find((f) => f.key === 'brand' && f.type !== 'range');
 
   return (
     <>
@@ -52,8 +54,13 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         <div className="min-w-0 flex-1 lg:border-l lg:border-catalog-rule lg:pl-[60px]">
           <h1 className="sr-only">{node.name}</h1>
           <CheckoutSteps current={node.name} />
-          <FilterDrawer key={listingQueryString(query)} basePath={basePath} query={query} />
-          <BrandSlider brands={listing.brands} basePath={basePath} query={query} />
+          <FilterDrawer
+            key={listingQueryString(query)}
+            basePath={basePath}
+            query={query}
+            filters={listing.filters}
+          />
+          {brandFilter && <BrandSlider filter={brandFilter} basePath={basePath} query={query} />}
 
           {listing.products.length > 0 ? (
             <ul className="mb-[16px] mt-[10px] grid grid-cols-2 gap-x-[10px] md:grid-cols-3 md:gap-x-[20px] lg:grid-cols-4">

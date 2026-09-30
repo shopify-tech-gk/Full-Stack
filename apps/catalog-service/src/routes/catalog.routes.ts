@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { PaginationQuery } from '@youmart/shared-types';
 import {
-  ListProductsQuery,
   CreateProductBody,
   UpdateProductBody,
   AddSkuBody,
@@ -11,7 +10,6 @@ import {
   UpdateCategoryBody,
 } from '../catalog/catalog.schema';
 import {
-  listProducts,
   getProductBySlug,
   getSkuById,
   listCategories,
@@ -27,6 +25,7 @@ import {
   getProductForIndex,
   listProductsForIndex,
 } from '../catalog/catalog.service';
+import { getCategoryFilters, listProducts } from '../catalog/browse.service';
 import { optionalAuth, requireServiceAuth, requireAdmin } from '../authMiddleware';
 
 export const catalogRouter: Router = Router();
@@ -53,12 +52,12 @@ catalogRouter.get('/internal/products-for-index', requireServiceAuth, async (req
   res.status(200).json(result);
 });
 
-// --- public read endpoints (unchanged from Ch4.1) ---
+// --- public read endpoints ---
 
+// W3: generic attribute-driven listing - attribute params (e.g. ?brand=A,B&ram=8&screen_size_min=6)
+// are interpreted through the category's filter definition, never by name in code.
 catalogRouter.get('/products', optionalAuth, async (req, res) => {
-  const query = ListProductsQuery.parse(req.query);
-  const result = await listProducts(query);
-  res.status(200).json(result);
+  res.status(200).json(await listProducts(req.query));
 });
 
 catalogRouter.get('/products/:slug', optionalAuth, async (req, res) => {
@@ -70,6 +69,11 @@ catalogRouter.get('/products/:slug', optionalAuth, async (req, res) => {
 catalogRouter.get('/categories', optionalAuth, async (_req, res) => {
   const items = await listCategories();
   res.status(200).json({ items });
+});
+
+catalogRouter.get('/categories/:slug/filters', optionalAuth, async (req, res) => {
+  const slug = typeof req.params.slug === 'string' ? req.params.slug : '';
+  res.status(200).json(await getCategoryFilters(slug, req.query));
 });
 
 // Internal-ish lookup for other services (cart/checkout) via

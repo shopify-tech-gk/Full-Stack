@@ -32,7 +32,7 @@ checks Typesense connectivity, not Postgres).
 
 Query: `{ q?, category? (uuid), minPrice?, maxPrice?, brand?, sort? ('relevance'|'price_asc'|'price_desc'|'newest'), page?, perPage? }`.
 
-Response: `{ results: [{id, title, slug, price, primaryImageUrl, categoryName}], facets: {category, brand, price}, found, page, perPage }`.
+Response: `{ results: [{id, title, slug, price, mrp, rating, primaryImageUrl, categoryName}], facets: {category, brand, price}, found, page, perPage }` (`mrp`/`rating` added W3; `category` matches sub-categories too).
 
 **Typo-tolerant** (Typesense's built-in fuzzy matching) - verified live: a
 query with a typo (`"vaccum"`) still matched "Robot Vacuum Cleaner".
@@ -40,6 +40,29 @@ query with a typo (`"vaccum"`) still matched "Robot Vacuum Cleaner".
 ### `GET /suggest` (optionalAuth - public)
 
 Query: `{ q, limit? }`. Lightweight autocomplete-style suggestions.
+
+### `POST /internal/browse` (requireServiceAuth - W3, never reachable through the gateway)
+
+The ONE generic attribute browse engine; catalog-service's public listing
+and filters endpoints (API.md §4) call it via `@youmart/service-client`'s
+`createSearchClient`, and `GET /products` above is a thin mapping onto it.
+
+Body: `{ q?, categoryId?, filters: [{key, kind:'values', values[]} | {key, kind:'range', min?, max?}], minPrice?, maxPrice?, minRating?, facets: [{key, kind:'values'|'range'}], includeStats?, sort?, page?, perPage? }`.
+Response: `{ items, found, page, perPage, facets: {<key>: {values?:[{value,count}], min?, max?}}, price?, categories? }`.
+
+- Documents index every product attribute generically: `attrs_<key>`
+  (`string[]`, faceted) and, for single numeric values, `attrn_<key>`
+  (`float`, faceted for min/max stats) - Typesense wildcard fields, so a
+  new attribute key needs no collection change. Keys are normalised to
+  `lower_snake_case`. Also indexed: `categoryIds` (category + ancestors),
+  `categorySlug`, `mrpPaise`, `discountPct`, `rating`, `ratingCount`.
+- Disjunctive faceting: each selected multi-select facet is recomputed
+  without its own clause; all searches go in one `multi_search` call.
+- A filter on an attribute no product carries returns no results (the
+  field doesn't exist in the index yet); a facet on one is omitted.
+- Range bounds are compared at float32 precision (Typesense `float`).
+- At startup, a collection that predates this schema is rebuilt once
+  (zero-downtime alias swap).
 
 ### `POST /admin/reindex` (requireAdmin('search.manage'))
 

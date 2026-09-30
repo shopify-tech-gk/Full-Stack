@@ -44,6 +44,14 @@ Same shape as [auth-api.md](./auth-api.md)'s health/ready endpoints
 
 #### `GET /products`
 
+> **W3 / API v1.3**: now the generic attribute-driven listing - served by
+> search-service's Typesense browse engine (not a Postgres query), with
+> `category` (slug), attribute filters interpreted through the category's
+> `filter_definition`, `sort`, `rating`, `page`. New:
+> `GET /categories/:slug/filters`. Authoritative shapes: [API.md](./API.md)
+> §4; the data format is `docs/catalog/IMPORT-SPEC.md`. The section below
+> describes the original v1.0 behaviour.
+
 List **only `ACTIVE`, non-deleted** products. `DRAFT`/`ARCHIVED` products are
 never visible here regardless of filters.
 

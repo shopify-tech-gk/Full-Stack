@@ -1,17 +1,10 @@
-// DEMO CONTENT ONLY - placeholder products for layout work. Replace with catalog API data.
+// DEMO CONTENT ONLY - placeholder products behind the demo cart (demo-cart.ts) until the cart API
+// is wired. The catalog pages use the real catalog API since W3.
 import type { Money } from './types';
-import { STORE_CATEGORIES, categoryHref } from './categories';
-import type { ListingBrand, ListingProduct, ProductDetailData } from './catalog';
-import {
-  PRODUCT_RAIL_TITLES,
-  type ProductCardData,
-  type ProductFilter,
-  type ProductRail,
-} from './storefront';
+import type { ProductCardData } from './storefront';
 
+/** Also the storefront's fallback image for a product without one. */
 export const DEMO_PRODUCT_IMAGE = '/placeholders/product.svg';
-
-const demoHref = (n: number) => `/product/demo-product-${n}`;
 
 const DEMO_TITLES = [
   'Demo Product Name',
@@ -43,7 +36,7 @@ const DEMO_PRICES: readonly (readonly [Money, Money, number])[] = [
 export const DEMO_PRODUCTS: readonly ProductCardData[] = DEMO_PRICES.map(
   ([mrp, sellingPrice, rating], index) => ({
     id: `demo-${index + 1}`,
-    href: demoHref(index + 1),
+    href: `/product/demo-product-${index + 1}`,
     title: DEMO_TITLES[index % DEMO_TITLES.length] ?? 'Demo Product',
     image: DEMO_PRODUCT_IMAGE,
     mrp,
@@ -51,116 +44,3 @@ export const DEMO_PRODUCTS: readonly ProductCardData[] = DEMO_PRICES.map(
     rating,
   }),
 );
-
-/** 12 demo cards per grid filter tab. */
-export function demoProductsFor(filter: ProductFilter): readonly ProductCardData[] {
-  switch (filter) {
-    case 'new':
-      return DEMO_PRODUCTS.slice(0, 12);
-    case 'all':
-      return DEMO_PRODUCTS.slice(4, 16);
-    case 'sale':
-      return DEMO_PRODUCTS.filter((p) => p.mrp !== p.sellingPrice).slice(0, 12);
-  }
-}
-
-export const DEMO_PRODUCT_RAILS: readonly ProductRail[] = PRODUCT_RAIL_TITLES.map(
-  (title, rail) => ({
-    title,
-    items: [0, 1, 2, 3].map((item) => ({
-      id: `rail-${rail + 1}-${item + 1}`,
-      href: demoHref(rail * 4 + item + 1),
-      title: item % 2 ? 'Demo Product Name With a Long Title' : 'Demo Product',
-      image: DEMO_PRODUCT_IMAGE,
-    })),
-  }),
-);
-
-export const DEMO_BRANDS: readonly ListingBrand[] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map(
-  (letter) => ({
-    slug: `brand-${letter}`,
-    name: `Brand ${letter.toUpperCase()}`,
-    logo: '/placeholders/brand-logo.svg',
-  }),
-);
-
-const LISTING_TITLES = [
-  'Demo Product',
-  'Demo Product Name With a Longer Title That Gets Cut',
-  'Demo Item',
-  'Demo Product Name Two Words',
-  'Demo Product Long Name For Wrapping Test Case',
-] as const;
-
-/** 70 demo listing products: two pages of 56, varied prices/ratings/brands for the filters. */
-export const DEMO_LISTING_PRODUCTS: readonly ListingProduct[] = Array.from(
-  { length: 70 },
-  (_, index) => {
-    const n = index + 1;
-    const price = ((n * 7919) % 4900) + 12 + (n % 4) * 0.25;
-    const onSale = n % 4 === 0;
-    const selling = price.toFixed(2) as Money;
-    return {
-      id: `demo-listing-${n}`,
-      href: demoHref(n),
-      title: `${LISTING_TITLES[index % LISTING_TITLES.length] ?? 'Demo Product'} ${n}`,
-      image: DEMO_PRODUCT_IMAGE,
-      mrp: onSale ? ((price * 1.15).toFixed(2) as Money) : selling,
-      sellingPrice: selling,
-      rating: ((n * 3) % 11) / 2,
-      brand: DEMO_BRANDS[index % DEMO_BRANDS.length]?.slug ?? 'brand-a',
-    };
-  },
-);
-
-export const DEMO_GALLERY_IMAGES = [1, 2, 3, 4].map((n) => `/placeholders/gallery-${n}.svg`);
-
-const DEMO_REVIEWS = [
-  ['Demo Customer A', '2026-02-17', 5, 'Demo review text - excellent quality.'],
-  [
-    'Demo Customer B',
-    '2026-02-17',
-    5,
-    'Demo review text - a longer review that wraps onto a second line to show how multi-line reviews look in the list.',
-  ],
-  ['Demo Customer C', '2026-02-17', 4, 'Demo review text - great value.'],
-  ['Demo Customer D', '2026-02-17', 5, 'Demo review text - colour as shown.'],
-] as const;
-
-/** Generic demo product for any slug; `demo-product-N` reuses listing product N's card data. */
-export function demoProductDetail(slug: string): ProductDetailData {
-  const n = Number(/^demo-product-(\d+)$/.exec(slug)?.[1] ?? 1);
-  const card = DEMO_LISTING_PRODUCTS[(n - 1) % DEMO_LISTING_PRODUCTS.length];
-  const category = STORE_CATEGORIES.find((c) => c.slug === 'cleaning-products');
-  const sub = category?.subcategories.find((s) => s.slug === 'mops');
-  const leaf = sub?.children.find((c) => c.slug === 'wiper-mops');
-  return {
-    id: `demo-detail-${n}`,
-    slug,
-    title: 'Demo Product Name Weight - 35 grams',
-    rating: 5,
-    shortDescription:
-      'Demo short description - one or two lines summarising the product, shown under the rating.',
-    description:
-      'Demo description - the full product description appears here in the Description tab. It can run over several lines to describe materials, size, usage and care, just like the live product pages do. Replace with the catalog description when real data is wired.',
-    mrp: card?.mrp ?? '12.10',
-    sellingPrice: card?.sellingPrice ?? '12.10',
-    images: DEMO_GALLERY_IMAGES,
-    categories: [
-      category && { name: category.name, href: categoryHref(category.slug) },
-      category && sub && { name: sub.name, href: categoryHref(category.slug, sub.slug) },
-      category &&
-        sub &&
-        leaf && { name: leaf.name, href: categoryHref(category.slug, sub.slug, leaf.slug) },
-    ].filter((c): c is { name: string; href: string } => Boolean(c)),
-    reviews: DEMO_REVIEWS.map(([author, date, rating, text], i) => ({
-      id: `demo-review-${i + 1}`,
-      author,
-      date,
-      rating,
-      text,
-      verified: true,
-    })),
-    related: DEMO_LISTING_PRODUCTS.slice(n % 60, (n % 60) + 4),
-  };
-}

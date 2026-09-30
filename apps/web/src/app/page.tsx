@@ -1,10 +1,8 @@
 import {
   BEST_CATEGORIES_IMAGE,
   BRAND_OFFERS,
-  DEMO_PRODUCT_RAILS,
   FEATURE_CARDS,
   bestCategories,
-  demoProductsFor,
 } from '@youmart/shared-client';
 import { BestCategoriesCarousel } from '@/components/home/BestCategoriesCarousel';
 import { BrandStrip } from '@/components/home/BrandStrip';
@@ -13,17 +11,12 @@ import { FeatureCards } from '@/components/home/FeatureCards';
 import { ProductRails } from '@/components/home/ProductRails';
 import { ProductShowcase } from '@/components/home/ProductShowcase';
 import { PromoBanners } from '@/components/home/PromoBanners';
+import { getHomeProducts } from '@/lib/catalog';
 import { storeCategories } from '@/lib/categories';
 
-// DEMO content below the category grid until the catalog API is wired.
-const showcase = {
-  new: demoProductsFor('new'),
-  all: demoProductsFor('all'),
-  sale: demoProductsFor('sale'),
-};
-
-export default function HomePage() {
+export default async function HomePage() {
   const best = bestCategories(storeCategories);
+  const { rails, showcase } = await getHomeProducts();
 
   return (
     // Live order: banners above the category grid below 1025px; category strip first on desktop.
@@ -36,7 +29,7 @@ export default function HomePage() {
       </div>
 
       <div className="order-3">
-        <ProductRails rails={DEMO_PRODUCT_RAILS} />
+        {rails.length > 0 && <ProductRails rails={rails} />}
         <BrandStrip brands={BRAND_OFFERS} />
         <ProductShowcase productsFor={showcase} />
         {best && (

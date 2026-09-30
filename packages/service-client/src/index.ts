@@ -10,3 +10,4 @@ export * from './clients/address.client';
 export * from './clients/auth.client';
 export * from './clients/settings.client';
 export * from './clients/logistics.client';
+export * from './clients/search.client';

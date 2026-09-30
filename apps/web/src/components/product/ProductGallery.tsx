@@ -4,13 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Maximize, X } from 'lucide-react';
 import { useModal } from '@/lib/useModal';
+import { skipImageOptimizer } from '@/lib/images';
 
 interface ProductGalleryProps {
   images: readonly string[];
   title: string;
 }
 
-const svg = (src: string) => src.endsWith('.svg');
+const svg = skipImageOptimizer;
 
 // Live (nickx slider): main image with a fade, 4-up thumbnail row (inactive at 70% opacity),
 // expand icon bottom-right opening a full-screen lightbox. No hover zoom (live: zoom "off").

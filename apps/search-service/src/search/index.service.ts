@@ -3,7 +3,10 @@ import { typesenseClient, isTypesenseNotFound } from '../typesenseClient';
 import { getProductForIndex, listProductsForIndex } from '../catalogClient';
 import { moneyToPaise } from './money-paise';
 import {
+  ATTR_NUMBER_PREFIX,
+  ATTR_STRING_PREFIX,
   PRODUCTS_ALIAS,
+  collectionNeedsRebuild,
   ensureCollection,
   buildCollectionSchema,
   currentPhysicalCollectionName,
@@ -11,15 +14,44 @@ import {
 } from './collection';
 import type { CatalogProductForIndex } from '../catalogClient';
 
-function readAttribute(attributes: unknown, key: string): string {
-  if (attributes && typeof attributes === 'object' && key in attributes) {
-    const value = (attributes as Record<string, unknown>)[key];
-    return typeof value === 'string' ? value : value != null ? String(value) : '';
+/** Same normalisation the catalog applies to filter-definition keys (lower_snake_case). */
+export function normalizeAttributeKey(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40);
+}
+
+const NUMERIC = /^-?\d+(\.\d+)?$/;
+
+/** `{ram: "8", color: ["black","blue"], waterproof: true}` -> `attrs_*` strings (+ `attrn_*` numbers). */
+function flattenAttributes(attributes: unknown): Record<string, string[] | number> {
+  const fields: Record<string, string[] | number> = {};
+  if (!attributes || typeof attributes !== 'object' || Array.isArray(attributes)) {
+    return fields;
   }
-  return '';
+  for (const [rawKey, raw] of Object.entries(attributes as Record<string, unknown>)) {
+    const key = normalizeAttributeKey(rawKey);
+    const values = (Array.isArray(raw) ? raw : [raw])
+      .filter((v): v is string | number | boolean =>
+        ['string', 'number', 'boolean'].includes(typeof v),
+      )
+      .map((v) => String(v).trim())
+      .filter((v) => v.length > 0 && v.length <= 100 && !v.includes('`'));
+    if (!key || values.length === 0) continue;
+    fields[`${ATTR_STRING_PREFIX}${key}`] = values;
+    if (values.length === 1 && NUMERIC.test(values[0]!)) {
+      fields[`${ATTR_NUMBER_PREFIX}${key}`] = Number(values[0]);
+    }
+  }
+  return fields;
 }
 
 function toDocument(product: CatalogProductForIndex): ProductDocument {
+  const pricePaise = product.price ? moneyToPaise(product.price) : 0;
+  const mrpPaise = product.mrp ? moneyToPaise(product.mrp) : pricePaise;
   return {
     id: product.id,
     title: product.title,
@@ -27,14 +59,18 @@ function toDocument(product: CatalogProductForIndex): ProductDocument {
     slug: product.slug,
     categoryId: product.categoryId,
     categoryName: product.categoryName,
-    brand: readAttribute(product.attributes, 'brand'),
-    color: readAttribute(product.attributes, 'color'),
-    size: readAttribute(product.attributes, 'size'),
+    categorySlug: product.categorySlug,
+    categoryIds: product.categoryPathIds,
     primaryImageUrl: product.primaryImageUrl ?? '',
-    pricePaise: product.price ? moneyToPaise(product.price) : 0,
+    pricePaise,
+    mrpPaise,
+    discountPct: mrpPaise > pricePaise ? Math.floor(((mrpPaise - pricePaise) * 100) / mrpPaise) : 0,
+    rating: product.rating ? Number(product.rating) : 0,
+    ratingCount: product.ratingCount,
     inStock: true,
     createdAt: Math.floor(new Date(product.createdAt).getTime() / 1000),
-  };
+    ...flattenAttributes(product.attributes),
+  } as ProductDocument;
 }
 
 /**
@@ -129,4 +165,10 @@ export async function fullReindex(): Promise<{ indexed: number; collectionName: 
 
 export async function initSearchIndex(): Promise<void> {
   await ensureCollection();
+  // W3 changed the document shape (generic attrs_*/attrn_* fields); rebuild an older collection
+  // once, zero-downtime via the same alias swap as the nightly job.
+  if (await collectionNeedsRebuild()) {
+    logger.info('products collection predates the generic-attribute schema - rebuilding');
+    await fullReindex();
+  }
 }

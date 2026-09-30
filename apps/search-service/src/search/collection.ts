@@ -8,6 +8,12 @@ import { typesenseClient, isTypesenseNotFound } from '../typesenseClient';
  * alias-swap a zero-downtime rebuild (see index.service.ts). */
 export const PRODUCTS_ALIAS = 'products';
 
+/** W3: every product attribute is indexed generically under these prefixes - `attrs_<key>` always
+ * holds the value(s) as strings (value facets, exact filters) and `attrn_<key>` additionally holds
+ * a numeric value (range filters, min/max stats). A new attribute key needs no schema change. */
+export const ATTR_STRING_PREFIX = 'attrs_';
+export const ATTR_NUMBER_PREFIX = 'attrn_';
+
 export interface ProductDocument {
   id: string;
   title: string;
@@ -15,14 +21,20 @@ export interface ProductDocument {
   slug: string;
   categoryId: string;
   categoryName: string;
-  brand: string;
-  color: string;
-  size: string;
+  categorySlug: string;
+  /** The product's category and all its ancestors - a parent listing includes its children. */
+  categoryIds: string[];
   primaryImageUrl: string;
   /** Exact-integer paise (see money-paise.ts) - never a float, to avoid
    * range-filter/sort drift. Converted back to a `"1299.00"` Money string
    * only at the API response boundary (search.service.ts). */
   pricePaise: number;
+  mrpPaise: number;
+  /** Whole percent off MRP, for "top deals" sorting. */
+  discountPct: number;
+  /** 0 when the product has no rating yet. */
+  rating: number;
+  ratingCount: number;
   /** Defaults to `true` at index time (Ch6.3 launch simplification,
    * explicitly permitted/flagged in the task) - computing REAL per-SKU
    * stock during indexing would mean an inventory-service call per
@@ -34,6 +46,8 @@ export interface ProductDocument {
   /** Unix seconds - used for `sort_by=createdAt:desc` ("newest") and as
    * the collection's `default_sorting_field`. */
   createdAt: number;
+  [attribute: `${typeof ATTR_STRING_PREFIX}${string}`]: string[];
+  [numericAttribute: `${typeof ATTR_NUMBER_PREFIX}${string}`]: number;
 }
 
 /**
@@ -53,16 +67,29 @@ function buildCollectionSchema(name: string): CollectionCreateSchema {
       { name: 'slug', type: 'string', index: false },
       { name: 'categoryId', type: 'string', facet: true },
       { name: 'categoryName', type: 'string', facet: true },
-      { name: 'brand', type: 'string', facet: true },
-      { name: 'color', type: 'string', facet: true },
-      { name: 'size', type: 'string', facet: true },
+      { name: 'categorySlug', type: 'string', index: false },
+      { name: 'categoryIds', type: 'string[]', facet: true },
       { name: 'primaryImageUrl', type: 'string', index: false },
       { name: 'pricePaise', type: 'int32', facet: true },
+      { name: 'mrpPaise', type: 'int32', index: false },
+      { name: 'discountPct', type: 'int32' },
+      { name: 'rating', type: 'float', facet: true },
+      { name: 'ratingCount', type: 'int32' },
       { name: 'inStock', type: 'bool', facet: true },
       { name: 'createdAt', type: 'int64' },
+      { name: `${ATTR_STRING_PREFIX}.*`, type: 'string[]', facet: true, optional: true },
+      { name: `${ATTR_NUMBER_PREFIX}.*`, type: 'float', facet: true, optional: true },
     ],
     default_sorting_field: 'createdAt',
   };
+}
+
+/** True when the live collection predates the W3 generic-attribute schema (needs a rebuild). */
+export async function collectionNeedsRebuild(): Promise<boolean> {
+  const name = await currentPhysicalCollectionName();
+  if (!name) return false;
+  const schema = await typesenseClient.collections(name).retrieve();
+  return !schema.fields?.some((field) => field.name === `${ATTR_STRING_PREFIX}.*`);
 }
 
 async function currentPhysicalCollectionName(): Promise<string | null> {

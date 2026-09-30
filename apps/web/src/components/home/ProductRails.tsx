@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ProductRail } from '@youmart/shared-client';
+import { skipImageOptimizer } from '@/lib/images';
 
 interface ProductRailsProps {
   rails: readonly ProductRail[];
@@ -29,7 +30,7 @@ export function ProductRails({ rails }: ProductRailsProps) {
                         src={item.image}
                         alt=""
                         fill
-                        unoptimized={item.image.endsWith('.svg')}
+                        unoptimized={skipImageOptimizer(item.image)}
                         sizes="(min-width: 1200px) 105px, (min-width: 769px) 20vw, 36vw"
                         className="object-cover"
                       />

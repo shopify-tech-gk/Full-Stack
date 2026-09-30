@@ -1,11 +1,12 @@
 import { randomBytes } from 'node:crypto';
-import type { Prisma } from '@youmart/db';
+import { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { compare } from '@youmart/shared-utils';
 import { enqueueSearchReindex } from '@youmart/search-reindex-client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { AppError } from '@youmart/errors';
+import { resolveCategory, type CategoryPathItem } from './browse.service';
 import type {
   ListProductsQuery,
   CreateProductBody,
@@ -14,6 +15,7 @@ import type {
   UpdateSkuBody,
   AddImageBody,
   CreateCategoryBody,
+  FilterDefinitionEntry,
   UpdateCategoryBody,
 } from './catalog.schema';
 
@@ -27,6 +29,10 @@ function decimalToMoney(value: Prisma.Decimal): Money {
 }
 
 function buildImageUrl(storedPath: string): string {
+  // Absolute URLs (e.g. an existing CDN/S3 host from a bulk import) are used as delivered.
+  if (/^https?:\/\//i.test(storedPath)) {
+    return storedPath;
+  }
   const base = config.cdnBaseUrl.replace(/\/+$/, '');
   const path = storedPath.replace(/^\/+/, '');
   return `${base}/${path}`;
@@ -87,6 +93,11 @@ export interface CategoryListItem {
   name: string;
   slug: string;
   parentId: string | null;
+}
+
+/** Write-endpoint responses also echo the category's own filter definition (null = inherited). */
+export interface AdminCategoryItem extends CategoryListItem {
+  filterDefinition: unknown;
 }
 
 const PRODUCT_LIST_INCLUDE = {
@@ -175,55 +186,7 @@ async function loadAdminProductDetailById(id: string): Promise<AdminProductDetai
 }
 
 /**
- * Only ACTIVE, non-deleted products are ever returned publicly - DRAFT and
- * ARCHIVED products are invisible here regardless of filters.
- *
- * `minPrice`/`maxPrice` select products that have AT LEAST ONE (non-deleted)
- * SKU whose selling_price falls in range - they do NOT change which price is
- * displayed. The displayed `price` is always the minimum selling_price
- * across ALL of that product's (non-deleted) SKUs, independent of the
- * filter, matching a typical "from ₹X" storefront listing price.
- */
-export async function listProducts(
-  query: ListProductsQuery,
-): Promise<PaginatedList<ProductListItem>> {
-  const { cursor, limit, categoryId, minPrice, maxPrice, q } = query;
-
-  const priceFilter: Prisma.SkuWhereInput | undefined =
-    minPrice !== undefined || maxPrice !== undefined
-      ? {
-          deletedAt: null,
-          sellingPrice: {
-            ...(minPrice !== undefined ? { gte: minPrice } : {}),
-            ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
-          },
-        }
-      : undefined;
-
-  const where: Prisma.ProductWhereInput = {
-    status: 'ACTIVE',
-    deletedAt: null,
-    ...(categoryId ? { categoryId } : {}),
-    ...(q ? { title: { contains: q, mode: 'insensitive' } } : {}),
-    ...(priceFilter ? { skus: { some: priceFilter } } : {}),
-  };
-
-  const rows = await prisma.product.findMany({
-    where,
-    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    take: limit + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-    include: PRODUCT_LIST_INCLUDE,
-  });
-
-  const hasMore = rows.length > limit;
-  const pageRows = hasMore ? rows.slice(0, limit) : rows;
-  const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null;
-
-  return { items: pageRows.map(toListItem), nextCursor };
-}
-
-/** Search-service's view of a product (Ch6.3) - deliberately includes
+ * Search-service's view of a product (Ch6.3) - deliberately includes
  * EVERY status and soft-deleted rows (unlike every public/seller-facing
  * function above) so search-service's `upsertProduct` can tell "gone/not
  * active -> remove from index" apart from "active -> upsert", using
@@ -238,14 +201,45 @@ export interface ProductForIndex {
   deletedAt: string | null;
   categoryId: string;
   categoryName: string;
+  /** W3: lets a parent category's listing include its descendants' products. */
+  categorySlug: string;
+  categoryPathIds: string[];
   price: Money | null;
+  /** MRP of the cheapest SKU (the one `price` comes from). */
+  mrp: Money | null;
+  rating: string | null;
+  ratingCount: number;
   primaryImageUrl: string | null;
   attributes: unknown;
   createdAt: string;
 }
 
-function toProductForIndex(product: ProductWithListRelations): ProductForIndex {
-  const price = minSellingPrice(product.skus);
+/** id -> parentId for every live category; categories are few, products are many. */
+async function loadCategoryParents(): Promise<Map<string, string | null>> {
+  const rows = await prisma.category.findMany({
+    where: { deletedAt: null },
+    select: { id: true, parentId: true },
+  });
+  return new Map(rows.map((row) => [row.id, row.parentId]));
+}
+
+export function categoryPathIds(categoryId: string, parents: Map<string, string | null>): string[] {
+  const path: string[] = [];
+  for (let id: string | null | undefined = categoryId; id && !path.includes(id);) {
+    path.push(id);
+    id = parents.get(id);
+  }
+  return path;
+}
+
+function toProductForIndex(
+  product: ProductWithListRelations,
+  parents: Map<string, string | null>,
+): ProductForIndex {
+  const cheapest = product.skus.reduce<(typeof product.skus)[number] | null>(
+    (min, sku) => (!min || sku.sellingPrice.lessThan(min.sellingPrice) ? sku : min),
+    null,
+  );
   const primaryImage = product.images[0];
   return {
     id: product.id,
@@ -256,7 +250,12 @@ function toProductForIndex(product: ProductWithListRelations): ProductForIndex {
     deletedAt: product.deletedAt ? product.deletedAt.toISOString() : null,
     categoryId: product.categoryId,
     categoryName: product.category.name,
-    price: price ? decimalToMoney(price) : null,
+    categorySlug: product.category.slug,
+    categoryPathIds: categoryPathIds(product.categoryId, parents),
+    price: cheapest ? decimalToMoney(cheapest.sellingPrice) : null,
+    mrp: cheapest ? decimalToMoney(cheapest.mrp) : null,
+    rating: product.rating ? product.rating.toFixed(1) : null,
+    ratingCount: product.ratingCount,
     primaryImageUrl: primaryImage ? buildImageUrl(primaryImage.url) : null,
     attributes: product.attributes,
     createdAt: product.createdAt.toISOString(),
@@ -273,7 +272,7 @@ export async function getProductForIndex(id: string): Promise<ProductForIndex | 
     where: { id },
     include: PRODUCT_LIST_INCLUDE,
   });
-  return product ? toProductForIndex(product) : null;
+  return product ? toProductForIndex(product, await loadCategoryParents()) : null;
 }
 
 /** Internal, service-to-service read (search-service's `fullReindex`
@@ -298,10 +297,11 @@ export async function listProductsForIndex(query: {
   const pageRows = hasMore ? rows.slice(0, limit) : rows;
   const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null;
 
-  return { items: pageRows.map(toProductForIndex), nextCursor };
+  const parents = await loadCategoryParents();
+  return { items: pageRows.map((row) => toProductForIndex(row, parents)), nextCursor };
 }
 
-export async function getProductBySlug(slug: string): Promise<ProductDetail> {
+export async function getProductBySlug(slug: string): Promise<PublicProductDetail> {
   const product = await prisma.product.findFirst({
     where: { slug, status: 'ACTIVE', deletedAt: null },
     include: PRODUCT_DETAIL_INCLUDE,
@@ -311,7 +311,54 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail> {
     throw new AppError('NOT_FOUND', 404, 'Product not found');
   }
 
-  return toProductDetail(product);
+  const category = await resolveCategory({ id: product.categoryId });
+  return {
+    ...toProductDetail(product),
+    attributes: product.attributes,
+    specifications: specifications(product.attributes, category.definition),
+    rating: product.rating ? Number(product.rating.toFixed(1)) : null,
+    ratingCount: product.ratingCount,
+    categoryPath: category.path,
+  };
+}
+
+/** v1.3 additive fields on the public detail. */
+export interface PublicProductDetail extends ProductDetail {
+  attributes: unknown;
+  specifications: { key: string; label: string; value: string; unit: string | null }[];
+  rating: number | null;
+  ratingCount: number;
+  categoryPath: CategoryPathItem[];
+}
+
+function labelFor(key: string): string {
+  const words = key.replace(/_/g, ' ').trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** Every attribute as a labelled row - definition order and labels first, the rest A-Z. */
+function specifications(
+  attributes: unknown,
+  definition: FilterDefinitionEntry[],
+): PublicProductDetail['specifications'] {
+  if (!attributes || typeof attributes !== 'object' || Array.isArray(attributes)) return [];
+  const rank = (key: string) => {
+    const index = definition.findIndex((entry) => entry.key === key);
+    return index === -1 ? definition.length : index;
+  };
+  return Object.entries(attributes as Record<string, unknown>)
+    .map(([key, raw]) => {
+      const entry = definition.find((e) => e.key === key);
+      const values = (Array.isArray(raw) ? raw : [raw]).filter(
+        (v) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean',
+      );
+      const value = values
+        .map((v) => (typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v)))
+        .join(', ');
+      return { key, label: entry?.label ?? labelFor(key), value, unit: entry?.unit ?? null };
+    })
+    .filter((row) => row.value.length > 0)
+    .sort((a, b) => rank(a.key) - rank(b.key) || a.label.localeCompare(b.label));
 }
 
 export interface SkuDetail {
@@ -812,7 +859,7 @@ export async function softDeleteImage(id: string): Promise<void> {
   await enqueueSearchReindex(existing.productId);
 }
 
-export async function createCategory(input: CreateCategoryBody): Promise<CategoryListItem> {
+export async function createCategory(input: CreateCategoryBody): Promise<AdminCategoryItem> {
   if (input.parentId) {
     await assertParentCategoryExists(input.parentId);
   }
@@ -820,18 +867,40 @@ export async function createCategory(input: CreateCategoryBody): Promise<Categor
   const slug = await generateUniqueCategorySlug(input.name);
 
   const created = await prisma.category.create({
-    data: { name: input.name, slug, parentId: input.parentId ?? null },
+    data: {
+      name: input.name,
+      slug,
+      parentId: input.parentId ?? null,
+      ...(input.filterDefinition ? { filterDefinition: input.filterDefinition } : {}),
+    },
   });
 
-  return { id: created.id, name: created.name, slug: created.slug, parentId: created.parentId };
+  return toAdminCategory(created);
+}
+
+function toAdminCategory(category: {
+  id: string;
+  name: string;
+  slug: string;
+  parentId: string | null;
+  filterDefinition: unknown;
+}): AdminCategoryItem {
+  return {
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    parentId: category.parentId,
+    filterDefinition: category.filterDefinition ?? null,
+  };
 }
 
 /** `slug` is kept stable here too, for the same reason as products - a
- * rename never implicitly changes the slug. */
+ * rename never implicitly changes the slug. Changing `filterDefinition` needs no reindex: every
+ * attribute is already indexed, the definition only chooses which ones to offer. */
 export async function updateCategory(
   id: string,
   input: UpdateCategoryBody,
-): Promise<CategoryListItem> {
+): Promise<AdminCategoryItem> {
   const existing = await prisma.category.findFirst({ where: { id, deletedAt: null } });
   if (!existing) {
     throw new AppError('NOT_FOUND', 404, 'Category not found');
@@ -849,10 +918,13 @@ export async function updateCategory(
     data: {
       ...(input.name !== undefined ? { name: input.name } : {}),
       ...(input.parentId !== undefined ? { parentId: input.parentId } : {}),
+      ...(input.filterDefinition !== undefined
+        ? { filterDefinition: input.filterDefinition ?? Prisma.DbNull }
+        : {}),
     },
   });
 
-  return { id: updated.id, name: updated.name, slug: updated.slug, parentId: updated.parentId };
+  return toAdminCategory(updated);
 }
 
 async function assertParentCategoryExists(parentId: string): Promise<void> {

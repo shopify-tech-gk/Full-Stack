@@ -21,6 +21,12 @@ export interface CatalogProductForIndex {
   deletedAt: string | null;
   categoryId: string;
   categoryName: string;
+  /** W3 additions. `categoryPathIds` = the category and all its ancestors. */
+  categorySlug: string;
+  categoryPathIds: string[];
+  mrp: string | null;
+  rating: string | null;
+  ratingCount: number;
   price: string | null;
   primaryImageUrl: string | null;
   attributes: unknown;

@@ -136,6 +136,17 @@ local `.env`. No service code path emits a code, so production is
 unaffected; the script refuses to run with `NODE_ENV=production` and is
 useless without both database access and the hash secret.
 
+### Sample catalog (dev only)
+
+`pnpm dev:seed-catalog` inserts 30 products in three differently-shaped
+categories (Electronics > Mobiles, Baby Care > Baby Diaper, Kitchenware >
+Bottle and Flask) with their filter definitions, then rebuilds the search
+index through `POST /api/search/admin/reindex`. Idempotent. It proves the
+attribute-driven listing, e.g.
+`http://localhost:3000/product-category/electronics/mobiles`. The bulk
+catalog is imported separately (`docs/catalog/IMPORT-SPEC.md`). Sample
+products have no images, so the storefront shows its placeholder.
+
 ## 7. Graceful shutdown
 
 Every service registers `SIGINT`/`SIGTERM` handlers that: stop accepting

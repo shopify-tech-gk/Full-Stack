@@ -1,8 +1,8 @@
-# YouMart Public API Contract (v1.2)
+# YouMart Public API Contract (v1.3)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
-revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2) — see
-§17 change log.**
+revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
+additive revision 2026-09-30 (W3) — see §17 change log.**
 
 This is the single, authoritative, consolidated contract for the **public
 gateway API** — everything a frontend web app or mobile client calls. It
@@ -17,7 +17,7 @@ Every endpoint documented here has been verified against the real running
 system as of this freeze (see "Verification" note per section where
 relevant, and the full verification log in the Ch7.4 commit).
 
-**Versioning policy**: this is v1.2 of the contract. Changes after the
+**Versioning policy**: this is v1.3 of the contract. Changes after the
 freeze must be additive/backward-compatible (new optional fields, new
 endpoints) wherever possible; each additive revision bumps the MINOR
 version (v1.1, v1.2, ...) and is listed in §17. Any breaking change
@@ -200,28 +200,80 @@ verifying tokens itself) — documented for completeness/mobile edge cases.
 
 ## 4. Catalog domain (`/api/catalog`)
 
-### `GET /api/catalog/products`
+**v1.3 — attribute-driven catalog.** Products carry free-form `attributes`
+(key -> value); every category carries a **filter definition** (data:
+which attributes it filters on and how, inherited from the nearest
+ancestor that has one). The listing and filter endpoints below are generic
+— no endpoint or client ever branches on a category or attribute name.
+Adding a category or a filter is a data change (admin API / import,
+`docs/catalog/IMPORT-SPEC.md`), never a code change. Listing, facet values
+and counts are served by the Typesense index (search-service), so cost
+doesn't grow with a Postgres scan — see §4.1.
+
+### `GET /api/catalog/products` — generic filtered listing (v1.3)
 
 - **Auth**: public (optional bearer, no behavior difference for a customer)
-- **Query**: `cursor?`, `limit?` (1-100, default 20), `categoryId?: Uuid`, `minPrice?: number`, `maxPrice?: number`, `q?: string (1-200 chars, case-insensitive title contains-match)`
+- **Query**:
+  - `category?: string` (category **slug**) — includes products of its sub-categories. `categoryId?: Uuid` still accepted.
+  - `q?: string` (1-200) — full-text, typo-tolerant (title weighted over description).
+  - `min_price?`, `max_price?` (rupees; v1 `minPrice`/`maxPrice` still accepted), `rating?: 0-5` (minimum average rating).
+  - **Attribute filters** — only keys declared in the category's filter definition are applied; any other param is ignored:
+    - `multi_select`: `<key>=v1,v2` (matches any; values are comma-separated) — e.g. `brand=Samsung,LG`
+    - `single_select` / `boolean`: `<key>=value` — e.g. `network=5G`, `insulated=true`
+    - `range`: `<key>_min=`, `<key>_max=` — e.g. `screen_size_min=6&screen_size_max=6.7`
+  - `sort?`: `relevance` (default; newest first when there is no `q`) | `newest` | `price_asc` | `price_desc` | `rating` | `discount`
+  - `limit?` (1-100, default 20); `page?` (1-500) or `cursor?` (the previous response's `nextCursor`)
 - **200**:
   ```json
   {
     "items": [
       {
-        "id": "Uuid",
-        "title": "string",
-        "slug": "string",
-        "price": "Money | null",
-        "imageUrl": "string | null",
+        "id": "Uuid", "title": "string", "slug": "string",
+        "price": "Money", "mrp": "Money", "imageUrl": "string | null",
+        "rating": "number | null", "ratingCount": number,
         "category": { "id": "Uuid", "name": "string", "slug": "string" }
       }
     ],
-    "nextCursor": "string | null"
+    "nextCursor": "string | null", "total": number, "page": number, "perPage": number
   }
   ```
-- **Notes**: only `ACTIVE`, non-deleted products. `price` is the lowest `sellingPrice` across the product's SKUs.
-- **Verified live** (2026-09-28): exact match.
+- **Errors**: `404 NOT_FOUND` (unknown `category`); `400 VALIDATION_ERROR` (non-numeric range bound, malformed cursor, value > 100 chars)
+- **Notes**: only `ACTIVE`, non-deleted products. `price`/`mrp` are the cheapest SKU's. `nextCursor` stays opaque (it is now a page token); deep pagination is capped at page 500 — narrow with filters instead.
+
+### `GET /api/catalog/categories/:slug/filters` — v1.3
+
+The category's filter definition + the values/counts available **for the
+current selection**. Accepts the same query params as the listing (so
+counts follow the shopper's choices). Multi-select counts are
+**disjunctive**: a filter's own selection doesn't narrow its own options
+(`Brand: Samsung(2), Xiaomi(1)` stays visible after picking Samsung).
+
+- **Auth**: public
+- **200**:
+  ```json
+  {
+    "category": { "id": "Uuid", "name": "Mobiles", "slug": "mobiles", "parentId": "Uuid | null" },
+    "path": [{ "id": "Uuid", "name": "Electronics", "slug": "electronics" }, { "...": "root -> this category" }],
+    "definitionFrom": "mobiles",
+    "total": 12,
+    "price": { "min": 7999, "max": 69900 },
+    "filters": [
+      { "key": "brand", "label": "Brand", "type": "multi_select", "order": 1, "values": [{ "value": "Samsung", "count": 4 }] },
+      { "key": "screen_size", "label": "Screen Size", "type": "range", "unit": "in", "order": 4, "min": 6.1, "max": 6.78 },
+      { "key": "network", "label": "Network", "type": "single_select", "order": 5, "values": [{ "value": "5G", "count": 9 }] }
+    ]
+  }
+  ```
+- `type`: `multi_select` | `single_select` | `boolean` (have `values`; boolean values are `"true"`/`"false"`) | `range` (has `min`/`max`, `null` when no product carries the attribute). Price (`price`, rupees, `null` for an empty category) and rating are universal and never appear in `filters`.
+- `definitionFrom`: slug of the category the definition was inherited from (itself or an ancestor), `null` when none.
+- **Errors**: `404` (unknown slug)
+
+### 4.1 How it scales (350k products)
+
+- Postgres (`catalog`) is the source of truth; the Typesense collection is a derived, rebuildable index (event-driven upsert per product change + nightly zero-downtime full rebuild via alias swap).
+- Every product attribute is indexed generically: `attrs_<key>` (string values, faceted) and `attrn_<key>` (the number, for ranges/stats). A new attribute key needs **no schema change and no reindex**; a filter definition only selects which indexed attributes a category offers.
+- Category membership is indexed as the full ancestor path (`categoryIds`), so a parent listing is one filter, not a tree walk.
+- One listing page = one Typesense `multi_search` round trip (results + one extra facet query per *selected* multi-select filter for disjunctive counts). No per-request Postgres scan; catalog-service only reads the category row(s) to resolve the definition.
 
 ### `GET /api/catalog/products/:slug`
 
@@ -243,9 +295,15 @@ verifying tokens itself) — documented for completeness/mobile edge cases.
         "attributes": {}
       }
     ],
-    "images": [{ "id": "Uuid", "url": "string", "position": 0 }]
+    "images": [{ "id": "Uuid", "url": "string", "position": 0 }],
+    "attributes": { "brand": "OnePlus", "ram": "12", "screen_size": 6.78 },
+    "specifications": [{ "key": "ram", "label": "RAM", "value": "12", "unit": "GB" }],
+    "rating": 4.6,
+    "ratingCount": 990,
+    "categoryPath": [{ "id": "Uuid", "name": "Electronics", "slug": "electronics" }, { "id": "Uuid", "name": "Mobiles", "slug": "mobiles" }]
   }
   ```
+- `attributes`, `specifications`, `rating`, `ratingCount`, `categoryPath` are v1.3 additions. `specifications` lists every attribute with the label/unit from the category's filter definition (definition order first, others A-Z with a humanised key as label). `images[].url` is absolute: `CDN_BASE_URL` + the stored key, or the stored absolute URL.
 - **Errors**: `404 NOT_FOUND` (no such ACTIVE product)
 - **Verified live** (2026-09-28): exact match.
 
@@ -275,8 +333,13 @@ All of these require `Authorization: Bearer <admin token>` with the
 | `PATCH /api/catalog/skus/:id`           | any of `mrp, sellingPrice, attributes`                                                                                           | `200` full product detail | `400`, `404`                                         |
 | `POST /api/catalog/products/:id/images` | `{url, position?}`                                                                                                               | `201` full product detail | `404`                                                |
 | `DELETE /api/catalog/images/:id`        | —                                                                                                                                | `204`                     | `404`                                                |
-| `POST /api/catalog/categories`          | `{name, slug?, parentId?}`                                                                                                       | `201` category            | `400`                                                |
-| `PATCH /api/catalog/categories/:id`     | any of `name, slug, parentId`                                                                                                    | `200` category            | `400`, `404`                                         |
+| `POST /api/catalog/categories`          | `{name, parentId?, filterDefinition?}` (v1.3)                                                                                    | `201` category (+ `filterDefinition`) | `400`                                       |
+| `PATCH /api/catalog/categories/:id`     | any of `name, parentId, filterDefinition` (v1.3; `null` = inherit again)                                                         | `200` category (+ `filterDefinition`) | `400`, `404`                                |
+
+`filterDefinition` (v1.3): array (max 30) of `{ key, label, type:
+"multi_select"|"single_select"|"range"|"boolean", unit?, order? }` —
+format and rules in `docs/catalog/IMPORT-SPEC.md` §2. Takes effect on the
+next request; no reindex needed.
 
 `status` transitions allowed: `DRAFT->ACTIVE`, `ACTIVE->ARCHIVED`,
 `ARCHIVED->ACTIVE` only; any other requested transition is `400
@@ -293,12 +356,12 @@ VALIDATION_ERROR`. Product delete is soft (never hard-deleted).
 - **200**:
   ```json
   {
-    "results": [{ "id": "Uuid", "title": "string", "slug": "string", "price": "Money", "primaryImageUrl": "string | null", "categoryName": "string" }],
+    "results": [{ "id": "Uuid", "title": "string", "slug": "string", "price": "Money", "mrp": "Money", "rating": "number | null", "primaryImageUrl": "string | null", "categoryName": "string" }],
     "facets": { "category": [{ "value": "string", "count": number }], "brand": [...], "price": [...] },
     "found": number, "page": number, "perPage": number
   }
   ```
-- **Notes**: typo-tolerant (Typesense fuzzy matching). Not a `Paginated<T>` shape (uses `results`/`found`/`page`/`perPage`, not `items`/`nextCursor`) — a deliberate, documented exception since it mirrors Typesense's own native response shape.
+- **Notes**: typo-tolerant (Typesense fuzzy matching). Not a `Paginated<T>` shape (uses `results`/`found`/`page`/`perPage`, not `items`/`nextCursor`) — a deliberate, documented exception since it mirrors Typesense's own native response shape. v1.3: `mrp`/`rating` added; served by the same generic engine as the catalog listing; `category` now also matches sub-categories; the `brand` facet reads the generic `brand` attribute.
 - **Verified live** (2026-09-28): exact match (note `primaryImageUrl` can be `null`, corrected from an earlier informal description of it as always a string).
 
 ### `GET /api/search/suggest`
@@ -813,6 +876,14 @@ Purely additive changes bump the minor version instead (§17).
 ---
 
 ## 17. Change log
+
+### v1.3 — 2026-09-30 (W3, additive)
+
+- **Added**: attribute-driven catalog. Categories carry a `filterDefinition` (admin `POST|PATCH /api/catalog/categories`, inherited by sub-categories); `GET /api/catalog/categories/:slug/filters` returns it with live facet values/counts — §4.
+- **Changed (compatible)**: `GET /api/catalog/products` is now served by the search index: new `category` (slug), `min_price`/`max_price`, `rating`, `sort`, `page` and generic attribute-filter params; items gain `mrp`, `rating`, `ratingCount` (`price` is never `null` now); the page gains `total`, `page`, `perPage`. `nextCursor` remains opaque but is now a page token; `categoryId`/`category` include sub-categories; `q` is full-text relevance instead of a title substring match.
+- **Added**: product detail `attributes`, `specifications`, `rating`, `ratingCount`, `categoryPath`; search results `mrp`, `rating` — §4, §5.
+- **Added**: absolute image URLs stored by an import are returned as-is (otherwise `CDN_BASE_URL` + key).
+- Import format for the bulk catalog: `docs/catalog/IMPORT-SPEC.md`.
 
 ### v1.2 — 2026-09-30 (W2, additive)
 

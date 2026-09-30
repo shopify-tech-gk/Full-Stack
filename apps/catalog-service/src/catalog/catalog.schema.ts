@@ -84,9 +84,46 @@ export type UpdateSkuBody = z.infer<typeof UpdateSkuBody>;
 export const AddImageBody = ImageInput;
 export type AddImageBody = z.infer<typeof AddImageBody>;
 
+/** Query names the listing API reserves - they can never be attribute (filter) keys. */
+export const RESERVED_FILTER_KEYS = [
+  'category',
+  'categoryId',
+  'q',
+  'price',
+  'min_price',
+  'max_price',
+  'minPrice',
+  'maxPrice',
+  'rating',
+  'sort',
+  'page',
+  'cursor',
+  'limit',
+];
+
+/** W3: one filter a category offers. `key` is a product attribute key (IMPORT-SPEC.md). */
+export const FilterDefinitionEntry = z.object({
+  key: z
+    .string()
+    .regex(/^[a-z0-9_]{1,40}$/, 'key must be lower_snake_case')
+    .refine((key) => !RESERVED_FILTER_KEYS.includes(key), 'key is reserved'),
+  label: z.string().trim().min(1).max(60),
+  type: z.enum(['multi_select', 'single_select', 'range', 'boolean']),
+  unit: z.string().trim().min(1).max(12).optional(),
+  order: z.number().int().min(0).max(1000).optional(),
+});
+export type FilterDefinitionEntry = z.infer<typeof FilterDefinitionEntry>;
+
+export const FilterDefinition = z
+  .array(FilterDefinitionEntry)
+  .max(30)
+  .refine((list) => new Set(list.map((f) => f.key)).size === list.length, 'keys must be unique');
+export type FilterDefinition = z.infer<typeof FilterDefinition>;
+
 export const CreateCategoryBody = z.object({
   name: z.string().min(1).max(200),
   parentId: z.string().uuid().optional(),
+  filterDefinition: FilterDefinition.optional(),
 });
 export type CreateCategoryBody = z.infer<typeof CreateCategoryBody>;
 
@@ -94,6 +131,8 @@ export const UpdateCategoryBody = z
   .object({
     name: z.string().min(1).max(200).optional(),
     parentId: z.string().uuid().nullable().optional(),
+    // null = inherit the parent's definition again.
+    filterDefinition: FilterDefinition.nullable().optional(),
   })
   .refine((body) => Object.keys(body).length > 0, {
     message: 'At least one field must be provided',

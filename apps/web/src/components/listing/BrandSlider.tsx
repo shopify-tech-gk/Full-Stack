@@ -1,13 +1,19 @@
 'use client';
 
 import { useCallback, useId, useRef, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { listingQueryString, type ListingBrand, type ListingQuery } from '@youmart/shared-client';
+import {
+  listingQueryString,
+  selectedValues,
+  withFilter,
+  type CategoryFilter,
+  type ListingQuery,
+} from '@youmart/shared-client';
 import { useModal } from '@/lib/useModal';
 
 interface BrandSliderProps {
-  brands: readonly ListingBrand[];
+  /** The category's `brand` filter (definition entry + facet counts). */
+  filter: CategoryFilter;
   basePath: string;
   query: ListingQuery;
 }
@@ -15,59 +21,65 @@ interface BrandSliderProps {
 const VISIBLE = 5;
 
 // Live "Shop by brand": first brands in a scrolling row + "View All" opening an All Brands popup.
-export function BrandSlider({ brands, basePath, query }: BrandSliderProps) {
+// Brands are the category's real brand facet values; catalog data carries no logos, so the
+// boxes show the brand name.
+export function BrandSlider({ filter, basePath, query }: BrandSliderProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   useModal(open, close, closeRef);
+  const brands = filter.values ?? [];
+  const chosen = selectedValues(query, filter.key);
 
-  // Clicking the active brand clears the brand filter.
-  const href = (slug: string) =>
-    `${basePath}${listingQueryString({ ...query, brand: query.brand === slug ? null : slug })}`;
+  // Clicking a selected brand removes it; other selections are kept.
+  const href = (value: string) => {
+    const next = chosen.includes(value) ? chosen.filter((v) => v !== value) : [...chosen, value];
+    return `${basePath}${listingQueryString({
+      ...query,
+      filters: withFilter(query.filters, filter.key, next.join(',') || null),
+    })}`;
+  };
 
-  const box = (brand: ListingBrand, popup: boolean) => {
-    const active = query.brand === brand.slug;
+  const box = (brand: { value: string; count: number }, popup: boolean) => {
+    const active = chosen.includes(brand.value);
     return (
       <Link
-        key={brand.slug}
-        href={href(brand.slug)}
+        key={brand.value}
+        href={href(brand.value)}
         aria-current={active ? 'true' : undefined}
-        aria-label={brand.name}
+        aria-label={`${brand.value} (${brand.count})`}
         onClick={popup ? close : undefined}
-        className={`flex shrink-0 items-center justify-center border-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+        className={`flex shrink-0 items-center justify-center border-2 px-[6px] text-center font-sans text-[13px] font-bold leading-[1.15] text-heading focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
           popup
             ? `h-[60.4px] w-[93px] rounded-[8px] bg-white ${active ? 'border-brand' : 'border-brand-popup-border'}`
-            : `mx-[4px] h-[60px] w-[90px] rounded-[6px] ${active ? 'border-brand' : 'border-transparent'}`
+            : `mx-[4px] h-[60px] w-[90px] rounded-[6px] bg-white ${active ? 'border-brand' : 'border-transparent'}`
         }`}
       >
-        <Image
-          src={brand.logo}
-          alt=""
-          width={132}
-          height={100}
-          unoptimized={brand.logo.endsWith('.svg')}
-          className="h-[50px] w-[66px] object-contain"
-        />
+        <span className="line-clamp-2">{brand.value}</span>
       </Link>
     );
   };
 
+  if (brands.length === 0) return null;
+
   return (
     <>
       <h2 className="mb-[5px] mt-[15px] font-ui text-[14px] font-medium leading-[1.1] text-black">
-        Shop by brand
+        Shop by {filter.label.toLowerCase()}
       </h2>
       <div className="scrollbar-none flex overflow-x-auto">
         {brands.slice(0, VISIBLE).map((brand) => box(brand, false))}
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-haspopup="dialog"
-          className="mx-[4px] my-[10px] flex h-[40px] w-[68px] shrink-0 items-center justify-center rounded-[10px] text-center font-sans text-[10px] font-semibold uppercase leading-[11.5px] tracking-[0.8px] text-[#444444] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-        >
-          View All
-        </button>
+        {brands.length > VISIBLE && (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-haspopup="dialog"
+            className="mx-[4px] my-[10px] flex h-[40px] w-[68px] shrink-0 items-center justify-center rounded-[10px] text-center font-sans text-[10px] font-semibold uppercase leading-[11.5px] tracking-[0.8px] text-[#444444] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          >
+            View All
+          </button>
+        )}
       </div>
 
       {open && (
@@ -83,7 +95,7 @@ export function BrandSlider({ brands, basePath, query }: BrandSliderProps) {
           >
             <div className="flex items-center justify-between">
               <h2 id={titleId} className="font-sans text-[18px] font-bold text-brand-popup-title">
-                All Brands
+                All {filter.label}s
               </h2>
               <button
                 ref={closeRef}

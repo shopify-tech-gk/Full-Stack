@@ -6,6 +6,7 @@ import type {
   ApiErrorCode,
   AuthUser,
   CartView,
+  CategoryFilters,
   OrderListItem,
   OrderView,
   OtpRequestBody,
@@ -15,7 +16,7 @@ import type {
   Paginated,
   PaginationQuery,
   ProductDetail,
-  ProductListItem,
+  ProductListPage,
   ProductListQuery,
   RazorpayOrder,
   RefreshResponse,
@@ -164,11 +165,17 @@ export function createApiClient(options: ApiClientOptions) {
       me: () => json<AuthUser>('GET', '/auth/me'),
     },
     catalog: {
+      /** Generic listing: attribute filters are passed as extra query keys. */
       listProducts: (query?: ProductListQuery) =>
-        json<Paginated<ProductListItem>>('GET', '/catalog/products', { query }),
+        json<ProductListPage>('GET', '/catalog/products', { query }),
       getProduct: (slug: string) =>
         json<ProductDetail>('GET', `/catalog/products/${encodeURIComponent(slug)}`),
       listCategories: () => json<{ items: ApiCategory[] }>('GET', '/catalog/categories'),
+      /** The category's filter definition + facet values/counts for the current selection. */
+      getCategoryFilters: (slug: string, query?: ProductListQuery) =>
+        json<CategoryFilters>('GET', `/catalog/categories/${encodeURIComponent(slug)}/filters`, {
+          query,
+        }),
       getSku: (skuId: Uuid) => json<SkuSummary>('GET', `/catalog/skus/${skuId}`),
     },
     search: {

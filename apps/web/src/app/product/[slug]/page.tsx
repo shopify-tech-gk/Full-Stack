@@ -167,6 +167,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <div id="reviews">
           <ProductTabs
             description={product.description}
+            specifications={product.specifications}
             reviews={product.reviews}
             title={product.title}
           />

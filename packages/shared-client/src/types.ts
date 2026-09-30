@@ -1,4 +1,4 @@
-// Types mirroring the FROZEN public API contract v1.2 (docs/contracts/API.md).
+// Types mirroring the FROZEN public API contract v1.3 (docs/contracts/API.md).
 // Keep in lockstep with that document - it is the source of truth.
 
 export type Uuid = string;
@@ -70,19 +70,59 @@ export interface CategoryRef {
 export interface ApiCategory extends CategoryRef {
   parentId: Uuid | null;
 }
+/** v1.3: listing items come from the search index (price/mrp/rating always present). */
 export interface ProductListItem {
   id: Uuid;
   title: string;
   slug: string;
-  price: Money | null;
+  price: Money;
+  mrp: Money;
   imageUrl: string | null;
+  rating: number | null;
+  ratingCount: number;
   category: CategoryRef;
 }
-export interface ProductListQuery extends PaginationQuery {
-  categoryId?: Uuid;
-  minPrice?: number;
-  maxPrice?: number;
+export type CatalogSort =
+  'relevance' | 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'discount';
+/** `category` + universal filters; attribute filters are extra keys (`brand=A,B`, `size_min=2`). */
+export interface ProductListQuery {
+  category?: string;
   q?: string;
+  min_price?: number;
+  max_price?: number;
+  rating?: number;
+  sort?: CatalogSort;
+  page?: number;
+  limit?: number;
+  [attributeFilter: string]: string | number | undefined;
+}
+export interface ProductListPage {
+  items: ProductListItem[];
+  nextCursor: string | null;
+  total: number;
+  page: number;
+  perPage: number;
+}
+export type FilterType = 'multi_select' | 'single_select' | 'range' | 'boolean';
+/** One filter a category offers (its `filter_definition` entry) + live facet data. */
+export interface CategoryFilter {
+  key: string;
+  label: string;
+  type: FilterType;
+  unit?: string;
+  order?: number;
+  values?: FacetCount[];
+  min?: number | null;
+  max?: number | null;
+}
+export interface CategoryFilters {
+  category: CategoryRef & { parentId: Uuid | null };
+  path: CategoryRef[];
+  definitionFrom: string | null;
+  total: number;
+  /** Rupees; null when the category has no products. */
+  price: { min: number; max: number } | null;
+  filters: CategoryFilter[];
 }
 export interface ProductSku {
   id: Uuid;
@@ -104,6 +144,12 @@ export interface ProductDetail {
   category: CategoryRef;
   skus: ProductSku[];
   images: ProductImage[];
+  /** v1.3 */
+  attributes: Record<string, unknown>;
+  specifications: { key: string; label: string; value: string; unit: string | null }[];
+  rating: number | null;
+  ratingCount: number;
+  categoryPath: CategoryRef[];
 }
 export interface SkuSummary {
   skuId: Uuid;
@@ -133,6 +179,9 @@ export interface SearchResult {
   title: string;
   slug: string;
   price: Money;
+  /** v1.3 */
+  mrp: Money;
+  rating: number | null;
   primaryImageUrl: string | null;
   categoryName: string;
 }

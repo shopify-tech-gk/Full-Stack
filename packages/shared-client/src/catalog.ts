@@ -1,15 +1,33 @@
-import type { Money } from './types';
-import { toPaise } from './money';
+import type {
+  CatalogSort,
+  Money,
+  ProductDetail,
+  ProductListItem,
+  ProductListQuery,
+  SearchResult,
+} from './types';
 import type { ProductCardData } from './storefront';
+import { categoryHref } from './categories';
+import { DEMO_PRODUCT_IMAGE } from './demo';
 
 // Category listing: live WooCommerce query-string names, so links/bookmarks stay compatible.
-export type ListingSort = 'default' | 'price' | 'price-desc';
+export type ListingSort = 'default' | 'price' | 'price-desc' | 'date' | 'rating';
 
 export const LISTING_SORT_OPTIONS: readonly { value: ListingSort; label: string }[] = [
   { value: 'default', label: 'Default sorting' },
   { value: 'price', label: 'Price: Low \u2192 High' },
   { value: 'price-desc', label: 'Price: High \u2192 Low' },
+  { value: 'date', label: 'Sort by latest' },
+  { value: 'rating', label: 'Sort by average rating' },
 ];
+
+const SORT_TO_API: Record<ListingSort, CatalogSort> = {
+  default: 'relevance',
+  price: 'price_asc',
+  'price-desc': 'price_desc',
+  date: 'newest',
+  rating: 'rating',
+};
 
 export const LISTING_RATING_OPTIONS: readonly { value: number; label: string }[] = [
   { value: 0, label: 'All Ratings' },
@@ -17,58 +35,77 @@ export const LISTING_RATING_OPTIONS: readonly { value: number; label: string }[]
   { value: 3, label: '3\u2605 & above' },
 ];
 
-/** Price slider bounds (live: range 0-100000, default upper handle 99,999). */
-export const LISTING_PRICE_LIMIT = 100000;
-export const LISTING_PRICE_DEFAULT_MAX = 99999;
+/** Price slider upper bound when the category's real price range is unknown (live: 0-100000). */
+export const LISTING_PRICE_FALLBACK_LIMIT = 100000;
 export const LISTING_PAGE_SIZE = 56;
 
 export interface ListingQuery {
   sort: ListingSort;
-  minPrice: number;
-  maxPrice: number;
+  minPrice: number | null;
+  maxPrice: number | null;
   minRating: number;
-  brand: string | null;
   page: number;
-}
-
-export interface ListingBrand {
-  slug: string;
-  name: string;
-  logo: string;
-}
-
-export interface ListingProduct extends ProductCardData {
-  brand: string;
+  /**
+   * Attribute filters exactly as they appear in the URL (`brand=Samsung,LG`, `screen_size_min=6`).
+   * Which keys mean anything is decided by the category's filter definition on the server.
+   */
+  filters: Record<string, string>;
 }
 
 type SearchParams = Record<string, string | string[] | undefined>;
+
+// Universal params (live names) + API names that must never be read as attribute filters.
+const RESERVED_PARAMS = new Set([
+  'orderby',
+  'min_price',
+  'max_price',
+  'rating_filter',
+  'q',
+  'page',
+  'category',
+  'sort',
+  'rating',
+  'limit',
+  'cursor',
+]);
+const FILTER_PARAM = /^[a-z0-9_]{1,48}$/;
 
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function clampInt(value: string | undefined, min: number, max: number, fallback: number): number {
+function optionalInt(value: string | undefined, min: number): number | null {
   const parsed = Number.parseInt(value ?? '', 10);
-  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+  return Number.isFinite(parsed) ? Math.max(min, parsed) : null;
 }
 
 export function parseListingQuery(params: SearchParams, page = 1): ListingQuery {
   const orderby = first(params.orderby);
-  const minPrice = clampInt(first(params.min_price), 0, LISTING_PRICE_LIMIT, 0);
-  const maxPrice = clampInt(
-    first(params.max_price),
-    minPrice,
-    LISTING_PRICE_LIMIT,
-    LISTING_PRICE_DEFAULT_MAX,
-  );
-  const brand = first(params.brand);
+  const minPrice = optionalInt(first(params.min_price), 0);
+  const maxPrice = optionalInt(first(params.max_price), minPrice ?? 0);
+  const filters: Record<string, string> = {};
+  for (const key of Object.keys(params).sort()) {
+    const value = first(params[key])?.trim();
+    if (
+      !RESERVED_PARAMS.has(key) &&
+      FILTER_PARAM.test(key) &&
+      value &&
+      value.length <= 500 &&
+      !value.includes('`')
+    ) {
+      filters[key] = value;
+    }
+  }
+  const rating = Number.parseInt(first(params.rating_filter) ?? '', 10);
   return {
-    sort: orderby === 'price' || orderby === 'price-desc' ? orderby : 'default',
-    minPrice,
+    sort: LISTING_SORT_OPTIONS.some((o) => o.value === orderby)
+      ? (orderby as ListingSort)
+      : 'default',
+    minPrice: minPrice && minPrice > 0 ? minPrice : null,
     maxPrice,
-    minRating: clampInt(first(params.rating_filter), 0, 5, 0),
-    brand: brand && /^[a-z0-9-]+$/.test(brand) ? brand : null,
+    minRating: Number.isFinite(rating) ? Math.min(5, Math.max(0, rating)) : 0,
     page: Math.max(1, page),
+    filters,
   };
 }
 
@@ -76,35 +113,77 @@ export function parseListingQuery(params: SearchParams, page = 1): ListingQuery 
 export function listingQueryString(query: Omit<ListingQuery, 'page'>): string {
   const params = new URLSearchParams();
   if (query.sort !== 'default') params.set('orderby', query.sort);
-  if (query.minPrice > 0) params.set('min_price', String(query.minPrice));
-  if (query.maxPrice !== LISTING_PRICE_DEFAULT_MAX) params.set('max_price', String(query.maxPrice));
+  if (query.minPrice !== null && query.minPrice > 0)
+    params.set('min_price', String(query.minPrice));
+  if (query.maxPrice !== null) params.set('max_price', String(query.maxPrice));
   if (query.minRating > 0) params.set('rating_filter', String(query.minRating));
-  if (query.brand) params.set('brand', query.brand);
+  for (const key of Object.keys(query.filters).sort()) {
+    params.set(key, query.filters[key]!);
+  }
   const text = params.toString();
   return text ? `?${text}` : '';
 }
 
-/** Filters + sorts a product list the way the listing API will. */
-export function applyListingQuery<T extends ListingProduct>(
-  products: readonly T[],
+/** The catalog API query for a listing (`GET /api/catalog/products`, `.../filters`). */
+export function catalogQuery(
   query: ListingQuery,
-): T[] {
-  const min = query.minPrice * 100;
-  const max = query.maxPrice * 100;
-  const result = products.filter((product) => {
-    const price = toPaise(product.sellingPrice);
-    return (
-      price >= min &&
-      price <= max &&
-      product.rating >= query.minRating &&
-      (!query.brand || product.brand === query.brand)
-    );
-  });
-  if (query.sort !== 'default') {
-    const direction = query.sort === 'price' ? 1 : -1;
-    result.sort((a, b) => direction * (toPaise(a.sellingPrice) - toPaise(b.sellingPrice)));
-  }
-  return result;
+  extra: { category?: string; limit?: number } = {},
+): ProductListQuery {
+  return {
+    ...query.filters,
+    ...(extra.category ? { category: extra.category } : {}),
+    sort: SORT_TO_API[query.sort],
+    ...(query.minPrice !== null ? { min_price: query.minPrice } : {}),
+    ...(query.maxPrice !== null ? { max_price: query.maxPrice } : {}),
+    ...(query.minRating > 0 ? { rating: query.minRating } : {}),
+    page: query.page,
+    limit: extra.limit ?? LISTING_PAGE_SIZE,
+  };
+}
+
+/** Values currently selected for a multi/single-select or boolean filter. */
+export function selectedValues(query: Pick<ListingQuery, 'filters'>, key: string): string[] {
+  return (query.filters[key] ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
+/** Returns `filters` with `key` set to `value`, or removed when `value` is empty. */
+export function withFilter(
+  filters: Record<string, string>,
+  key: string,
+  value: string | null,
+): Record<string, string> {
+  const next = { ...filters };
+  if (value) next[key] = value;
+  else delete next[key];
+  return next;
+}
+
+/** A catalog listing item as the storefront card renders it. */
+export function toCardData(item: ProductListItem): ProductCardData {
+  return {
+    id: item.id,
+    href: `/product/${item.slug}`,
+    title: item.title,
+    image: item.imageUrl ?? DEMO_PRODUCT_IMAGE,
+    mrp: item.mrp,
+    sellingPrice: item.price,
+    rating: item.rating ?? 0,
+  };
+}
+
+export function searchResultToCardData(result: SearchResult): ProductCardData {
+  return {
+    id: result.id,
+    href: `/product/${result.slug}`,
+    title: result.title,
+    image: result.primaryImageUrl ?? DEMO_PRODUCT_IMAGE,
+    mrp: result.mrp ?? result.price,
+    sellingPrice: result.price,
+    rating: result.rating ?? 0,
+  };
 }
 
 export type PaginationItem = number | 'dots';
@@ -166,12 +245,53 @@ export interface ProductDetailData {
   slug: string;
   title: string;
   rating: number;
+  ratingCount: number;
   shortDescription: string;
   description: string;
   mrp: Money;
   sellingPrice: Money;
   images: readonly string[];
   categories: readonly { name: string; href: string }[];
+  /** Labelled attribute rows (labels/units from the category's filter definition). */
+  specifications: readonly { label: string; value: string }[];
   reviews: readonly ProductReviewData[];
   related: readonly ProductCardData[];
+}
+
+/** First sentence of the description, for the short summary under the rating. */
+function firstSentence(text: string): string {
+  const match = /^.{20,300}?[.!?](\s|$)/s.exec(text.trim());
+  return (match ? match[0] : text.slice(0, 200)).trim();
+}
+
+/** Maps `GET /api/catalog/products/:slug` onto the product page. The cheapest SKU sets the price. */
+export function toProductDetailData(
+  detail: ProductDetail,
+  related: readonly ProductCardData[],
+): ProductDetailData {
+  const sku = [...detail.skus].sort((a, b) => Number(a.sellingPrice) - Number(b.sellingPrice))[0];
+  const description = detail.description ?? '';
+  return {
+    id: detail.id,
+    slug: detail.slug,
+    title: detail.title,
+    rating: detail.rating ?? 0,
+    ratingCount: detail.ratingCount,
+    shortDescription: firstSentence(description),
+    description,
+    mrp: sku?.mrp ?? '0.00',
+    sellingPrice: sku?.sellingPrice ?? '0.00',
+    images: detail.images.length > 0 ? detail.images.map((i) => i.url) : [DEMO_PRODUCT_IMAGE],
+    categories: detail.categoryPath.map((category, index) => ({
+      name: category.name,
+      href: categoryHref(...detail.categoryPath.slice(0, index + 1).map((c) => c.slug)),
+    })),
+    specifications: detail.specifications.map((row) => ({
+      label: row.label,
+      value: row.unit ? `${row.value} ${row.unit}` : row.value,
+    })),
+    // No public reviews API yet; the tab shows its empty state.
+    reviews: [],
+    related,
+  };
 }

@@ -1,19 +1,34 @@
-// Data seam for the listing + product routes. DEMO data today; swap each body for the catalog API
-// (`api.catalog.*`) later - the pages only depend on these signatures.
+// Data seam for the listing, product, search and homepage routes - the real catalog/search APIs
+// through the gateway (W3). Server-side only; the pages depend on these signatures.
 import {
-  DEMO_BRANDS,
-  DEMO_LISTING_PRODUCTS,
+  ApiError,
   LISTING_PAGE_SIZE,
-  applyListingQuery,
-  demoProductDetail,
-  type ListingBrand,
-  type ListingProduct,
+  PRODUCT_RAIL_TITLES,
+  catalogQuery,
+  createApiClient,
+  searchResultToCardData,
+  toCardData,
+  toProductDetailData,
+  type CategoryFilters,
+  type CatalogSort,
   type ListingQuery,
+  type ProductCardData,
   type ProductDetailData,
+  type ProductFilter,
+  type ProductRail,
   type StoreCategory,
   type StoreSubcategory,
 } from '@youmart/shared-client';
+import { API_URL } from './api';
 import { storeCategories } from './categories';
+
+// Catalog data changes with every import/price update, so Next must never cache it.
+const catalogApi = createApiClient({
+  baseUrl: process.env.API_INTERNAL_URL ?? API_URL,
+  fetchImpl: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+});
+
+const isNotFound = (err: unknown) => err instanceof ApiError && err.status === 404;
 
 export interface CategoryNode {
   root: StoreCategory;
@@ -21,7 +36,7 @@ export interface CategoryNode {
   name: string;
 }
 
-/** Resolves `/product-category/a/b/c` path segments against the category tree. */
+/** Resolves `/product-category/a/b/c` path segments against the storefront menu tree. */
 export function resolveCategoryPath(segments: readonly string[]): CategoryNode | null {
   const [rootSlug, ...rest] = segments;
   const root = storeCategories.find((c) => c.slug === rootSlug);
@@ -42,36 +57,106 @@ export function resolveCategoryPath(segments: readonly string[]): CategoryNode |
 }
 
 export interface CategoryListing {
-  products: ListingProduct[];
+  products: ProductCardData[];
   total: number;
   totalPages: number;
-  brands: readonly ListingBrand[];
+  /** The category's filter definition + facets; null for /shop or a category with no catalog data yet. */
+  filters: CategoryFilters | null;
 }
 
+/**
+ * One generic listing for EVERY category: products and the category's data-driven filters come
+ * from the API; `path` only picks the category (its last segment is the catalog slug).
+ */
 export async function getCategoryListing(
-  _path: readonly string[],
+  path: readonly string[],
   query: ListingQuery,
 ): Promise<CategoryListing> {
-  const filtered = applyListingQuery(DEMO_LISTING_PRODUCTS, query);
-  const start = (query.page - 1) * LISTING_PAGE_SIZE;
-  return {
-    products: filtered.slice(start, start + LISTING_PAGE_SIZE),
-    total: filtered.length,
-    totalPages: Math.max(1, Math.ceil(filtered.length / LISTING_PAGE_SIZE)),
-    brands: DEMO_BRANDS,
-  };
+  const category = path[path.length - 1];
+  const params = catalogQuery(query, { category });
+  try {
+    const [page, filters] = await Promise.all([
+      catalogApi.catalog.listProducts(params),
+      category ? catalogApi.catalog.getCategoryFilters(category, params) : Promise.resolve(null),
+    ]);
+    return {
+      products: page.items.map(toCardData),
+      total: page.total,
+      totalPages: Math.max(1, Math.ceil(page.total / LISTING_PAGE_SIZE)),
+      filters,
+    };
+  } catch (err) {
+    // A storefront menu category the catalog doesn't hold yet: an empty listing, not an error.
+    if (isNotFound(err)) {
+      return { products: [], total: 0, totalPages: 1, filters: null };
+    }
+    throw err;
+  }
 }
 
 export async function getProductDetail(slug: string): Promise<ProductDetailData | null> {
-  return /^[a-z0-9-]+$/.test(slug) ? demoProductDetail(slug) : null;
+  if (!/^[a-z0-9-]{1,200}$/.test(slug)) return null;
+  try {
+    const detail = await catalogApi.catalog.getProduct(slug);
+    const related = await catalogApi.catalog.listProducts({
+      category: detail.category.slug,
+      limit: 5,
+    });
+    return toProductDetailData(
+      detail,
+      related.items
+        .filter((item) => item.id !== detail.id)
+        .slice(0, 4)
+        .map(toCardData),
+    );
+  } catch (err) {
+    if (isNotFound(err)) return null;
+    throw err;
+  }
 }
 
-/** DEMO title match. Wiring: api.search.products({ q }) (search-service). */
-export async function searchProducts(q: string): Promise<ListingProduct[]> {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return [];
-  return DEMO_LISTING_PRODUCTS.filter((p) => p.title.toLowerCase().includes(needle)).slice(
-    0,
-    LISTING_PAGE_SIZE,
-  );
+export async function searchProducts(q: string): Promise<ProductCardData[]> {
+  if (!q.trim()) return [];
+  const result = await catalogApi.search.products({ q: q.trim(), perPage: 50 });
+  return result.results.map(searchResultToCardData);
+}
+
+export interface HomeProducts {
+  rails: ProductRail[];
+  showcase: Record<ProductFilter, ProductCardData[]>;
+}
+
+/**
+ * Homepage rails + showcase from three real catalog queries. There is no personalisation or
+ * sales data yet, so "trending"/"recommended" use rating and "top deals" uses discount.
+ */
+export async function getHomeProducts(): Promise<HomeProducts> {
+  const fetchSorted = (sort: CatalogSort) =>
+    catalogApi.catalog
+      .listProducts({ sort, limit: 12 })
+      .then((page) => page.items.map(toCardData))
+      .catch(() => [] as ProductCardData[]);
+  const [newest, topRated, deals] = await Promise.all([
+    fetchSorted('newest'),
+    fetchSorted('rating'),
+    fetchSorted('discount'),
+  ]);
+  const rail = (title: string, cards: ProductCardData[]): ProductRail => ({
+    title,
+    items: cards
+      .slice(0, 4)
+      .map(({ id, href, title: name, image }) => ({ id, href, title: name, image })),
+  });
+  // PRODUCT_RAIL_TITLES order: left-off, trending, top deals, recommended, more to explore.
+  const [leftOff, trending, topDeals, recommended, explore] = PRODUCT_RAIL_TITLES;
+  return {
+    rails: [
+      rail(leftOff, newest),
+      rail(trending, topRated),
+      rail(topDeals, deals),
+      rail(recommended, topRated.slice(4)),
+      rail(explore, newest.slice(4)),
+    ].filter((r) => r.items.length > 0),
+    showcase: { new: newest, all: topRated, sale: deals },
+  };
 }

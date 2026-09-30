@@ -1,4 +1,8 @@
-import { createSellerClient, type ServiceAuthOptions } from '@youmart/service-client';
+import {
+  createSearchClient,
+  createSellerClient,
+  type ServiceAuthOptions,
+} from '@youmart/service-client';
 import { config } from './config';
 
 // Ch6.5 - self-minted short-lived service token attached to every internal
@@ -15,6 +19,13 @@ const serviceAuth: ServiceAuthOptions = {
  */
 export const sellerClient = createSellerClient({
   baseUrl: config.sellerServiceUrl,
+  timeoutMs: config.serviceHttpTimeoutMs,
+  serviceAuth,
+});
+
+/** W3: search-service's generic attribute browse engine (Typesense). */
+export const searchClient = createSearchClient({
+  baseUrl: config.searchServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
   serviceAuth,
 });

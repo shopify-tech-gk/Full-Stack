@@ -14,7 +14,8 @@
     "infra:up": "docker compose -f docker/docker-compose.yml --env-file .env up -d",
     "infra:down": "docker compose -f docker/docker-compose.yml --env-file .env down",
     "infra:logs": "docker compose -f docker/docker-compose.yml --env-file .env logs -f",
-    "dev:otp": "node scripts/dev-otp.mjs"
+    "dev:otp": "node scripts/dev-otp.mjs",
+    "dev:seed-catalog": "node scripts/dev-seed-catalog.mjs"
   },
   "devDependencies": {
     "@types/node": "20.19.43",
