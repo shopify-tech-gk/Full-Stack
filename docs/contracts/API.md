@@ -1,9 +1,9 @@
-# YouMart Public API Contract (v1.5)
+# YouMart Public API Contract (v1.6)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
 additive revision 2026-09-30 (W3), v1.4 additive revision 2026-10-01 (W4),
-v1.5 revision 2026-10-01 (W5)
+v1.5 revision 2026-10-01 (W5), v1.6 additive revision 2026-10-01 (W6)
 — see §17 change log.**
 
 This is the single, authoritative, consolidated contract for the **public
@@ -19,7 +19,7 @@ Every endpoint documented here has been verified against the real running
 system as of this freeze (see "Verification" note per section where
 relevant, and the full verification log in the Ch7.4 commit).
 
-**Versioning policy**: this is v1.5 of the contract. Changes after the
+**Versioning policy**: this is v1.6 of the contract. Changes after the
 freeze must be additive/backward-compatible (new optional fields, new
 endpoints) wherever possible; each additive revision bumps the MINOR
 version (v1.1, v1.2, ...) and is listed in §17. Any breaking change
@@ -188,6 +188,13 @@ verifying tokens itself) — documented for completeness/mobile edge cases.
 - **200**: `AuthUser` (the caller's own profile)
 - **Errors**: `401` (missing/expired token — refresh and retry); `403` (account BLOCKED)
 
+### `PATCH /api/auth/me` — v1.6
+
+- **Auth**: customer bearer token
+- **Body**: `{ "name": "string" }` (trimmed, 1-100 chars). Only the display name is editable; email and phone are OTP-verified login identities and cannot be changed here.
+- **200**: `AuthUser` (updated)
+- **Errors**: `400 VALIDATION_ERROR`; `401`
+
 ### `POST /api/auth/logout`
 
 - **Auth**: `ym_rt` cookie (optional — always succeeds)
@@ -334,6 +341,16 @@ counts follow the shopper's choices). Multi-select counts are
 - `attributes`, `specifications`, `rating`, `ratingCount`, `categoryPath` are v1.3 additions. `specifications` lists every attribute with the label/unit from the category's filter definition (definition order first, others A-Z with a humanised key as label). `images[].url` is absolute: `CDN_BASE_URL` + the stored key, or the stored absolute URL.
 - **Errors**: `404 NOT_FOUND` (no such ACTIVE product)
 - **Verified live** (2026-09-28): exact match.
+
+### Product reviews — v1.6
+
+One review per customer per product, **purchase-verified**: only a customer with a non-cancelled item of the product on a `CONFIRMED` (paid) order may submit. Reviews publish immediately. `rating`/`ratingCount` on the product (and in search, after the async reindex) include them; ratings imported with the catalogue are kept.
+
+`Review`: `{ id, rating: 1-5, title: string|null, body, author, verifiedPurchase: boolean, createdAt, updatedAt }` (`author` is the name the customer chose, or `"YouMart customer"`).
+
+- `GET /api/catalog/products/:slug/reviews?page&limit` — public. **200** `{ items: Review[], total, page, perPage, breakdown: {"1".."5": count} }`, newest first (`limit` 1-50, default 10). `404` unknown product.
+- `GET /api/catalog/products/:slug/reviews/mine` — customer token. **200** `{ canReview: boolean, review: Review|null }`.
+- `POST /api/catalog/products/:slug/reviews` — customer token. **Body** `{ rating: 1-5, body: 10-2000 chars, title?: <=120, authorName?: 1-60 }`. **201** `Review` (created) / **200** `Review` (the caller's existing review, edited). **Errors**: `400`; `401`; `403 FORBIDDEN` ("Only customers who have bought this product can review it"); `404`.
 
 ### `GET /api/catalog/categories`
 
@@ -565,7 +582,8 @@ with no token. Every order is scoped to the caller. **Single exception
 
 ### `GET /api/orders/:id`
 
-- **200**: `OrderView` (same shape as checkout's response)
+- `:id` is the order's `orderId` **or** its `orderNumber` (v1.6, case-insensitive) — storefront order pages use `/account/orders/<orderNumber>`.
+- **200**: `OrderView` (same shape as checkout's response). v1.6 adds `createdAt`, `timeline: [{ status, at }]` (order status history, oldest first) and `items[].orderItemId` (for `GET /api/logistics/track/order-item/:orderItemId`).
 - **Errors**: `404` (not caller's own, or doesn't exist)
 
 ### `POST /api/orders/track` — v1.1, guest order tracking
@@ -906,6 +924,13 @@ Purely additive changes bump the minor version instead (§17).
 ---
 
 ## 17. Change log
+
+### v1.6 — 2026-10-01 (W6, additive)
+
+- **Added**: `PATCH /api/auth/me { name }` — §3.
+- **Added**: product reviews (list / mine / submit, purchase-verified, one per customer) — §4. Backed by catalog-service on the least-privilege `reviews_svc` DB role; purchase checks go to order-service's internal `GET /orders/internal/purchases` (service token, not exposed by the gateway).
+- **Added**: `OrderView.createdAt`, `OrderView.timeline`, `items[].orderItemId`; `GET /api/orders/:id` also accepts the order number — §8.
+- No other change: order history, guest tracking, cancel, notify, wishlist and the contact form use the v1.1 endpoints as documented. The guest wishlist (signed out) is client-side only and merges over `POST /api/wishlist/items` on login (rules: `packages/shared-client/src/guest-wishlist.ts`).
 
 ### v1.5 — 2026-10-01 (W5, compatible behaviour change)
 

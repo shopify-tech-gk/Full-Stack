@@ -44,6 +44,16 @@ export async function getSessionUser(userId: string): Promise<SessionUser> {
   return toSessionUser(await loadActiveUser(userId));
 }
 
+/**
+ * PATCH /auth/me (W6) - the display name only. Phone/email are login identifiers: changing one
+ * needs an OTP to the new value, so that's a separate (deferred) flow.
+ */
+export async function updateProfile(userId: string, input: { name: string }): Promise<SessionUser> {
+  await loadActiveUser(userId);
+  const user = await prisma.user.update({ where: { id: userId }, data: { name: input.name } });
+  return toSessionUser(user);
+}
+
 export async function issueSession(userId: string, userAgent?: string): Promise<SessionResult> {
   const user = await loadActiveUser(userId);
 

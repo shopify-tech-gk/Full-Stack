@@ -26,7 +26,14 @@ import {
   listProductsForIndex,
 } from '../catalog/catalog.service';
 import { getCategoryFilters, listProducts } from '../catalog/browse.service';
-import { optionalAuth, requireServiceAuth, requireAdmin } from '../authMiddleware';
+import {
+  SubmitReviewBody,
+  getMyReview,
+  listReviews,
+  submitReview,
+} from '../catalog/review.service';
+import { optionalAuth, requireAuth, requireServiceAuth, requireAdmin } from '../authMiddleware';
+import { requireUserId } from '../authToken';
 
 export const catalogRouter: Router = Router();
 
@@ -64,6 +71,24 @@ catalogRouter.get('/products/:slug', optionalAuth, async (req, res) => {
   const slug = typeof req.params.slug === 'string' ? req.params.slug : '';
   const product = await getProductBySlug(slug);
   res.status(200).json(product);
+});
+
+// --- W6: product reviews (reviews schema via reviews_svc; purchase-verified submit) ---
+catalogRouter.get('/products/:slug/reviews', optionalAuth, async (req, res) => {
+  const slug = typeof req.params.slug === 'string' ? req.params.slug : '';
+  res.status(200).json(await listReviews(slug, req.query));
+});
+
+catalogRouter.get('/products/:slug/reviews/mine', requireAuth, async (req, res) => {
+  const slug = typeof req.params.slug === 'string' ? req.params.slug : '';
+  res.status(200).json(await getMyReview(requireUserId(req), slug));
+});
+
+catalogRouter.post('/products/:slug/reviews', requireAuth, async (req, res) => {
+  const slug = typeof req.params.slug === 'string' ? req.params.slug : '';
+  const body = SubmitReviewBody.parse(req.body);
+  const result = await submitReview(requireUserId(req), slug, body);
+  res.status(result.created ? 201 : 200).json(result.review);
 });
 
 catalogRouter.get('/categories', optionalAuth, async (_req, res) => {

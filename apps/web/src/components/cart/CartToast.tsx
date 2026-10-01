@@ -27,9 +27,11 @@ const TONES = {
 // cart message. Sits above the mobile bottom nav; never moves page content.
 export function CartToast() {
   const toast = useCartToast();
-  const onCart = (usePathname() ?? '').startsWith('/cart');
+  const pathname = usePathname() ?? '';
   if (!toast) return null;
   const { border, icon } = TONES[toast.tone];
+  const action = toast.action ?? { href: '/cart', label: 'View cart' };
+  const onTarget = pathname.startsWith(action.href);
 
   return (
     <div
@@ -41,15 +43,15 @@ export function CartToast() {
       <div className="min-w-0 flex-1">
         <p>
           {toast.message}
-          {toast.tone !== 'error' && !onCart && (
+          {toast.tone !== 'error' && !onTarget && (
             <>
               {' '}
               <Link
-                href="/cart"
+                href={action.href}
                 onClick={dismissCartToast}
                 className="font-semibold text-brand hover:text-woo-linkHover focus:outline-none focus-visible:underline"
               >
-                View cart
+                {action.label}
               </Link>
             </>
           )}

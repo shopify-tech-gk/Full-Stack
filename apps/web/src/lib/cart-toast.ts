@@ -2,7 +2,7 @@
 
 // One site-wide cart notice (floating, WooCommerce notice styling): add-to-cart confirmations and
 // errors from every page, and the merge summary after signing in - which can happen on /checkout
-// or /my-account, where no cart page is on screen to show it.
+// or /account, where no cart page is on screen to show it.
 import { useSyncExternalStore } from 'react';
 
 export interface CartToast {
@@ -10,6 +10,8 @@ export interface CartToast {
   tone: 'success' | 'info' | 'error';
   message: string;
   details?: string[];
+  /** The follow-up link; defaults to "View cart". */
+  action?: { href: string; label: string };
 }
 
 let toast: CartToast | null = null;

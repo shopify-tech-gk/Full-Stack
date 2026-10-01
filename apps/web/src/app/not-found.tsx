@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import { NOT_FOUND_PAGE } from '@youmart/shared-client';
+import { NOT_FOUND_PAGE, ROUTES } from '@youmart/shared-client';
 import { SearchBar } from '@/components/layout/SearchBar';
 
 const LINKS = [
-  { href: '/', label: 'Home' },
-  { href: '/shop', label: 'Shop' },
-  { href: '/order-track', label: 'Track Order' },
-  { href: '/customer-care', label: 'Customer Care' },
+  { href: ROUTES.home, label: 'Home' },
+  { href: ROUTES.shop, label: 'Shop' },
+  { href: ROUTES.trackOrder, label: 'Track Order' },
+  { href: ROUTES.customerCare, label: 'Customer Care' },
 ] as const;
 
 // Live 404: centred brand-blue Outfit 32px title, one line of copy, a search box.

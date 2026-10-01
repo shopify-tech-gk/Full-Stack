@@ -1,3 +1,5 @@
+import { categoryHref } from './categories';
+
 export interface PromoBanner {
   id: string;
   title: string;
@@ -8,7 +10,7 @@ export interface PromoBanner {
 
 /**
  * Live homepage banners rotate as two PAIRS, swapping instantly about every 3 s
- * (measured on youmartshop.com). hrefs are the live WooCommerce category URLs.
+ * (measured on youmartshop.com). hrefs point at the same categories as live, on our clean URLs.
  */
 export const PROMO_BANNER_SLIDES: readonly (readonly [PromoBanner, PromoBanner])[] = [
   [
@@ -16,13 +18,13 @@ export const PROMO_BANNER_SLIDES: readonly (readonly [PromoBanner, PromoBanner])
       id: 'pet-products',
       title: 'Pet Products - 25% off',
       image: '/banners/pet-products.png',
-      href: '/product-category/pet-products',
+      href: categoryHref('pet-products'),
     },
     {
       id: 'sport-gear',
       title: 'Sport Gear - Top-quality equipment for champions',
       image: '/banners/sport-gear.png',
-      href: '/product-category/sports-fitness',
+      href: categoryHref('sports-fitness'),
     },
   ],
   [
@@ -30,14 +32,14 @@ export const PROMO_BANNER_SLIDES: readonly (readonly [PromoBanner, PromoBanner])
       id: 'kitchen-pro',
       title: 'Kitchen Pro - Smart, efficient, time-saving',
       image: '/banners/kitchen-pro.png',
-      href: '/product-category/stainless-steel-vessels',
+      href: categoryHref('stainless-steel-vessels'),
     },
     {
       id: 'tech-deals',
       title: 'Tech Deals - Fast, reliable, best prices',
       image: '/banners/tech-deals.png',
-      // Live links /product-category/mobile-accessories/, which 404s on live too.
-      href: '/product-category/electronics/mobiles',
+      // Live links its mobile-accessories category, which 404s on live too.
+      href: categoryHref('electronics', 'mobiles'),
     },
   ],
 ];

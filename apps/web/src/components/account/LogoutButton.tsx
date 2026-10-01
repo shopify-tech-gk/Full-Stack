@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { ROUTES } from '@youmart/shared-client';
 import { logout } from '@/lib/session';
 
 /** POST /api/auth/logout (revokes the refresh cookie), drops the in-memory token, back to login. */
@@ -23,7 +24,7 @@ export function LogoutButton({
         startTransition(async () => {
           // The local session is cleared even if the network call fails.
           await logout().catch(() => undefined);
-          router.replace('/my-account');
+          router.replace(ROUTES.account);
         })
       }
     >

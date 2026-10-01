@@ -39,6 +39,11 @@ const catalogServiceEnvSchema = baseEnvSchema.extend({
   SELLER_SERVICE_URL: z.string().url(),
   // W3: public listing/filters are answered by search-service's Typesense browse engine.
   SEARCH_SERVICE_URL: z.string().url(),
+  // W6: product reviews live in the `reviews` schema - reached only through the least-privilege
+  // `reviews_svc` role (Ch2 grants), never through catalog_svc.
+  REVIEWS_DATABASE_URL: z.string().url(),
+  // W6: "did this customer buy it" for verified-purchase reviews (orders schema is off-limits).
+  ORDER_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
@@ -62,6 +67,8 @@ export interface CatalogServiceConfig {
   defaultSellerId: string;
   sellerServiceUrl: string;
   searchServiceUrl: string;
+  reviewsDatabaseUrl: string;
+  orderServiceUrl: string;
   serviceHttpTimeoutMs: number;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
@@ -81,6 +88,8 @@ export const config: Readonly<CatalogServiceConfig> = Object.freeze({
   defaultSellerId: parsed.DEFAULT_SELLER_ID,
   sellerServiceUrl: parsed.SELLER_SERVICE_URL,
   searchServiceUrl: parsed.SEARCH_SERVICE_URL,
+  reviewsDatabaseUrl: parsed.REVIEWS_DATABASE_URL,
+  orderServiceUrl: parsed.ORDER_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,

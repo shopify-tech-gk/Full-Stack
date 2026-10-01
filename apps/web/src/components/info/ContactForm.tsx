@@ -1,37 +1,47 @@
 'use client';
 
-import { useId, useState, useTransition, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import {
   EMPTY_CONTACT_FORM,
+  supportErrorMessage,
+  validateContactForm,
   type ContactFormValues,
   type FormErrors,
 } from '@youmart/shared-client';
-import { submitContact } from '@/app/support-actions';
 import { Notice } from '@/components/account/Notice';
-import { FIELD_HINT, FORM_BUTTON, FORM_INPUT } from '@/components/account/formStyles';
+import { FORM_BUTTON, FORM_INPUT } from '@/components/account/formStyles';
+import { api } from '@/lib/api';
 import { Field } from './Field';
 
 // Not on live (its contact page only lists phone/email/address) - flagged addition.
+// POST /api/support/messages (notification-service): stored for the support team, rate-limited.
 export function ContactForm() {
   const id = useId();
   const [values, setValues] = useState(EMPTY_CONTACT_FORM);
   const [errors, setErrors] = useState<FormErrors<keyof ContactFormValues>>({});
   const [sent, setSent] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [failure, setFailure] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   const set = (key: keyof ContactFormValues, value: string) =>
     setValues((current) => ({ ...current, [key]: value }));
 
-  const onSubmit = (event: FormEvent) => {
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    startTransition(async () => {
-      const result = await submitContact(values);
-      setErrors(result.errors ?? {});
-      if (result.ok) {
-        setSent(result.reference ?? '');
-        setValues(EMPTY_CONTACT_FORM);
-      }
-    });
+    const { data, errors: found } = validateContactForm(values);
+    setErrors(found);
+    setFailure(null);
+    if (!data) return;
+    setPending(true);
+    try {
+      const receipt = await api.support.sendMessage(data);
+      setSent(receipt.reference);
+      setValues(EMPTY_CONTACT_FORM);
+    } catch (error) {
+      setFailure(supportErrorMessage(error));
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
@@ -49,10 +59,11 @@ export function ContactForm() {
       </h2>
       {sent !== null && (
         <Notice tone="success">
-          Thank you! Your message has been received (reference {sent}). Our team will get back to
-          you soon.
+          Thank you! Your message has been received (reference <strong>{sent}</strong>). Our team
+          will get back to you soon.
         </Notice>
       )}
+      {failure && <Notice tone="error">{failure}</Notice>}
       <div className="grid gap-x-[20px] md:grid-cols-2">
         <Field id={`${id}-name`} label="Name" required error={errors.name}>
           {(aria) => (
@@ -117,12 +128,10 @@ export function ContactForm() {
           )}
         </Field>
       </div>
-      <p className="mx-[3px] flex flex-wrap items-center gap-[16px]">
+      <p className="mx-[3px]">
         <button type="submit" disabled={pending} className={FORM_BUTTON}>
-          {pending ? 'Sending…' : 'Send message'}
+          {pending ? 'Sending\u2026' : 'Send message'}
         </button>
-        {/* DEMO hint - remove when the support endpoint exists. */}
-        <span className={`${FIELD_HINT} mt-0`}>Demo: messages are not sent anywhere yet.</span>
       </p>
     </form>
   );

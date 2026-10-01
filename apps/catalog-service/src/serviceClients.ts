@@ -1,4 +1,5 @@
 import {
+  createOrderClient,
   createSearchClient,
   createSellerClient,
   type ServiceAuthOptions,
@@ -26,6 +27,13 @@ export const sellerClient = createSellerClient({
 /** W3: search-service's generic attribute browse engine (Typesense). */
 export const searchClient = createSearchClient({
   baseUrl: config.searchServiceUrl,
+  timeoutMs: config.serviceHttpTimeoutMs,
+  serviceAuth,
+});
+
+/** W6: verified-purchase check for reviews. */
+export const orderClient = createOrderClient({
+  baseUrl: config.orderServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
   serviceAuth,
 });

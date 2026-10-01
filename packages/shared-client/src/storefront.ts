@@ -1,5 +1,6 @@
 import type { Money } from './types';
 import { STORE_CATEGORIES, categoryHref, type StoreSubcategory } from './categories';
+import { ROUTES } from './routes';
 
 /** What a product card renders; the catalog API maps into this when real data is wired. */
 export interface ProductCardData {
@@ -131,13 +132,13 @@ export const FOOTER = {
   quickLinks: {
     heading: 'Quick links',
     links: [
-      { label: 'Home', href: '/' },
+      { label: 'Home', href: ROUTES.home },
       { label: 'About', href: '/about' },
-      { label: 'Shop', href: '/shop' },
-      { label: 'Contact', href: '/contact' },
-      { label: 'Order Track', href: '/order-track' },
-      { label: 'Order Cancel', href: '/order-cancel' },
-      { label: 'Order Notify', href: '/order-notify' },
+      { label: 'Shop', href: ROUTES.shop },
+      { label: 'Contact', href: ROUTES.contact },
+      { label: 'Order Track', href: ROUTES.trackOrder },
+      { label: 'Order Cancel', href: ROUTES.cancelOrder },
+      { label: 'Order Notify', href: ROUTES.orderNotifications },
     ] satisfies FooterLink[],
   },
   policy: {
@@ -182,9 +183,9 @@ export const FOOTER = {
     phoneHref: 'tel:+919944557815',
   },
   bottomLinks: [
-    { id: 'shop', label: 'Shop', href: '/shop' },
-    { id: 'account', label: 'My Account', href: '/my-account' },
-    { id: 'cart', label: 'Cart', href: '/cart' },
+    { id: 'shop', label: 'Shop', href: ROUTES.shop },
+    { id: 'account', label: 'My Account', href: ROUTES.account },
+    { id: 'cart', label: 'Cart', href: ROUTES.cart },
     { id: 'faq', label: 'FAQ', href: '/faq' },
   ] as const,
   copyrightSite: 'youmart.in',

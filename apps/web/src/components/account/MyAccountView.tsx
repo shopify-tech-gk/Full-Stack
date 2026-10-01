@@ -2,25 +2,19 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { authUserLabel, type AccountOrder } from '@youmart/shared-client';
+import { ROUTES, authUserLabel } from '@youmart/shared-client';
 import { reloadUser, useSession } from '@/lib/session';
 import { AccountShell } from './AccountShell';
 import { LogoutButton } from './LogoutButton';
-import { OrdersTable } from './OrdersTable';
+import { OrdersList } from './OrdersList';
 import { OtpLoginForm } from './OtpLoginForm';
 import { BODY_TEXT, TEXT_LINK } from './formStyles';
 
 const HEADING =
   'font-ui text-[20px] font-semibold leading-[1.3] text-heading md:text-[25px] min-[922px]:text-[34px]';
 
-interface MyAccountViewProps {
-  returnTo?: string;
-  /** DEMO orders until the order API is wired. */
-  orders: readonly AccountOrder[];
-}
-
-/** /my-account is the login page when signed out (as on live) and the dashboard when signed in. */
-export function MyAccountView({ returnTo, orders }: MyAccountViewProps) {
+/** /account is the login page when signed out (as on live) and the dashboard when signed in. */
+export function MyAccountView({ returnTo }: { returnTo?: string }) {
   const session = useSession();
   if (session.status === 'loading') {
     return <div aria-busy="true" className="min-h-[480px]" />;
@@ -28,10 +22,10 @@ export function MyAccountView({ returnTo, orders }: MyAccountViewProps) {
   if (session.status === 'anonymous') {
     return <LoginView returnTo={returnTo} />;
   }
-  return <Dashboard label={authUserLabel(session.user)} orders={orders} />;
+  return <Dashboard label={authUserLabel(session.user)} />;
 }
 
-function Dashboard({ label, orders }: { label: string; orders: readonly AccountOrder[] }) {
+function Dashboard({ label }: { label: string }) {
   useEffect(() => {
     // Real authenticated read (GET /api/auth/me): refreshes the profile and exercises the
     // expired-token path (401 -> silent refresh -> retry).
@@ -47,27 +41,23 @@ function Dashboard({ label, orders }: { label: string; orders: readonly AccountO
       </div>
       <p className={`${BODY_TEXT} mb-[25.6px]`}>
         From your account dashboard you can view your{' '}
-        <Link href="/my-account/orders" className={TEXT_LINK}>
+        <Link href={ROUTES.orders} className={TEXT_LINK}>
           recent orders
         </Link>
         , manage your{' '}
-        <Link href="/my-account/edit-address" className={TEXT_LINK}>
+        <Link href={ROUTES.addresses} className={TEXT_LINK}>
           shipping and billing addresses
         </Link>
         , and{' '}
-        <Link href="/my-account/edit-account" className={TEXT_LINK}>
+        <Link href={ROUTES.accountDetails} className={TEXT_LINK}>
           edit your account details
         </Link>
         .
       </p>
-      {orders.length > 0 && (
-        <>
-          <h2 className="mb-[12px] font-ui text-[20px] font-semibold leading-[26px] text-heading">
-            Recent orders
-          </h2>
-          <OrdersTable orders={orders.slice(0, 3)} />
-        </>
-      )}
+      <h2 className="mb-[12px] font-ui text-[20px] font-semibold leading-[26px] text-heading">
+        Recent orders
+      </h2>
+      <OrdersList limit={3} paged={false} emptyText="You haven't placed an order yet." />
     </AccountShell>
   );
 }

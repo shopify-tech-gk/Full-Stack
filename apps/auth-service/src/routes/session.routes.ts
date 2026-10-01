@@ -1,7 +1,13 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { config } from '../config';
 import { AppError } from '@youmart/errors';
-import { getSessionUser, rotateSession, revokeSession } from '../auth/session.service';
+import {
+  getSessionUser,
+  rotateSession,
+  revokeSession,
+  updateProfile,
+} from '../auth/session.service';
 import { REFRESH_COOKIE_OPTIONS } from '../auth/cookie.util';
 import { requireAuth } from '../authMiddleware';
 
@@ -35,6 +41,23 @@ sessionRouter.get('/me', requireAuth, async (req, res) => {
     throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
   }
   res.status(200).json(await getSessionUser(userId));
+});
+
+const UpdateProfileBody = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Please enter your name')
+    .max(100, 'Name must be 100 characters or fewer'),
+});
+
+sessionRouter.patch('/me', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  const body = UpdateProfileBody.parse(req.body);
+  res.status(200).json(await updateProfile(userId, body));
 });
 
 sessionRouter.post('/logout', async (req, res) => {

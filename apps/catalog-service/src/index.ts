@@ -1,7 +1,7 @@
 import { createApp } from './app';
 import { config } from './config';
 import { logger } from './logger';
-import { close } from './db';
+import { close, closeReviewsDb } from './db';
 
 const app = createApp();
 
@@ -29,8 +29,8 @@ function shutdown(signal: string): void {
       logger.info('http server closed');
     }
 
-    // No queue is used yet in this service - just release the db pool.
-    close()
+    // No queue is used yet in this service - just release the db pools.
+    Promise.all([close(), closeReviewsDb()])
       .then(() => {
         logger.info('db connection pool closed');
       })

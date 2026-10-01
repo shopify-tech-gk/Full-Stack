@@ -33,6 +33,7 @@ import { useAddresses } from '@/lib/addresses';
 import { api } from '@/lib/api';
 import { useCart } from '@/lib/cart';
 import { openRazorpayCheckout } from '@/lib/razorpay';
+import { forgetPendingOrder, pendingOrderId, rememberPendingOrder } from '@/lib/pending-order';
 import { useSession } from '@/lib/session';
 import { AddressPicker } from './AddressPicker';
 import { OrderPanel, OrderReviewTable, type ReviewRow } from './OrderReview';
@@ -51,37 +52,6 @@ type Phase =
   | { step: 'done'; order: OrderView; placedAt: string };
 
 type Message = { tone: 'info' | 'error'; text: string };
-
-// The placed order survives a reload (checkout empties the cart, so it is the only record).
-const PENDING_KEY = 'ym_pending_order';
-
-function rememberPending(userId: string, orderId: string): void {
-  try {
-    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ userId, orderId }));
-  } catch {
-    // Private mode: the order still exists server-side.
-  }
-}
-
-function pendingOrderId(userId: string): string | null {
-  try {
-    const saved = JSON.parse(sessionStorage.getItem(PENDING_KEY) ?? 'null') as {
-      userId?: string;
-      orderId?: string;
-    } | null;
-    return saved?.userId === userId && saved.orderId ? saved.orderId : null;
-  } catch {
-    return null;
-  }
-}
-
-function forgetPending(): void {
-  try {
-    sessionStorage.removeItem(PENDING_KEY);
-  } catch {
-    // ignore
-  }
-}
 
 /** Live's section heading ("Billing details"): small Outfit semibold over a 1px blue rule. */
 const SECTION_TITLE =
@@ -158,7 +128,7 @@ export function CheckoutView() {
   useEffect(() => () => polling.current?.abort(), []);
 
   const finish = (order: OrderView) => {
-    forgetPending();
+    forgetPendingOrder();
     reloadCart();
     setMessage(null);
     setPhase({ step: 'done', order, placedAt: new Date().toISOString() });
@@ -185,7 +155,7 @@ export function CheckoutView() {
     if (outcome.kind === 'confirmed') {
       finish(outcome.order);
     } else if (outcome.kind === 'cancelled') {
-      forgetPending();
+      forgetPendingOrder();
       setPhase({ step: 'review' });
       setMessage({ tone: 'error', text: `Order ${order.orderNumber} was cancelled.` });
     } else {
@@ -259,7 +229,7 @@ export function CheckoutView() {
       reloadCart();
       return;
     }
-    rememberPending(userId, order.orderId);
+    rememberPendingOrder(userId, order.orderId);
     // The order consumed the server cart; the header count follows.
     reloadCart();
     await pay(order);
@@ -291,10 +261,10 @@ export function CheckoutView() {
         } else if (order.status === 'CONFIRMED') {
           finish(order);
         } else {
-          forgetPending();
+          forgetPendingOrder();
         }
       })
-      .catch(() => forgetPending())
+      .catch(() => forgetPendingOrder())
       .finally(() => active && setResumeChecked(true));
     return () => {
       active = false;

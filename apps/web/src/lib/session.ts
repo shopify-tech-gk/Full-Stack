@@ -82,6 +82,13 @@ export async function reloadUser(): Promise<void> {
   if (state.status === 'authenticated') setState({ status: 'authenticated', user });
 }
 
+/** PATCH /api/auth/me - the header greeting and every account view update at once. */
+export async function updateProfileName(name: string): Promise<AuthUser> {
+  const user = await api.auth.updateProfile({ name });
+  if (state.status === 'authenticated') setState({ status: 'authenticated', user });
+  return user;
+}
+
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

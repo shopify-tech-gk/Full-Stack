@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { loginHref } from '@youmart/shared-client';
 import { useSession } from '@/lib/session';
 
 /** Client-side gate: the access token only exists in browser memory, so the server can't check it. */
@@ -12,7 +13,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (session.status === 'anonymous') {
-      router.replace(`/my-account?returnTo=${encodeURIComponent(pathname)}`);
+      router.replace(loginHref(pathname));
     }
   }, [session.status, pathname, router]);
 

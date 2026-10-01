@@ -143,7 +143,7 @@ categories (Electronics > Mobiles, Baby Care > Baby Diaper, Kitchenware >
 Bottle and Flask) with their filter definitions, then rebuilds the search
 index through `POST /api/search/admin/reindex`. Idempotent. It proves the
 attribute-driven listing, e.g.
-`http://localhost:3000/product-category/electronics/mobiles`. The bulk
+`http://localhost:3000/category/electronics/mobiles`. The bulk
 catalog is imported separately (`docs/catalog/IMPORT-SPEC.md`). Sample
 products have no images, so the storefront shows its placeholder.
 

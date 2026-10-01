@@ -1126,6 +1126,7 @@ model Review {
   rating      Int
   title       String?
   body        String?      @db.Text
+  authorName  String?      @map("author_name") @db.VarChar(100)
   status      ReviewStatus @default(PENDING)
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")

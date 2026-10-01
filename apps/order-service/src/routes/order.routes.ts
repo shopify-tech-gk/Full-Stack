@@ -9,6 +9,7 @@ import {
   getInternalOrder,
   confirmOrder,
   cancelOrderForPaymentFailure,
+  findPurchase,
   getSettleableItems,
   getInternalOrderItem,
   setSellerItemStatusInternal,
@@ -16,6 +17,9 @@ import {
 import { adminUpdateSellerItemStatus, listSellerItems } from '../order/seller-order.service';
 import { ListSellerItemsQuery } from '../order/seller-order.schema';
 import { SettleableItemsQuery } from '../order/settleable.schema';
+import { z } from 'zod';
+
+const PurchaseQuery = z.object({ userId: z.string().uuid(), productId: z.string().uuid() });
 import { SetSellerItemStatusBody } from '../order/item-status.schema';
 import { CheckoutBody } from '../order/checkout.schema';
 import { GuestTrackBody } from '../order/guest-track.schema';
@@ -119,6 +123,12 @@ orderRouter.get('/internal/settleable', requireServiceAuth, async (req, res) => 
   const query = SettleableItemsQuery.parse(req.query);
   const items = await getSettleableItems(query.sellerId, new Date(query.from), new Date(query.to));
   res.status(200).json({ items });
+});
+
+// W6: catalog-service's review submit asks "did this customer buy this product?".
+orderRouter.get('/internal/purchases', requireServiceAuth, async (req, res) => {
+  const query = PurchaseQuery.parse(req.query);
+  res.status(200).json(await findPurchase(query.userId, query.productId));
 });
 
 orderRouter.get('/internal/:orderId', requireServiceAuth, async (req, res) => {

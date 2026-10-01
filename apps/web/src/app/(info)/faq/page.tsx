@@ -56,7 +56,7 @@ export default function FaqPage() {
               </details>
             ))}
           </div>
-          {/* DEMO image - live shows a stock photo here. */}
+          {/* Brand-photo placeholder (live: a stock photo) - awaiting the store's own image. */}
           <Image
             src="/placeholders/photo.svg"
             alt=""

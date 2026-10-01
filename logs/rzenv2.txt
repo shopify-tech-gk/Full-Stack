@@ -1,0 +1,3 @@
+RAZORPAY_KEY_ID: sameAsExample=False quoted=False hasSpace=False alnumOnly=True
+RAZORPAY_KEY_SECRET: sameAsExample=False quoted=False hasSpace=False alnumOnly=True
+RAZORPAY_WEBHOOK_SECRET: sameAsExample=False quoted=False hasSpace=False alnumOnly=True

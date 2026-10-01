@@ -150,7 +150,7 @@ async function loadAccountCart(gen: number): Promise<void> {
       );
       writeGuest(kept);
     }
-    // Site-wide: the sign-in may have happened on /checkout or /my-account.
+    // Site-wide: the sign-in may have happened on /checkout or /account.
     const notice = mergeNotice(result);
     if (notice && gen === generation) showCartToast(notice);
   }

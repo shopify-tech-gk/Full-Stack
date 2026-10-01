@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Download, House, ShoppingBag, ShoppingCart, User, type LucideIcon } from 'lucide-react';
-import { BUSINESS } from '@youmart/shared-client';
+import { BUSINESS, ROUTES } from '@youmart/shared-client';
 import { CartCountBadge, cartLinkLabel } from '@/components/cart/CartCountBadge';
 import { useCartCount } from '@/lib/cart';
 
@@ -16,11 +16,11 @@ interface Tab {
 
 // Targets as live links them ("Buy Again" opens the wishlist).
 const TABS: Tab[] = [
-  { href: '/', label: 'Home', icon: House, filled: true },
+  { href: ROUTES.home, label: 'Home', icon: House, filled: true },
   { href: BUSINESS.appStoreHref, label: 'Install App', icon: Download, filled: false },
-  { href: '/wishlist', label: 'Buy Again', icon: ShoppingBag, filled: true },
-  { href: '/cart', label: 'Cart', icon: ShoppingCart, filled: true },
-  { href: '/my-account', label: 'Account', icon: User, filled: true },
+  { href: ROUTES.wishlist, label: 'Buy Again', icon: ShoppingBag, filled: true },
+  { href: ROUTES.cart, label: 'Cart', icon: ShoppingCart, filled: true },
+  { href: ROUTES.account, label: 'Account', icon: User, filled: true },
 ];
 
 function isActive(pathname: string, href: string): boolean {

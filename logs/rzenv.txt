@@ -1,0 +1,5 @@
+RAZORPAY_KEY_ID set=True len=22 testPrefix=True
+RAZORPAY_KEY_SECRET set=True len=35 testPrefix=False
+RAZORPAY_WEBHOOK_SECRET set=True len=39 testPrefix=False
+.env
+tracked=

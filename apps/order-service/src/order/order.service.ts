@@ -23,6 +23,8 @@ export type OrderItemStatusValue =
   'PENDING' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'RETURNED';
 
 export interface OrderItemView {
+  /** W6: lets the customer UI track a line's shipment, request a return or review it. */
+  orderItemId: string;
   skuId: string;
   productId: string;
   sellerId: string;
@@ -60,6 +62,10 @@ export interface OrderView {
   shippingTotal: Money;
   grandTotal: Money;
   shippingAddress: ShippingAddressView | null;
+  /** W6 (v1.6) */
+  createdAt: string;
+  /** W6 (v1.6): the order's status history, oldest first (same data guest tracking shows). */
+  timeline: { status: OrderStatusValue; at: string }[];
 }
 
 export interface OrderListItem {
@@ -72,9 +78,12 @@ export interface OrderListItem {
 
 const ORDER_WITH_ITEMS_INCLUDE = {
   items: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' as const } },
+  statusHistory: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' as const } },
 } satisfies Prisma.OrderInclude;
 
 type OrderWithItems = Prisma.OrderGetPayload<{ include: typeof ORDER_WITH_ITEMS_INCLUDE }>;
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function toShippingAddressView(order: OrderWithItems): ShippingAddressView | null {
   if (
@@ -108,6 +117,7 @@ function toOrderView(order: OrderWithItems): OrderView {
     orderNumber: order.orderNumber,
     status: order.status,
     items: order.items.map((item) => ({
+      orderItemId: item.id,
       skuId: item.skuId,
       productId: item.productId,
       sellerId: item.sellerId,
@@ -121,12 +131,21 @@ function toOrderView(order: OrderWithItems): OrderView {
     shippingTotal: decimalToMoney(order.shippingTotal),
     grandTotal: decimalToMoney(order.grandTotal),
     shippingAddress: toShippingAddressView(order),
+    createdAt: order.createdAt.toISOString(),
+    timeline: order.statusHistory.map((h) => ({
+      status: h.toStatus,
+      at: h.createdAt.toISOString(),
+    })),
   };
 }
 
 async function loadOrderView(orderId: string, userId: string): Promise<OrderView> {
+  // W6: the storefront's order page is keyed by order number (clean URL); both stay user-scoped.
+  const key = UUID_PATTERN.test(orderId)
+    ? { id: orderId }
+    : { orderNumber: orderId.trim().toUpperCase() };
   const order = await prisma.order.findFirst({
-    where: { id: orderId, userId, deletedAt: null },
+    where: { ...key, userId, deletedAt: null },
     include: ORDER_WITH_ITEMS_INCLUDE,
   });
 
@@ -425,6 +444,7 @@ export async function getInternalOrder(orderId: string): Promise<InternalOrderVi
     grandTotal: decimalToMoney(order.grandTotal),
     shippingAddress: toShippingAddressView(order),
     items: order.items.map((item) => ({
+      orderItemId: item.id,
       skuId: item.skuId,
       productId: item.productId,
       sellerId: item.sellerId,
@@ -659,6 +679,27 @@ export interface InternalOrderItemView {
    * changes). Same approximation as settlement-service's
    * getSettleableItems (Ch5.3). */
   updatedAt: string;
+}
+
+/**
+ * W6, SERVICE-ONLY: the caller's most recent PAID purchase of a product (an order item on a
+ * CONFIRMED order, not cancelled) - catalog-service uses it to mark a review "verified purchase".
+ */
+export async function findPurchase(
+  userId: string,
+  productId: string,
+): Promise<{ orderItemId: string | null }> {
+  const item = await prisma.orderItem.findFirst({
+    where: {
+      productId,
+      deletedAt: null,
+      sellerStatus: { notIn: ['CANCELLED'] },
+      order: { userId, status: 'CONFIRMED', deletedAt: null },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true },
+  });
+  return { orderItemId: item?.id ?? null };
 }
 
 /**

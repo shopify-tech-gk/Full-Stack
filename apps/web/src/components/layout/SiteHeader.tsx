@@ -4,9 +4,10 @@ import { useCallback, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Download, Heart, Menu, PackageSearch, ShoppingCart } from 'lucide-react';
-import { BUSINESS } from '@youmart/shared-client';
+import { BUSINESS, ROUTES } from '@youmart/shared-client';
 import { useSession } from '@/lib/session';
 import { useCartCount } from '@/lib/cart';
+import { useWishlistCount } from '@/lib/wishlist';
 import { CartCountBadge, cartLinkLabel } from '@/components/cart/CartCountBadge';
 import { Logo } from './Logo';
 import { SearchBar } from './SearchBar';
@@ -25,13 +26,13 @@ const TILE_ICON = 'size-6';
 // Order, labels and glyphs as measured on the live desktop header; targets as live links them.
 const DESKTOP_ACTIONS: DesktopAction[] = [
   {
-    href: '/my-account/edit-address',
+    href: ROUTES.addresses,
     lines: ['Delivery', 'location'],
     icon: <FaMapMarkerAlt className={TILE_ICON} />,
   },
-  { href: '/my-account', lines: ['My', 'Account'], icon: <FaUser className={TILE_ICON} /> },
+  { href: ROUTES.account, lines: ['My', 'Account'], icon: <FaUser className={TILE_ICON} /> },
   {
-    href: '/order-track',
+    href: ROUTES.trackOrder,
     lines: ['Order', 'Track'],
     icon: <PackageSearch aria-hidden="true" className={TILE_ICON} strokeWidth={2.25} />,
   },
@@ -41,17 +42,17 @@ const DESKTOP_ACTIONS: DesktopAction[] = [
     icon: <Download aria-hidden="true" className={TILE_ICON} strokeWidth={2.5} />,
   },
   {
-    href: '/wishlist',
+    href: ROUTES.wishlist,
     lines: ['My', 'Wishlist'],
     icon: <Heart aria-hidden="true" className={TILE_ICON} strokeWidth={2.5} />,
   },
   {
-    href: '/customer-care',
+    href: ROUTES.customerCare,
     lines: ['Customer', 'Care'],
     icon: <FaWhatsapp className={TILE_ICON} />,
   },
   {
-    href: '/cart',
+    href: ROUTES.cart,
     lines: ['Cart'],
     icon: <ShoppingCart aria-hidden="true" className={TILE_ICON} strokeWidth={2.5} />,
   },
@@ -106,6 +107,7 @@ export function SiteHeader() {
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const session = useSession();
   const cartCount = useCartCount();
+  const wishlistCount = useWishlistCount();
   // Same tile as live's "My Account"; once signed in it greets the customer instead.
   const firstName = session.user?.name?.split(' ')[0];
   const accountLines: [string, string] =
@@ -133,13 +135,13 @@ export function SiteHeader() {
           <Logo variant="mobile" className="ml-[11px] w-[138px]" priority />
           <nav aria-label="Quick links" className="ml-auto flex items-center gap-[28px]">
             <CompactLink
-              href="/order-track"
+              href={ROUTES.trackOrder}
               lines={['Track', 'Order']}
               icon={trackOrderIcon}
               align="left"
             />
             <CompactLink
-              href="/customer-care"
+              href={ROUTES.customerCare}
               lines={['Customer', 'Care']}
               icon={customerCareIcon}
               align="center"
@@ -159,13 +161,13 @@ export function SiteHeader() {
         <SearchBar id="search-tablet" size="mobile" className="-mt-px ml-[16px] w-[41%] shrink-0" />
         <nav aria-label="Quick links" className="ml-auto mr-[12px] flex items-center gap-[24px]">
           <CompactLink
-            href="/my-account/edit-address"
+            href={ROUTES.addresses}
             lines={['Delivery', 'Location']}
             icon={<FaMapMarkerAlt className="h-[24px] w-[18px] text-brand" />}
             align="center"
           />
           <CompactLink
-            href="/customer-care"
+            href={ROUTES.customerCare}
             lines={['Customer', 'Care']}
             icon={customerCareIcon}
             align="center"
@@ -187,20 +189,25 @@ export function SiteHeader() {
                 <Link
                   href={href}
                   aria-label={
-                    href === '/cart'
+                    href === ROUTES.cart
                       ? cartLinkLabel(cartCount)
-                      : href === '/my-account' && session.status === 'authenticated'
-                        ? 'My account (signed in)'
-                        : undefined
+                      : href === ROUTES.wishlist
+                        ? `My wishlist, ${wishlistCount} ${wishlistCount === 1 ? 'item' : 'items'}`
+                        : href === ROUTES.account && session.status === 'authenticated'
+                          ? 'My account (signed in)'
+                          : undefined
                   }
                   className="group flex min-w-[38px] flex-col items-center"
                 >
                   <span className="relative flex size-[38px] items-center justify-center rounded-tile bg-brand p-[7px] text-white">
                     {icon}
-                    {href === '/cart' && <CartCountBadge count={cartCount} tone="onBrand" />}
+                    {href === ROUTES.cart && <CartCountBadge count={cartCount} tone="onBrand" />}
+                    {href === ROUTES.wishlist && (
+                      <CartCountBadge count={wishlistCount} tone="onBrand" />
+                    )}
                   </span>
                   <TwoLineLabel
-                    lines={href === '/my-account' ? accountLines : lines}
+                    lines={href === ROUTES.account ? accountLines : lines}
                     className="mt-[1px] text-center font-ui text-[13px] font-semibold leading-[16.9px] text-ink-strong"
                   />
                 </Link>

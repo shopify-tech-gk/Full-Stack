@@ -10,7 +10,7 @@ import {
 import { ProductCard } from '@/components/product/ProductCard';
 
 interface ProductShowcaseProps {
-  /** Products per filter tab; the catalog API replaces the demo sets later. */
+  /** Products per filter tab, from the catalog API (lib/catalog getHomeProducts). */
   productsFor: Record<ProductFilter, readonly ProductCardData[]>;
 }
 

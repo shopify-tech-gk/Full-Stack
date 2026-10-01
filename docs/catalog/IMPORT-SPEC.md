@@ -61,22 +61,22 @@ A `manifest.json` accompanies each delivery:
 }
 ```
 
-| Field         | Required | Type   | Rules                                                                                                                                            |
-| ------------- | -------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `slug`        | yes      | string | `^[a-z0-9-]{1,200}$`, unique across ALL categories, **stable forever** (it is the URL: `/product-category/<parent>/<slug>`). Reuse live youmartshop.com slugs. |
-| `name`        | yes      | string | 1-200 chars, display name.                                                                                                                       |
-| `parent_slug` | no       | string | Slug of the parent; omit/null for a root. Parents must appear earlier in the file. Max depth 3 (root > sub > child), as the storefront menu.      |
-| `filters`     | no       | array  | The **filter definition** (below). Omit/null = **inherit** the nearest ancestor's definition. `[]` = explicitly no attribute filters.            |
+| Field         | Required | Type   | Rules                                                                                                                                                                                                 |
+| ------------- | -------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `slug`        | yes      | string | `^[a-z0-9-]{1,200}$`, unique across ALL categories, **stable forever** (it is the URL: `/category/<parent>/<slug>`; the old `/product-category/...` 308-redirects). Reuse live youmartshop.com slugs. |
+| `name`        | yes      | string | 1-200 chars, display name.                                                                                                                                                                            |
+| `parent_slug` | no       | string | Slug of the parent; omit/null for a root. Parents must appear earlier in the file. Max depth 3 (root > sub > child), as the storefront menu.                                                          |
+| `filters`     | no       | array  | The **filter definition** (below). Omit/null = **inherit** the nearest ancestor's definition. `[]` = explicitly no attribute filters.                                                                 |
 
 ### Filter definition entries
 
-| Field   | Required | Type    | Rules                                                                                                           |
-| ------- | -------- | ------- | --------------------------------------------------------------------------------------------------------------- |
-| `key`   | yes      | string  | An attribute key used by this category's products (§4). `^[a-z0-9_]{1,40}$`. Unique within the definition.      |
-| `label` | yes      | string  | 1-60 chars, what the shopper sees ("RAM", "Screen Size").                                                       |
-| `type`  | yes      | enum    | `multi_select` (checkboxes), `single_select` (radio), `range` (slider), `boolean` (a single "Yes" checkbox).     |
-| `unit`  | no       | string  | 1-12 chars, shown after values ("GB", "in", "ml", "pcs"). Never repeat the unit inside attribute values.         |
-| `order` | no       | integer | 0-1000, display order (ascending).                                                                              |
+| Field   | Required | Type    | Rules                                                                                                        |
+| ------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| `key`   | yes      | string  | An attribute key used by this category's products (§4). `^[a-z0-9_]{1,40}$`. Unique within the definition.   |
+| `label` | yes      | string  | 1-60 chars, what the shopper sees ("RAM", "Screen Size").                                                    |
+| `type`  | yes      | enum    | `multi_select` (checkboxes), `single_select` (radio), `range` (slider), `boolean` (a single "Yes" checkbox). |
+| `unit`  | no       | string  | 1-12 chars, shown after values ("GB", "in", "ml", "pcs"). Never repeat the unit inside attribute values.     |
+| `order` | no       | integer | 0-1000, display order (ascending).                                                                           |
 
 - At most **30** filters per category.
 - **Price and rating are universal** - every category gets them automatically. Never declare them.
@@ -125,31 +125,31 @@ A `manifest.json` accompanies each delivery:
 }
 ```
 
-| Field              | Required | Type             | Rules                                                                                                                  |
-| ------------------ | -------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `external_id`      | yes      | string           | The data team's stable id, 1-100 chars. The importer upserts by it - re-delivering a product updates it, never duplicates. |
-| `title`            | yes      | string           | 1-300 chars.                                                                                                           |
-| `slug`             | no       | string           | `^[a-z0-9-]{1,200}$`, unique. Generated from the title when omitted. Stable once published (it is the product URL).     |
-| `description`      | no       | string           | Up to 5,000 chars, plain text. The first sentence doubles as the short description.                                     |
-| `category_slug`    | yes      | string           | Must exist in `categories.jsonl`. Assign the **most specific** (leaf) category.                                         |
-| `status`           | no       | enum             | `ACTIVE` (listed) \| `DRAFT` (hidden) \| `ARCHIVED` (withdrawn). Default `ACTIVE`.                                      |
-| `attributes`       | yes      | object           | §4. May be `{}`, but products without attributes can't be filtered.                                                     |
-| `hsn_code`         | no       | string           | GST HSN/SAC code, 1-20 chars. Platform default applies when omitted.                                                    |
-| `gst_rate_percent` | no       | decimal string   | e.g. `"18.00"`. Platform default applies when omitted.                                                                   |
-| `rating`           | no       | number           | Average review rating 1.0-5.0 (one decimal), feeds the rating filter/sort. Omit when there are no ratings.              |
-| `rating_count`     | no       | integer          | Number of ratings behind `rating`. Default 0.                                                                           |
-| `skus`             | yes      | array (1+)       | Sellable variants (below).                                                                                              |
-| `images`           | no       | array            | §5. First by `position` is the listing image.                                                                           |
+| Field              | Required | Type           | Rules                                                                                                                      |
+| ------------------ | -------- | -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `external_id`      | yes      | string         | The data team's stable id, 1-100 chars. The importer upserts by it - re-delivering a product updates it, never duplicates. |
+| `title`            | yes      | string         | 1-300 chars.                                                                                                               |
+| `slug`             | no       | string         | `^[a-z0-9-]{1,200}$`, unique. Generated from the title when omitted. Stable once published (it is the product URL).        |
+| `description`      | no       | string         | Up to 5,000 chars, plain text. The first sentence doubles as the short description.                                        |
+| `category_slug`    | yes      | string         | Must exist in `categories.jsonl`. Assign the **most specific** (leaf) category.                                            |
+| `status`           | no       | enum           | `ACTIVE` (listed) \| `DRAFT` (hidden) \| `ARCHIVED` (withdrawn). Default `ACTIVE`.                                         |
+| `attributes`       | yes      | object         | §4. May be `{}`, but products without attributes can't be filtered.                                                        |
+| `hsn_code`         | no       | string         | GST HSN/SAC code, 1-20 chars. Platform default applies when omitted.                                                       |
+| `gst_rate_percent` | no       | decimal string | e.g. `"18.00"`. Platform default applies when omitted.                                                                     |
+| `rating`           | no       | number         | Average review rating 1.0-5.0 (one decimal), feeds the rating filter/sort. Omit when there are no ratings.                 |
+| `rating_count`     | no       | integer        | Number of ratings behind `rating`. Default 0.                                                                              |
+| `skus`             | yes      | array (1+)     | Sellable variants (below).                                                                                                 |
+| `images`           | no       | array          | §5. First by `position` is the listing image.                                                                              |
 
 ### SKUs
 
-| Field           | Required | Type           | Rules                                                                                      |
-| --------------- | -------- | -------------- | ------------------------------------------------------------------------------------------ |
-| `sku_code`      | yes      | string         | 1-100 chars, unique across the whole catalog, stable.                                      |
-| `mrp`           | yes      | decimal string | Rupees with exactly 2 decimals (`"24999.00"`). Never a JSON number (float rounding).        |
-| `selling_price` | yes      | decimal string | Same format, `<= mrp`.                                                                     |
-| `stock`         | no       | integer        | Units available, >= 0. Default 0 (listed but not purchasable).                              |
-| `attributes`    | no       | object         | What distinguishes this variant (`{"color": "Black"}`), same format as §4.                 |
+| Field           | Required | Type           | Rules                                                                                |
+| --------------- | -------- | -------------- | ------------------------------------------------------------------------------------ |
+| `sku_code`      | yes      | string         | 1-100 chars, unique across the whole catalog, stable.                                |
+| `mrp`           | yes      | decimal string | Rupees with exactly 2 decimals (`"24999.00"`). Never a JSON number (float rounding). |
+| `selling_price` | yes      | decimal string | Same format, `<= mrp`.                                                               |
+| `stock`         | no       | integer        | Units available, >= 0. Default 0 (listed but not purchasable).                       |
+| `attributes`    | no       | object         | What distinguishes this variant (`{"color": "Black"}`), same format as §4.           |
 
 The listing shows the **cheapest SKU's** price and MRP.
 
@@ -171,12 +171,12 @@ The listing shows the **cheapest SKU's** price and MRP.
 
 ### 4.2 Values
 
-| Value type    | Example                          | Use for                                                                                 |
-| ------------- | -------------------------------- | --------------------------------------------------------------------------------------- |
-| string        | `"Samsung"`, `"5G"`, `"M"`       | `multi_select` / `single_select` filters.                                               |
-| number        | `6.6`, `1000`, `54`              | `range` filters (also fine for select filters). A numeric string (`"8"`) counts too.     |
-| boolean       | `true` / `false`                 | `boolean` filters ("Insulated: Yes").                                                   |
-| list          | `["Black", "Blue"]`              | Multi-valued attributes; the product matches a filter on any of its values.              |
+| Value type | Example                    | Use for                                                                              |
+| ---------- | -------------------------- | ------------------------------------------------------------------------------------ |
+| string     | `"Samsung"`, `"5G"`, `"M"` | `multi_select` / `single_select` filters.                                            |
+| number     | `6.6`, `1000`, `54`        | `range` filters (also fine for select filters). A numeric string (`"8"`) counts too. |
+| boolean    | `true` / `false`           | `boolean` filters ("Insulated: Yes").                                                |
+| list       | `["Black", "Blue"]`        | Multi-valued attributes; the product matches a filter on any of its values.          |
 
 Rules:
 

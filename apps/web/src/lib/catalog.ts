@@ -36,7 +36,7 @@ export interface CategoryNode {
   name: string;
 }
 
-/** Resolves `/product-category/a/b/c` path segments against the storefront menu tree. */
+/** Resolves `/category/a/b/c` path segments against the storefront menu tree. */
 export function resolveCategoryPath(segments: readonly string[]): CategoryNode | null {
   const [rootSlug, ...rest] = segments;
   const root = storeCategories.find((c) => c.slug === rootSlug);

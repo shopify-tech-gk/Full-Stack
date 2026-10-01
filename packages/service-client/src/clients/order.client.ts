@@ -119,6 +119,9 @@ export interface OrderClient {
    * token is what authenticates this call, Ch6.5). Returns the exact same
    * shape as `getInternalOrder`. */
   getInternalOrderForInvoice(orderId: string): Promise<InternalOrderView>;
+  /** Backed by `GET /orders/internal/purchases` (W6) - the user's most recent paid order item
+   * for the product, or `null`; catalog-service uses it to verify a review's purchase. */
+  findPurchase(userId: string, productId: string): Promise<{ orderItemId: string | null }>;
 }
 
 /** `baseUrl` (e.g. `ORDER_SERVICE_URL`) is injected by the caller - this
@@ -200,6 +203,17 @@ export function createOrderClient({
       return request<InternalOrderView>({
         baseUrl,
         path: `/orders/internal/for-invoice/${orderId}`,
+        method: 'GET',
+        authToken: authToken(),
+        timeoutMs,
+      });
+    },
+
+    findPurchase(userId, productId) {
+      const query = new URLSearchParams({ userId, productId }).toString();
+      return request<{ orderItemId: string | null }>({
+        baseUrl,
+        path: `/orders/internal/purchases?${query}`,
         method: 'GET',
         authToken: authToken(),
         timeoutMs,

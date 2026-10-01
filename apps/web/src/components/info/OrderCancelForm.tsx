@@ -1,71 +1,101 @@
 'use client';
 
-import { useId, useState, useTransition, type FormEvent } from 'react';
+import { useEffect, useId, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import {
   CANCEL_REASONS,
   EMPTY_ORDER_CANCEL,
+  formatMoney,
+  orderHref,
+  supportErrorMessage,
+  validateOrderCancel,
+  type CancelOrderResult,
   type FormErrors,
   type OrderCancelValues,
 } from '@youmart/shared-client';
-import { requestOrderCancel } from '@/app/support-actions';
 import { Notice } from '@/components/account/Notice';
-import { FIELD_HINT, FORM_BUTTON, FORM_INPUT } from '@/components/account/formStyles';
+import { FORM_BUTTON, FORM_INPUT, TEXT_LINK } from '@/components/account/formStyles';
+import { api } from '@/lib/api';
 import { Field } from './Field';
+import { initialOrderId, useOwnOrders } from './useOwnOrders';
 
-export function OrderCancelForm() {
+/**
+ * POST /api/orders/:id/cancel on one of the customer's own orders: an unpaid order is cancelled
+ * at once (stock released); a paid one becomes a request our team approves (refund on approval).
+ */
+export function OrderCancelForm({ orderNumber }: { orderNumber?: string }) {
   const id = useId();
+  const { orders, failed } = useOwnOrders();
   const [values, setValues] = useState(EMPTY_ORDER_CANCEL);
   const [errors, setErrors] = useState<FormErrors<keyof OrderCancelValues>>({});
-  const [reference, setReference] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<CancelOrderResult | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    if (orders) setValues((v) => ({ ...v, orderId: initialOrderId(orders, orderNumber) }));
+  }, [orders, orderNumber]);
 
   const set = (key: keyof OrderCancelValues, value: string) =>
     setValues((current) => ({ ...current, [key]: value }));
 
-  const onSubmit = (event: FormEvent) => {
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    startTransition(async () => {
-      const result = await requestOrderCancel(values);
-      setErrors(result.errors ?? {});
-      if (result.ok) {
-        setReference(result.reference ?? '');
-        setValues(EMPTY_ORDER_CANCEL);
-      }
-    });
+    const { data, errors: found } = validateOrderCancel(values);
+    setErrors(found);
+    setFailure(null);
+    if (!data) return;
+    setPending(true);
+    try {
+      const { orderId, ...body } = data;
+      setResult(await api.orders.cancel(orderId, body));
+      setValues(EMPTY_ORDER_CANCEL);
+    } catch (error) {
+      setFailure(supportErrorMessage(error));
+    } finally {
+      setPending(false);
+    }
   };
+
+  if (failed) return <Notice tone="error">We could not load your orders. Please refresh.</Notice>;
+  if (!orders) return <div aria-busy="true" className="min-h-[200px]" />;
+
+  const open = orders.filter((order) => order.status !== 'CANCELLED');
+  if (result) {
+    const number = result.order.orderNumber;
+    return (
+      <Notice tone="success">
+        {result.outcome === 'CANCELLED'
+          ? `Order #${number} has been cancelled.`
+          : `We've received your request to cancel order #${number}. We'll confirm once it is reviewed; any payment is refunded to the original method.`}{' '}
+        <Link href={orderHref(number)} className={TEXT_LINK}>
+          View order
+        </Link>
+      </Notice>
+    );
+  }
+  if (open.length === 0) {
+    return <Notice tone="info">You have no orders that can be cancelled.</Notice>;
+  }
 
   return (
     <form onSubmit={onSubmit} noValidate>
-      {reference !== null && (
-        <Notice tone="success">
-          Your cancellation request has been received (reference {reference}). We will confirm by
-          WhatsApp or SMS once it is processed.
-        </Notice>
-      )}
-      <Field id={`${id}-order`} label="Order ID" required error={errors.orderNumber}>
+      {failure && <Notice tone="error">{failure}</Notice>}
+      <Field id={`${id}-order`} label="Order" required error={errors.orderId}>
         {(aria) => (
-          <input
+          <select
             {...aria}
-            maxLength={40}
-            placeholder="Enter Order ID"
-            value={values.orderNumber}
-            onChange={(e) => set('orderNumber', e.target.value)}
+            value={values.orderId}
+            onChange={(e) => set('orderId', e.target.value)}
             className={FORM_INPUT}
-          />
-        )}
-      </Field>
-      <Field id={`${id}-phone`} label="Mobile number" required error={errors.phone}>
-        {(aria) => (
-          <input
-            {...aria}
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel-national"
-            placeholder="Mobile number used for the order"
-            value={values.phone}
-            onChange={(e) => set('phone', e.target.value)}
-            className={FORM_INPUT}
-          />
+          >
+            <option value="">Select an order&hellip;</option>
+            {open.map((order) => (
+              <option key={order.orderId} value={order.orderId}>
+                #{order.orderNumber} &middot; {formatMoney(order.grandTotal)}
+              </option>
+            ))}
+          </select>
         )}
       </Field>
       <Field id={`${id}-reason`} label="Reason for cancellation" required error={errors.reason}>
@@ -99,12 +129,8 @@ export function OrderCancelForm() {
       </Field>
       <p className="m-[3px]">
         <button type="submit" disabled={pending} className={FORM_BUTTON}>
-          {pending ? 'Sending…' : 'Request cancellation'}
+          {pending ? 'Sending\u2026' : 'Cancel order'}
         </button>
-      </p>
-      {/* DEMO hint - remove when a customer cancel endpoint exists. */}
-      <p className={`${FIELD_HINT} mx-[3px] mt-[10px]`}>
-        Demo: requests are not sent anywhere yet.
       </p>
     </form>
   );

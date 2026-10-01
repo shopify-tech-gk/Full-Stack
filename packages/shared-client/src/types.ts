@@ -255,6 +255,8 @@ export type OrderStatus = 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED';
 export type SellerItemStatus =
   'PENDING' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'RETURNED';
 export interface OrderItem {
+  /** v1.6 */
+  orderItemId: Uuid;
   skuId: Uuid;
   productId: Uuid;
   sellerId: Uuid;
@@ -285,6 +287,14 @@ export interface OrderView {
   shippingTotal: Money;
   grandTotal: Money;
   shippingAddress: ShippingAddressSnapshot;
+  /** v1.6 */
+  createdAt: IsoDateTime;
+  /** v1.6: order status history, oldest first. */
+  timeline: OrderTimelineEntry[];
+}
+export interface OrderTimelineEntry {
+  status: OrderStatus;
+  at: IsoDateTime;
 }
 export interface OrderListItem {
   orderId: Uuid;
@@ -292,6 +302,111 @@ export interface OrderListItem {
   status: OrderStatus;
   grandTotal: Money;
   createdAt: IsoDateTime;
+}
+
+/** POST /api/orders/track (public): deliberately no ids, prices or full address. */
+export interface GuestTrackingView {
+  orderNumber: string;
+  status: OrderStatus;
+  placedAt: IsoDateTime;
+  shipTo: { city: string; state: string } | null;
+  items: {
+    title: string;
+    quantity: number;
+    sellerStatus: SellerItemStatus;
+    shipment: ShipmentTracking | null;
+  }[];
+  timeline: OrderTimelineEntry[];
+}
+export interface ShipmentTracking {
+  status: string;
+  carrier: string | null;
+  awbNumber: string | null;
+  events: { status: string; location: string | null; occurredAt: IsoDateTime }[];
+}
+
+export type CancelRequestStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED';
+export interface CancelRequestView {
+  cancelRequestId: Uuid;
+  orderId: Uuid;
+  status: CancelRequestStatus;
+  reason: string;
+  comment: string | null;
+  resolutionNote: string | null;
+  createdAt: IsoDateTime;
+  resolvedAt: IsoDateTime | null;
+}
+/** POST /api/orders/:id/cancel - unpaid orders cancel at once; paid ones become a request. */
+export interface CancelOrderResult {
+  outcome: 'CANCELLED' | 'CANCEL_REQUESTED';
+  order: OrderView;
+  cancelRequest: CancelRequestView | null;
+}
+export interface NotifyPreference {
+  orderId: Uuid;
+  whatsapp: boolean;
+  sms: boolean;
+  updatedAt: IsoDateTime | null;
+}
+
+// --- Wishlist ---
+export interface WishlistItem {
+  wishlistItemId: Uuid;
+  skuId: Uuid;
+  productId: Uuid;
+  /** null (with title/prices) once the product is no longer sold. */
+  productSlug: string | null;
+  title: string | null;
+  sellingPrice: Money | null;
+  mrp: Money | null;
+  available: boolean;
+  addedAt: IsoDateTime;
+}
+export interface WishlistView {
+  items: WishlistItem[];
+  itemCount: number;
+}
+
+// --- Support ---
+export interface SupportMessageBody {
+  name: string;
+  phone: string;
+  email?: string;
+  message: string;
+}
+export interface SupportMessageReceipt {
+  messageId: Uuid;
+  reference: string;
+  receivedAt: IsoDateTime;
+}
+
+// --- Reviews (v1.6) ---
+export interface Review {
+  id: Uuid;
+  rating: number;
+  title: string | null;
+  body: string;
+  author: string;
+  verifiedPurchase: boolean;
+  createdAt: IsoDateTime;
+  updatedAt: IsoDateTime;
+}
+export interface ReviewPage {
+  items: Review[];
+  total: number;
+  page: number;
+  perPage: number;
+  breakdown: Record<'1' | '2' | '3' | '4' | '5', number>;
+}
+export interface MyReview {
+  canReview: boolean;
+  review: Review | null;
+}
+export interface SubmitReviewBody {
+  rating: number;
+  title?: string;
+  body: string;
+  authorName?: string;
 }
 
 // --- Payments ---

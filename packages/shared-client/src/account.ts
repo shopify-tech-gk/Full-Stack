@@ -1,8 +1,17 @@
 import { ApiError } from './api-client';
+import { ROUTES } from './routes';
 import type { Address, AddressInput, OrderView, SellerItemStatus } from './types';
 
 /** Where a successful login may return to - same-origin paths under these prefixes only. */
-export const LOGIN_RETURN_PATHS = ['/my-account', '/checkout', '/order-notify', '/wishlist'];
+export const LOGIN_RETURN_PATHS = [
+  ROUTES.account,
+  ROUTES.checkout,
+  ROUTES.wishlist,
+  ROUTES.cancelOrder,
+  ROUTES.orderNotifications,
+  // A product page ("log in to write a review").
+  '/product',
+];
 
 /** Customer-facing text for an OTP request/verify failure (ApiError envelope from auth-service). */
 export function otpErrorMessage(error: unknown, step: 'request' | 'verify'): string {
@@ -31,13 +40,13 @@ export type AccountSection =
   'dashboard' | 'orders' | 'track' | 'addresses' | 'account' | 'wishlist' | 'logout';
 
 export const ACCOUNT_NAV: readonly { key: AccountSection; label: string; href: string }[] = [
-  { key: 'dashboard', label: 'Dashboard', href: '/my-account' },
-  { key: 'orders', label: 'Orders', href: '/my-account/orders' },
-  { key: 'track', label: 'Track Order', href: '/order-track' },
-  { key: 'addresses', label: 'Addresses', href: '/my-account/edit-address' },
-  { key: 'account', label: 'Account details', href: '/my-account/edit-account' },
-  { key: 'wishlist', label: 'Wishlist', href: '/wishlist' },
-  { key: 'logout', label: 'Log out', href: '/my-account' },
+  { key: 'dashboard', label: 'Dashboard', href: ROUTES.account },
+  { key: 'orders', label: 'Orders', href: ROUTES.orders },
+  { key: 'track', label: 'Track Order', href: ROUTES.trackOrder },
+  { key: 'addresses', label: 'Addresses', href: ROUTES.addresses },
+  { key: 'account', label: 'Account details', href: ROUTES.accountDetails },
+  { key: 'wishlist', label: 'Wishlist', href: ROUTES.wishlist },
+  { key: 'logout', label: 'Log out', href: ROUTES.account },
 ];
 
 // --- Phone / OTP (auth-service: E.164 phone, 6-digit code) ---
@@ -102,13 +111,13 @@ export function authUserLabel(user: {
 
 export function safeReturnTo(value: unknown): string {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) {
-    return '/my-account';
+    return ROUTES.account;
   }
   const path = value.split(/[?#]/)[0] ?? '';
   const allowed =
     !path.includes('\\') &&
     LOGIN_RETURN_PATHS.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
-  return allowed ? path : '/my-account';
+  return allowed ? path : ROUTES.account;
 }
 
 // --- Addresses (address-service CreateAddressBody) ---
@@ -271,18 +280,27 @@ export function addressLines(
   ].filter((line): line is string => Boolean(line));
 }
 
-// --- Orders / tracking (order-service OrderView + logistics tracking events) ---
+// --- Orders / tracking (order-service OrderView + guest tracking share these) ---
+/** What the status helpers need: the payment status and each line's fulfilment status. */
+export interface OrderProgressSource {
+  status: OrderView['status'];
+  items: readonly { sellerStatus: SellerItemStatus }[];
+}
+
 export interface TrackingEvent {
   status: string;
-  location?: string;
+  location: string | null;
   /** ISO timestamp. */
   occurredAt: string;
 }
 
-/** Order as the account pages show it; `createdAt` comes from GET /api/orders. */
-export interface AccountOrder extends OrderView {
-  createdAt: string;
-  events: readonly TrackingEvent[];
+/** Every line's shipment events, newest first (an order can ship in several parcels). */
+export function shipmentEvents(
+  items: readonly { shipment?: { events: readonly TrackingEvent[] } | null }[],
+): TrackingEvent[] {
+  return items
+    .flatMap((item) => item.shipment?.events ?? [])
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
 }
 
 export const TRACKING_STEPS = ['Order placed', 'Packed', 'Shipped', 'Delivered'] as const;
@@ -298,7 +316,7 @@ const STEP_OF: Record<SellerItemStatus, number> = {
 };
 
 /** Fulfilment progress = the least-advanced live item (per-item sellerStatus, not order.status). */
-export function trackingProgress(order: OrderView): { step: number; cancelled: boolean } {
+export function trackingProgress(order: OrderProgressSource): { step: number; cancelled: boolean } {
   const live = order.items.filter((item) => item.sellerStatus !== 'CANCELLED');
   if (order.status === 'CANCELLED' || live.length === 0) {
     return { step: -1, cancelled: true };
@@ -306,10 +324,25 @@ export function trackingProgress(order: OrderView): { step: number; cancelled: b
   return { step: Math.min(...live.map((item) => STEP_OF[item.sellerStatus])), cancelled: false };
 }
 
-export function orderStatusLabel(order: OrderView): string {
+export function orderStatusLabel(order: OrderProgressSource): string {
   if (order.status === 'PENDING_PAYMENT') return 'Pending payment';
   const { step, cancelled } = trackingProgress(order);
   return cancelled
     ? 'Cancelled'
     : (['Processing', 'Packed', 'Shipped', 'Delivered'][step] ?? 'Processing');
+}
+
+/** Mirrors order-service's cancel rule: unpaid, or paid and nothing has shipped yet. */
+export function canCancelOrder(order: OrderProgressSource): boolean {
+  if (order.status === 'CANCELLED') return false;
+  return order.items.every((item) => STEP_OF[item.sellerStatus] < 2);
+}
+
+/** Label for a timeline row (order-service's order-level status history). */
+export function orderEventLabel(status: OrderView['status']): string {
+  return {
+    PENDING_PAYMENT: 'Order placed',
+    CONFIRMED: 'Payment received',
+    CANCELLED: 'Order cancelled',
+  }[status];
 }

@@ -79,8 +79,9 @@ function optionalInt(value: string | undefined, min: number): number | null {
   return Number.isFinite(parsed) ? Math.max(min, parsed) : null;
 }
 
-export function parseListingQuery(params: SearchParams, page = 1): ListingQuery {
+export function parseListingQuery(params: SearchParams): ListingQuery {
   const orderby = first(params.orderby);
+  const page = optionalInt(first(params.page), 1) ?? 1;
   const minPrice = optionalInt(first(params.min_price), 0);
   const maxPrice = optionalInt(first(params.max_price), minPrice ?? 0);
   const filters: Record<string, string> = {};
@@ -109,7 +110,7 @@ export function parseListingQuery(params: SearchParams, page = 1): ListingQuery 
   };
 }
 
-/** Query string for a listing URL; defaults are omitted. `page` lives in the path (live: /page/N). */
+/** Query string for a listing URL; defaults are omitted (the page number is added separately). */
 export function listingQueryString(query: Omit<ListingQuery, 'page'>): string {
   const params = new URLSearchParams();
   if (query.sort !== 'default') params.set('orderby', query.sort);
@@ -122,6 +123,12 @@ export function listingQueryString(query: Omit<ListingQuery, 'page'>): string {
   }
   const text = params.toString();
   return text ? `?${text}` : '';
+}
+
+/** A listing page URL: page 1 is the bare listing; later pages add `page=N` to the filters. */
+export function listingPageHref(basePath: string, queryString: string, page: number): string {
+  if (page <= 1) return `${basePath}${queryString}`;
+  return `${basePath}${queryString ? `${queryString}&` : '?'}page=${page}`;
 }
 
 /** The catalog API query for a listing (`GET /api/catalog/products`, `.../filters`). */
@@ -233,17 +240,8 @@ export function paginationItems(current: number, total: number, size = 3): Pagin
   return items;
 }
 
-// Product detail page view model; the catalog API maps into this later.
-export interface ProductReviewData {
-  id: string;
-  author: string;
-  /** ISO date. */
-  date: string;
-  rating: number;
-  text: string;
-  verified: boolean;
-}
-
+// Product detail page view model. Written reviews load separately (GET .../:slug/reviews);
+// rating/ratingCount are the catalog aggregate, which includes them.
 export interface ProductDetailData {
   id: string;
   slug: string;
@@ -260,7 +258,6 @@ export interface ProductDetailData {
   categories: readonly { name: string; href: string }[];
   /** Labelled attribute rows (labels/units from the category's filter definition). */
   specifications: readonly { label: string; value: string }[];
-  reviews: readonly ProductReviewData[];
   related: readonly ProductCardData[];
 }
 
@@ -297,8 +294,6 @@ export function toProductDetailData(
       label: row.label,
       value: row.unit ? `${row.value} ${row.unit}` : row.value,
     })),
-    // No public reviews API yet; the tab shows its empty state.
-    reviews: [],
     related,
   };
 }

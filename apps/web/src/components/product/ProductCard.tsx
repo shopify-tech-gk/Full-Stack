@@ -9,6 +9,7 @@ import {
 import { skipImageOptimizer } from '@/lib/images';
 import { AddToCartButton } from './AddToCartButton';
 import { StarRating } from './StarRating';
+import { WishlistButton } from './WishlistButton';
 
 interface ProductCardProps {
   product: ProductCardData;
@@ -23,6 +24,30 @@ interface ProductCardProps {
 // Live MRP strike: two red lines crossed at +/-18deg over the struck price.
 const STRIKE =
   "relative no-underline text-black before:absolute before:inset-x-0 before:top-[0.56em] before:h-[2px] before:rotate-[18deg] before:bg-price-strike before:content-[''] after:absolute after:inset-x-0 after:top-[0.56em] after:h-[2px] after:-rotate-[18deg] after:bg-price-strike after:content-['']";
+
+// POLISH (W6, flagged): a wishlist heart on every card; live only offers it on the product page.
+function CardHeart({ product }: { product: ProductCardData }) {
+  const { skuId, slug } = product;
+  return (
+    <div className="absolute right-[8px] top-[8px] z-[1]">
+      <WishlistButton
+        variant="icon"
+        product={
+          skuId && slug
+            ? {
+                skuId,
+                productId: product.id,
+                productSlug: slug,
+                title: product.title,
+                price: product.sellingPrice,
+                mrp: product.mrp,
+              }
+            : null
+        }
+      />
+    </div>
+  );
+}
 
 /** Measured from the live youmartshop.com product grid (rtsb grid layout 1 + site overrides). */
 export function ProductCard({
@@ -39,7 +64,8 @@ export function ProductCard({
   const price = formatMoney(product.sellingPrice);
 
   return (
-    <article className="group flex h-full flex-col justify-between overflow-hidden rounded-product-card border-2 border-card-border bg-white shadow-product-card">
+    <article className="group relative flex h-full flex-col justify-between overflow-hidden rounded-product-card border-2 border-card-border bg-white shadow-product-card">
+      <CardHeart product={product} />
       <Link
         href={product.href}
         tabIndex={-1}
@@ -111,10 +137,11 @@ function ListingCard({ product, priority, shadow }: Omit<ProductCardProps, 'vari
 
   return (
     <article
-      className={`flex h-full flex-col overflow-hidden rounded-[10px] border border-catalog-rule bg-white ${
+      className={`relative flex h-full flex-col overflow-hidden rounded-[10px] border border-catalog-rule bg-white ${
         shadow ? 'shadow-listing-card' : ''
       }`}
     >
+      <CardHeart product={product} />
       <Link
         href={product.href}
         tabIndex={-1}

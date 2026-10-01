@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import { paginationItems } from '@youmart/shared-client';
+import { listingPageHref, paginationItems } from '@youmart/shared-client';
 
 interface PaginationProps {
   current: number;
   totalPages: number;
-  /** Category path without `/page/N`. */
   basePath: string;
   /** Preserved filter query string (leading `?` or empty). */
   query: string;
@@ -16,7 +15,7 @@ export function Pagination({ current, totalPages, basePath, query }: PaginationP
   if (totalPages <= 1) {
     return null;
   }
-  const href = (page: number) => `${page === 1 ? basePath : `${basePath}/page/${page}`}${query}`;
+  const href = (page: number) => listingPageHref(basePath, query, page);
   const link = `${CELL} font-ui text-brand hover:bg-brand hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand`;
 
   return (

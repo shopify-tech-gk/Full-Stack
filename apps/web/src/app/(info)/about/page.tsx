@@ -24,7 +24,7 @@ export default function AboutPage() {
               {hero.title}
             </h1>
           </div>
-          {/* DEMO image */}
+          {/* Brand-photo placeholder - awaiting the store's own image. */}
           <Image
             src="/placeholders/photo.svg"
             alt=""
@@ -37,7 +37,7 @@ export default function AboutPage() {
       </section>
 
       <section className="mx-auto flex max-w-[1240px] flex-col gap-[30px] px-[20px] py-[50px] lg:flex-row lg:items-center lg:gap-[48px] lg:py-[150px]">
-        {/* DEMO image */}
+        {/* Brand-photo placeholder - awaiting the store's own image. */}
         <Image
           src="/placeholders/photo.svg"
           alt=""

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Heart } from 'lucide-react';
 import {
   SAFE_CHECKOUT_LABEL,
   SAFE_CHECKOUT_METHODS,
@@ -17,6 +16,7 @@ import { PurchasePanel } from '@/components/product/PurchasePanel';
 import { ShareButtons } from '@/components/product/ShareButtons';
 import { StarRating } from '@/components/product/StarRating';
 import { getProductDetail } from '@/lib/catalog';
+import { WishlistButton } from '@/components/product/WishlistButton';
 import { storeCategories } from '@/lib/categories';
 
 interface ProductPageProps {
@@ -44,7 +44,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
   const off = discountPercent(product.mrp, product.sellingPrice);
-  const reviewCount = product.reviews.length;
+  const reviewCount = product.ratingCount;
 
   return (
     <>
@@ -141,38 +141,25 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </ul>
             </fieldset>
 
-            {/* DEMO: wishlist + back-in-stock notify are not wired yet. */}
-            <div className="pt-[7px]">
-              <button
-                type="button"
-                className="flex items-center gap-[5px] rounded-[5px] bg-brand px-[10px] py-[6px] font-sans text-[14.4px] font-semibold leading-[16.56px] text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
-              >
-                <Heart aria-hidden="true" className="size-[22px]" />
-                Add to wishlist
-              </button>
+            <div className="mb-[4px] pt-[7px]">
+              <WishlistButton
+                variant="button"
+                product={
+                  product.skuId
+                    ? {
+                        skuId: product.skuId,
+                        productId: product.id,
+                        productSlug: product.slug,
+                        title: product.title,
+                        price: product.sellingPrice,
+                        mrp: product.mrp,
+                      }
+                    : null
+                }
+              />
             </div>
-            <div className="mb-[4px] mt-[10px]">
-              <button
-                type="button"
-                className="inline-flex items-center gap-[7px] rounded-[6px] border-2 border-brand bg-brand px-[43px] py-[8px] font-sans text-[14px] font-semibold leading-none text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
-              >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                Notify
-              </button>
-            </div>
+            {/* Live's back-in-stock "Notify" button is left out until a stock-alert API exists
+                (W6 deferred) - a button that does nothing would be demo UI. */}
 
             <ShareButtons title={product.title} />
           </div>
@@ -180,9 +167,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         <div id="reviews">
           <ProductTabs
+            slug={product.slug}
             description={product.description}
             specifications={product.specifications}
-            reviews={product.reviews}
             title={product.title}
           />
         </div>

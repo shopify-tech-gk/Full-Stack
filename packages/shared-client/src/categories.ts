@@ -276,9 +276,9 @@ export const STORE_CATEGORIES: readonly StoreCategory[] = TREE.map(([slug, name,
   })),
 }));
 
-/** Live URL scheme: `/product-category/<category>[/<sub>[/<child>]]`. */
+/** Clean URL scheme (W6): `/category/<category>[/<sub>[/<child>]]`. */
 export function categoryHref(...slugs: string[]): string {
-  return `/product-category/${slugs.join('/')}`;
+  return `/category/${slugs.join('/')}`;
 }
 
 /** Asset path convention; the platform decides how to load it (web: /public, mobile: bundled). */

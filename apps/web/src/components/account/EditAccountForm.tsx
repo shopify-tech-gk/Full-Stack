@@ -1,10 +1,11 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { formatPhone, type AuthUser } from '@youmart/shared-client';
-import { useSession } from '@/lib/session';
+import { formatPhone, supportErrorMessage, type AuthUser } from '@youmart/shared-client';
+import { updateProfileName, useSession } from '@/lib/session';
 import { Notice } from './Notice';
 import {
+  FIELD_ERROR,
   FIELD_HINT,
   FORM_BUTTON,
   FORM_INPUT,
@@ -18,26 +19,40 @@ export function EditAccountForm() {
   return session.status === 'authenticated' ? <AccountDetailsForm user={session.user} /> : null;
 }
 
-// WooCommerce "Account details" minus the password section (login is passwordless OTP). The
-// signed-in identity is real; saving is still DEMO (no profile-update endpoint yet).
+// WooCommerce "Account details" minus the password section (login is passwordless OTP). The name
+// saves through PATCH /api/auth/me; email and mobile are the OTP-verified login identities, so
+// changing them needs a fresh OTP (not offered yet).
 function AccountDetailsForm({ user }: { user: AuthUser }) {
   const id = useId();
   const [name, setName] = useState(user.name ?? '');
-  const [email, setEmail] = useState(user.email ?? '');
-  const [status, setStatus] = useState<'idle' | 'saved' | 'invalid'>('idle');
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const [pending, setPending] = useState(false);
 
-  const onSubmit = (event: FormEvent) => {
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const valid = name.trim().length > 0 && (!email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
-    setStatus(valid ? 'saved' : 'invalid');
+    const trimmed = name.trim();
+    setStatus(null);
+    if (trimmed.length === 0 || trimmed.length > 100) {
+      setError('Please enter your name (up to 100 characters).');
+      return;
+    }
+    setError(null);
+    setPending(true);
+    try {
+      const saved = await updateProfileName(trimmed);
+      setName(saved.name ?? '');
+      setStatus({ tone: 'success', text: 'Account details changed successfully.' });
+    } catch (failure) {
+      setStatus({ tone: 'error', text: supportErrorMessage(failure) });
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
     <form onSubmit={onSubmit} noValidate>
-      {status === 'saved' && <Notice tone="success">Account details changed successfully.</Notice>}
-      {status === 'invalid' && (
-        <Notice tone="error">Please enter your name and a valid email address.</Notice>
-      )}
+      {status && <Notice tone={status.tone}>{status.text}</Notice>}
       <p className={FORM_ROW}>
         <label htmlFor={`${id}-name`} className={FORM_LABEL}>
           Full name <span className={FORM_REQUIRED}>*</span>
@@ -47,28 +62,34 @@ function AccountDetailsForm({ user }: { user: AuthUser }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete="name"
+          maxLength={100}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-name-error` : undefined}
           className={FORM_INPUT}
         />
+        {error && (
+          <span id={`${id}-name-error`} className={FIELD_ERROR}>
+            {error}
+          </span>
+        )}
       </p>
       <p className={FORM_ROW}>
         <label htmlFor={`${id}-email`} className={FORM_LABEL}>
-          Email address <span className="font-normal">(optional)</span>
+          Email address
         </label>
         <input
           id={`${id}-email`}
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          disabled={user.isEmailVerified}
-          aria-describedby={user.isEmailVerified ? `${id}-email-note` : undefined}
+          value={user.email ?? 'Not added'}
+          disabled
+          aria-describedby={`${id}-email-note`}
           className={FORM_INPUT}
         />
-        {user.isEmailVerified && (
-          <span id={`${id}-email-note`} className={FIELD_HINT}>
-            Verified by OTP. You can log in with this email.
-          </span>
-        )}
+        <span id={`${id}-email-note`} className={FIELD_HINT}>
+          {user.email
+            ? 'Verified by OTP. You can log in with this email.'
+            : 'You signed up with your mobile number.'}
+        </span>
       </p>
       <p className={FORM_ROW}>
         <label htmlFor={`${id}-phone`} className={FORM_LABEL}>
@@ -88,8 +109,8 @@ function AccountDetailsForm({ user }: { user: AuthUser }) {
         </span>
       </p>
       <p className="mx-[3px]">
-        <button type="submit" className={FORM_BUTTON}>
-          Save changes
+        <button type="submit" disabled={pending} className={FORM_BUTTON}>
+          {pending ? 'Saving\u2026' : 'Save changes'}
         </button>
       </p>
     </form>

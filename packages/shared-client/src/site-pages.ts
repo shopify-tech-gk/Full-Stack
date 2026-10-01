@@ -654,7 +654,7 @@ export const FAQ_PAGE: { title: string; subtitle: string; heading: string; items
       question: 'How do I track my order?',
       // FIXED: live ends with a bare "Link"; the page name is linked instead.
       answer: [
-        'Once your order is shipped, you’ll receive a tracking number via email or SMS. Use this number to track your order on the “[Track Order](/order-track)” page on our website.',
+        'Once your order is shipped, you’ll receive a tracking number via email or SMS. Use this number to track your order on the “[Track Order](/track-order)” page on our website.',
       ],
     },
     {
@@ -704,7 +704,7 @@ export const FAQ_PAGE: { title: string; subtitle: string; heading: string; items
     {
       question: 'Can I cancel my order?',
       answer: [
-        'Yes. Orders can be cancelled before they are shipped. Once shipped, cancellation may not be possible. Visit “[Orders Cancel](/order-cancel)” to check cancellation eligibility.',
+        'Yes. Orders can be cancelled before they are shipped. Once shipped, cancellation may not be possible. Visit “[Orders Cancel](/cancel-order)” to check cancellation eligibility.',
       ],
     },
     {
