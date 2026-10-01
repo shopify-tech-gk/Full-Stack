@@ -2,6 +2,7 @@ export * from './types';
 export * from './money';
 export * from './api-client';
 export * from './categories';
+export * from './category-taxonomy';
 export * from './content';
 export * from './theme';
 export * from './storefront';

@@ -96,6 +96,20 @@ export const FEATURE_CARDS: readonly FeatureCard[] = [
   { id: 'guarantee', title: 'Guarantee', text: 'Satisfaction guaranteed with every purchase.' },
 ];
 
+export interface ExploreFeature {
+  id: 'delivery' | 'genuine' | 'returns' | 'support';
+  title: string;
+  text: string;
+}
+
+/** Desktop redesign: the trust strip under "Explore Categories" (client's design copy). */
+export const EXPLORE_FEATURES: readonly ExploreFeature[] = [
+  { id: 'delivery', title: 'Fast & Reliable Delivery', text: 'Get your orders on time' },
+  { id: 'genuine', title: '100% Genuine Products', text: 'Shop with confidence' },
+  { id: 'returns', title: 'Easy Returns & Refunds', text: 'Hassle-free shopping' },
+  { id: 'support', title: 'Dedicated Support', text: "We're here to help" },
+];
+
 export const BEST_CATEGORIES_SLUG = 'fashion-jewellery';
 export const BEST_CATEGORIES_IMAGE = '/placeholders/category-card.svg';
 

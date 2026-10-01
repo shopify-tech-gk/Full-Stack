@@ -16,6 +16,8 @@ interface CategoryMegaMenuProps {
   categories: readonly StoreCategory[];
   /** Inner pages (listing/product) show only the desktop strip, as live does. */
   mobileGrid?: boolean;
+  /** The homepage's desktop uses ExploreCategories instead (desktop redesign). */
+  desktopStrip?: boolean;
 }
 
 /**
@@ -23,7 +25,11 @@ interface CategoryMegaMenuProps {
  * third level). Below 1025px: plain grid - 4 columns of 75px circles on mobile, 5 of 158px on
  * tablet - exactly as the live site switches layouts.
  */
-export function CategoryMegaMenu({ categories, mobileGrid = true }: CategoryMegaMenuProps) {
+export function CategoryMegaMenu({
+  categories,
+  mobileGrid = true,
+  desktopStrip = true,
+}: CategoryMegaMenuProps) {
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
 
   return (
@@ -58,21 +64,23 @@ export function CategoryMegaMenu({ categories, mobileGrid = true }: CategoryMega
         </ul>
       )}
 
-      <div className="relative -mt-px hidden bg-strip-frame px-[10px] pb-[14px] pt-[8px] lg:block">
-        <ul className="flex flex-wrap justify-center bg-page">
-          {categories.map((category) => (
-            <DesktopCategory
-              key={category.slug}
-              category={category}
-              open={activeSlug === category.slug}
-              onOpen={() => setActiveSlug(category.slug)}
-              onClose={() =>
-                setActiveSlug((current) => (current === category.slug ? null : current))
-              }
-            />
-          ))}
-        </ul>
-      </div>
+      {desktopStrip && (
+        <div className="relative -mt-px hidden bg-strip-frame px-[10px] pb-[14px] pt-[8px] lg:block">
+          <ul className="flex flex-wrap justify-center bg-page">
+            {categories.map((category) => (
+              <DesktopCategory
+                key={category.slug}
+                category={category}
+                open={activeSlug === category.slug}
+                onOpen={() => setActiveSlug(category.slug)}
+                onClose={() =>
+                  setActiveSlug((current) => (current === category.slug ? null : current))
+                }
+              />
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
