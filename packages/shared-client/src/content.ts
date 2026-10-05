@@ -45,6 +45,8 @@ export const PROMO_BANNER_SLIDES: readonly (readonly [PromoBanner, PromoBanner])
 ];
 
 export const PROMO_ROTATION_MS = 3000;
+/** Desktop promo slider (redesign): a slower, animated advance than live's instant 3 s swap. */
+export const PROMO_SLIDER_INTERVAL_MS = 5500;
 
 /** Live DOM text (rendered uppercase via CSS on the welcome marquee). */
 export const WELCOME_MESSAGE = 'Welcome to YouMart \u2013 Shop Easy Live Better';

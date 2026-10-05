@@ -6,16 +6,20 @@ import {
   PRODUCT_RAIL_TITLES,
   catalogQuery,
   createApiClient,
+  resolveProductRails,
   searchResultToCardData,
   toCardData,
   toProductDetailData,
   type CategoryFilters,
   type CatalogSort,
   type ListingQuery,
+  type PersonalRailFeed,
   type ProductCardData,
   type ProductDetailData,
   type ProductFilter,
+  type ProductListItem,
   type ProductRail,
+  type ProductRailSlider,
   type StoreCategory,
   type StoreSubcategory,
 } from '@youmart/shared-client';
@@ -123,24 +127,34 @@ export async function searchProducts(q: string): Promise<ProductCardData[]> {
 
 export interface HomeProducts {
   rails: ProductRail[];
+  /** Desktop (>= 1025px) rail sliders; `rails` stays the below-1025px live layout's data. */
+  sliders: ProductRailSlider[];
   showcase: Record<ProductFilter, ProductCardData[]>;
 }
 
 /**
  * Homepage rails + showcase from three real catalog queries. There is no personalisation or
- * sales data yet, so "trending"/"recommended" use rating and "top deals" uses discount.
+ * sales data yet, so "trending"/"recommended" use rating/reviews and "top deals" uses discount.
+ * `personal` is the Step B seam: a per-user feed (recently viewed, recommendations) for the
+ * desktop 'left-off' / 'recommended' sliders, which fall back to these catalog products.
  */
-export async function getHomeProducts(): Promise<HomeProducts> {
+export async function getHomeProducts(personal?: PersonalRailFeed): Promise<HomeProducts> {
   const fetchSorted = (sort: CatalogSort) =>
     catalogApi.catalog
       .listProducts({ sort, limit: 12 })
-      .then((page) => page.items.map(toCardData))
-      .catch(() => [] as ProductCardData[]);
-  const [newest, topRated, deals] = await Promise.all([
+      .then((page) => page.items)
+      .catch(() => [] as ProductListItem[]);
+  const [newestItems, topRatedItems, dealItems] = await Promise.all([
     fetchSorted('newest'),
     fetchSorted('rating'),
     fetchSorted('discount'),
   ]);
+  const newest = newestItems.map(toCardData);
+  const topRated = topRatedItems.map(toCardData);
+  const deals = dealItems.map(toCardData);
+  const popular = [...newestItems, ...topRatedItems, ...dealItems]
+    .sort((a, b) => b.ratingCount - a.ratingCount || (b.rating ?? 0) - (a.rating ?? 0))
+    .map(toCardData);
   const rail = (title: string, cards: ProductCardData[]): ProductRail => ({
     title,
     items: cards
@@ -157,6 +171,7 @@ export async function getHomeProducts(): Promise<HomeProducts> {
       rail(recommended, topRated.slice(4)),
       rail(explore, newest.slice(4)),
     ].filter((r) => r.items.length > 0),
+    sliders: await resolveProductRails({ newest, topRated, deals, popular }, personal),
     showcase: { new: newest, all: topRated, sale: deals },
   };
 }

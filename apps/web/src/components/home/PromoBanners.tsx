@@ -5,8 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { PROMO_BANNER_SLIDES, PROMO_ROTATION_MS } from '@youmart/shared-client';
 
-// Live: two banner pairs that swap instantly every ~3s. Pauses on hover/focus and never rotates
-// for prefers-reduced-motion users.
+// Below 1025px only (desktop: PromoSlider). Live: two banner pairs that swap instantly every ~3s.
+// Pauses on hover/focus and never rotates for prefers-reduced-motion users.
 export function PromoBanners() {
   const [slide, setSlide] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -30,7 +30,7 @@ export function PromoBanners() {
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
-      className="pl-[15px] pr-[10px] pt-[20px] lg:pb-[12px] lg:pr-[9px] lg:pt-[10px]"
+      className="pl-[15px] pr-[10px] pt-[20px] lg:hidden"
     >
       {PROMO_BANNER_SLIDES.map((pair, index) => (
         <ul

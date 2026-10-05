@@ -94,9 +94,15 @@ const config: Config = {
           from: { opacity: '0', transform: 'translateY(8px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
+        'slide-progress': {
+          from: { transform: 'scaleX(0)' },
+          to: { transform: 'scaleX(1)' },
+        },
       },
       animation: {
         'toast-in': 'toast-in 200ms ease-out',
+        // Duration comes from the component (style.animationDuration).
+        'slide-progress': 'slide-progress linear forwards',
       },
     },
   },

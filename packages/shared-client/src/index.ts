@@ -6,6 +6,7 @@ export * from './category-taxonomy';
 export * from './content';
 export * from './theme';
 export * from './storefront';
+export * from './product-rails';
 export * from './catalog';
 export * from './account';
 export * from './cart';
