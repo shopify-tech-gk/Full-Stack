@@ -45,4 +45,8 @@ const { rails, sliders, showcase } = await getHomeProducts(recentlyViewedFeed(cu
   panel) so tests and analytics can tell which one is showing.
 - No UI change is needed: `ProductRailSliders` renders whatever `sliders` contains.
 
-Rail headings, badges and "View all" targets live in `PRODUCT_RAIL_DEFINITIONS` in the same file.
+Rail headings and "View all" targets live in `PRODUCT_RAIL_DEFINITIONS` in the same file. Discount
+badges are not hardcoded: rails with `discountBadge: true` (Trending, Top Deals) show
+`railDiscountBadge(products)` - "Up to N% off" for the real best discount among the products the
+rail actually shows (personal or fallback), or no badge below `RAIL_BADGE_MIN_DISCOUNT` (5%).
+Products are never filtered to fit a badge.

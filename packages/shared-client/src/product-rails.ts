@@ -17,7 +17,8 @@ export interface ProductRailDefinition {
   title: (typeof PRODUCT_RAIL_TITLES)[number];
   /** The desktop design splits the live heading into a name + offer badge. */
   heading: string;
-  badge: string | null;
+  /** Show "Up to N% off", N being the real maximum discount among the rail's products. */
+  discountBadge: boolean;
   viewAllHref: string;
   personal: boolean;
 }
@@ -29,7 +30,7 @@ export const PRODUCT_RAIL_DEFINITIONS: readonly ProductRailDefinition[] = [
     key: 'left-off',
     title: LEFT_OFF,
     heading: 'Pick up where you left off',
-    badge: null,
+    discountBadge: false,
     viewAllHref: `${ROUTES.shop}?orderby=date`,
     personal: true,
   },
@@ -37,7 +38,7 @@ export const PRODUCT_RAIL_DEFINITIONS: readonly ProductRailDefinition[] = [
     key: 'trending',
     title: TRENDING,
     heading: 'Trending Products',
-    badge: 'Up to 10% off',
+    discountBadge: true,
     viewAllHref: `${ROUTES.shop}?orderby=rating`,
     personal: false,
   },
@@ -45,7 +46,7 @@ export const PRODUCT_RAIL_DEFINITIONS: readonly ProductRailDefinition[] = [
     key: 'top-deals',
     title: TOP_DEALS,
     heading: 'Top Deals',
-    badge: 'Up to 20% off',
+    discountBadge: true,
     viewAllHref: ROUTES.shop,
     personal: false,
   },
@@ -53,7 +54,7 @@ export const PRODUCT_RAIL_DEFINITIONS: readonly ProductRailDefinition[] = [
     key: 'recommended',
     title: RECOMMENDED,
     heading: 'Recommended for You',
-    badge: null,
+    discountBadge: false,
     viewAllHref: `${ROUTES.shop}?orderby=rating`,
     personal: true,
   },
@@ -61,7 +62,7 @@ export const PRODUCT_RAIL_DEFINITIONS: readonly ProductRailDefinition[] = [
     key: 'explore',
     title: EXPLORE,
     heading: 'More Items to Explore',
-    badge: null,
+    discountBadge: false,
     viewAllHref: ROUTES.shop,
     personal: false,
   },
@@ -69,6 +70,8 @@ export const PRODUCT_RAIL_DEFINITIONS: readonly ProductRailDefinition[] = [
 
 /** Products per desktop slider. */
 export const PRODUCT_RAIL_SLIDER_SIZE = 12;
+/** Below this best discount a rail's badge is dropped ("Up to 2% off" isn't an offer). */
+export const RAIL_BADGE_MIN_DISCOUNT = 5;
 
 /** Catalog lists the fallbacks are drawn from (each already sorted by the API or the caller). */
 export interface RailCatalogPools {
@@ -90,6 +93,14 @@ export interface ProductRailSlider extends ProductRailDefinition {
   products: ProductCardData[];
   /** Where `products` came from: the per-user feed, or the heading-matched catalog fallback. */
   source: 'personal' | 'fallback';
+  /** e.g. "Up to 38% off", computed from `products`; null = no badge. */
+  badge: string | null;
+}
+
+/** "Up to N% off" for the products' real best discount, or null below RAIL_BADGE_MIN_DISCOUNT. */
+export function railDiscountBadge(products: readonly ProductCardData[]): string | null {
+  const best = Math.max(0, ...products.map((p) => discountPercent(p.mrp, p.sellingPrice)));
+  return best >= RAIL_BADGE_MIN_DISCOUNT ? `Up to ${best}% off` : null;
 }
 
 function uniqueById(products: readonly ProductCardData[]): ProductCardData[] {
@@ -135,13 +146,12 @@ export async function resolveProductRails(
         definition.personal && personal
           ? await personal(definition.key as PersonalRailKey).catch(() => null)
           : null;
-      return mine && mine.length > 0
-        ? {
-            ...definition,
-            products: uniqueById(mine).slice(0, PRODUCT_RAIL_SLIDER_SIZE),
-            source: 'personal',
-          }
-        : { ...definition, products: fallback[definition.key], source: 'fallback' };
+      const [products, source] =
+        mine && mine.length > 0
+          ? [uniqueById(mine).slice(0, PRODUCT_RAIL_SLIDER_SIZE), 'personal' as const]
+          : [fallback[definition.key], 'fallback' as const];
+      const badge = definition.discountBadge ? railDiscountBadge(products) : null;
+      return { ...definition, products, source, badge };
     }),
   );
   return rails.filter((rail) => rail.products.length > 0);
