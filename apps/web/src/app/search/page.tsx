@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { CategoryMegaMenu } from '@/components/home/CategoryMegaMenu';
+import { CategoryBar } from '@/components/category/CategoryBar';
 import { ProductCard } from '@/components/product/ProductCard';
 import { searchProducts } from '@/lib/catalog';
-import { storeCategories } from '@/lib/categories';
+import { categoryBarMains } from '@/lib/category-taxonomy';
 
 interface SearchPageProps {
   searchParams: Record<string, string | string[] | undefined>;
@@ -25,7 +25,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   return (
     <>
-      <CategoryMegaMenu categories={storeCategories} mobileGrid={false} />
+      <CategoryBar mains={categoryBarMains()} />
       <div className="mx-auto max-w-[1240px] px-[10px] py-[20px] lg:mb-[64px] lg:mt-[44px] lg:px-[20px]">
         <h1 className="mb-[20px] font-ui text-[20px] font-semibold leading-[1.3] text-heading lg:text-[25px]">
           {q ? <>Search results for: &ldquo;{q}&rdquo;</> : 'Search'}

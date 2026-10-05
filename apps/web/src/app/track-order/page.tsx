@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { CategoryMegaMenu } from '@/components/home/CategoryMegaMenu';
+import { CategoryBar } from '@/components/category/CategoryBar';
 import { TrackOrderForm } from '@/components/account/TrackOrderForm';
-import { storeCategories } from '@/lib/categories';
+import { categoryBarMains } from '@/lib/category-taxonomy';
 
 export const metadata: Metadata = { title: 'Track Order - You Mart' };
 
@@ -17,7 +17,7 @@ export default function TrackOrderPage({ searchParams }: TrackOrderPageProps) {
 
   return (
     <>
-      <CategoryMegaMenu categories={storeCategories} mobileGrid={false} />
+      <CategoryBar mains={categoryBarMains()} />
       <div className="px-[10px] py-[10px]">
         <h1 className="sr-only">Track Order</h1>
         <TrackOrderForm initialOrderNumber={orderNumber} />

@@ -1,0 +1,27 @@
+OLD DESKTOP CATEGORY DESIGN - BACKUP (taken on branch desktop-redesign, 2026-10-05)
+==================================================================================
+
+These are verbatim copies of the files as they were BEFORE the desktop redesign was carried to
+the inner pages. They are .txt so the build/lint never picks them up.
+
+  CategoryMegaMenu.tsx.txt   apps/web/src/components/home/CategoryMegaMenu.tsx
+                             (old desktop strip of 60px circles + hover mega-dropdowns/flyouts)
+  CategorySidebar.tsx.txt    apps/web/src/components/listing/CategorySidebar.tsx
+  CheckoutSteps.tsx.txt      apps/web/src/components/listing/CheckoutSteps.tsx
+  category-page.tsx.txt      apps/web/src/app/category/[...slug]/page.tsx
+  product-page.tsx.txt       apps/web/src/app/product/[slug]/page.tsx
+
+Before the change, every inner page rendered the old desktop strip with:
+
+  import { CategoryMegaMenu } from '@/components/home/CategoryMegaMenu';
+  import { storeCategories } from '@/lib/categories';
+  ...
+  <CategoryMegaMenu categories={storeCategories} mobileGrid={false} />
+
+in: app/category/[...slug]/page.tsx, app/product/[slug]/page.tsx, app/shop/page.tsx,
+app/search/page.tsx, app/cart/page.tsx, app/checkout/page.tsx, app/track-order/page.tsx,
+app/account/layout.tsx, app/(info)/layout.tsx
+
+To restore the old design: copy each .txt back to its path (dropping .txt) and put that line back
+in place of <CategoryBar ... /> in the pages listed above. The exact pre-change state is also the
+git commit before the "inner pages" redesign commit on desktop-redesign.

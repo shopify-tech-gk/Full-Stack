@@ -1,11 +1,11 @@
-import { CategoryMegaMenu } from '@/components/home/CategoryMegaMenu';
-import { storeCategories } from '@/lib/categories';
+import { CategoryBar } from '@/components/category/CategoryBar';
+import { categoryBarMains } from '@/lib/category-taxonomy';
 
-// Live inner pages keep the desktop category strip (no mobile grid).
+// Desktop category navigation (no mobile grid on inner pages).
 export default function MyAccountLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <CategoryMegaMenu categories={storeCategories} mobileGrid={false} />
+      <CategoryBar mains={categoryBarMains()} />
       {children}
     </>
   );

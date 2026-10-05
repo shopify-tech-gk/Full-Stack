@@ -27,7 +27,7 @@ export default async function HomePage() {
     <div className="flex flex-col">
       <div className="order-2 mt-[27px] lg:order-1 lg:mt-0">
         {/* Below 1025px: the live category grid, unchanged. Desktop: the redesigned section. */}
-        <CategoryMegaMenu categories={storeCategories} desktopStrip={false} />
+        <CategoryMegaMenu categories={storeCategories} />
         <ExploreCategories mains={exploreCategories()} />
         <ExploreFeatureStrip features={EXPLORE_FEATURES} />
       </div>

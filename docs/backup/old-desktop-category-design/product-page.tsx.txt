@@ -8,7 +8,7 @@ import {
   discountPercent,
   formatMoney,
 } from '@youmart/shared-client';
-import { CategoryBar } from '@/components/category/CategoryBar';
+import { CategoryMegaMenu } from '@/components/home/CategoryMegaMenu';
 import { ProductCard } from '@/components/product/ProductCard';
 import { ProductGallery } from '@/components/product/ProductGallery';
 import { ProductTabs } from '@/components/product/ProductTabs';
@@ -17,7 +17,7 @@ import { ShareButtons } from '@/components/product/ShareButtons';
 import { StarRating } from '@/components/product/StarRating';
 import { getProductDetail } from '@/lib/catalog';
 import { WishlistButton } from '@/components/product/WishlistButton';
-import { categoryBarMains } from '@/lib/category-taxonomy';
+import { storeCategories } from '@/lib/categories';
 
 interface ProductPageProps {
   params: { slug: string };
@@ -48,7 +48,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <>
-      <CategoryBar mains={categoryBarMains()} />
+      <CategoryMegaMenu categories={storeCategories} mobileGrid={false} />
       <div className="mx-auto mt-[10px] max-w-[1240px] px-[20px] lg:my-[64px]">
         <div className="lg:flex lg:items-start lg:justify-between">
           <ProductGallery images={product.images} title={product.title} />

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef6fd"/>
+    </linearGradient>
+    <linearGradient id="wave" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0142aa"/>
+      <stop offset="1" stop-color="#3f8fe0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="600" fill="url(#bg)"/>
+  <circle cx="345" cy="70" r="95" fill="#dcecfb" opacity="0.8"/>
+  <circle cx="40" cy="300" r="70" fill="#e6f1fc"/>
+  <rect x="44" y="96" width="150" height="16" rx="8" fill="#c9def4"/>
+  <rect x="44" y="124" width="96" height="8" rx="4" fill="#9cc4ee"/>
+  <rect x="104" y="248" width="192" height="196" rx="26" fill="#d6e8fa"/>
+  <path d="M154 392l46-62 34 44 22-28 40 46z" fill="#b6d4f3"/>
+  <circle cx="246" cy="296" r="16" fill="#b6d4f3"/>
+  <path d="M0 510c70-36 160-38 230-8s120 26 170-10v108H0z" fill="url(#wave)"/>
+  <path d="M0 540c80-30 170-26 240 2s110 18 160-8" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.55"/>
+  <rect x="5" y="5" width="390" height="590" rx="30" fill="none" stroke="#3f8fe0" stroke-width="6"/>
+</svg>

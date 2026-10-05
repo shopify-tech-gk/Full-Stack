@@ -7,10 +7,10 @@ import { ArrowRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
   EXPLORE_CATEGORY_PLACEHOLDER,
   ROUTES,
-  SUBCATEGORY_PLACEHOLDER_IMAGE,
   taxonomyPages,
-  type TaxonomyNode,
+  type TaxonomyLeaf,
 } from '@youmart/shared-client';
+import { TileImage } from '@/components/category/TileImage';
 import type { ExploreMain, ExploreSub } from '@/lib/category-taxonomy';
 
 const ROUND_ARROW =
@@ -281,7 +281,7 @@ function ScrollNudge({
       tabIndex={-1}
       aria-label={label}
       onClick={onClick}
-      className={`absolute top-[14px] flex size-[20px] items-center justify-center rounded-full border border-card-border bg-white text-brand opacity-0 shadow-carousel-arrow transition-opacity group-hover:opacity-100 ${
+      className={`absolute top-[24px] flex size-[20px] items-center justify-center rounded-full border border-card-border bg-white text-brand opacity-0 shadow-carousel-arrow transition-opacity group-hover:opacity-100 ${
         direction === 1 ? 'right-[-2px]' : 'left-[-2px]'
       }`}
     >
@@ -291,7 +291,7 @@ function ScrollNudge({
 }
 
 const TILE =
-  'flex w-full flex-col items-center rounded-[7px] text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand';
+  'group/tile flex w-full flex-col items-center rounded-[7px] text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand';
 
 function SubTile({
   sub,
@@ -307,21 +307,15 @@ function SubTile({
   const body = (
     <>
       <span
-        className={`relative block size-[46px] overflow-hidden rounded-[7px] border bg-white ${
+        className={`relative block h-[69px] w-[46px] overflow-hidden rounded-[7px] border ${
           open ? 'border-brand ring-1 ring-brand' : 'border-cart-line'
         }`}
       >
-        <Image
-          src={SUBCATEGORY_PLACEHOLDER_IMAGE}
-          alt=""
-          fill
-          sizes="46px"
-          className="object-cover"
-        />
+        <TileImage src={sub.image} sizes="46px" />
       </span>
       <span
         className={`mt-[4px] line-clamp-2 block w-full hyphens-auto font-sans text-[8.5px] font-medium leading-[10px] [overflow-wrap:anywhere] ${
-          open ? 'text-brand' : 'text-ink-body'
+          open ? 'text-brand' : 'text-ink-body group-hover/tile:text-brand'
         }`}
       >
         {sub.name}
@@ -362,7 +356,7 @@ function SubPanel({
   sub: ExploreSub;
   onClose: () => void;
 }) {
-  const [children, setChildren] = useState<TaxonomyNode[] | null>(null);
+  const [children, setChildren] = useState<TaxonomyLeaf[] | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -409,14 +403,17 @@ function SubPanel({
           Loading&hellip;
         </p>
       ) : (
-        <ul className="mt-[6px] max-h-[196px] overflow-y-auto overscroll-contain pr-[2px]">
+        <ul className="mt-[6px] max-h-[252px] overflow-y-auto overscroll-contain pr-[2px]">
           {children.map((child) => (
             <li key={child.slug}>
               <Link
                 href={child.href}
-                className="flex items-center justify-between gap-[6px] rounded-[6px] px-[6px] py-[5px] font-sans text-[12.5px] leading-[1.3] text-ink-body hover:bg-brand-popup-bg hover:text-brand focus:outline-none focus-visible:bg-brand-popup-bg focus-visible:text-brand"
+                className="flex items-center gap-[10px] rounded-[8px] px-[4px] py-[4px] font-sans text-[12.5px] leading-[1.3] text-ink-body hover:bg-brand-popup-bg hover:text-brand focus:outline-none focus-visible:bg-brand-popup-bg focus-visible:text-brand"
               >
-                <span className="min-w-0 truncate">{child.name}</span>
+                <span className="relative block h-[45px] w-[30px] shrink-0 overflow-hidden rounded-[5px] border border-cart-line">
+                  <TileImage src={child.image} sizes="30px" />
+                </span>
+                <span className="min-w-0 flex-1 truncate">{child.name}</span>
                 <ChevronRight
                   aria-hidden="true"
                   className="size-[12px] shrink-0 opacity-60"

@@ -4,7 +4,14 @@
 // corrected sheet is a data swap with no UI change. It is a best-effort realignment of the client's
 // sheet pending their confirmation - see docs/catalog/taxonomy-realign-report.md.
 // The ~45 KB data module is NOT re-exported from the package index (it would land in every client
-// bundle): import CATEGORY_TAXONOMY_SOURCE from '@youmart/shared-client/src/category-taxonomy.data'.
+// bundle): import CATEGORY_TAXONOMY_SOURCE / CATEGORY_IMAGE_PATHS from
+// '@youmart/shared-client/src/category-taxonomy.data'.
+//
+// Artwork (apps/web/public/categories/explore/, registered by the same command):
+//   <main>.webp           main desktop banner, landscape 12:5
+//   mobile/<main>.webp    main mobile image, portrait (slot for the mobile phase)
+//   <main>/<sub>.webp, <main>/<sub>/<sub-to-sub>.webp   portrait 2:3 tiles
+// Anything missing falls back to a placeholder.
 //
 // Linking: the taxonomy differs from the catalog tree, so every node is matched by name to the
 // storefront category tree (the one /category/... pages resolve). No match -> nearest matched
@@ -15,6 +22,9 @@ import { ROUTES } from './routes';
 export type CategoryTaxonomySource = ReadonlyArray<
   readonly [main: string, subs: ReadonlyArray<readonly [sub: string, items: readonly string[]]>]
 >;
+
+/** Registered artwork: slug path without extension (e.g. `baby-care/diapering`) -> public URL. */
+export type CategoryImagePaths = Readonly<Record<string, string>>;
 
 /**
  * Main-category artwork. `desktop` is the landscape banner used by the desktop grid; `mobile` is
@@ -35,9 +45,14 @@ export interface TaxonomyNode {
   match: CatalogMatch;
 }
 
-export interface TaxonomySub extends TaxonomyNode {
+/** Sub and sub-to-sub categories: one portrait (2:3) tile image; null = placeholder. */
+export interface TaxonomyLeaf extends TaxonomyNode {
+  image: string | null;
+}
+
+export interface TaxonomySub extends TaxonomyLeaf {
   /** Sub-to-sub categories, in the sheet's order. */
-  children: TaxonomyNode[];
+  children: TaxonomyLeaf[];
 }
 
 export interface TaxonomyMain extends TaxonomyNode {
@@ -48,50 +63,13 @@ export interface TaxonomyMain extends TaxonomyNode {
 
 /** Desktop "Explore Categories" grid: 6 columns x 2 rows. */
 export const EXPLORE_CATEGORIES_PAGE_SIZE = 12;
-/** Main categories without a banner yet. Sub/sub-to-sub use SUBCATEGORY_PLACEHOLDER_IMAGE. */
+/** Main categories without a banner yet. */
 export const EXPLORE_CATEGORY_PLACEHOLDER = '/placeholders/category-card.svg';
+/** Sub / sub-to-sub tiles without artwork: the portrait sky-blue podium card. */
+export const CATEGORY_TILE_PLACEHOLDER = '/placeholders/category-tile.svg';
 
-// Main categories with a landscape banner in apps/web/public/categories/explore/<slug>.webp.
-const DESKTOP_IMAGES = new Set([
-  'agri-and-gardening',
-  'artificial-flowers-and-plants',
-  'arts-and-crafts',
-  'auto-accessories',
-  'baby-care',
-  'bath-fittings',
-  'cleaning-products',
-  'clothing',
-  'cosmetics',
-  'crockery',
-  'disposable-items',
-  'electrical-and-lights',
-  'electronics',
-  'fashion-jewellery',
-  'footwear',
-  'furniture',
-  'gifts-frames',
-  'hardwares',
-  'home-appliances',
-  'home-furnishing',
-  'kitchenware',
-  'musical-instruments',
-  'party-decorations',
-  'pet-supplies',
-  'plastic-household',
-  'sports-fitness',
-  'stationary',
-  'tailoring-materials',
-  'tools',
-  'toys-games',
-  'travel-accessories',
-  'wall-clock-watches',
-]);
-
-export function categoryImages(mainSlug: string): CategoryImageSet {
-  return {
-    desktop: DESKTOP_IMAGES.has(mainSlug) ? `/categories/explore/${mainSlug}.webp` : null,
-    mobile: null,
-  };
+export function categoryImages(mainSlug: string, images: CategoryImagePaths): CategoryImageSet {
+  return { desktop: images[mainSlug] ?? null, mobile: images[`mobile/${mainSlug}`] ?? null };
 }
 
 /** Name key for matching: case, '&'/'and', punctuation and simple plurals don't matter. */
@@ -141,6 +119,7 @@ const searchHref = (name: string) => `${ROUTES.search}?q=${encodeURIComponent(na
  */
 export function buildCategoryTaxonomy(
   source: CategoryTaxonomySource,
+  images: CategoryImagePaths = {},
   catalog: readonly StoreCategory[] = STORE_CATEGORIES,
 ): TaxonomyMain[] {
   const roots = new Map(catalog.map((root) => [nameKey(root.name), indexRoot(root)]));
@@ -163,21 +142,23 @@ export function buildCategoryTaxonomy(
 
       return {
         ...main,
-        image: categoryImages(slug),
+        image: categoryImages(slug, images),
         subcategories: subs
           .map(([subName, items]): TaxonomySub => {
-            const sub: TaxonomyNode = {
-              slug: slugify(subName),
-              name: subName,
-              ...link(subName, main),
-            };
+            const subSlug = slugify(subName);
+            const sub: TaxonomyNode = { slug: subSlug, name: subName, ...link(subName, main) };
             return {
               ...sub,
-              children: items.map((item) => ({
-                slug: slugify(item),
-                name: item,
-                ...link(item, sub),
-              })),
+              image: images[`${slug}/${subSlug}`] ?? null,
+              children: items.map((item) => {
+                const itemSlug = slugify(item);
+                return {
+                  slug: itemSlug,
+                  name: item,
+                  ...link(item, sub),
+                  image: images[`${slug}/${subSlug}/${itemSlug}`] ?? null,
+                };
+              }),
             };
           })
           .sort(byName),

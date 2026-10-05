@@ -1,11 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { categoryHref, listingQueryString, parseListingQuery } from '@youmart/shared-client';
-import { CategoryBar } from '@/components/category/CategoryBar';
-import {
-  CategoryBreadcrumb,
-  CategoryTaxonomySidebar,
-} from '@/components/category/CategoryTaxonomySidebar';
+import { CategoryMegaMenu } from '@/components/home/CategoryMegaMenu';
 import { BrandSlider } from '@/components/listing/BrandSlider';
 import { CategorySidebar } from '@/components/listing/CategorySidebar';
 import { CheckoutSteps } from '@/components/listing/CheckoutSteps';
@@ -13,7 +9,7 @@ import { FilterDrawer } from '@/components/listing/FilterDrawer';
 import { Pagination } from '@/components/listing/Pagination';
 import { ProductCard } from '@/components/product/ProductCard';
 import { getCategoryListing, resolveCategoryPath } from '@/lib/catalog';
-import { categoryBarMains, categoryContext } from '@/lib/category-taxonomy';
+import { storeCategories } from '@/lib/categories';
 
 interface CategoryPageProps {
   params: { slug: string[] };
@@ -39,36 +35,15 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const basePath = categoryHref(...path);
   // `brand` is the one conventional attribute key (IMPORT-SPEC.md) - shown as live's brand strip.
   const brandFilter = listing.filters?.filters.find((f) => f.key === 'brand' && f.type !== 'range');
-  const context = categoryContext(path);
-  const title = context?.trail[context.trail.length - 1]?.name ?? node.name;
 
   return (
     <>
-      <CategoryBar mains={categoryBarMains()} activeSlug={context?.main.slug} />
-      <div className="mt-[10px] flex pr-[20px] lg:mx-auto lg:mt-[14px] lg:max-w-[1440px] lg:gap-[24px] lg:px-[12px]">
-        {/* Below 1025px the live sidebar stays; desktop has the redesign's taxonomy sidebar. */}
-        <div className="contents lg:hidden">
-          <CategorySidebar category={node.root} activeSlug={path[1]} />
-        </div>
-        {context && <CategoryTaxonomySidebar main={context.main} currentHref={basePath} />}
-        <div className="min-w-0 flex-1">
-          <h1 className="sr-only lg:hidden">{node.name}</h1>
-          {context && (
-            <div className="mb-[12px] hidden rounded-[16px] border border-cart-line bg-white px-[18px] py-[14px] shadow-rail-card lg:block">
-              <CategoryBreadcrumb trail={context.trail} />
-              <div className="mt-[6px] flex items-baseline gap-[12px]">
-                <h1 className="font-ui text-[26px] font-bold leading-[1.2] text-heading">
-                  {title}
-                </h1>
-                <p className="font-sans text-[13px] text-ink-body">
-                  {listing.total} product{listing.total === 1 ? '' : 's'}
-                </p>
-              </div>
-            </div>
-          )}
-          <div className="lg:hidden">
-            <CheckoutSteps current={node.name} />
-          </div>
+      <CategoryMegaMenu categories={storeCategories} mobileGrid={false} />
+      <div className="mt-[10px] flex pr-[20px] lg:mx-auto lg:mt-0 lg:max-w-[1260px]">
+        <CategorySidebar category={node.root} activeSlug={path[1]} />
+        <div className="min-w-0 flex-1 lg:border-l lg:border-catalog-rule lg:pl-[60px]">
+          <h1 className="sr-only">{node.name}</h1>
+          <CheckoutSteps current={node.name} />
           <FilterDrawer
             key={listingQueryString(query)}
             basePath={basePath}
