@@ -105,6 +105,15 @@ export interface ProductListPage {
   page: number;
   perPage: number;
 }
+/** v1.7 view tracking: a listing card + when the customer last viewed it. */
+export interface RecentlyViewedItem extends ProductListItem {
+  viewedAt: string;
+}
+/** v1.7: one guest view, merged into the account on login. */
+export interface RecentlyViewedMergeItem {
+  productId: Uuid;
+  viewedAt: string;
+}
 export type FilterType = 'multi_select' | 'single_select' | 'range' | 'boolean';
 /** One filter a category offers (its `filter_definition` entry) + live facet data. */
 export interface CategoryFilter {

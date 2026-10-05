@@ -21,9 +21,22 @@ import {
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
-import type { ProductRailKey, ProductRailSlider } from '@youmart/shared-client';
+import {
+  PRODUCT_RAIL_SLIDER_SIZE,
+  railDiscountBadge,
+  railProducts,
+  type PersonalRailKey,
+  type ProductCardData,
+  type ProductRailKey,
+  type ProductRailSlider,
+} from '@youmart/shared-client';
+import { usePersonalRails } from '@/lib/recently-viewed';
+import { RailSlide } from './RailSlide';
 
-type RailTab = Pick<ProductRailSlider, 'key' | 'heading' | 'badge' | 'viewAllHref' | 'source'>;
+type RailTab = Pick<
+  ProductRailSlider,
+  'key' | 'heading' | 'badge' | 'discountBadge' | 'viewAllHref' | 'source'
+>;
 
 const ICONS: Record<ProductRailKey, LucideIcon> = {
   'left-off': History,
@@ -38,17 +51,37 @@ const ROUND_ARROW =
 
 /** Tabbed heading (WAI-ARIA tabs) over one contained horizontal slider per rail. */
 export function RailTabs({
-  tabs,
-  panels,
+  tabs: serverTabs,
+  panels: serverPanels,
+  personalFallback,
 }: {
   tabs: readonly RailTab[];
   panels: readonly ReactNode[];
+  /** Personal rails' heading-matched products, to top up the shopper's own. */
+  personalFallback: Partial<Record<string, ProductCardData[]>>;
 }) {
   const id = useId();
   const [active, setActive] = useState(0);
   const [edges, setEdges] = useState({ left: false, right: false });
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const scrollers = useRef<(HTMLUListElement | null)[]>([]);
+  const personal = usePersonalRails();
+
+  // A personal rail with the shopper's own products is re-rendered here; the rest stay as served.
+  const tabs: RailTab[] = [];
+  const panels: ReactNode[] = [];
+  serverTabs.forEach((tab, index) => {
+    const fallback = personalFallback[tab.key];
+    const mine = fallback ? (personal?.[tab.key as PersonalRailKey] ?? null) : null;
+    if (!fallback || !mine) {
+      tabs.push(tab);
+      panels.push(serverPanels[index]);
+      return;
+    }
+    const { products, source } = railProducts(fallback, mine, PRODUCT_RAIL_SLIDER_SIZE);
+    tabs.push({ ...tab, source, badge: tab.discountBadge ? railDiscountBadge(products) : null });
+    panels.push(products.map((product) => <RailSlide key={product.id} product={product} />));
+  });
   const current = tabs[active];
 
   const measure = useCallback(() => {

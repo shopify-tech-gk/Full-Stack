@@ -456,6 +456,25 @@ model ProductImage {
   @@schema("catalog")
 }
 
+/// A customer's recently viewed products (view tracking) - per-user behaviour data, capped at the
+/// newest 50 per user by catalog-service (older rows are hard-deleted, not kept). `userId` and
+/// `productId` are SOFT references to auth.user.id and catalog.product.id. One ACTIVE row per
+/// (user, product) via a partial unique index hand-added in migration SQL: a re-view moves
+/// `viewedAt` forward instead of adding a row.
+model RecentlyViewed {
+  id        String    @id @default(uuid(7))
+  userId    String    @map("user_id")
+  productId String    @map("product_id")
+  viewedAt  DateTime  @map("viewed_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([userId, viewedAt(sort: Desc)])
+  @@map("recently_viewed")
+  @@schema("catalog")
+}
+
 // ---------------------------------------------------------------------------
 // inventory schema - stock levels and reservations. DATA LAYER ONLY: the
 // Redis SETNX stock lock (the anti-oversell mechanism) is BEHAVIOR built in

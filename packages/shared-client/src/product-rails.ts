@@ -103,7 +103,7 @@ export function railDiscountBadge(products: readonly ProductCardData[]): string 
   return best >= RAIL_BADGE_MIN_DISCOUNT ? `Up to ${best}% off` : null;
 }
 
-function uniqueById(products: readonly ProductCardData[]): ProductCardData[] {
+function uniqueById<T extends { id: string }>(products: readonly T[]): T[] {
   const seen = new Set<string>();
   return products.filter((p) => !seen.has(p.id) && seen.add(p.id));
 }
@@ -134,6 +134,33 @@ export function fallbackRailProducts(
   };
 }
 
+/**
+ * The products for one personal rail from a feed: the user's own (de-duped), or null when the
+ * rail isn't personal, there is no feed, it has no history, or it failed - null = fallback.
+ */
+export async function personalRailProducts(
+  definition: ProductRailDefinition,
+  personal?: PersonalRailFeed,
+): Promise<ProductCardData[] | null> {
+  if (!definition.personal || !personal) return null;
+  const mine = await personal(definition.key as PersonalRailKey).catch(() => null);
+  return mine && mine.length > 0 ? uniqueById(mine) : null;
+}
+
+/**
+ * What a rail shows: with per-user products, those first, topped up with the heading-matched
+ * fallback (no repeats) so it is never sparse; without, the fallback alone.
+ */
+export function railProducts<T extends { id: string }>(
+  fallback: readonly T[],
+  mine: readonly T[] | null,
+  size: number,
+): { products: T[]; source: ProductRailSlider['source'] } {
+  return mine && mine.length > 0
+    ? { products: uniqueById([...mine, ...fallback]).slice(0, size), source: 'personal' }
+    : { products: fallback.slice(0, size), source: 'fallback' };
+}
+
 /** The desktop sliders: per-user data where supplied and non-empty, else the fallback; never empty. */
 export async function resolveProductRails(
   pools: RailCatalogPools,
@@ -142,14 +169,12 @@ export async function resolveProductRails(
   const fallback = fallbackRailProducts(pools);
   const rails = await Promise.all(
     PRODUCT_RAIL_DEFINITIONS.map(async (definition): Promise<ProductRailSlider> => {
-      const mine =
-        definition.personal && personal
-          ? await personal(definition.key as PersonalRailKey).catch(() => null)
-          : null;
-      const [products, source] =
-        mine && mine.length > 0
-          ? [uniqueById(mine).slice(0, PRODUCT_RAIL_SLIDER_SIZE), 'personal' as const]
-          : [fallback[definition.key], 'fallback' as const];
+      const mine = await personalRailProducts(definition, personal);
+      const { products, source } = railProducts(
+        fallback[definition.key],
+        mine,
+        PRODUCT_RAIL_SLIDER_SIZE,
+      );
       const badge = definition.discountBadge ? railDiscountBadge(products) : null;
       return { ...definition, products, source, badge };
     }),

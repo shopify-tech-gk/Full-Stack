@@ -7,6 +7,7 @@ export * from './content';
 export * from './theme';
 export * from './storefront';
 export * from './product-rails';
+export * from './recently-viewed';
 export * from './catalog';
 export * from './account';
 export * from './cart';

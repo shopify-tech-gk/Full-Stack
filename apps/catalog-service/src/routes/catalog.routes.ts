@@ -32,6 +32,18 @@ import {
   listReviews,
   submitReview,
 } from '../catalog/review.service';
+import {
+  MergeViewsBody,
+  ProductCardsQuery,
+  RecentlyViewedQuery,
+  RecordViewBody,
+  clearRecentlyViewed,
+  listRecentlyViewed,
+  mergeRecentlyViewed,
+  productCards,
+  recordView,
+} from '../catalog/recently-viewed.service';
+import { logger } from '../logger';
 import { optionalAuth, requireAuth, requireServiceAuth, requireAdmin } from '../authMiddleware';
 import { requireUserId } from '../authToken';
 
@@ -94,6 +106,39 @@ catalogRouter.post('/products/:slug/reviews', requireAuth, async (req, res) => {
 catalogRouter.get('/categories', optionalAuth, async (_req, res) => {
   const items = await listCategories();
   res.status(200).json({ items });
+});
+
+// --- View tracking: the CALLER's recently viewed products (customer token; own rows only) ---
+catalogRouter.get('/recently-viewed', requireAuth, async (req, res) => {
+  const { limit } = RecentlyViewedQuery.parse(req.query);
+  res.status(200).json({ items: await listRecentlyViewed(requireUserId(req), limit) });
+});
+
+catalogRouter.post('/recently-viewed', requireAuth, (req, res) => {
+  const userId = requireUserId(req);
+  const { productId } = RecordViewBody.parse(req.body);
+  // Non-blocking: 202 goes out first and the write runs after it, so a product page never waits
+  // on view tracking; a failed write is logged and dropped (a lost view is harmless).
+  res.status(202).json({ accepted: true });
+  recordView(userId, productId).catch((err: unknown) =>
+    logger.warn({ err, userId, productId }, 'recently-viewed: recording a view failed'),
+  );
+});
+
+catalogRouter.post('/recently-viewed/merge', requireAuth, async (req, res) => {
+  const body = MergeViewsBody.parse(req.body);
+  res.status(200).json({ items: await mergeRecentlyViewed(requireUserId(req), body) });
+});
+
+catalogRouter.delete('/recently-viewed', requireAuth, async (req, res) => {
+  await clearRecentlyViewed(requireUserId(req));
+  res.status(204).send();
+});
+
+// Public: a guest's history is product ids in their own browser; this turns them into fresh cards.
+catalogRouter.get('/product-cards', optionalAuth, async (req, res) => {
+  const { ids } = ProductCardsQuery.parse(req.query);
+  res.status(200).json({ items: await productCards(ids) });
 });
 
 catalogRouter.get('/categories/:slug/filters', optionalAuth, async (req, res) => {

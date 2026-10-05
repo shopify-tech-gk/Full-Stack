@@ -1,4 +1,4 @@
-# YouMart Public API Contract (v1.6)
+# YouMart Public API Contract (v1.7)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
@@ -356,6 +356,18 @@ One review per customer per product, **purchase-verified**: only a customer with
 
 - **Auth**: public
 - **200**: `{ "items": [{ "id": "Uuid", "name": "string", "slug": "string", "parentId": "Uuid | null" }] }`
+
+### Recently viewed (view tracking) — v1.7
+
+A customer's recently viewed products, kept by catalog-service (`catalog.recently_viewed`, `catalog_svc` role). **Per user and private**: every call acts on the token's own user only. **Capped**: one entry per product (a re-view moves it to the top), newest first, at most **50** per user — older entries are deleted, not kept. Guests keep the same capped list in their own browser only (never sent) and it is merged on login.
+
+`RecentlyViewedItem` = a listing item (exactly the `GET /api/catalog/products` item shape) + `viewedAt: string` (ISO).
+
+- `POST /api/catalog/recently-viewed` — customer token. **Body** `{ productId: Uuid }`. **202** `{ "accepted": true }` — returned **before** the write, which runs after the response (fire-and-forget: a page never waits on it, a failed write is logged and dropped). Ids that aren't live products are ignored. **Errors**: `400` (not a uuid); `401`.
+- `GET /api/catalog/recently-viewed?limit` — customer token. **200** `{ items: RecentlyViewedItem[] }`, newest first (`limit` 1-50, default 50). Products archived since they were viewed drop out. **Errors**: `401`.
+- `POST /api/catalog/recently-viewed/merge` — customer token. **Body** `{ items: [{ productId: Uuid, viewedAt: ISO }] }` (max 50) — a guest's local history on login; each product keeps its latest view time (future times count as now), then the cap applies. **200** `{ items: RecentlyViewedItem[] }` (the merged list). **Errors**: `400` (more than 50, bad id/time); `401`.
+- `DELETE /api/catalog/recently-viewed` — customer token. Clears the caller's history (rows deleted). **204**.
+- `GET /api/catalog/product-cards?ids=Uuid,Uuid` — public. **200** `{ items: ProductListItem[] }` — live products as listing cards, in the order given (unknown/archived ids skipped); 1-50 ids. How a guest's locally kept ids become fresh cards (prices are never stored in the browser). **Errors**: `400`.
 
 ### `GET /api/catalog/skus/:skuId`
 
@@ -924,6 +936,10 @@ Purely additive changes bump the minor version instead (§17).
 ---
 
 ## 17. Change log
+
+### v1.7 — 2026-10-05 (view tracking, additive)
+
+- **Added**: recently viewed — `POST/GET/DELETE /api/catalog/recently-viewed`, `POST /api/catalog/recently-viewed/merge`, and the public `GET /api/catalog/product-cards` — §4. Served by catalog-service (no new service) through the existing `/api/catalog` gateway route; additive migration `20261005070532_view_tracking_recently_viewed` (one new `catalog` table, `catalog_svc` grants). No existing endpoint, shape or status code changed.
 
 ### v1.6 — 2026-10-01 (W6, additive)
 

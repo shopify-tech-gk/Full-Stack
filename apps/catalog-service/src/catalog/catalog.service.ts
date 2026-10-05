@@ -6,7 +6,7 @@ import { enqueueSearchReindex } from '@youmart/search-reindex-client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { AppError } from '@youmart/errors';
-import { resolveCategory, type CategoryPathItem } from './browse.service';
+import { resolveCategory, type CategoryPathItem, type ListingItem } from './browse.service';
 import type {
   ListProductsQuery,
   CreateProductBody,
@@ -107,6 +107,14 @@ const PRODUCT_LIST_INCLUDE = {
 } satisfies Prisma.ProductInclude;
 
 type ProductWithListRelations = Prisma.ProductGetPayload<{ include: typeof PRODUCT_LIST_INCLUDE }>;
+
+/** The SKU a card shows and adds to cart: the cheapest live one. */
+function cheapestSku<T extends { sellingPrice: Prisma.Decimal }>(skus: T[]): T | null {
+  return skus.reduce<T | null>(
+    (min, sku) => (!min || sku.sellingPrice.lessThan(min.sellingPrice) ? sku : min),
+    null,
+  );
+}
 
 function minSellingPrice(skus: { sellingPrice: Prisma.Decimal }[]): Prisma.Decimal | null {
   if (skus.length === 0) {
@@ -238,10 +246,7 @@ function toProductForIndex(
   product: ProductWithListRelations,
   parents: Map<string, string | null>,
 ): ProductForIndex {
-  const cheapest = product.skus.reduce<(typeof product.skus)[number] | null>(
-    (min, sku) => (!min || sku.sellingPrice.lessThan(min.sellingPrice) ? sku : min),
-    null,
-  );
+  const cheapest = cheapestSku(product.skus);
   const primaryImage = product.images[0];
   return {
     id: product.id,
@@ -263,6 +268,42 @@ function toProductForIndex(
     attributes: product.attributes,
     createdAt: product.createdAt.toISOString(),
   };
+}
+
+/**
+ * Live (ACTIVE, non-deleted) products as listing cards - the `GET /catalog/products` item shape,
+ * read from Postgres instead of the search index - keyed by id. Products with no live SKU are
+ * left out (a card needs a price and an "Add" SKU).
+ */
+export async function listingItemsByIds(ids: readonly string[]): Promise<Map<string, ListingItem>> {
+  if (ids.length === 0) return new Map();
+  const products = await prisma.product.findMany({
+    where: { id: { in: [...ids] }, status: 'ACTIVE', deletedAt: null },
+    include: PRODUCT_LIST_INCLUDE,
+  });
+  const items = new Map<string, ListingItem>();
+  for (const product of products) {
+    const sku = cheapestSku(product.skus);
+    if (!sku) continue;
+    const image = product.images[0];
+    items.set(product.id, {
+      id: product.id,
+      title: product.title,
+      slug: product.slug,
+      price: decimalToMoney(sku.sellingPrice),
+      mrp: decimalToMoney(sku.mrp),
+      skuId: sku.id,
+      imageUrl: image ? buildImageUrl(image.url) : null,
+      rating: product.rating ? Number(product.rating.toFixed(1)) : null,
+      ratingCount: product.ratingCount,
+      category: {
+        id: product.category.id,
+        name: product.category.name,
+        slug: product.category.slug,
+      },
+    });
+  }
+  return items;
 }
 
 /** Internal, service-to-service read (search-service's event-driven

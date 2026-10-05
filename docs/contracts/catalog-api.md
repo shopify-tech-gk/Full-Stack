@@ -147,6 +147,15 @@ it returns `active: false` so a caller can distinguish "doesn't exist" from
   catalog schema directly.
 - **404** `NOT_FOUND`: SKU doesn't exist or is soft-deleted
 
+### View tracking (v1.7, additive)
+
+Customer-token (`requireAuth`) endpoints acting on the caller's own history only:
+`POST /recently-viewed` (`202`, write runs after the response), `GET /recently-viewed`,
+`POST /recently-viewed/merge`, `DELETE /recently-viewed`; plus the public
+`GET /product-cards?ids=`. Shapes, cap (50 per user, de-duped, newest first) and
+privacy rules: [API.md](./API.md) §4 "Recently viewed". Table `catalog.recently_viewed`
+(`catalog_svc`), migration `20261005070532_view_tracking_recently_viewed`.
+
 ### Write endpoints (`requireAdmin('catalog.manage')`, Ch6.7a real RBAC)
 
 All of the following require a valid ADMIN RS256 token whose role grants

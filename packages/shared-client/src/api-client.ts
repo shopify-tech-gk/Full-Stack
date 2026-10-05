@@ -22,8 +22,11 @@ import type {
   PaginationQuery,
   ProductDetail,
   ProductListPage,
+  ProductListItem,
   ProductListQuery,
   RazorpayOrder,
+  RecentlyViewedItem,
+  RecentlyViewedMergeItem,
   RefreshResponse,
   ReturnView,
   ReviewPage,
@@ -200,6 +203,23 @@ export function createApiClient(options: ApiClientOptions) {
         json<MyReview>('GET', `/catalog/products/${encodeURIComponent(slug)}/reviews/mine`),
       submitReview: (slug: string, body: SubmitReviewBody) =>
         json<Review>('POST', `/catalog/products/${encodeURIComponent(slug)}/reviews`, { body }),
+      /** v1.7: the signed-in customer's recently viewed products, newest first (max 50). */
+      recentlyViewed: () =>
+        json<{ items: RecentlyViewedItem[] }>('GET', '/catalog/recently-viewed'),
+      /** v1.7: records a view; the server answers 202 before writing, so callers needn't wait. */
+      recordView: (productId: Uuid) =>
+        json<{ accepted: true }>('POST', '/catalog/recently-viewed', { body: { productId } }),
+      /** v1.7: folds a guest's local history into the account; returns the merged list. */
+      mergeRecentlyViewed: (items: readonly RecentlyViewedMergeItem[]) =>
+        json<{ items: RecentlyViewedItem[] }>('POST', '/catalog/recently-viewed/merge', {
+          body: { items },
+        }),
+      clearRecentlyViewed: () => json<void>('DELETE', '/catalog/recently-viewed'),
+      /** v1.7: live products as listing cards, in the order given (a guest's local history). */
+      productCards: (ids: readonly Uuid[]) =>
+        json<{ items: ProductListItem[] }>('GET', '/catalog/product-cards', {
+          query: { ids: ids.join(',') },
+        }),
     },
     search: {
       products: (query: SearchQuery) => json<SearchResponse>('GET', '/search/products', { query }),

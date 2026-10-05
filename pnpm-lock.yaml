@@ -367,6 +367,9 @@ importers:
       pino-http:
         specifier: 11.0.0
         version: 11.0.0
+      uuid:
+        specifier: 14.0.2
+        version: 14.0.2
       zod:
         specifier: 4.5.4
         version: 4.5.4

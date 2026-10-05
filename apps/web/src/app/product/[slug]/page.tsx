@@ -13,6 +13,7 @@ import { ProductCard } from '@/components/product/ProductCard';
 import { ProductGallery } from '@/components/product/ProductGallery';
 import { ProductTabs } from '@/components/product/ProductTabs';
 import { PurchasePanel } from '@/components/product/PurchasePanel';
+import { ProductViewTracker } from '@/components/product/ProductViewTracker';
 import { ShareButtons } from '@/components/product/ShareButtons';
 import { StarRating } from '@/components/product/StarRating';
 import { getProductDetail } from '@/lib/catalog';
@@ -48,6 +49,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <>
+      <ProductViewTracker productId={product.id} />
       <CategoryBar mains={categoryBarMains()} />
       <div className="mx-auto mt-[10px] max-w-[1240px] px-[20px] lg:my-[64px]">
         <div className="lg:flex lg:items-start lg:justify-between">
