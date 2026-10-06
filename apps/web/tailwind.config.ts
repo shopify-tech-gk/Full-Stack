@@ -98,11 +98,16 @@ const config: Config = {
           from: { transform: 'scaleX(0)' },
           to: { transform: 'scaleX(1)' },
         },
+        'rise-in': {
+          from: { opacity: '0', transform: 'translateY(12px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'toast-in': 'toast-in 200ms ease-out',
         // Duration comes from the component (style.animationDuration).
         'slide-progress': 'slide-progress linear forwards',
+        'rise-in': 'rise-in 500ms cubic-bezier(0.22, 1, 0.36, 1) both',
       },
     },
   },

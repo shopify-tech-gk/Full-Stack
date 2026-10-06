@@ -52,30 +52,39 @@ export const PRODUCT_FILTER_TABS: readonly { key: ProductFilter; label: string; 
 export interface BrandOffer {
   id: string;
   name: string;
+  /** Its category listing filtered to the brand, biggest discount first. */
   href: string;
+  /** Below 1025px (the live layout's tile, still a placeholder there). */
   image: string;
+  /** Desktop: the brand's poster (live youmartshop.com artwork, 480px WebP). */
+  poster: string;
   /** Starburst badge, two lines. */
   badge: readonly [string, string];
 }
 
-// Offer ranges are live's copy; brand names/logos are placeholders until real assets arrive.
-// Live's 7th badge reads "5% OFF / 60%" (lines swapped) - corrected to "5% to 60% / OFF".
-const BRAND_BADGES: readonly (readonly [string, string])[] = [
-  ['5% to 90%', 'OFF'],
-  ['5% to 95%', 'OFF'],
-  ['5% to 83%', 'OFF'],
-  ['5% to 90%', 'OFF'],
-  ['10% to 47%', 'OFF'],
-  ['15% to 83%', 'OFF'],
-  ['5% to 60%', 'OFF'],
-  ['5% to 92%', 'OFF'],
+// Live's brand row, in live's order: brand, its category (live links each poster to
+// /product-category/<category>/?brand=<brand>), poster file and live's offer range. Live's 7th
+// badge reads "5% OFF / 60%" (lines swapped) - corrected to "5% to 60% / OFF". Live's 5th poster
+// is COSCO though its link says nivia; the link follows the poster.
+const BRANDS: readonly (readonly [string, string, string, readonly [string, string]])[] = [
+  ["L'Or\u00e9al Paris", 'cosmetics', 'loreal-paris', ['5% to 90%', 'OFF']],
+  ['Philips', 'home-appliances', 'philips', ['5% to 95%', 'OFF']],
+  ['Hawkins', 'stainless-steel-vessels', 'hawkins', ['5% to 83%', 'OFF']],
+  ['Samsung', 'electronics', 'samsung', ['5% to 90%', 'OFF']],
+  ['Cosco', 'sports-fitness', 'cosco', ['10% to 47%', 'OFF']],
+  ['Safari', 'travel-accessories', 'safari', ['15% to 83%', 'OFF']],
+  ['Bosch', 'tools', 'bosch', ['5% to 60%', 'OFF']],
+  ['Havells', 'electrical-and-lights', 'havells', ['5% to 92%', 'OFF']],
 ];
 
-export const BRAND_OFFERS: readonly BrandOffer[] = BRAND_BADGES.map((badge, index) => ({
-  id: `brand-${index + 1}`,
-  name: `Brand ${index + 1}`,
-  href: '/shop',
+// `brand` is the conventional attribute key (IMPORT-SPEC.md); the listing applies it through the
+// category's filter definition.
+export const BRAND_OFFERS: readonly BrandOffer[] = BRANDS.map(([name, category, file, badge]) => ({
+  id: file,
+  name,
+  href: `${categoryHref(category)}?${new URLSearchParams({ brand: name, orderby: 'discount' })}`,
   image: '/placeholders/brand.svg',
+  poster: `/brands/${file}.webp`,
   badge,
 }));
 
@@ -127,6 +136,44 @@ export function bestCategories(
     .slice(0, 9)
     .map((sub) => ({ ...sub, href: categoryHref(category.slug, sub.slug) }));
   return { title: `Best Categories Today \u2014 ${category.name}`, items };
+}
+
+export interface BestCategorySlide {
+  slug: string;
+  name: string;
+  href: string;
+  /** Sub-categories A-Z; `key` is `<category>/<sub>` (its tile artwork's path). */
+  items: readonly { slug: string; name: string; href: string; key: string }[];
+}
+
+/**
+ * Desktop "Best Categories Today": every category with sub-categories, one after another, starting
+ * from live's featured one (BEST_CATEGORIES_SLUG) and wrapping round the menu order.
+ */
+export function bestCategoryRotation(
+  categories = STORE_CATEGORIES,
+  first = BEST_CATEGORIES_SLUG,
+): BestCategorySlide[] {
+  const slides = categories
+    .filter((category) => category.subcategories.length > 0)
+    .map((category) => ({
+      slug: category.slug,
+      name: category.name,
+      href: categoryHref(category.slug),
+      items: [...category.subcategories]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((sub) => ({
+          slug: sub.slug,
+          name: sub.name,
+          href: categoryHref(category.slug, sub.slug),
+          key: `${category.slug}/${sub.slug}`,
+        })),
+    }));
+  const start = Math.max(
+    0,
+    slides.findIndex((slide) => slide.slug === first),
+  );
+  return [...slides.slice(start), ...slides.slice(0, start)];
 }
 
 export interface FooterLink {

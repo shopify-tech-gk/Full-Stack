@@ -143,9 +143,9 @@ function MainCard({ main, openSub, onOpenSub }: MainCardProps) {
           src={main.image.desktop ?? EXPLORE_CATEGORY_PLACEHOLDER}
           alt=""
           width={960}
-          height={400}
+          height={300}
           sizes="(min-width: 1440px) 225px, 16vw"
-          className="aspect-[12/5] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          className="aspect-[16/5] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
         />
       </Link>
 

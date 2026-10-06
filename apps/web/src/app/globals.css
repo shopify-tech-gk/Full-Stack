@@ -27,6 +27,24 @@
   --ym-menu-border: #dadada;
 }
 
+/* Google page translation (lib/translate.ts): keep its toolbar, hover tips and body offset out of
+   the layout - our own language pill is the only control. These match nothing until it loads. */
+.goog-te-banner-frame,
+iframe.skiptranslate,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf {
+  display: none !important;
+}
+body:has(> .skiptranslate) {
+  top: 0 !important;
+}
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;

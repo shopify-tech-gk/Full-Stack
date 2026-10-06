@@ -41,9 +41,9 @@ export function CategoryTaxonomySidebar({
           src={main.image.desktop ?? EXPLORE_CATEGORY_PLACEHOLDER}
           alt=""
           width={960}
-          height={400}
+          height={300}
           sizes="270px"
-          className="aspect-[12/5] w-full rounded-[8px] object-cover"
+          className="aspect-[16/5] w-full rounded-[8px] object-cover"
         />
         <span className="flex items-center justify-between gap-[6px] px-[4px] pb-[3px] pt-[8px]">
           <span

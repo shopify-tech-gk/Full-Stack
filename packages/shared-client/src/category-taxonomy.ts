@@ -8,7 +8,7 @@
 // '@youmart/shared-client/src/category-taxonomy.data'.
 //
 // Artwork (apps/web/public/categories/explore/, registered by the same command):
-//   <main>.webp           main desktop banner, landscape 12:5
+//   <main>.webp           main desktop banner, landscape 16:5 (960 x 300)
 //   mobile/<main>.webp    main mobile image, portrait (slot for the mobile phase)
 //   <main>/<sub>.webp, <main>/<sub>/<sub-to-sub>.webp   portrait 2:3 tiles
 // Anything missing falls back to a placeholder.

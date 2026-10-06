@@ -6,6 +6,7 @@ import {
   bestCategories,
 } from '@youmart/shared-client';
 import { BestCategoriesCarousel } from '@/components/home/BestCategoriesCarousel';
+import { BestCategoriesShowcase } from '@/components/home/BestCategoriesShowcase';
 import { BrandStrip } from '@/components/home/BrandStrip';
 import { CategoryMegaMenu } from '@/components/home/CategoryMegaMenu';
 import { ExploreCategories } from '@/components/home/ExploreCategories';
@@ -51,6 +52,7 @@ export default async function HomePage() {
             items={best.items}
           />
         )}
+        <BestCategoriesShowcase />
         <FeatureCards cards={FEATURE_CARDS} />
       </div>
     </div>

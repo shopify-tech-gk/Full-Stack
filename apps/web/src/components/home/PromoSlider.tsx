@@ -5,24 +5,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { PROMO_BANNER_SLIDES, PROMO_SLIDER_INTERVAL_MS } from '@youmart/shared-client';
-
-const DESKTOP = '(min-width: 1025px)';
-const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+import { DESKTOP_QUERY, REDUCED_MOTION_QUERY, useMedia, usePageHidden } from '@/lib/useMedia';
 
 const ARROW =
   'absolute top-1/2 z-10 flex size-[46px] -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-brand opacity-0 shadow-[0_8px_24px_rgba(1,66,170,0.22)] backdrop-blur transition-[opacity,background-color,color,transform] duration-300 hover:scale-105 hover:bg-brand hover:text-white focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 group-hover:opacity-100 motion-reduce:transition-none';
-
-function useMedia(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-  useEffect(() => {
-    const list = window.matchMedia(query);
-    const update = () => setMatches(list.matches);
-    update();
-    list.addEventListener('change', update);
-    return () => list.removeEventListener('change', update);
-  }, [query]);
-  return matches;
-}
 
 /**
  * DESKTOP ONLY (>= 1025px): the promo banners as a sliding carousel - pairs glide in, auto-advance
@@ -35,16 +21,10 @@ export function PromoSlider() {
   const [index, setIndex] = useState(0);
   const [hovering, setHovering] = useState(false);
   const [stopped, setStopped] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const desktop = useMedia(DESKTOP);
-  const reduced = useMedia(REDUCED_MOTION);
+  const hidden = usePageHidden();
+  const desktop = useMedia(DESKTOP_QUERY);
+  const reduced = useMedia(REDUCED_MOTION_QUERY);
   const running = desktop && !reduced && !stopped && !hovering && !hidden && count > 1;
-
-  useEffect(() => {
-    const update = () => setHidden(document.visibilityState === 'hidden');
-    document.addEventListener('visibilitychange', update);
-    return () => document.removeEventListener('visibilitychange', update);
-  }, []);
 
   // Restarts on every slide change, so manual navigation gets a full interval too.
   useEffect(() => {
@@ -95,13 +75,12 @@ export function PromoSlider() {
                       tabIndex={current ? undefined : -1}
                       className="group/banner relative block overflow-hidden rounded-[22px] shadow-[0_10px_30px_-12px_rgba(1,66,170,0.35)] ring-1 ring-brand/10 transition-[box-shadow,transform] duration-500 hover:-translate-y-[2px] hover:shadow-[0_18px_40px_-14px_rgba(1,66,170,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand motion-reduce:transition-none motion-reduce:hover:translate-y-0"
                     >
-                      {/* Same src/size/sizes as the mobile banners, so desktop reuses their preload. */}
                       <Image
-                        src={banner.image}
+                        src={banner.poster}
                         alt={banner.title}
                         width={1536}
                         height={480}
-                        sizes="(min-width: 1025px) 50vw, 45vw"
+                        sizes="(min-width: 1440px) 704px, 50vw"
                         className="h-auto w-full transition-transform duration-[1200ms] ease-out group-hover/banner:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover/banner:scale-100"
                       />
                       <span

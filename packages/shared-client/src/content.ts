@@ -3,8 +3,10 @@ import { categoryHref } from './categories';
 export interface PromoBanner {
   id: string;
   title: string;
-  /** Asset path convention; web serves it from /public. */
+  /** Asset path convention; web serves it from /public. Below 1025px (the live layout). */
   image: string;
+  /** Desktop slider: the live youmartshop.com poster (1536x480 WebP). */
+  poster: string;
   href: string;
 }
 
@@ -18,12 +20,14 @@ export const PROMO_BANNER_SLIDES: readonly (readonly [PromoBanner, PromoBanner])
       id: 'pet-products',
       title: 'Pet Products - 25% off',
       image: '/banners/pet-products.png',
+      poster: '/banners/desktop/pet-products.webp',
       href: categoryHref('pet-products'),
     },
     {
       id: 'sport-gear',
       title: 'Sport Gear - Top-quality equipment for champions',
       image: '/banners/sport-gear.png',
+      poster: '/banners/desktop/sport-gear.webp',
       href: categoryHref('sports-fitness'),
     },
   ],
@@ -32,12 +36,14 @@ export const PROMO_BANNER_SLIDES: readonly (readonly [PromoBanner, PromoBanner])
       id: 'kitchen-pro',
       title: 'Kitchen Pro - Smart, efficient, time-saving',
       image: '/banners/kitchen-pro.png',
+      poster: '/banners/desktop/kitchen-pro.webp',
       href: categoryHref('stainless-steel-vessels'),
     },
     {
       id: 'tech-deals',
       title: 'Tech Deals - Fast, reliable, best prices',
       image: '/banners/tech-deals.png',
+      poster: '/banners/desktop/tech-deals.webp',
       // Live links its mobile-accessories category, which 404s on live too.
       href: categoryHref('electronics', 'mobiles'),
     },

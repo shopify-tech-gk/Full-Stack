@@ -11,7 +11,7 @@ import { categoryHref } from './categories';
 import { DEMO_PRODUCT_IMAGE } from './demo';
 
 // Category listing: live WooCommerce query-string names, so links/bookmarks stay compatible.
-export type ListingSort = 'default' | 'price' | 'price-desc' | 'date' | 'rating';
+export type ListingSort = 'default' | 'price' | 'price-desc' | 'date' | 'rating' | 'discount';
 
 export const LISTING_SORT_OPTIONS: readonly { value: ListingSort; label: string }[] = [
   { value: 'default', label: 'Default sorting' },
@@ -19,6 +19,8 @@ export const LISTING_SORT_OPTIONS: readonly { value: ListingSort; label: string 
   { value: 'price-desc', label: 'Price: High \u2192 Low' },
   { value: 'date', label: 'Sort by latest' },
   { value: 'rating', label: 'Sort by average rating' },
+  // Not a live WooCommerce option: the brand-offer tiles land here (biggest discount first).
+  { value: 'discount', label: 'Sort by discount' },
 ];
 
 const SORT_TO_API: Record<ListingSort, CatalogSort> = {
@@ -27,6 +29,7 @@ const SORT_TO_API: Record<ListingSort, CatalogSort> = {
   'price-desc': 'price_desc',
   date: 'newest',
   rating: 'rating',
+  discount: 'discount',
 };
 
 export const LISTING_RATING_OPTIONS: readonly { value: number; label: string }[] = [

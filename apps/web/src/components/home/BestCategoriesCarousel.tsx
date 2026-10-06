@@ -13,8 +13,8 @@ interface BestCategoriesCarouselProps {
 
 const GAP = 16;
 
-// Live: 3-column grid on mobile; from 769px a single scrollable row of 200px cards with
-// round arrow buttons that scroll two cards at a time.
+// Below 1025px only (desktop: BestCategoriesShowcase). Live: 3-column grid on mobile; from 769px a
+// single scrollable row of 200px cards with round arrow buttons that scroll two cards at a time.
 export function BestCategoriesCarousel({ title, image, items }: BestCategoriesCarouselProps) {
   const track = useRef<HTMLUListElement>(null);
 
@@ -32,7 +32,7 @@ export function BestCategoriesCarousel({ title, image, items }: BestCategoriesCa
     'absolute top-1/2 z-[5] hidden size-[38px] -translate-y-1/2 items-center justify-center rounded-full border border-category-card-arrowBorder bg-white text-ink-body shadow-carousel-arrow focus:outline-none focus-visible:ring-2 focus-visible:ring-brand min-[769px]:flex';
 
   return (
-    <section aria-labelledby="best-categories" className="p-[10px]">
+    <section aria-labelledby="best-categories" className="p-[10px] lg:hidden">
       <div className="mx-auto my-[30px] max-w-[1200px] px-[15px]">
         <h2
           id="best-categories"

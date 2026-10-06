@@ -6,15 +6,16 @@ const INNER =
 
 interface OfferBadgeProps {
   lines: readonly [string, string];
+  className?: string;
 }
 
-export function OfferBadge({ lines }: OfferBadgeProps) {
+export function OfferBadge({ lines, className = '' }: OfferBadgeProps) {
   // Live shrinks the text when the first line is long ("5% to 90%").
   const compact = lines[0].length >= 8;
   return (
     <span
       aria-hidden="true"
-      className="pointer-events-none absolute -bottom-[8px] -left-[8px] z-10 size-[70px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)] md:-bottom-[20px] md:-left-[12px] md:size-[78px]"
+      className={`pointer-events-none absolute -bottom-[8px] -left-[8px] z-10 size-[70px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.25)] md:-bottom-[20px] md:-left-[12px] md:size-[78px] ${className}`}
     >
       <svg viewBox="0 0 100 100" className="block size-full">
         <polygon points={OUTER} className="fill-offer-outer" />

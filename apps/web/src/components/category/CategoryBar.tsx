@@ -137,7 +137,7 @@ export function CategoryBar({
                         src={main.image ?? EXPLORE_CATEGORY_PLACEHOLDER}
                         alt=""
                         width={960}
-                        height={400}
+                        height={300}
                         sizes="72px"
                         className="h-[28px] w-[56px] rounded-full object-cover"
                       />
@@ -220,9 +220,9 @@ function MegaPanel({ main }: { main: CategoryBarMain }) {
             src={main.image ?? EXPLORE_CATEGORY_PLACEHOLDER}
             alt=""
             width={960}
-            height={400}
+            height={300}
             sizes="96px"
-            className="aspect-[12/5] w-[96px] shrink-0 rounded-[7px] object-cover"
+            className="aspect-[16/5] w-[96px] shrink-0 rounded-[7px] object-cover"
           />
           <span className="min-w-0">
             <span className="line-clamp-2 font-ui text-[14px] font-semibold leading-[1.2] text-heading group-hover:text-brand">
