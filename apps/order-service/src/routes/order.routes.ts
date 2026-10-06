@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { PaginationQuery } from '@youmart/shared-types';
 import { AppError, buildApiError } from '@youmart/errors';
 import {
@@ -57,7 +57,7 @@ const checkoutRateLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.auth?.userId ?? req.ip ?? 'unknown',
+  keyGenerator: (req) => req.auth?.userId ?? ipKeyGenerator(req.ip ?? 'unknown'),
   handler: (_req, res) => {
     res
       .status(429)
