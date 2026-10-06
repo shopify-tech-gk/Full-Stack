@@ -4,8 +4,8 @@ import { logger } from './logger';
 
 const app = createApp();
 
-const server = app.listen(config.port, () => {
-  logger.info({ port: config.port }, 'api-gateway listening');
+const server = app.listen(config.port, config.host, () => {
+  logger.info({ host: config.host, port: config.port }, 'api-gateway listening');
 });
 
 function shutdown(signal: string): void {

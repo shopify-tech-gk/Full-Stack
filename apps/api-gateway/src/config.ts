@@ -18,6 +18,12 @@ const apiGatewayEnvSchema = z.object({
   // The ONE public port - everything else lives behind this.
   GATEWAY_PORT: z.coerce.number().int().positive().default(4000),
 
+  // The interface the gateway binds to. DEFAULT 'localhost' (loopback only) - prod/controlled
+  // deploys set this explicitly (e.g. '0.0.0.0' inside a container behind the load balancer).
+  // For LOCAL DEVICE TESTING ONLY, set GATEWAY_HOST=0.0.0.0 so a phone on the same Wi-Fi can
+  // reach the gateway at http://<PC-LAN-IP>:4000. Never ship 0.0.0.0 to an exposed host.
+  GATEWAY_HOST: z.string().default('localhost'),
+
   // Downstream service base URLs - one explicit `<NAME>_SERVICE_URL` var
   // per service, matching the SAME naming convention every other service
   // already uses for its own outbound service-client URLs (e.g.
@@ -73,6 +79,7 @@ export interface ApiGatewayConfig {
   nodeEnv: 'development' | 'test' | 'production';
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
   port: number;
+  host: string;
   services: {
     auth: string;
     catalog: string;
@@ -101,6 +108,7 @@ export const config: Readonly<ApiGatewayConfig> = Object.freeze({
   nodeEnv: parsed.NODE_ENV,
   logLevel: parsed.LOG_LEVEL,
   port: parsed.GATEWAY_PORT,
+  host: parsed.GATEWAY_HOST,
   services: Object.freeze({
     auth: parsed.AUTH_SERVICE_URL,
     catalog: parsed.CATALOG_SERVICE_URL,

@@ -43,9 +43,34 @@ time, so **restart Metro after changing `.env`**. Alternatives: an Android emula
 `http://10.0.2.2:4000/api`; or run a tunnel (`pnpm --filter @youmart/mobile start --tunnel`) and
 expose the gateway too.
 
-> The gateway currently binds localhost; to accept LAN requests from a phone it must listen on
-> `0.0.0.0` and your firewall must allow port 4000. (Out of scope for Phase 1 — noted for device
-> testing.)
+## Test on a REAL phone over Wi-Fi (Expo Go)
+
+By default the gateway binds `localhost` (loopback only), so a phone can't reach it. Enable the
+dev-only `0.0.0.0` bind and point the app at your PC's Wi-Fi IP:
+
+1. **Enable the gateway's LAN bind (dev only).** In the repo-root `.env`, set:
+   ```
+   GATEWAY_HOST=0.0.0.0
+   ```
+   then restart the gateway (or the backend stack). Default stays `localhost`; this is dev-only.
+2. **Find your PC's Wi-Fi LAN IP.** Run `ipconfig` and use the **Wireless LAN adapter Wi-Fi**
+   IPv4 Address (e.g. `192.168.1.50`). **Ignore** WSL/Hyper-V/virtual adapters (`172.x`,
+   `192.168.137.x`, `vEthernet`).
+3. **Point the app at it.** In `apps/mobile/.env` (copy from `.env.example`):
+   ```
+   EXPO_PUBLIC_API_URL=http://192.168.1.50:4000/api
+   ```
+   `EXPO_PUBLIC_*` is inlined at bundle time — **restart Metro** after changing it.
+4. **Allow the firewall.** Windows Firewall must allow inbound TCP **4000** (approve the prompt, or
+   add an inbound rule for port 4000 on the Private/Wi-Fi profile).
+5. **Same Wi-Fi.** Phone and PC must be on the **same network** (and the Wi-Fi must not use client
+   isolation / AP isolation).
+6. **Run + scan.** `pnpm --filter @youmart/mobile start`, then scan the QR with **Expo Go**
+   (Android) or the **Camera app** (iPhone with Expo Go installed). The category list should load.
+
+> Android emulator alternative (no LAN bind needed): `EXPO_PUBLIC_API_URL=http://10.0.2.2:4000/api`
+> reaches the host's localhost directly. A tunnel is another option:
+> `pnpm --filter @youmart/mobile start --tunnel` (you'd also need to expose the gateway).
 
 ## Windows / iOS testing reality
 

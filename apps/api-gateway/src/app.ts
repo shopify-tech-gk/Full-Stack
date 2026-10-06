@@ -18,7 +18,19 @@ export function createApp(): Express {
 
   app.use(
     cors({
-      origin: config.corsAllowedOrigins,
+      // CORS is a BROWSER mechanism. The native mobile app (and curl/server-to-server) send no
+      // Origin header and don't enforce CORS, so they're never blocked.
+      origin: (origin, callback) => {
+        // No Origin -> non-browser client (mobile app, curl): always allow.
+        if (!origin) return callback(null, true);
+        // Configured browser origins (the web app) -> allowed in EVERY environment (unchanged).
+        if (config.corsAllowedOrigins.includes(origin)) return callback(null, true);
+        // DEV ONLY: allow any browser origin for local device/preview testing (e.g. Expo web on a
+        // LAN IP). Production keeps the strict allow-list above - this branch never runs in prod.
+        if (config.nodeEnv === 'development') return callback(null, true);
+        // Otherwise: not an allowed origin (the browser blocks it) - prod behaviour unchanged.
+        return callback(null, false);
+      },
       credentials: true,
     }),
   );
