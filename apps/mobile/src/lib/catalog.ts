@@ -1,0 +1,121 @@
+// RN catalog data layer — mirrors apps/web/src/lib/catalog.ts but using the mobile api client.
+// Reuses shared-client mappers/logic (toCardData, resolveProductRails, toProductDetailData,
+// catalogQuery) — NO new backend, NO duplicated logic. Real data through the gateway.
+import {
+  ApiError,
+  catalogQuery,
+  resolveProductRails,
+  searchResultToCardData,
+  toCardData,
+  toProductDetailData,
+  type ApiCategory,
+  type CatalogSort,
+  type CategoryFilters,
+  type ListingQuery,
+  type PersonalRailFeed,
+  type ProductCardData,
+  type ProductDetailData,
+  type ProductListItem,
+  type ProductRailSlider,
+} from '@youmart/shared-client';
+import { api } from '@/lib/api';
+import { loadGuestViews } from '@/stores/recently-viewed';
+
+const isNotFound = (err: unknown) => err instanceof ApiError && err.status === 404;
+
+/** The personal-rail seam (shared with web): guest recently-viewed resolved to fresh cards. */
+const recentlyViewedFeed: PersonalRailFeed = async (key) => {
+  if (key !== 'left-off') return null;
+  const views = await loadGuestViews();
+  if (views.length === 0) return null;
+  try {
+    const { items } = await api.catalog.productCards(views.map((v) => v.productId));
+    return items.map(toCardData);
+  } catch {
+    return null;
+  }
+};
+
+export interface HomeData {
+  categories: ApiCategory[];
+  rails: ProductRailSlider[];
+}
+
+/** Home: real category list + product rails (recently-viewed personalization + heading-matched
+ * fallback), using the SAME resolveProductRails logic as the web desktop sliders. */
+export async function getHome(): Promise<HomeData> {
+  const fetchSorted = (sort: CatalogSort) =>
+    api.catalog
+      .listProducts({ sort, limit: 12 })
+      .then((page) => page.items)
+      .catch(() => [] as ProductListItem[]);
+  const [categories, newestItems, topRatedItems, dealItems] = await Promise.all([
+    api.catalog
+      .listCategories()
+      .then((r) => r.items)
+      .catch(() => [] as ApiCategory[]),
+    fetchSorted('newest'),
+    fetchSorted('rating'),
+    fetchSorted('discount'),
+  ]);
+  const newest = newestItems.map(toCardData);
+  const topRated = topRatedItems.map(toCardData);
+  const deals = dealItems.map(toCardData);
+  const popular = [...newestItems, ...topRatedItems, ...dealItems]
+    .sort((a, b) => b.ratingCount - a.ratingCount || (b.rating ?? 0) - (a.rating ?? 0))
+    .map(toCardData);
+  const rails = await resolveProductRails({ newest, topRated, deals, popular }, recentlyViewedFeed);
+  return { categories, rails };
+}
+
+export interface Listing {
+  products: ProductCardData[];
+  total: number;
+  filters: CategoryFilters | null;
+}
+
+/** One generic listing for every category (attribute-driven filters, W3) via shared-client. */
+export async function getListing(category: string, query: ListingQuery): Promise<Listing> {
+  const params = catalogQuery(query, { category });
+  try {
+    const [page, filters] = await Promise.all([
+      api.catalog.listProducts(params),
+      api.catalog.getCategoryFilters(category, params).catch(() => null),
+    ]);
+    return { products: page.items.map(toCardData), total: page.total, filters };
+  } catch (err) {
+    if (isNotFound(err)) return { products: [], total: 0, filters: null };
+    throw err;
+  }
+}
+
+export async function getProduct(slug: string): Promise<ProductDetailData | null> {
+  if (!/^[a-z0-9-]{1,200}$/.test(slug)) return null;
+  try {
+    const detail = await api.catalog.getProduct(slug);
+    const related = await api.catalog
+      .listProducts({ category: detail.category.slug, limit: 6 })
+      .catch(() => ({ items: [] as ProductListItem[] }));
+    return toProductDetailData(
+      detail,
+      related.items
+        .filter((item) => item.id !== detail.id)
+        .slice(0, 4)
+        .map(toCardData),
+    );
+  } catch (err) {
+    if (isNotFound(err)) return null;
+    throw err;
+  }
+}
+
+export async function searchProducts(q: string): Promise<ProductCardData[]> {
+  if (!q.trim()) return [];
+  const result = await api.search.products({ q: q.trim(), perPage: 40 });
+  return result.results.map(searchResultToCardData);
+}
+
+/** A fresh, default listing query (overridden by the filter sheet). */
+export function emptyListingQuery(): ListingQuery {
+  return { sort: 'default', minPrice: null, maxPrice: null, minRating: 0, page: 1, filters: {} };
+}
