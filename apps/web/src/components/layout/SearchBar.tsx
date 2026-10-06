@@ -75,21 +75,20 @@ export function SearchBar({ id, className = '', size = 'desktop' }: SearchBarPro
         name="q"
         autoComplete="off"
         placeholder={SEARCH_PLACEHOLDER}
-        className="h-[36px] w-full rounded-full border-2 border-brand-accent bg-white py-[7px] pl-[15px] pr-[45px] font-sans text-[16px] text-ink-input transition-shadow placeholder:text-ink-placeholder focus:shadow-search-focus focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+        className={`h-[36px] w-full rounded-full border-2 border-brand-accent bg-white py-[7px] pl-[15px] font-sans text-[16px] text-ink-input transition-shadow placeholder:text-ink-placeholder focus:shadow-search-focus focus:outline-none [&::-webkit-search-cancel-button]:hidden ${mobile ? 'pr-[15px]' : 'pr-[45px]'}`}
       />
-      <button
-        type="button"
-        onClick={startVoiceSearch}
-        aria-label={listening ? 'Listening for voice search' : 'Search by voice'}
-        aria-pressed={listening}
-        className={`absolute right-[10px] flex items-center justify-center rounded-full bg-white text-black ${mobile ? 'top-[3px] size-[35px]' : 'top-[4px] size-[28px]'} ${listening ? 'text-hover' : ''}`}
-      >
-        <Mic
-          aria-hidden="true"
-          className={mobile ? 'size-[24px]' : 'size-[20px]'}
-          strokeWidth={2}
-        />
-      </button>
+      {/* Live's mobile search has no voice button; keep it on desktop only (desktop stays unchanged). */}
+      {!mobile && (
+        <button
+          type="button"
+          onClick={startVoiceSearch}
+          aria-label={listening ? 'Listening for voice search' : 'Search by voice'}
+          aria-pressed={listening}
+          className={`absolute right-[10px] top-[4px] flex size-[28px] items-center justify-center rounded-full bg-white text-black ${listening ? 'text-hover' : ''}`}
+        >
+          <Mic aria-hidden="true" className="size-[20px]" strokeWidth={2} />
+        </button>
+      )}
     </form>
   );
 }
