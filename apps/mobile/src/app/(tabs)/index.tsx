@@ -14,11 +14,13 @@ import { FEATURE_CARDS, type ApiCategory, type FeatureCard } from '@youmart/shar
 import { AppHeader } from '@/components/AppHeader';
 import { PromoCarousel } from '@/components/PromoCarousel';
 import { ProductRail } from '@/components/ProductRail';
+import { ProductRailTabs } from '@/components/ProductRailTabs';
 import { BrandStrip } from '@/components/BrandStrip';
 import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
 import { getHome, type HomeData } from '@/lib/catalog';
+import { useRailLayout, type RailLayout } from '@/stores/prefs';
 import { colors, font, radii, space } from '@/theme';
 
 const FEATURE_ICON: Record<FeatureCard['id'], keyof typeof Ionicons.glyphMap> = {
@@ -40,6 +42,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const [state, setState] = useState<State>({ status: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
+  const [railLayout, setRailLayout] = useRailLayout();
 
   const load = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
@@ -91,13 +94,15 @@ export default function HomeScreen() {
             categories={state.data.categories}
             onPress={(slug) => router.push(`/category/${slug}`)}
           />
-          {state.data.rails.slice(0, 2).map((rail) => (
-            <ProductRail key={rail.key} rail={rail} />
-          ))}
+
+          <RailsHeader layout={railLayout} onChange={setRailLayout} />
+          {railLayout === 'tabbed' ? (
+            <ProductRailTabs rails={state.data.rails} />
+          ) : (
+            state.data.rails.map((rail) => <ProductRail key={rail.key} rail={rail} />)
+          )}
+
           <BrandStrip />
-          {state.data.rails.slice(2).map((rail) => (
-            <ProductRail key={rail.key} rail={rail} />
-          ))}
           <ProductShowcase showcase={state.data.showcase} />
           {state.data.best ? <BestCategories best={state.data.best} /> : null}
           <FeatureStrip />
@@ -138,6 +143,47 @@ function CategoryStrip({
   );
 }
 
+function RailsHeader({
+  layout,
+  onChange,
+}: {
+  layout: RailLayout;
+  onChange: (l: RailLayout) => void;
+}) {
+  return (
+    <View style={styles.railsHead}>
+      <View style={styles.railsTitleRow}>
+        <View style={styles.railsAccent} />
+        <Text style={styles.railsTitle}>Handpicked for you</Text>
+      </View>
+      <View style={styles.toggle}>
+        <Pressable
+          style={[styles.segment, layout === 'stacked' && styles.segmentActive]}
+          onPress={() => onChange('stacked')}
+          accessibilityLabel="Stacked rails view"
+        >
+          <Ionicons
+            name="reorder-three-outline"
+            size={16}
+            color={layout === 'stacked' ? colors.white : colors.brand.DEFAULT}
+          />
+        </Pressable>
+        <Pressable
+          style={[styles.segment, layout === 'tabbed' && styles.segmentActive]}
+          onPress={() => onChange('tabbed')}
+          accessibilityLabel="Tabbed slider view"
+        >
+          <Ionicons
+            name="albums-outline"
+            size={15}
+            color={layout === 'tabbed' ? colors.white : colors.brand.DEFAULT}
+          />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 function FeatureStrip() {
   // Web mobile: three full-width stacked cards — Expertise (yellow), Quality (blue),
   // Guarantee (green) — centered icon + title + text. (Expertise uses dark text: live's
@@ -170,6 +216,31 @@ const styles = StyleSheet.create({
   },
   retryText: { fontFamily: font.uiSemibold, color: colors.white, fontSize: 14 },
   body: { paddingTop: space.md },
+  railsHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: space.lg,
+    marginTop: space.xl,
+  },
+  railsTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
+  railsAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: colors.brand.DEFAULT },
+  railsTitle: { fontFamily: font.uiBold, fontSize: 17, color: colors.heading },
+  toggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.brandPopup.bg,
+    borderRadius: radii.pill,
+    padding: 3,
+    gap: 2,
+  },
+  segment: {
+    width: 36,
+    height: 30,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentActive: { backgroundColor: colors.brand.DEFAULT },
   catWrap: { marginTop: space.xl },
   catTitle: {
     fontFamily: font.uiBold,
