@@ -4,12 +4,14 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CART_SHIPPING_TOTAL, cartTotals, formatMoney } from '@youmart/shared-client';
 import { useCart } from '@/stores/cart';
+import { useSession } from '@/stores/session';
 import { ProductImage } from '@/components/ui';
 import { colors, font, radii, space } from '@/theme';
 
 export default function CartScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const session = useSession();
   const { cart, setQuantity, removeItem } = useCart();
   const totals = cartTotals(cart, CART_SHIPPING_TOTAL);
 
@@ -24,6 +26,11 @@ export default function CartScreen() {
       </View>
     );
   }
+
+  const proceed = () => {
+    if (session.status === 'authenticated') router.push('/checkout');
+    else router.push('/auth/login');
+  };
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -41,7 +48,11 @@ export default function CartScreen() {
                 <View style={styles.stepper}>
                   <Pressable
                     style={styles.stepBtn}
-                    onPress={() => setQuantity(line.cartItemId, line.quantity - 1)}
+                    onPress={() =>
+                      line.quantity <= 1
+                        ? removeItem(line.cartItemId)
+                        : setQuantity(line.cartItemId, line.quantity - 1)
+                    }
                   >
                     <Ionicons name="remove" size={16} color={colors.brand.DEFAULT} />
                   </Pressable>
@@ -76,11 +87,16 @@ export default function CartScreen() {
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>{formatMoney(totals.total)}</Text>
         </View>
-        <Pressable style={styles.checkout} disabled>
-          <Ionicons name="lock-closed" size={15} color={colors.white} />
-          <Text style={styles.checkoutText}>Sign in to checkout</Text>
+        <Pressable style={styles.checkout} onPress={proceed}>
+          <Ionicons
+            name={session.status === 'authenticated' ? 'arrow-forward' : 'lock-closed'}
+            size={16}
+            color={colors.white}
+          />
+          <Text style={styles.checkoutText}>
+            {session.status === 'authenticated' ? 'Proceed to checkout' : 'Sign in to checkout'}
+          </Text>
         </Pressable>
-        <Text style={styles.note}>Login &amp; real checkout arrive in the next update.</Text>
       </View>
     </View>
   );
@@ -167,11 +183,9 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.cart.ink,
+    backgroundColor: colors.brand.DEFAULT,
     borderRadius: radii.button,
     paddingVertical: 14,
-    opacity: 0.85,
   },
   checkoutText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.white },
-  note: { fontFamily: font.body, fontSize: 11.5, color: colors.text.muted, textAlign: 'center' },
 });

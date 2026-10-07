@@ -72,6 +72,43 @@ dev-only `0.0.0.0` bind and point the app at your PC's Wi-Fi IP:
 > reaches the host's localhost directly. A tunnel is another option:
 > `pnpm --filter @youmart/mobile start --tunnel` (you'd also need to expose the gateway).
 
+## Auth & token storage (Phase 2b — the RN cookie-model replacement)
+
+The web keeps the access token in memory and the refresh token in an httpOnly `ym_rt` cookie. RN
+has no browser cookie jar, so [src/lib/api.ts](src/lib/api.ts) injects a custom `fetchImpl` built on
+**`expo/fetch`** (it exposes `Set-Cookie` and keeps no implicit cookie jar):
+
+- **Access token** — in memory only (`setAccessToken`), sent as `Authorization: Bearer` by
+  shared-client. Never persisted, never logged.
+- **Refresh token** — captured from the auth response's `Set-Cookie: ym_rt=…` into
+  **expo-secure-store**, and re-attached as a `Cookie: ym_rt=<value>` header only on
+  `/auth/refresh` + `/auth/logout`. This needs **no backend change** (the server still reads
+  `req.cookies.ym_rt`).
+- **Silent refresh** — on launch, if a refresh token is stored, [src/stores/session.tsx](src/stores/session.tsx)
+  calls `/auth/refresh` to restore the session without re-OTP; any 401 triggers one refresh+retry.
+- **Logout** — revokes server-side, clears memory + secure-store.
+
+Dev OTP (local, notifications simulated): request a code in the app, then on the PC run
+`pnpm dev:otp 9876543210` (or `pnpm dev:otp you@example.com`) to print the code — see
+[docs/ops/running.md](../../docs/ops/running.md).
+
+## Payment (Razorpay) — Expo Go compatible
+
+Razorpay's native `react-native-razorpay` **crashes in Expo Go** (native module). Instead the
+payment screen ([src/app/payment.tsx](src/app/payment.tsx)) runs **Razorpay Checkout in a WebView**
+(`react-native-webview`, Expo Go-compatible). The app uses only the **public key id + Razorpay order
+id** from the backend — the **secret never touches the app**. Confirmation is **server-authoritative
+via the webhook**: after the widget closes, the app **polls `GET /api/orders/:id` until CONFIRMED**
+(the client callback alone is never trusted). Server owns all prices (anti-tampering).
+
+- **Testable in Expo Go now:** login, cart/wishlist/addresses, checkout → create order → the
+  Razorpay WebView → webhook-poll → CONFIRMED → success/orders.
+- **Needs live Razorpay keys:** the backend must have real `RAZORPAY_KEY_ID`/secret + the webhook
+  configured for an end-to-end paid confirmation. Without them the create-order + poll logic still
+  runs; the widget needs valid keys.
+- **Alternative (full native SDK):** `react-native-razorpay` gives a native sheet but requires an
+  **Expo dev build / EAS Build** (not Expo Go). Not used here, to keep Expo Go testing working.
+
 ## Windows / iOS testing reality
 
 - **Android:** fully testable on Windows — Expo Go on an Android phone, or an Android emulator.
@@ -80,18 +117,13 @@ dev-only `0.0.0.0` bind and point the app at your PC's Wi-Fi IP:
 
 ## Reuse of `@youmart/shared-client` (how it works)
 
-`shared-client` is pure, platform-agnostic TypeScript (no `window`/`localStorage`/`document`; the
-only external dependency is the global `fetch`, which React Native provides). Metro resolves and
-transpiles it from the workspace via `metro.config.js` (`watchFolders` = monorepo root +
-`nodeModulesPaths` + symlink support for pnpm). The api-client is constructed in `src/lib/api.ts`.
+`shared-client` is pure, platform-agnostic TypeScript. Metro resolves and transpiles it from the
+workspace via `metro.config.js`. The app reuses its api-client, types, money math, catalog mappers,
+auth helpers, and the **guest→account merge logic** (`mergeGuestCart` / `mergeGuestWishlist` /
+`mergeRecentlyViewed`) — same logic as the web, with RN storage injected:
 
-## Flagged for later phases (not solved in Phase 1)
+- guest cart/wishlist/recently-viewed → **AsyncStorage** (`src/stores/*`);
+- refresh token → **expo-secure-store** (`src/lib/storage.ts`).
 
-- **Auth storage:** the web keeps the access token in memory and the refresh token in an httpOnly
-  cookie (`ym_rt`). RN has no browser cookie — the app will store the refresh token in
-  **expo-secure-store** and inject `getAccessToken`/`onUnauthorized` into `createApiClient`.
-- **Guest persistence:** `guest-cart`, `guest-wishlist`, and `recently-viewed` need a storage
-  adapter. The web injects `localStorage`; RN will inject **AsyncStorage/SecureStore** (same
-  shared-client logic, different adapter). To be wired in the cart/auth phases.
-- **UI:** the full app UI (matching the verified mobile web as the visual source of truth) comes in
-  later phases. Phase 1 is foundation + plumbing only.
+On login, the guest cart, wishlist, and recently-viewed history are merged into the account and the
+local copies cleared — identical to the web W4 / view-tracking behaviour.

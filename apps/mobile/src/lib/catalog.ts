@@ -20,15 +20,21 @@ import {
 } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { loadGuestViews } from '@/stores/recently-viewed';
+import { getSession } from '@/stores/session';
 
 const isNotFound = (err: unknown) => err instanceof ApiError && err.status === 404;
 
-/** The personal-rail seam (shared with web): guest recently-viewed resolved to fresh cards. */
+/** The personal-rail seam (shared with web): signed-in -> server history; guest -> local ids
+ * resolved to fresh cards. Empty/failure -> null, so the rail uses the heading-matched fallback. */
 const recentlyViewedFeed: PersonalRailFeed = async (key) => {
   if (key !== 'left-off') return null;
-  const views = await loadGuestViews();
-  if (views.length === 0) return null;
   try {
+    if (getSession().status === 'authenticated') {
+      const { items } = await api.catalog.recentlyViewed();
+      return items.length > 0 ? items.map(toCardData) : null;
+    }
+    const views = await loadGuestViews();
+    if (views.length === 0) return null;
     const { items } = await api.catalog.productCards(views.map((v) => v.productId));
     return items.map(toCardData);
   } catch {
