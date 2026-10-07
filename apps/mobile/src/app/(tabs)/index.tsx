@@ -10,21 +10,28 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { EXPLORE_FEATURES, type ApiCategory } from '@youmart/shared-client';
+import { FEATURE_CARDS, type ApiCategory, type FeatureCard } from '@youmart/shared-client';
 import { AppHeader } from '@/components/AppHeader';
 import { PromoCarousel } from '@/components/PromoCarousel';
 import { ProductRail } from '@/components/ProductRail';
 import { BrandStrip } from '@/components/BrandStrip';
 import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
+import { Footer } from '@/components/Footer';
 import { getHome, type HomeData } from '@/lib/catalog';
 import { colors, font, radii, space } from '@/theme';
 
-const FEATURE_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
-  delivery: 'rocket-outline',
-  genuine: 'shield-checkmark-outline',
-  returns: 'refresh-outline',
-  support: 'headset-outline',
+const FEATURE_ICON: Record<FeatureCard['id'], keyof typeof Ionicons.glyphMap> = {
+  expertise: 'bulb-outline',
+  quality: 'diamond-outline',
+  guarantee: 'shield-checkmark-outline',
+};
+
+// Live's feature-card colours; Expertise keeps dark ink (white-on-yellow is unreadable).
+const FEATURE_TONE: Record<FeatureCard['id'], { bg: string; ink: string }> = {
+  expertise: { bg: colors.feature.expertise, ink: colors.heading },
+  quality: { bg: colors.feature.quality, ink: colors.white },
+  guarantee: { bg: colors.feature.guarantee, ink: colors.white },
 };
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: HomeData };
@@ -94,7 +101,7 @@ export default function HomeScreen() {
           <ProductShowcase showcase={state.data.showcase} />
           {state.data.best ? <BestCategories best={state.data.best} /> : null}
           <FeatureStrip />
-          <View style={{ height: space.xxl }} />
+          <Footer />
         </ScrollView>
       )}
     </View>
@@ -109,47 +116,44 @@ function CategoryStrip({
   onPress: (slug: string) => void;
 }) {
   const roots = categories.filter((c) => !c.parentId);
-  const list = (roots.length > 0 ? roots : categories).slice(0, 14);
+  const list = roots.length > 0 ? roots : categories;
   if (list.length === 0) return null;
+  // Web mobile: a 4-column grid of category circles with the label below each.
   return (
     <View style={styles.catWrap}>
       <Text style={styles.catTitle}>Shop by category</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.catList}
-      >
+      <View style={styles.catGrid}>
         {list.map((c) => (
           <Pressable key={c.id} style={styles.catChip} onPress={() => onPress(c.slug)}>
             <View style={styles.catIcon}>
-              <Ionicons name="pricetag" size={18} color={colors.brand.DEFAULT} />
+              <Ionicons name="pricetag" size={22} color={colors.brand.DEFAULT} />
             </View>
             <Text numberOfLines={2} style={styles.catLabel}>
               {c.name}
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 function FeatureStrip() {
+  // Web mobile: three full-width stacked cards — Expertise (yellow), Quality (blue),
+  // Guarantee (green) — centered icon + title + text. (Expertise uses dark text: live's
+  // white-on-yellow is ~1.2:1 / unreadable — the previously-approved accessibility fix.)
   return (
     <View style={styles.features}>
-      {EXPLORE_FEATURES.map((f) => (
-        <View key={f.id} style={styles.feature}>
-          <Ionicons
-            name={FEATURE_ICON[f.id] ?? 'star-outline'}
-            size={22}
-            color={colors.brand.DEFAULT}
-          />
-          <Text style={styles.featureTitle}>{f.title}</Text>
-          <Text style={styles.featureText} numberOfLines={2}>
-            {f.text}
-          </Text>
-        </View>
-      ))}
+      {FEATURE_CARDS.map((card) => {
+        const tone = FEATURE_TONE[card.id];
+        return (
+          <View key={card.id} style={[styles.feature, { backgroundColor: tone.bg }]}>
+            <Ionicons name={FEATURE_ICON[card.id] ?? 'star-outline'} size={30} color={tone.ink} />
+            <Text style={[styles.featureTitle, { color: tone.ink }]}>{card.title}</Text>
+            <Text style={[styles.featureText, { color: tone.ink }]}>{card.text}</Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -175,40 +179,45 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   catList: { paddingHorizontal: space.lg, gap: space.md },
-  catChip: { width: 76, alignItems: 'center', gap: 6 },
+  catGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: space.md,
+    rowGap: space.lg,
+  },
+  catChip: { width: '25%', alignItems: 'center', gap: 6, paddingHorizontal: 2 },
   catIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.card.border,
   },
-  catLabel: { fontFamily: font.ui, fontSize: 11.5, color: colors.text.body, textAlign: 'center' },
+  catLabel: {
+    fontFamily: font.uiSemibold,
+    fontSize: 11,
+    color: colors.text.body,
+    textAlign: 'center',
+  },
   features: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     marginTop: space.xxl,
     paddingHorizontal: space.lg,
-    gap: space.md,
+    gap: space.sm,
   },
   feature: {
-    flexGrow: 1,
-    flexBasis: '46%',
-    backgroundColor: colors.white,
     borderRadius: radii.featureCard,
-    padding: space.lg,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: colors.card.border,
+    paddingVertical: space.xl,
+    paddingHorizontal: space.lg,
+    alignItems: 'center',
+    gap: 6,
   },
   featureTitle: {
-    fontFamily: font.uiSemibold,
-    fontSize: 13.5,
-    color: colors.text.strong,
+    fontFamily: font.uiBold,
+    fontSize: 20,
     marginTop: 4,
   },
-  featureText: { fontFamily: font.body, fontSize: 12, color: colors.text.body },
+  featureText: { fontFamily: font.body, fontSize: 13.5, lineHeight: 20, textAlign: 'center' },
 });
