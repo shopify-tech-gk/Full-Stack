@@ -74,19 +74,24 @@ dev-only `0.0.0.0` bind and point the app at your PC's Wi-Fi IP:
 
 ## Auth & token storage (Phase 2b — the RN cookie-model replacement)
 
-The web keeps the access token in memory and the refresh token in an httpOnly `ym_rt` cookie. RN
-has no browser cookie jar, so [src/lib/api.ts](src/lib/api.ts) injects a custom `fetchImpl` built on
-**`expo/fetch`** (it exposes `Set-Cookie` and keeps no implicit cookie jar):
+The web keeps the access token in memory and the refresh token in an httpOnly `ym_rt` cookie. On
+React Native:
 
-- **Access token** — in memory only (`setAccessToken`), sent as `Authorization: Bearer` by
-  shared-client. Never persisted, never logged.
-- **Refresh token** — captured from the auth response's `Set-Cookie: ym_rt=…` into
-  **expo-secure-store**, and re-attached as a `Cookie: ym_rt=<value>` header only on
-  `/auth/refresh` + `/auth/logout`. This needs **no backend change** (the server still reads
-  `req.cookies.ym_rt`).
-- **Silent refresh** — on launch, if a refresh token is stored, [src/stores/session.tsx](src/stores/session.tsx)
-  calls `/auth/refresh` to restore the session without re-OTP; any 401 triggers one refresh+retry.
-- **Logout** — revokes server-side, clears memory + secure-store.
+- **Access token** — in memory only (`setAccessToken` in [src/lib/api.ts](src/lib/api.ts)), sent as
+  `Authorization: Bearer` by shared-client. Never persisted, never logged.
+- **Refresh token** — handled by React Native's **native cookie jar** (iOS `NSHTTPCookieStorage` /
+  Android `CookieManager`). The `ym_rt` cookie the server sets on login is stored and replayed
+  automatically on `/auth/refresh`, **including across app restarts** (it's a 14-day persistent
+  cookie). The api-client already sends `credentials: 'include'`, so this needs **no backend
+  change** and no manual cookie handling.
+- **Silent refresh** — on launch, [src/stores/session.tsx](src/stores/session.tsx) calls
+  `/auth/refresh`; if the jar has `ym_rt` the session is restored without re-OTP. Any 401 triggers
+  one refresh+retry. **Logout** revokes server-side (the clearing `Set-Cookie` empties the jar).
+
+> An earlier attempt injected a custom `expo/fetch` fetchImpl to mirror the refresh token into
+> expo-secure-store, but its `Response` did not read back reliably in Expo Go (requests reached the
+> server yet responses hung). The native cookie jar is the robust, Expo-Go-safe path; a
+> secure-store token model can return later with a native dev build if required.
 
 Dev OTP (local, notifications simulated): request a code in the app, then on the PC run
 `pnpm dev:otp 9876543210` (or `pnpm dev:otp you@example.com`) to print the code — see

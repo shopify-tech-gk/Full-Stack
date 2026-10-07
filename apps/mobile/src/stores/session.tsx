@@ -1,12 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AuthUser } from '@youmart/shared-client';
-import {
-  api,
-  clearStoredSession,
-  hasStoredSession,
-  setAccessToken,
-  setUnauthorizedHandler,
-} from '@/lib/api';
+import { api, setAccessToken, setUnauthorizedHandler } from '@/lib/api';
 
 // RN session, mirroring the web's lib/session.ts. The difference is storage: the web restores from
 // an httpOnly cookie; RN restores from a refresh token in expo-secure-store (managed in lib/api.ts).
@@ -60,13 +54,9 @@ export function refreshSession(): Promise<boolean> {
 
 setUnauthorizedHandler(refreshSession);
 
-/** On launch: if a refresh token is stored, try a silent refresh; otherwise go anonymous. */
+/** On launch: attempt a silent refresh (the native cookie jar replays `ym_rt` if present). */
 export async function bootstrapSession(): Promise<void> {
-  if (await hasStoredSession()) {
-    await refreshSession();
-  } else {
-    setState(ANONYMOUS);
-  }
+  await refreshSession();
 }
 
 export async function loginWithOtp(identifier: string, code: string): Promise<AuthUser> {
@@ -79,9 +69,8 @@ export async function loginWithOtp(identifier: string, code: string): Promise<Au
 export async function logout(): Promise<void> {
   epoch += 1;
   try {
-    await api.auth.logout();
+    await api.auth.logout(); // clears the `ym_rt` cookie server-side (Set-Cookie clears the jar)
   } finally {
-    await clearStoredSession();
     setAccessToken(null);
     setState(ANONYMOUS);
   }
