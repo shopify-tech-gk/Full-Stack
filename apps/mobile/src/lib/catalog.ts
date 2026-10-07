@@ -3,8 +3,10 @@
 // catalogQuery) — NO new backend, NO duplicated logic. Real data through the gateway.
 import {
   ApiError,
+  bestCategories,
   catalogQuery,
   resolveProductRails,
+  resolveStoreCategories,
   searchResultToCardData,
   toCardData,
   toProductDetailData,
@@ -15,8 +17,10 @@ import {
   type PersonalRailFeed,
   type ProductCardData,
   type ProductDetailData,
+  type ProductFilter,
   type ProductListItem,
   type ProductRailSlider,
+  type StoreSubcategory,
 } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { loadGuestViews } from '@/stores/recently-viewed';
@@ -45,10 +49,12 @@ const recentlyViewedFeed: PersonalRailFeed = async (key) => {
 export interface HomeData {
   categories: ApiCategory[];
   rails: ProductRailSlider[];
+  showcase: Record<ProductFilter, ProductCardData[]>;
+  best: { title: string; items: readonly (StoreSubcategory & { href: string })[] } | null;
 }
 
 /** Home: real category list + product rails (recently-viewed personalization + heading-matched
- * fallback), using the SAME resolveProductRails logic as the web desktop sliders. */
+ * fallback), plus the showcase grid and the best-categories carousel (same logic as web). */
 export async function getHome(): Promise<HomeData> {
   const fetchSorted = (sort: CatalogSort) =>
     api.catalog
@@ -71,7 +77,12 @@ export async function getHome(): Promise<HomeData> {
     .sort((a, b) => b.ratingCount - a.ratingCount || (b.rating ?? 0) - (a.rating ?? 0))
     .map(toCardData);
   const rails = await resolveProductRails({ newest, topRated, deals, popular }, recentlyViewedFeed);
-  return { categories, rails };
+  return {
+    categories,
+    rails,
+    showcase: { new: newest, all: topRated, sale: deals },
+    best: bestCategories(resolveStoreCategories()),
+  };
 }
 
 export interface Listing {

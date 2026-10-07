@@ -8,6 +8,17 @@ import { useWishlist } from '@/stores/wishlist';
 import { useCart } from '@/stores/cart';
 import { colors, font, radii, space } from '@/theme';
 
+const INFO_LINKS: { page: string; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { page: 'about', label: 'About YouMart', icon: 'information-circle-outline' },
+  { page: 'contact', label: 'Contact us', icon: 'call-outline' },
+  { page: 'customer-care', label: 'Customer care', icon: 'headset-outline' },
+  { page: 'faq', label: 'FAQ', icon: 'help-circle-outline' },
+  { page: 'shipping', label: 'Shipping details', icon: 'cube-outline' },
+  { page: 'refund-policy', label: 'Refund policy', icon: 'refresh-outline' },
+  { page: 'terms', label: 'Terms & conditions', icon: 'document-text-outline' },
+  { page: 'privacy-policy', label: 'Privacy policy', icon: 'lock-closed-outline' },
+];
+
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -68,8 +79,29 @@ export default function AccountScreen() {
           icon="navigate-outline"
           label="Track an order"
           onPress={() => router.push('/track-order')}
-          last
+          last={!loggedIn}
         />
+        {loggedIn ? (
+          <Row
+            icon="person-outline"
+            label="Account details"
+            onPress={() => router.push('/account/details')}
+            last
+          />
+        ) : null}
+      </View>
+
+      <Text style={styles.sectionLabel}>Help &amp; information</Text>
+      <View style={styles.rows}>
+        {INFO_LINKS.map((link, i) => (
+          <Row
+            key={link.page}
+            icon={link.icon}
+            label={link.label}
+            onPress={() => router.push(`/info/${link.page}`)}
+            last={i === INFO_LINKS.length - 1}
+          />
+        ))}
       </View>
 
       {loggedIn ? (
@@ -138,6 +170,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   loginText: { fontFamily: font.uiSemibold, fontSize: 16, color: colors.white },
+  sectionLabel: {
+    fontFamily: font.uiSemibold,
+    fontSize: 13,
+    color: colors.text.muted,
+    marginTop: space.sm,
+    marginLeft: 4,
+  },
   rows: {
     backgroundColor: colors.white,
     borderRadius: radii.tile,

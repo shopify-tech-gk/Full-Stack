@@ -51,6 +51,7 @@ export default function RootLayout() {
                 }}
               >
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="search" options={{ headerShown: false }} />
                 <Stack.Screen name="category/[slug]" options={{ headerShown: true, title: '' }} />
                 <Stack.Screen name="product/[slug]" options={{ headerShown: true, title: '' }} />
                 <Stack.Screen name="auth/login" options={{ headerShown: true, title: 'Sign in' }} />
@@ -72,6 +73,11 @@ export default function RootLayout() {
                   options={{ headerShown: true, title: 'My Orders' }}
                 />
                 <Stack.Screen name="orders/[id]" options={{ headerShown: true, title: 'Order' }} />
+                <Stack.Screen
+                  name="account/details"
+                  options={{ headerShown: true, title: 'Account details' }}
+                />
+                <Stack.Screen name="info/[page]" options={{ headerShown: true, title: '' }} />
                 <Stack.Screen
                   name="track-order"
                   options={{ headerShown: true, title: 'Track Order' }}

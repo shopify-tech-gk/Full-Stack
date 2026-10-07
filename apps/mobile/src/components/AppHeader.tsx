@@ -29,7 +29,7 @@ export function AppHeader() {
           ) : null}
         </Pressable>
       </View>
-      <Pressable style={styles.search} onPress={() => router.push('/categories')}>
+      <Pressable style={styles.search} onPress={() => router.push('/search')}>
         <Ionicons name="search" size={18} color={colors.text.placeholder} />
         <Text style={styles.searchText} numberOfLines={1}>
           {SEARCH_PLACEHOLDER}

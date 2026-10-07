@@ -14,6 +14,9 @@ import { EXPLORE_FEATURES, type ApiCategory } from '@youmart/shared-client';
 import { AppHeader } from '@/components/AppHeader';
 import { PromoCarousel } from '@/components/PromoCarousel';
 import { ProductRail } from '@/components/ProductRail';
+import { BrandStrip } from '@/components/BrandStrip';
+import { BestCategories } from '@/components/BestCategories';
+import { ProductShowcase } from '@/components/ProductShowcase';
 import { getHome, type HomeData } from '@/lib/catalog';
 import { colors, font, radii, space } from '@/theme';
 
@@ -81,9 +84,15 @@ export default function HomeScreen() {
             categories={state.data.categories}
             onPress={(slug) => router.push(`/category/${slug}`)}
           />
-          {state.data.rails.map((rail) => (
+          {state.data.rails.slice(0, 2).map((rail) => (
             <ProductRail key={rail.key} rail={rail} />
           ))}
+          <BrandStrip />
+          {state.data.rails.slice(2).map((rail) => (
+            <ProductRail key={rail.key} rail={rail} />
+          ))}
+          <ProductShowcase showcase={state.data.showcase} />
+          {state.data.best ? <BestCategories best={state.data.best} /> : null}
           <FeatureStrip />
           <View style={{ height: space.xxl }} />
         </ScrollView>

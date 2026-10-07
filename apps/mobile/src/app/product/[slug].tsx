@@ -21,6 +21,7 @@ import { useCart } from '@/stores/cart';
 import { useWishlist } from '@/stores/wishlist';
 import { Price, ProductImage, Stars } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
+import { ProductReviews } from '@/components/ProductReviews';
 import { colors, font, radii, space } from '@/theme';
 
 export default function ProductScreen() {
@@ -151,6 +152,8 @@ export default function ProductScreen() {
 
           {product.description ? <Text style={styles.desc}>{product.description}</Text> : null}
         </View>
+
+        <ProductReviews slug={product.slug} />
 
         {product.related.length > 0 ? (
           <View style={styles.related}>
