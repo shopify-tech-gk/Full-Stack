@@ -1,39 +1,54 @@
-import { useCallback, useRef, type ReactNode } from 'react';
-import {
-  StyleSheet,
-  useWindowDimensions,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { createContext, useCallback, useContext, useRef, type ReactNode } from 'react';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useRouter, type Href } from 'expo-router';
 
 /** Bottom-tab order — index here matches each tab's `index` prop. */
 const TAB_ROUTES: string[] = ['/', '/buy-again', '/cart', '/account'];
 
+type ZoneApi = { setZone: (active: boolean) => void };
+const ZoneContext = createContext<ZoneApi | null>(null);
+
+/**
+ * Wrap a horizontal carousel/product section so a swipe that STARTS on it scrolls that section
+ * instead of switching tabs. Everywhere else on the screen, a horizontal swipe changes tab.
+ */
+export function HScrollZone({ children }: { children: ReactNode }) {
+  const zone = useContext(ZoneContext);
+  return (
+    <View
+      onTouchStart={() => zone?.setZone(true)}
+      onTouchEnd={() => zone?.setZone(false)}
+      onTouchCancel={() => zone?.setZone(false)}
+    >
+      {children}
+    </View>
+  );
+}
+
 /**
  * Wraps a tab screen so a horizontal swipe moves to the previous/next bottom tab (Instagram-style).
  * Swiping right→left opens the next tab; left→right opens the previous one. Vertical drags fall
- * through to scrolling. On screens with their own horizontal carousels (Home), pass `edgeOnly` so
- * only swipes that start near the screen edge switch tabs and the inner rails keep scrolling.
+ * through to scrolling, and swipes that begin inside an {@link HScrollZone} scroll that carousel.
  */
 export function SwipeTabs({
   index,
-  edgeOnly = false,
   style,
   children,
 }: {
   index: number;
-  edgeOnly?: boolean;
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
 }) {
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const startX = useRef(0);
   const startY = useRef(0);
   const decided = useRef(false);
+  const inZone = useRef(false);
+
+  const setZone = useCallback((active: boolean) => {
+    inZone.current = active;
+  }, []);
 
   const go = useCallback(
     (dir: number) => {
@@ -43,8 +58,6 @@ export function SwipeTabs({
     },
     [index, router],
   );
-
-  const edge = edgeOnly ? 56 : width;
 
   const pan = Gesture.Pan()
     .runOnJS(true)
@@ -65,19 +78,23 @@ export function SwipeTabs({
       if (Math.abs(dx) < 14 && Math.abs(dy) < 14) return;
       decided.current = true;
       const horizontal = Math.abs(dx) > Math.abs(dy) * 1.4;
-      const fromEdge = startX.current <= edge || startX.current >= width - edge;
-      if (horizontal && fromEdge) state.activate();
+      if (horizontal && !inZone.current) state.activate();
       else state.fail();
     })
     .onEnd((e) => {
-      if (Math.abs(e.translationX) < 55 && Math.abs(e.velocityX) < 450) return;
+      if (Math.abs(e.translationX) < 50 && Math.abs(e.velocityX) < 420) return;
       go(e.translationX < 0 ? 1 : -1);
+    })
+    .onFinalize(() => {
+      inZone.current = false;
     });
 
   return (
-    <GestureDetector gesture={pan}>
-      <View style={[styles.fill, style]}>{children}</View>
-    </GestureDetector>
+    <ZoneContext.Provider value={{ setZone }}>
+      <GestureDetector gesture={pan}>
+        <View style={[styles.fill, style]}>{children}</View>
+      </GestureDetector>
+    </ZoneContext.Provider>
   );
 }
 

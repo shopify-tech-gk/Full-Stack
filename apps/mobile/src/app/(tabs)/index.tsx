@@ -21,7 +21,7 @@ import { BrandStrip } from '@/components/BrandStrip';
 import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
-import { SwipeTabs } from '@/components/SwipeTabs';
+import { SwipeTabs, HScrollZone } from '@/components/SwipeTabs';
 import { CategoryCard } from '@/components/CategoryCard';
 import { getHome, type HomeData } from '@/lib/catalog';
 import { mainCategories, catalogSlugOf, type CatNode } from '@/lib/home-categories';
@@ -68,7 +68,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <SwipeTabs index={0} edgeOnly style={styles.screen}>
+    <SwipeTabs index={0} style={styles.screen}>
       <AppHeader />
       {state.status === 'loading' ? (
         <View style={styles.center}>
@@ -93,19 +93,35 @@ export default function HomeScreen() {
             />
           }
         >
-          <PromoCarousel />
-          <CategoryPager />
+          <HScrollZone>
+            <PromoCarousel />
+          </HScrollZone>
+          <HScrollZone>
+            <CategoryPager />
+          </HScrollZone>
 
           <RailsHeader layout={railLayout} onChange={setRailLayout} />
           {railLayout === 'tabbed' ? (
-            <ProductRailTabs rails={state.data.rails} />
+            <HScrollZone>
+              <ProductRailTabs rails={state.data.rails} />
+            </HScrollZone>
           ) : (
-            state.data.rails.map((rail) => <ProductRail key={rail.key} rail={rail} />)
+            state.data.rails.map((rail) => (
+              <HScrollZone key={rail.key}>
+                <ProductRail rail={rail} />
+              </HScrollZone>
+            ))
           )}
 
-          <BrandStrip />
-          <ProductShowcase showcase={state.data.showcase} />
-          <BestCategories />
+          <HScrollZone>
+            <BrandStrip />
+          </HScrollZone>
+          <HScrollZone>
+            <ProductShowcase showcase={state.data.showcase} />
+          </HScrollZone>
+          <HScrollZone>
+            <BestCategories />
+          </HScrollZone>
           <FeatureStrip />
           <Footer />
         </ScrollView>
