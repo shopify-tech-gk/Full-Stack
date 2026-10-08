@@ -9,6 +9,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        animation: 'shift',
         tabBarActiveTintColor: colors.brand.DEFAULT,
         tabBarInactiveTintColor: colors.nav.inactiveIcon,
         tabBarLabelStyle: { fontFamily: font.uiMedium, fontSize: 11 },
