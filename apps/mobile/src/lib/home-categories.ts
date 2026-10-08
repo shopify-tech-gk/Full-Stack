@@ -151,3 +151,40 @@ export function taxonomyPathForSlug(slug: string): string[] {
   }
   return [];
 }
+
+/** Sibling categories of the node at `path` (its parent's other children) — for "Related categories". */
+export function relatedCategories(path: string[]): CatNode[] {
+  if (path.length === 0) return mainCategories();
+  const [mainSlug, subSlug, leafSlug] = path;
+  const main = tree().find((m) => m.slug === mainSlug);
+  if (!main) return mainCategories();
+
+  if (!subSlug) {
+    return tree()
+      .filter((m) => m.slug !== mainSlug)
+      .map((m) => ({
+        slug: m.slug,
+        name: m.name,
+        href: m.href,
+        hasChildren: m.subcategories.length > 0,
+      }));
+  }
+
+  const sub = main.subcategories.find((s) => s.slug === subSlug);
+  if (!sub) return [];
+
+  if (!leafSlug) {
+    return main.subcategories
+      .filter((s) => s.slug !== subSlug)
+      .map((s) => ({
+        slug: s.slug,
+        name: s.name,
+        href: s.href,
+        hasChildren: subHasChildren(s.children, s.name),
+      }));
+  }
+
+  return sub.children
+    .filter((c) => c.slug !== leafSlug)
+    .map((c) => ({ slug: c.slug, name: c.name, href: c.href, hasChildren: false }));
+}

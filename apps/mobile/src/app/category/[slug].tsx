@@ -18,6 +18,7 @@ import { FilterSheet } from '@/components/FilterSheet';
 import {
   browseNode,
   catalogSlugOf,
+  relatedCategories,
   taxonomyPathForSlug,
   taxonomyTrail,
   type CatNode,
@@ -49,6 +50,27 @@ export default function CategoryScreen() {
     [taxoPath],
   );
   const trail = useMemo(() => taxonomyTrail(taxoPath), [taxoPath]);
+  const related = useMemo(() => relatedCategories(taxoPath).slice(0, 12), [taxoPath]);
+
+  const openSibling = useCallback(
+    (node: CatNode) => {
+      if (node.href.startsWith('/search')) {
+        router.push({ pathname: '/search', params: { q: node.name } });
+        return;
+      }
+      const cslug = catalogSlugOf(node.href) || node.slug;
+      const sibTaxo = [...taxoPath.slice(0, -1), node.slug].join('~');
+      router.push(`/category/${cslug}?taxo=${sibTaxo}`);
+    },
+    [router, taxoPath],
+  );
+  const siblingImageKey = useCallback(
+    (node: CatNode) =>
+      taxoPath.length <= 1
+        ? `mobile/${node.slug}`
+        : [...taxoPath.slice(0, -1), node.slug].join('/'),
+    [taxoPath],
+  );
 
   // Reload page 1 whenever the category or applied filters/sort change (not on page append).
   useEffect(() => {
@@ -163,6 +185,32 @@ export default function CategoryScreen() {
       </View>
     ) : null;
 
+  const allLoaded = Boolean(data && data.total > 0 && data.products.length >= data.total);
+  const footer = (
+    <View>
+      {loadingMore ? (
+        <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
+      ) : null}
+      {allLoaded && related.length > 0 ? (
+        <View style={styles.related}>
+          <Text style={styles.relatedTitle}>Related categories</Text>
+          <View style={styles.relatedGrid}>
+            {related.map((c) => (
+              <View key={c.slug} style={styles.relatedSlot}>
+                <CategoryCard
+                  name={c.name}
+                  hasChildren={c.hasChildren}
+                  imageKey={siblingImageKey(c)}
+                  onPress={() => openSibling(c)}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+
   return (
     <View style={styles.screen}>
       <View style={styles.bar}>
@@ -192,11 +240,7 @@ export default function CategoryScreen() {
           onEndReached={loadMore}
           onEndReachedThreshold={1.2}
           showsVerticalScrollIndicator={false}
-          ListFooterComponent={
-            loadingMore ? (
-              <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
-            ) : null
-          }
+          ListFooterComponent={footer}
         />
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -264,6 +308,15 @@ const styles = StyleSheet.create({
   },
   stripRow: { paddingHorizontal: space.lg, gap: space.md },
   stripCard: { width: 108 },
+  related: { paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.xxl },
+  relatedTitle: {
+    fontFamily: font.uiBold,
+    fontSize: 17,
+    color: colors.heading,
+    marginBottom: space.md,
+  },
+  relatedGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space.md },
+  relatedSlot: { width: '33.333%', paddingHorizontal: space.xs },
   center: { alignItems: 'center', justifyContent: 'center', gap: space.md, paddingVertical: 60 },
   emptyText: { fontFamily: font.body, fontSize: 14, color: colors.text.body },
   grid: { padding: space.lg, gap: space.md },
