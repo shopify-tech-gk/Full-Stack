@@ -2,6 +2,13 @@ import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import type { ProductCardData } from '@youmart/shared-client';
 import { colors, font, radii, space } from '@/theme';
 import { useCart } from '@/stores/cart';
@@ -22,6 +29,8 @@ function ProductCardBase({ product, width, accent }: Props) {
   const wishlist = useWishlist();
   const slug = product.slug ?? '';
   const saved = product.skuId ? wishlist.has(product.skuId) : false;
+  const pop = useSharedValue(1);
+  const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
 
   const open = () => {
     if (slug) router.push(`/product/${slug}`);
@@ -41,6 +50,7 @@ function ProductCardBase({ product, width, accent }: Props) {
 
   const heart = () => {
     if (!product.skuId || !slug) return;
+    pop.value = withSequence(withTiming(1.3, { duration: 110 }), withSpring(1, { damping: 6 }));
     wishlist.toggle({
       skuId: product.skuId,
       productId: product.id,
@@ -74,12 +84,22 @@ function ProductCardBase({ product, width, accent }: Props) {
         <ProductImage src={product.image} style={styles.image} />
         {accent ? <View style={[styles.accentStrip, { backgroundColor: accent }]} /> : null}
         {product.skuId ? (
-          <Pressable onPress={heart} hitSlop={8} style={styles.heart}>
-            <Ionicons
-              name={saved ? 'heart' : 'heart-outline'}
-              size={18}
-              color={saved ? colors.price.discount : colors.brand.DEFAULT}
-            />
+          <Pressable
+            onPress={heart}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.heart,
+              saved && styles.heartSaved,
+              pressed && styles.heartPressed,
+            ]}
+          >
+            <Animated.View style={heartStyle}>
+              <Ionicons
+                name={saved ? 'heart' : 'heart-outline'}
+                size={18}
+                color={saved ? colors.price.discount : colors.brand.DEFAULT}
+              />
+            </Animated.View>
           </Pressable>
         ) : null}
       </View>
@@ -122,10 +142,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: space.sm,
     right: space.sm,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.card.border,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -134,6 +156,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
+  heartSaved: { backgroundColor: '#fff0f0', borderColor: colors.price.discount },
+  heartPressed: { opacity: 0.7 },
   body: { padding: space.md, gap: 6 },
   title: { fontFamily: font.body, fontSize: 13.5, lineHeight: 18, color: colors.text.strong },
   add: {

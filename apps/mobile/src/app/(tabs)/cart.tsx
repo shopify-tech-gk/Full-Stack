@@ -6,6 +6,7 @@ import { CART_SHIPPING_TOTAL, cartTotals, formatMoney } from '@youmart/shared-cl
 import { useCart } from '@/stores/cart';
 import { useSession } from '@/stores/session';
 import { ProductImage } from '@/components/ui';
+import { SwipeTabs } from '@/components/SwipeTabs';
 import { colors, font, radii, space } from '@/theme';
 
 export default function CartScreen() {
@@ -17,13 +18,15 @@ export default function CartScreen() {
 
   if (cart.items.length === 0) {
     return (
-      <View style={[styles.screen, styles.empty, { paddingTop: insets.top }]}>
-        <Ionicons name="cart-outline" size={64} color={colors.card.border} />
-        <Text style={styles.emptyTitle}>Your Cart is Empty</Text>
-        <Pressable style={styles.shopBtn} onPress={() => router.push('/')}>
-          <Text style={styles.shopText}>Start shopping</Text>
-        </Pressable>
-      </View>
+      <SwipeTabs index={2}>
+        <View style={[styles.screen, styles.empty, { paddingTop: insets.top }]}>
+          <Ionicons name="cart-outline" size={64} color={colors.card.border} />
+          <Text style={styles.emptyTitle}>Your Cart is Empty</Text>
+          <Pressable style={styles.shopBtn} onPress={() => router.push('/')}>
+            <Text style={styles.shopText}>Start shopping</Text>
+          </Pressable>
+        </View>
+      </SwipeTabs>
     );
   }
 
@@ -33,72 +36,74 @@ export default function CartScreen() {
   };
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <Text style={styles.header}>My Cart</Text>
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        {cart.items.map((line) => (
-          <View key={line.cartItemId} style={styles.line}>
-            <ProductImage src={undefined} style={styles.thumb} icon={22} />
-            <View style={styles.lineBody}>
-              <Text numberOfLines={2} style={styles.lineTitle}>
-                {line.title}
-              </Text>
-              <Text style={styles.linePrice}>{formatMoney(line.priceSnapshot)}</Text>
-              <View style={styles.qtyRow}>
-                <View style={styles.stepper}>
-                  <Pressable
-                    style={styles.stepBtn}
-                    onPress={() =>
-                      line.quantity <= 1
-                        ? removeItem(line.cartItemId)
-                        : setQuantity(line.cartItemId, line.quantity - 1)
-                    }
-                  >
-                    <Ionicons name="remove" size={16} color={colors.brand.DEFAULT} />
-                  </Pressable>
-                  <Text style={styles.qty}>{line.quantity}</Text>
-                  <Pressable
-                    style={styles.stepBtn}
-                    onPress={() => setQuantity(line.cartItemId, line.quantity + 1)}
-                  >
-                    <Ionicons name="add" size={16} color={colors.brand.DEFAULT} />
+    <SwipeTabs index={2}>
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <Text style={styles.header}>My Cart</Text>
+        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          {cart.items.map((line) => (
+            <View key={line.cartItemId} style={styles.line}>
+              <ProductImage src={undefined} style={styles.thumb} icon={22} />
+              <View style={styles.lineBody}>
+                <Text numberOfLines={2} style={styles.lineTitle}>
+                  {line.title}
+                </Text>
+                <Text style={styles.linePrice}>{formatMoney(line.priceSnapshot)}</Text>
+                <View style={styles.qtyRow}>
+                  <View style={styles.stepper}>
+                    <Pressable
+                      style={styles.stepBtn}
+                      onPress={() =>
+                        line.quantity <= 1
+                          ? removeItem(line.cartItemId)
+                          : setQuantity(line.cartItemId, line.quantity - 1)
+                      }
+                    >
+                      <Ionicons name="remove" size={16} color={colors.brand.DEFAULT} />
+                    </Pressable>
+                    <Text style={styles.qty}>{line.quantity}</Text>
+                    <Pressable
+                      style={styles.stepBtn}
+                      onPress={() => setQuantity(line.cartItemId, line.quantity + 1)}
+                    >
+                      <Ionicons name="add" size={16} color={colors.brand.DEFAULT} />
+                    </Pressable>
+                  </View>
+                  <Pressable onPress={() => removeItem(line.cartItemId)} hitSlop={8}>
+                    <Ionicons name="trash-outline" size={18} color={colors.cart.danger} />
                   </Pressable>
                 </View>
-                <Pressable onPress={() => removeItem(line.cartItemId)} hitSlop={8}>
-                  <Ionicons name="trash-outline" size={18} color={colors.cart.danger} />
-                </Pressable>
               </View>
+              <Text style={styles.lineTotal}>{formatMoney(line.lineTotal)}</Text>
             </View>
-            <Text style={styles.lineTotal}>{formatMoney(line.lineTotal)}</Text>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
 
-      <View style={[styles.summary, { paddingBottom: insets.bottom + space.md }]}>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Subtotal</Text>
-          <Text style={styles.summaryValue}>{formatMoney(totals.subtotal)}</Text>
+        <View style={[styles.summary, { paddingBottom: insets.bottom + space.md }]}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Subtotal</Text>
+            <Text style={styles.summaryValue}>{formatMoney(totals.subtotal)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Shipping</Text>
+            <Text style={styles.free}>Free shipping</Text>
+          </View>
+          <View style={[styles.summaryRow, styles.totalRow]}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalValue}>{formatMoney(totals.total)}</Text>
+          </View>
+          <Pressable style={styles.checkout} onPress={proceed}>
+            <Ionicons
+              name={session.status === 'authenticated' ? 'arrow-forward' : 'lock-closed'}
+              size={16}
+              color={colors.white}
+            />
+            <Text style={styles.checkoutText}>
+              {session.status === 'authenticated' ? 'Proceed to checkout' : 'Sign in to checkout'}
+            </Text>
+          </Pressable>
         </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Shipping</Text>
-          <Text style={styles.free}>Free shipping</Text>
-        </View>
-        <View style={[styles.summaryRow, styles.totalRow]}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalValue}>{formatMoney(totals.total)}</Text>
-        </View>
-        <Pressable style={styles.checkout} onPress={proceed}>
-          <Ionicons
-            name={session.status === 'authenticated' ? 'arrow-forward' : 'lock-closed'}
-            size={16}
-            color={colors.white}
-          />
-          <Text style={styles.checkoutText}>
-            {session.status === 'authenticated' ? 'Proceed to checkout' : 'Sign in to checkout'}
-          </Text>
-        </Pressable>
       </View>
-    </View>
+    </SwipeTabs>
   );
 }
 

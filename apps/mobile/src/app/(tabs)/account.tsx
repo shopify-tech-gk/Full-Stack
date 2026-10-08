@@ -6,6 +6,7 @@ import { authUserLabel } from '@youmart/shared-client';
 import { logout, useSession } from '@/stores/session';
 import { useWishlist } from '@/stores/wishlist';
 import { useCart } from '@/stores/cart';
+import { SwipeTabs } from '@/components/SwipeTabs';
 import { colors, font, radii, space } from '@/theme';
 
 const INFO_LINKS: { page: string; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -29,88 +30,90 @@ export default function AccountScreen() {
   const loggedIn = session.status === 'authenticated';
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.body, { paddingTop: insets.top + space.lg }]}
-    >
-      <View style={styles.hero}>
-        <View style={styles.avatar}>
-          <Ionicons name="person" size={34} color={colors.white} />
+    <SwipeTabs index={3}>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.body, { paddingTop: insets.top + space.lg }]}
+      >
+        <View style={styles.hero}>
+          <View style={styles.avatar}>
+            <Ionicons name="person" size={34} color={colors.white} />
+          </View>
+          <Text style={styles.name}>{loggedIn ? authUserLabel(session.user) : 'Guest'}</Text>
+          <Text style={styles.sub}>
+            {loggedIn
+              ? 'Welcome back to YouMart.'
+              : 'Browse as a guest — your cart & wishlist are saved on this device.'}
+          </Text>
         </View>
-        <Text style={styles.name}>{loggedIn ? authUserLabel(session.user) : 'Guest'}</Text>
-        <Text style={styles.sub}>
-          {loggedIn
-            ? 'Welcome back to YouMart.'
-            : 'Browse as a guest — your cart & wishlist are saved on this device.'}
-        </Text>
-      </View>
 
-      {!loggedIn ? (
-        <Pressable style={styles.loginBtn} onPress={() => router.push('/auth/login')}>
-          <Ionicons name="log-in-outline" size={20} color={colors.white} />
-          <Text style={styles.loginText}>Sign in / Sign up</Text>
-        </Pressable>
-      ) : null}
-
-      <View style={styles.rows}>
-        <Row
-          icon="bag-handle-outline"
-          label="My Orders"
-          onPress={() => router.push(loggedIn ? '/orders' : '/auth/login')}
-        />
-        <Row
-          icon="location-outline"
-          label="Addresses"
-          onPress={() => router.push(loggedIn ? '/addresses' : '/auth/login')}
-        />
-        <Row
-          icon="heart-outline"
-          label="Wishlist"
-          value={`${count}`}
-          onPress={() => router.push('/wishlist')}
-        />
-        <Row
-          icon="cart-outline"
-          label="Cart"
-          value={`${itemCount}`}
-          onPress={() => router.push('/cart')}
-        />
-        <Row
-          icon="navigate-outline"
-          label="Track an order"
-          onPress={() => router.push('/track-order')}
-          last={!loggedIn}
-        />
-        {loggedIn ? (
-          <Row
-            icon="person-outline"
-            label="Account details"
-            onPress={() => router.push('/account/details')}
-            last
-          />
+        {!loggedIn ? (
+          <Pressable style={styles.loginBtn} onPress={() => router.push('/auth/login')}>
+            <Ionicons name="log-in-outline" size={20} color={colors.white} />
+            <Text style={styles.loginText}>Sign in / Sign up</Text>
+          </Pressable>
         ) : null}
-      </View>
 
-      <Text style={styles.sectionLabel}>Help &amp; information</Text>
-      <View style={styles.rows}>
-        {INFO_LINKS.map((link, i) => (
+        <View style={styles.rows}>
           <Row
-            key={link.page}
-            icon={link.icon}
-            label={link.label}
-            onPress={() => router.push(`/info/${link.page}`)}
-            last={i === INFO_LINKS.length - 1}
+            icon="bag-handle-outline"
+            label="My Orders"
+            onPress={() => router.push(loggedIn ? '/orders' : '/auth/login')}
           />
-        ))}
-      </View>
+          <Row
+            icon="location-outline"
+            label="Addresses"
+            onPress={() => router.push(loggedIn ? '/addresses' : '/auth/login')}
+          />
+          <Row
+            icon="heart-outline"
+            label="Wishlist"
+            value={`${count}`}
+            onPress={() => router.push('/wishlist')}
+          />
+          <Row
+            icon="cart-outline"
+            label="Cart"
+            value={`${itemCount}`}
+            onPress={() => router.push('/cart')}
+          />
+          <Row
+            icon="navigate-outline"
+            label="Track an order"
+            onPress={() => router.push('/track-order')}
+            last={!loggedIn}
+          />
+          {loggedIn ? (
+            <Row
+              icon="person-outline"
+              label="Account details"
+              onPress={() => router.push('/account/details')}
+              last
+            />
+          ) : null}
+        </View>
 
-      {loggedIn ? (
-        <Pressable style={styles.logout} onPress={() => void logout()}>
-          <Ionicons name="log-out-outline" size={18} color={colors.price.discount} />
-          <Text style={styles.logoutText}>Log out</Text>
-        </Pressable>
-      ) : null}
-    </ScrollView>
+        <Text style={styles.sectionLabel}>Help &amp; information</Text>
+        <View style={styles.rows}>
+          {INFO_LINKS.map((link, i) => (
+            <Row
+              key={link.page}
+              icon={link.icon}
+              label={link.label}
+              onPress={() => router.push(`/info/${link.page}`)}
+              last={i === INFO_LINKS.length - 1}
+            />
+          ))}
+        </View>
+
+        {loggedIn ? (
+          <Pressable style={styles.logout} onPress={() => void logout()}>
+            <Ionicons name="log-out-outline" size={18} color={colors.price.discount} />
+            <Text style={styles.logoutText}>Log out</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+    </SwipeTabs>
   );
 }
 

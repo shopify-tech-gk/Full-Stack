@@ -112,7 +112,7 @@ export default function CategoryScreen() {
       <View style={styles.header}>
         {trail.length > 0 ? (
           <View style={styles.trail}>
-            <Pressable onPress={() => router.push('/(tabs)/categories')} hitSlop={6}>
+            <Pressable onPress={() => router.navigate('/')} hitSlop={6}>
               <Ionicons name="home-outline" size={13} color={colors.text.body} />
             </Pressable>
             {trail.map((t, i) => {

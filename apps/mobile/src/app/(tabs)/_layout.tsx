@@ -25,11 +25,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="categories"
+        name="buy-again"
         options={{
-          title: 'Categories',
+          title: 'Buy Again',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'grid' : 'grid-outline'} size={size} color={color} />
+            <Ionicons name={focused ? 'heart' : 'heart-outline'} size={size} color={color} />
           ),
         }}
       />

@@ -21,6 +21,7 @@ import { BrandStrip } from '@/components/BrandStrip';
 import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
+import { SwipeTabs } from '@/components/SwipeTabs';
 import { CategoryCard } from '@/components/CategoryCard';
 import { getHome, type HomeData } from '@/lib/catalog';
 import { mainCategories, catalogSlugOf, type CatNode } from '@/lib/home-categories';
@@ -67,7 +68,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={styles.screen}>
+    <SwipeTabs index={0} edgeOnly style={styles.screen}>
       <AppHeader />
       {state.status === 'loading' ? (
         <View style={styles.center}>
@@ -109,7 +110,7 @@ export default function HomeScreen() {
           <Footer />
         </ScrollView>
       )}
-    </View>
+    </SwipeTabs>
   );
 }
 
