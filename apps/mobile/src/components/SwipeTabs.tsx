@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useRef, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
 
 /** Bottom-tab order — index here matches each tab's `index` prop. */
@@ -41,14 +42,17 @@ export function SwipeTabs({
   children: ReactNode;
 }) {
   const router = useRouter();
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const decided = useRef(false);
-  const inZone = useRef(false);
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
+  const decided = useSharedValue(false);
+  const inZone = useSharedValue(false);
 
-  const setZone = useCallback((active: boolean) => {
-    inZone.current = active;
-  }, []);
+  const setZone = useCallback(
+    (active: boolean) => {
+      inZone.value = active;
+    },
+    [inZone],
+  );
 
   const go = useCallback(
     (dir: number) => {
@@ -60,33 +64,36 @@ export function SwipeTabs({
   );
 
   const pan = Gesture.Pan()
-    .runOnJS(true)
     .manualActivation(true)
     .onTouchesDown((e) => {
+      'worklet';
       const t = e.allTouches[0];
       if (!t) return;
-      startX.current = t.absoluteX;
-      startY.current = t.absoluteY;
-      decided.current = false;
+      startX.value = t.absoluteX;
+      startY.value = t.absoluteY;
+      decided.value = false;
     })
-    .onTouchesMove((e, state) => {
-      if (decided.current) return;
+    .onTouchesMove((e, manager) => {
+      'worklet';
+      if (decided.value) return;
       const t = e.allTouches[0];
       if (!t) return;
-      const dx = t.absoluteX - startX.current;
-      const dy = t.absoluteY - startY.current;
-      if (Math.abs(dx) < 14 && Math.abs(dy) < 14) return;
-      decided.current = true;
-      const horizontal = Math.abs(dx) > Math.abs(dy) * 1.4;
-      if (horizontal && !inZone.current) state.activate();
-      else state.fail();
+      const dx = t.absoluteX - startX.value;
+      const dy = t.absoluteY - startY.value;
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      decided.value = true;
+      const horizontal = Math.abs(dx) > Math.abs(dy) * 1.3;
+      if (horizontal && !inZone.value) manager.activate();
+      else manager.fail();
     })
     .onEnd((e) => {
-      if (Math.abs(e.translationX) < 50 && Math.abs(e.velocityX) < 420) return;
-      go(e.translationX < 0 ? 1 : -1);
+      'worklet';
+      if (Math.abs(e.translationX) < 45 && Math.abs(e.velocityX) < 400) return;
+      runOnJS(go)(e.translationX < 0 ? 1 : -1);
     })
     .onFinalize(() => {
-      inZone.current = false;
+      'worklet';
+      inZone.value = false;
     });
 
   return (
