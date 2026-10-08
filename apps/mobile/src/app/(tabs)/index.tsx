@@ -155,7 +155,12 @@ function CategoryPager() {
           <View style={[styles.catPage, { width }]}>
             {item.map((c) => (
               <View key={c.slug} style={styles.catCardSlot}>
-                <CategoryCard name={c.name} hasChildren={c.hasChildren} onPress={() => open(c)} />
+                <CategoryCard
+                  name={c.name}
+                  hasChildren={c.hasChildren}
+                  imageKey={`mobile/${c.slug}`}
+                  onPress={() => open(c)}
+                />
               </View>
             ))}
           </View>

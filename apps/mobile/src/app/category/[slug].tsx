@@ -150,6 +150,7 @@ export default function CategoryScreen() {
                   <CategoryCard
                     name={c.name}
                     hasChildren={c.hasChildren}
+                    imageKey={[...taxoPath, c.slug].join('/')}
                     onPress={() => openNode(c)}
                   />
                 </View>

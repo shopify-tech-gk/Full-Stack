@@ -1,35 +1,52 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { lookupCategoryImage } from '@/lib/category-images';
 import { colors, font, radii } from '@/theme';
 
 /**
  * Portrait category card — the frosted light-blue "podium" look (the desktop sub-category tile
- * placeholder aesthetic), in the YouMart theme. A soft image area with decorative circles + a
- * centered icon, and the category name below. Used for main, sub, and sub-to-sub categories.
+ * placeholder aesthetic), in the YouMart theme. When a bundled image exists for `imageKey` it fills
+ * the card; otherwise a soft icon placeholder shows. The category name sits below. Used for main,
+ * sub, and sub-to-sub categories.
  */
 export function CategoryCard({
   name,
   onPress,
   hasChildren,
+  imageKey,
 }: {
   name: string;
   onPress: () => void;
   hasChildren?: boolean;
+  imageKey?: string;
 }) {
+  const image = lookupCategoryImage(imageKey);
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.imageArea}>
-        {/* Frosted decorative circles (like the mockup) */}
-        <View style={[styles.blob, styles.blobTop]} />
-        <View style={[styles.blob, styles.blobBottom]} />
-        <View style={styles.dots}>
-          {[0, 1, 2, 3].map((i) => (
-            <View key={i} style={styles.dot} />
-          ))}
-        </View>
-        <View style={styles.iconWrap}>
-          <Ionicons name="pricetags" size={26} color={colors.brand.DEFAULT} />
-        </View>
+        {image ? (
+          <Image
+            source={image}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={150}
+          />
+        ) : (
+          <>
+            {/* Frosted decorative circles (like the mockup) */}
+            <View style={[styles.blob, styles.blobTop]} />
+            <View style={[styles.blob, styles.blobBottom]} />
+            <View style={styles.dots}>
+              {[0, 1, 2, 3].map((i) => (
+                <View key={i} style={styles.dot} />
+              ))}
+            </View>
+            <View style={styles.iconWrap}>
+              <Ionicons name="pricetags" size={26} color={colors.brand.DEFAULT} />
+            </View>
+          </>
+        )}
       </View>
       <View style={styles.footer}>
         <Text numberOfLines={2} style={styles.name}>
