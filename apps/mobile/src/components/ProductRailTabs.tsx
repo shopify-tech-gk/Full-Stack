@@ -15,6 +15,16 @@ const ICON: Record<ProductRailKey, keyof typeof Ionicons.glyphMap> = {
   explore: 'compass-outline',
 };
 
+// Subtle per-rail accent (existing theme tokens) so each rail's cards are distinctly — but calmly —
+// highlighted: a themed card border, a thin divider under the image, and a soft lift shadow.
+const ACCENT: Record<ProductRailKey, string> = {
+  'left-off': colors.brand.DEFAULT,
+  trending: colors.star.filled,
+  'top-deals': colors.price.discount,
+  recommended: colors.feature.guarantee,
+  explore: colors.brand.accent,
+};
+
 const CARD_WIDTH = 160;
 
 export function ProductRailTabs({ rails }: { rails: ProductRailSlider[] }) {
@@ -70,7 +80,10 @@ export function ProductRailTabs({ rails }: { rails: ProductRailSlider[] }) {
         horizontal
         data={rail.products}
         keyExtractor={(p) => p.id}
-        renderItem={({ item }) => <ProductCard product={item} width={CARD_WIDTH} />}
+        extraData={active}
+        renderItem={({ item }) => (
+          <ProductCard product={item} width={CARD_WIDTH} accent={ACCENT[rail.key]} />
+        )}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.products}
         ItemSeparatorComponent={() => <View style={{ width: space.md }} />}

@@ -12,9 +12,11 @@ interface Props {
   product: ProductCardData;
   /** Fixed width for horizontal rails; omit for grid (flex). */
   width?: number;
+  /** Subtle per-rail accent (themes the border, a thin divider, and a soft lift shadow). */
+  accent?: string;
 }
 
-function ProductCardBase({ product, width }: Props) {
+function ProductCardBase({ product, width, accent }: Props) {
   const router = useRouter();
   const cart = useCart();
   const wishlist = useWishlist();
@@ -55,11 +57,22 @@ function ProductCardBase({ product, width }: Props) {
       style={({ pressed }) => [
         styles.card,
         width ? { width } : styles.flex,
+        accent
+          ? {
+              borderColor: accent,
+              shadowColor: accent,
+              shadowOpacity: 0.22,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 4,
+            }
+          : null,
         pressed && styles.pressed,
       ]}
     >
       <View>
         <ProductImage src={product.image} style={styles.image} />
+        {accent ? <View style={[styles.accentStrip, { backgroundColor: accent }]} /> : null}
         {product.skuId ? (
           <Pressable onPress={heart} hitSlop={8} style={styles.heart}>
             <Ionicons
@@ -104,6 +117,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   pressed: { opacity: 0.85 },
   image: { borderTopLeftRadius: radii.productCard, borderTopRightRadius: radii.productCard },
+  accentStrip: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3 },
   heart: {
     position: 'absolute',
     top: space.sm,
