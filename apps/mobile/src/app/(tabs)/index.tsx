@@ -104,7 +104,7 @@ export default function HomeScreen() {
 
           <BrandStrip />
           <ProductShowcase showcase={state.data.showcase} />
-          {state.data.best ? <BestCategories best={state.data.best} /> : null}
+          <BestCategories />
           <FeatureStrip />
           <Footer />
         </ScrollView>

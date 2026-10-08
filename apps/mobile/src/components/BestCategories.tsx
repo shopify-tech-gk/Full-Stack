@@ -1,64 +1,236 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import type { StoreSubcategory } from '@youmart/shared-client';
+import { bestCategoryRotation, resolveStoreCategories } from '@youmart/shared-client';
 import { colors, font, radii, space } from '@/theme';
 
-type BestCat = { title: string; items: readonly (StoreSubcategory & { href: string })[] };
+const CARD_WIDTH = 150;
 
-/** "Best Categories Today" — a horizontal carousel of sub-category cards (live homepage section). */
-export function BestCategories({ best }: { best: BestCat }) {
+/**
+ * "Best Categories Today" — the DESKTOP design, adapted natively: a white rounded card with a
+ * tinted header (eyebrow + category title + sub-count + Shop button + prev/next arrows), a
+ * scrollable category chip bar, and a horizontal row of sub-category tiles (placeholder image area
+ * + name + circular arrow). Images are placeholders. Same data as web (bestCategoryRotation).
+ */
+export function BestCategories() {
   const router = useRouter();
+  const slides = useMemo(() => bestCategoryRotation(resolveStoreCategories()), []);
+  const [index, setIndex] = useState(0);
+  const chipsRef = useRef<ScrollView>(null);
+  const trackRef = useRef<FlatList>(null);
+  const slide = slides[index];
+  if (!slide) return null;
+
+  const go = (next: number) => {
+    const wrapped = (next + slides.length) % slides.length;
+    setIndex(wrapped);
+    trackRef.current?.scrollToOffset({ offset: 0, animated: false });
+    chipsRef.current?.scrollTo({ x: Math.max(0, wrapped * 92 - 60), animated: true });
+  };
+
   return (
     <View style={styles.wrap}>
-      <View style={styles.head}>
-        <View style={styles.accent} />
-        <Text style={styles.heading}>{best.title}</Text>
-      </View>
-      <FlatList
-        horizontal
-        data={best.items}
-        keyExtractor={(s) => s.slug}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ width: space.md }} />}
-        renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => router.push(`/category/${item.slug}`)}>
-            <View style={styles.thumb}>
-              <Ionicons name="pricetags-outline" size={26} color={colors.brand.DEFAULT} />
+      <View style={styles.card}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.eyebrowRow}>
+            <View style={styles.dash} />
+            <Text style={styles.eyebrow}>Best Categories Today</Text>
+          </View>
+
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{slide.name}</Text>
+            <Text style={styles.sub}>{slide.items.length} sub-categories</Text>
+          </View>
+
+          <View style={styles.actions}>
+            <Pressable
+              style={styles.shopBtn}
+              onPress={() => router.push(`/category/${slide.slug}`)}
+            >
+              <Text style={styles.shopText}>Shop {slide.name}</Text>
+              <Ionicons name="arrow-forward" size={14} color={colors.white} />
+            </Pressable>
+            <View style={styles.arrowGroup}>
+              <Pressable
+                style={styles.arrow}
+                onPress={() => go(index - 1)}
+                accessibilityLabel="Previous category"
+              >
+                <Ionicons name="chevron-back" size={18} color={colors.brand.DEFAULT} />
+              </Pressable>
+              <Pressable
+                style={styles.arrow}
+                onPress={() => go(index + 1)}
+                accessibilityLabel="Next category"
+              >
+                <Ionicons name="chevron-forward" size={18} color={colors.brand.DEFAULT} />
+              </Pressable>
             </View>
-            <Text numberOfLines={2} style={styles.label}>
-              {item.name}
-            </Text>
-          </Pressable>
-        )}
-      />
+          </View>
+
+          {/* Category chips */}
+          <ScrollView
+            ref={chipsRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chips}
+          >
+            {slides.map((s, i) => {
+              const on = i === index;
+              return (
+                <Pressable
+                  key={s.slug}
+                  onPress={() => go(i)}
+                  style={[styles.chip, on && styles.chipActive]}
+                >
+                  <Text numberOfLines={1} style={[styles.chipText, on && styles.chipTextActive]}>
+                    {s.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Sub-category tiles */}
+        <FlatList
+          ref={trackRef}
+          horizontal
+          data={slide.items}
+          keyExtractor={(it) => it.key}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.track}
+          ItemSeparatorComponent={() => <View style={{ width: space.md }} />}
+          renderItem={({ item }) => (
+            <Pressable style={styles.tile} onPress={() => router.push(`/category/${item.slug}`)}>
+              <View style={styles.tileImage}>
+                <Ionicons name="pricetags-outline" size={30} color={colors.card.border} />
+              </View>
+              <View style={styles.tileBar}>
+                <Text numberOfLines={1} style={styles.tileName}>
+                  {item.name}
+                </Text>
+                <View style={styles.tileArrow}>
+                  <Ionicons name="chevron-forward" size={12} color={colors.brand.DEFAULT} />
+                </View>
+              </View>
+            </Pressable>
+          )}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: space.xxl },
-  head: {
+  wrap: { marginTop: space.xxl, paddingHorizontal: space.md },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.brandPopup.border,
+    overflow: 'hidden',
+  },
+  header: {
+    backgroundColor: colors.brandPopup.bg,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+    paddingBottom: space.md,
+  },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dash: { width: 22, height: 3, borderRadius: 2, backgroundColor: colors.brand.DEFAULT },
+  eyebrow: {
+    fontFamily: font.uiBold,
+    fontSize: 11.5,
+    color: colors.brand.DEFAULT,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    flexWrap: 'wrap',
+    marginTop: 6,
+  },
+  title: { fontFamily: font.uiBold, fontSize: 24, color: colors.heading },
+  sub: { fontFamily: font.body, fontSize: 13, color: colors.text.muted },
+  actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: space.md,
-    paddingHorizontal: space.lg,
+    justifyContent: 'space-between',
+    marginTop: space.md,
   },
-  accent: { width: 4, height: 18, borderRadius: 2, backgroundColor: colors.brand.DEFAULT },
-  heading: { fontFamily: font.uiBold, fontSize: 17, color: colors.heading, flexShrink: 1 },
-  list: { paddingHorizontal: space.lg },
-  card: { width: 104, alignItems: 'center', gap: 8 },
-  thumb: {
-    width: 104,
-    height: 104,
-    borderRadius: radii.categoryCard,
-    backgroundColor: colors.white,
+  shopBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.brand.DEFAULT,
+    borderRadius: radii.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexShrink: 1,
+  },
+  shopText: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.white },
+  arrowGroup: { flexDirection: 'row', gap: 8 },
+  arrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.card.border,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontFamily: font.ui, fontSize: 12, color: colors.text.body, textAlign: 'center' },
+  chips: { gap: 8, paddingTop: space.md, paddingRight: space.lg },
+  chip: {
+    height: 34,
+    justifyContent: 'center',
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.cart.line,
+    backgroundColor: colors.white,
+    paddingHorizontal: 14,
+  },
+  chipActive: { backgroundColor: colors.brand.DEFAULT, borderColor: colors.brand.DEFAULT },
+  chipText: { fontFamily: font.uiSemibold, fontSize: 12.5, color: colors.heading },
+  chipTextActive: { color: colors.white },
+  track: { paddingHorizontal: space.lg, paddingVertical: space.lg },
+  tile: {
+    width: CARD_WIDTH,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.cart.line,
+    backgroundColor: colors.white,
+    overflow: 'hidden',
+  },
+  tileImage: {
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.rail.thumb,
+  },
+  tileBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.cart.line,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  tileName: { flex: 1, fontFamily: font.uiSemibold, fontSize: 13, color: colors.heading },
+  tileArrow: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.brand.DEFAULT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
