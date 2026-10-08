@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import type { ListingQuery } from '@youmart/shared-client';
-import { emptyListingQuery, getListing, type Listing } from '@/lib/catalog';
+import { emptyListingQuery, getListing, listMoreProducts, type Listing } from '@/lib/catalog';
 import { ProductCard } from '@/components/ProductCard';
 import { CategoryCard } from '@/components/CategoryCard';
 import { FilterSheet } from '@/components/FilterSheet';
@@ -97,8 +97,10 @@ export default function CategoryScreen() {
     setLoadingMore(true);
     const nextPage = query.page + 1;
     try {
-      const res = await getListing(category, { ...query, page: nextPage });
-      setData((prev) => (prev ? { ...res, products: [...prev.products, ...res.products] } : res));
+      const res = await listMoreProducts(category, { ...query, page: nextPage });
+      setData((prev) =>
+        prev ? { ...prev, products: [...prev.products, ...res.products], total: res.total } : prev,
+      );
       setQuery((q) => ({ ...q, page: nextPage }));
     } catch {
       /* keep what we have */
@@ -188,7 +190,7 @@ export default function CategoryScreen() {
           ListHeaderComponent={header}
           renderItem={({ item }) => <ProductCard product={item} />}
           onEndReached={loadMore}
-          onEndReachedThreshold={0.4}
+          onEndReachedThreshold={1.2}
           showsVerticalScrollIndicator={false}
           ListFooterComponent={
             loadingMore ? (

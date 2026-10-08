@@ -35,10 +35,17 @@ const FEATURE_ICON: Record<FeatureCard['id'], keyof typeof Ionicons.glyphMap> = 
 };
 
 // Live's feature-card colours; Expertise keeps dark ink (white-on-yellow is unreadable).
-const FEATURE_TONE: Record<FeatureCard['id'], { bg: string; ink: string }> = {
-  expertise: { bg: colors.feature.expertise, ink: colors.heading },
-  quality: { bg: colors.feature.quality, ink: colors.white },
-  guarantee: { bg: colors.feature.guarantee, ink: colors.white },
+const FEATURE_TONE: Record<FeatureCard['id'], { bg: string; ink: string; chip: string }> = {
+  expertise: { bg: colors.feature.expertise, ink: colors.heading, chip: 'rgba(0,0,0,0.08)' },
+  quality: { bg: colors.feature.quality, ink: colors.white, chip: 'rgba(255,255,255,0.2)' },
+  guarantee: { bg: colors.feature.guarantee, ink: colors.white, chip: 'rgba(255,255,255,0.2)' },
+};
+
+// Short mobile taglines (the full web copy is too long for the compact row).
+const FEATURE_SHORT: Record<FeatureCard['id'], string> = {
+  expertise: 'Expert help for every order',
+  quality: 'Top-quality products',
+  guarantee: 'Satisfaction guaranteed',
 };
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: HomeData };
@@ -235,18 +242,20 @@ function RailsHeader({
 }
 
 function FeatureStrip() {
-  // Web mobile: three full-width stacked cards — Expertise (yellow), Quality (blue),
-  // Guarantee (green) — centered icon + title + text. (Expertise uses dark text: live's
-  // white-on-yellow is ~1.2:1 / unreadable — the previously-approved accessibility fix.)
+  // Compact mobile trust badges: three side-by-side cards (icon chip + title + short tagline).
   return (
     <View style={styles.features}>
       {FEATURE_CARDS.map((card) => {
         const tone = FEATURE_TONE[card.id];
         return (
           <View key={card.id} style={[styles.feature, { backgroundColor: tone.bg }]}>
-            <Ionicons name={FEATURE_ICON[card.id] ?? 'star-outline'} size={30} color={tone.ink} />
+            <View style={[styles.featureIcon, { backgroundColor: tone.chip }]}>
+              <Ionicons name={FEATURE_ICON[card.id] ?? 'star-outline'} size={18} color={tone.ink} />
+            </View>
             <Text style={[styles.featureTitle, { color: tone.ink }]}>{card.title}</Text>
-            <Text style={[styles.featureText, { color: tone.ink }]}>{card.text}</Text>
+            <Text numberOfLines={2} style={[styles.featureText, { color: tone.ink }]}>
+              {FEATURE_SHORT[card.id] ?? card.text}
+            </Text>
           </View>
         );
       })}
@@ -311,21 +320,30 @@ const styles = StyleSheet.create({
   catDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.card.border },
   catDotActive: { backgroundColor: colors.brand.DEFAULT, width: 18 },
   features: {
-    marginTop: space.xxl,
-    paddingHorizontal: space.lg,
+    flexDirection: 'row',
     gap: space.sm,
+    marginTop: space.xl,
+    paddingHorizontal: space.lg,
   },
   feature: {
+    flex: 1,
     borderRadius: radii.featureCard,
-    paddingVertical: space.xl,
-    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    paddingHorizontal: 8,
     alignItems: 'center',
     gap: 6,
   },
+  featureIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   featureTitle: {
     fontFamily: font.uiBold,
-    fontSize: 20,
-    marginTop: 4,
+    fontSize: 13,
+    textAlign: 'center',
   },
-  featureText: { fontFamily: font.body, fontSize: 13.5, lineHeight: 20, textAlign: 'center' },
+  featureText: { fontFamily: font.body, fontSize: 10.5, lineHeight: 13.5, textAlign: 'center' },
 });

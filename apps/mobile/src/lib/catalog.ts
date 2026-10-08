@@ -106,6 +106,20 @@ export async function getListing(category: string, query: ListingQuery): Promise
   }
 }
 
+/** Products-only fetch for infinite scroll "load more" — skips the (unchanged) filter definition. */
+export async function listMoreProducts(
+  category: string,
+  query: ListingQuery,
+): Promise<{ products: ProductCardData[]; total: number }> {
+  try {
+    const page = await api.catalog.listProducts(catalogQuery(query, { category }));
+    return { products: page.items.map(toCardData), total: page.total };
+  } catch (err) {
+    if (isNotFound(err)) return { products: [], total: 0 };
+    throw err;
+  }
+}
+
 export async function getProduct(slug: string): Promise<ProductDetailData | null> {
   if (!/^[a-z0-9-]{1,200}$/.test(slug)) return null;
   try {
@@ -126,10 +140,15 @@ export async function getProduct(slug: string): Promise<ProductDetailData | null
   }
 }
 
-export async function searchProducts(q: string): Promise<ProductCardData[]> {
-  if (!q.trim()) return [];
-  const result = await api.search.products({ q: q.trim(), perPage: 40 });
-  return result.results.map(searchResultToCardData);
+/** Search a page of products (infinite scroll). `found` is the total match count. */
+export async function searchProductsPage(
+  q: string,
+  page: number,
+  perPage = 50,
+): Promise<{ products: ProductCardData[]; total: number }> {
+  if (!q.trim()) return { products: [], total: 0 };
+  const result = await api.search.products({ q: q.trim(), page, perPage });
+  return { products: result.results.map(searchResultToCardData), total: result.found };
 }
 
 /** A fresh, default listing query (overridden by the filter sheet). */

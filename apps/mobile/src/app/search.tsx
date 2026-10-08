@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,12 +12,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SEARCH_PLACEHOLDER, type ProductCardData } from '@youmart/shared-client';
-import { searchProducts } from '@/lib/catalog';
+import { searchProductsPage } from '@/lib/catalog';
 import { ProductCard } from '@/components/ProductCard';
 import { colors, font, radii, space } from '@/theme';
 
-type State =
-  { status: 'idle' } | { status: 'loading' } | { status: 'done'; results: ProductCardData[] };
+const PER_PAGE = 50;
+
+type Results = { term: string; products: ProductCardData[]; total: number; page: number };
+type State = { status: 'idle' } | { status: 'loading' } | { status: 'done'; results: Results };
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -25,32 +27,75 @@ export default function SearchScreen() {
   const { q } = useLocalSearchParams<{ q?: string }>();
   const [query, setQuery] = useState(String(q ?? ''));
   const [state, setState] = useState<State>({ status: 'idle' });
+  const [loadingMore, setLoadingMore] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards against stale responses when the user keeps typing.
+  const reqId = useRef(0);
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 300);
     return () => clearTimeout(t);
   }, []);
 
-  // Debounced search as the user types.
+  // Debounced first-page search as the user types.
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
     const term = query.trim();
     if (term.length < 2) {
+      reqId.current += 1;
       setState({ status: 'idle' });
       return;
     }
     setState({ status: 'loading' });
+    const id = (reqId.current += 1);
     timer.current = setTimeout(() => {
-      searchProducts(term)
-        .then((results) => setState({ status: 'done', results }))
-        .catch(() => setState({ status: 'done', results: [] }));
+      searchProductsPage(term, 1, PER_PAGE)
+        .then((res) => {
+          if (reqId.current !== id) return;
+          setState({
+            status: 'done',
+            results: { term, products: res.products, total: res.total, page: 1 },
+          });
+        })
+        .catch(() => {
+          if (reqId.current !== id) return;
+          setState({ status: 'done', results: { term, products: [], total: 0, page: 1 } });
+        });
     }, 350);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
   }, [query]);
+
+  const loadMore = useCallback(async () => {
+    if (state.status !== 'done' || loadingMore) return;
+    const { term, products, total, page } = state.results;
+    if (products.length >= total) return;
+    setLoadingMore(true);
+    const id = reqId.current;
+    try {
+      const res = await searchProductsPage(term, page + 1, PER_PAGE);
+      if (reqId.current !== id) return;
+      setState((prev) =>
+        prev.status === 'done'
+          ? {
+              status: 'done',
+              results: {
+                ...prev.results,
+                products: [...prev.results.products, ...res.products],
+                total: res.total,
+                page: page + 1,
+              },
+            }
+          : prev,
+      );
+    } catch {
+      /* keep what we have */
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [state, loadingMore]);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top + 6 }]}>
@@ -88,25 +133,34 @@ export default function SearchScreen() {
         <View style={styles.hint}>
           <ActivityIndicator size="large" color={colors.brand.DEFAULT} />
         </View>
-      ) : state.results.length === 0 ? (
+      ) : state.results.products.length === 0 ? (
         <View style={styles.hint}>
           <Ionicons name="sad-outline" size={48} color={colors.card.border} />
-          <Text style={styles.hintText}>No products found for “{query.trim()}”.</Text>
+          <Text style={styles.hintText}>No products found for “{state.results.term}”.</Text>
         </View>
       ) : (
         <FlatList
-          data={state.results}
+          data={state.results.products}
           keyExtractor={(p) => p.id}
           numColumns={2}
           columnWrapperStyle={styles.col}
           contentContainerStyle={styles.grid}
           keyboardShouldPersistTaps="handled"
+          onEndReached={loadMore}
+          onEndReachedThreshold={1.2}
+          showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <Text style={styles.count}>
-              {state.results.length} results for “{query.trim()}”
+              {state.results.total} result{state.results.total === 1 ? '' : 's'} for “
+              {state.results.term}”
             </Text>
           }
           renderItem={({ item }) => <ProductCard product={item} />}
+          ListFooterComponent={
+            loadingMore ? (
+              <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
+            ) : null
+          }
         />
       )}
     </View>
