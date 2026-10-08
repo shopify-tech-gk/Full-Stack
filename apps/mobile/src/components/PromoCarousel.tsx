@@ -1,73 +1,100 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
   StyleSheet,
-  Text,
   View,
   useWindowDimensions,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { PROMO_BANNER_SLIDES } from '@youmart/shared-client';
-import { colors, font, radii, space } from '@/theme';
+import { PROMO_BANNER_SLIDES, PROMO_SLIDER_INTERVAL_MS } from '@youmart/shared-client';
+import { colors, radii, space } from '@/theme';
 
-// Promo banners as a native paging carousel. The live banner artwork is kept as placeholders
-// (per the "don't import youmartshop.com images" rule) — rendered as premium branded cards.
+// Real desktop banner poster images (our own assets), bundled for native. Keyed by banner id.
+/* eslint-disable @typescript-eslint/no-require-imports */
+const POSTERS: Record<string, number> = {
+  'pet-products': require('../../assets/banners/pet-products.webp'),
+  'sport-gear': require('../../assets/banners/sport-gear.webp'),
+  'kitchen-pro': require('../../assets/banners/kitchen-pro.webp'),
+  'tech-deals': require('../../assets/banners/tech-deals.webp'),
+};
+/* eslint-enable @typescript-eslint/no-require-imports */
+
 const BANNERS = PROMO_BANNER_SLIDES.flat();
-const TONES = [
-  colors.brand.DEFAULT,
-  colors.info.maroon,
-  colors.brand.accent,
-  colors.feature.guarantee,
-];
+const RATIO = 3.2; // posters are 1536x480
 
-/** Last path segment of a shared-client category href, for native routing. */
-function slugFromHref(href: string): string {
-  return href.split('?')[0]!.split('/').filter(Boolean).pop() ?? '';
-}
-
+/** Promo slider — the desktop design with the real banner poster images: full-width landscape
+ * banners, native paging swipe, auto-advance with a pause/play control, and dots (like desktop). */
 export function PromoCarousel() {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const listRef = useRef<FlatList>(null);
   const [index, setIndex] = useState(0);
-  const onScroll = useRef((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const [paused, setPaused] = useState(false);
+
+  const slideWidth = width - space.lg * 2;
+  const bannerHeight = slideWidth / RATIO;
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setIndex(Math.round(e.nativeEvent.contentOffset.x / width));
-  }).current;
+  };
+
+  // Auto-advance (pausable), like the desktop slider.
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(() => {
+      setIndex((i) => {
+        const next = (i + 1) % BANNERS.length;
+        listRef.current?.scrollToOffset({ offset: next * width, animated: true });
+        return next;
+      });
+    }, PROMO_SLIDER_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [paused, width]);
+
+  const openBanner = (href: string) => {
+    const slug = href.split('?')[0]?.split('/').filter(Boolean).pop() ?? '';
+    if (slug) router.push(`/category/${slug}`);
+  };
 
   return (
     <View style={styles.wrap}>
       <FlatList
+        ref={listRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         data={BANNERS}
         keyExtractor={(b) => b.id}
         onMomentumScrollEnd={onScroll}
-        renderItem={({ item, index: i }) => (
+        renderItem={({ item }) => (
           <Pressable
-            onPress={() => router.push(`/category/${slugFromHref(item.href)}`)}
+            onPress={() => openBanner(item.href)}
             style={({ pressed }) => [{ width }, pressed && styles.pressed]}
           >
-            <View style={[styles.card, { backgroundColor: TONES[i % TONES.length] }]}>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>YouMart</Text>
-              </View>
-              <Text style={styles.title}>{item.title}</Text>
-              <View style={styles.cta}>
-                <Text style={styles.ctaText}>Shop now</Text>
-                <Ionicons name="arrow-forward" size={14} color={colors.brand.DEFAULT} />
-              </View>
-            </View>
+            <Image
+              source={POSTERS[item.id]}
+              style={[styles.banner, { width: slideWidth, height: bannerHeight }]}
+              contentFit="cover"
+              transition={200}
+            />
           </Pressable>
         )}
       />
-      <View style={styles.dots}>
-        {BANNERS.map((b, i) => (
-          <View key={b.id} style={[styles.dot, i === index && styles.dotActive]} />
-        ))}
+
+      <View style={styles.controls}>
+        <View style={styles.dots}>
+          {BANNERS.map((b, i) => (
+            <View key={b.id} style={[styles.dot, i === index && styles.dotActive]} />
+          ))}
+        </View>
+        <Pressable onPress={() => setPaused((p) => !p)} hitSlop={8} style={styles.pause}>
+          <Ionicons name={paused ? 'play' : 'pause'} size={12} color={colors.brand.DEFAULT} />
+        </Pressable>
       </View>
     </View>
   );
@@ -75,36 +102,30 @@ export function PromoCarousel() {
 
 const styles = StyleSheet.create({
   wrap: { marginTop: space.md },
-  pressed: { opacity: 0.92 },
-  card: {
+  pressed: { opacity: 0.95 },
+  banner: {
     marginHorizontal: space.lg,
     borderRadius: radii.banner + 6,
-    padding: space.xl,
-    height: 150,
-    justifyContent: 'space-between',
-    overflow: 'hidden',
+    backgroundColor: colors.brandPopup.bg,
   },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  badgeText: { fontFamily: font.uiBold, fontSize: 11, color: colors.white, letterSpacing: 0.5 },
-  title: { fontFamily: font.uiBold, fontSize: 20, color: colors.white, maxWidth: '85%' },
-  cta: {
-    alignSelf: 'flex-start',
+  controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.white,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: space.md,
   },
-  ctaText: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.brand.DEFAULT },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: space.md },
+  dots: { flexDirection: 'row', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.card.border },
   dotActive: { backgroundColor: colors.brand.DEFAULT, width: 18 },
+  pause: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: colors.card.border,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
