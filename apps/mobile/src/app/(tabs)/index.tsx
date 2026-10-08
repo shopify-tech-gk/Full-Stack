@@ -1,16 +1,18 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { FEATURE_CARDS, type ApiCategory, type FeatureCard } from '@youmart/shared-client';
+import { FEATURE_CARDS, type FeatureCard } from '@youmart/shared-client';
 import { AppHeader } from '@/components/AppHeader';
 import { PromoCarousel } from '@/components/PromoCarousel';
 import { ProductRail } from '@/components/ProductRail';
@@ -20,6 +22,7 @@ import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
 import { getHome, type HomeData } from '@/lib/catalog';
+import { allCategories, type HomeCategory } from '@/lib/home-categories';
 import { useRailLayout, type RailLayout } from '@/stores/prefs';
 import { colors, font, radii, space } from '@/theme';
 
@@ -39,7 +42,6 @@ const FEATURE_TONE: Record<FeatureCard['id'], { bg: string; ink: string }> = {
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: HomeData };
 
 export default function HomeScreen() {
-  const router = useRouter();
   const [state, setState] = useState<State>({ status: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
   const [railLayout, setRailLayout] = useRailLayout();
@@ -90,10 +92,7 @@ export default function HomeScreen() {
           }
         >
           <PromoCarousel />
-          <CategoryStrip
-            categories={state.data.categories}
-            onPress={(slug) => router.push(`/category/${slug}`)}
-          />
+          <CategoryPager />
 
           <RailsHeader layout={railLayout} onChange={setRailLayout} />
           {railLayout === 'tabbed' ? (
@@ -113,32 +112,65 @@ export default function HomeScreen() {
   );
 }
 
-function CategoryStrip({
-  categories,
-  onPress,
-}: {
-  categories: ApiCategory[];
-  onPress: (slug: string) => void;
-}) {
-  const roots = categories.filter((c) => !c.parentId);
-  const list = roots.length > 0 ? roots : categories;
-  if (list.length === 0) return null;
-  // Web mobile: a 4-column grid of category circles with the label below each.
+const CATEGORIES_PER_PAGE = 8; // 2 rows x 4 circles — roomy, not congested
+
+function CategoryPager() {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const cats = useMemo(() => allCategories(), []);
+  const pages = useMemo(() => {
+    const out: HomeCategory[][] = [];
+    for (let i = 0; i < cats.length; i += CATEGORIES_PER_PAGE) {
+      out.push(cats.slice(i, i + CATEGORIES_PER_PAGE));
+    }
+    return out;
+  }, [cats]);
+  const [page, setPage] = useState(0);
+
+  if (pages.length === 0) return null;
+
+  const open = (c: HomeCategory) => {
+    if (c.href.startsWith('/search')) {
+      router.push({ pathname: '/search', params: { q: c.name } });
+    } else {
+      const slug = c.href.split('?')[0]?.split('/').filter(Boolean).pop() ?? c.slug;
+      router.push(`/category/${slug}`);
+    }
+  };
+
   return (
     <View style={styles.catWrap}>
       <Text style={styles.catTitle}>Shop by category</Text>
-      <View style={styles.catGrid}>
-        {list.map((c) => (
-          <Pressable key={c.id} style={styles.catChip} onPress={() => onPress(c.slug)}>
-            <View style={styles.catIcon}>
-              <Ionicons name="pricetag" size={22} color={colors.brand.DEFAULT} />
-            </View>
-            <Text numberOfLines={2} style={styles.catLabel}>
-              {c.name}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <FlatList
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        data={pages}
+        keyExtractor={(_, i) => String(i)}
+        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
+        decelerationRate="fast"
+        renderItem={({ item }) => (
+          <View style={[styles.catPage, { width }]}>
+            {item.map((c) => (
+              <Pressable key={c.slug} style={styles.catChip} onPress={() => open(c)}>
+                <View style={styles.catIcon}>
+                  <Ionicons name="pricetag" size={24} color={colors.brand.DEFAULT} />
+                </View>
+                <Text numberOfLines={2} style={styles.catLabel}>
+                  {c.name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      />
+      {pages.length > 1 ? (
+        <View style={styles.catDots}>
+          {pages.map((_, i) => (
+            <View key={i} style={[styles.catDot, i === page && styles.catDotActive]} />
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -250,11 +282,11 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
   catList: { paddingHorizontal: space.lg, gap: space.md },
-  catGrid: {
+  catPage: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: space.md,
-    rowGap: space.lg,
+    rowGap: space.xl,
   },
   catChip: { width: '25%', alignItems: 'center', gap: 6, paddingHorizontal: 2 },
   catIcon: {
@@ -273,6 +305,9 @@ const styles = StyleSheet.create({
     color: colors.text.body,
     textAlign: 'center',
   },
+  catDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: space.lg },
+  catDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.card.border },
+  catDotActive: { backgroundColor: colors.brand.DEFAULT, width: 18 },
   features: {
     marginTop: space.xxl,
     paddingHorizontal: space.lg,
