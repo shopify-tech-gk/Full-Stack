@@ -23,7 +23,7 @@ import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
 import { CategoryCard } from '@/components/CategoryCard';
 import { getHome, type HomeData } from '@/lib/catalog';
-import { mainCategories, type CatNode } from '@/lib/home-categories';
+import { mainCategories, catalogSlugOf, type CatNode } from '@/lib/home-categories';
 import { useRailLayout, type RailLayout } from '@/stores/prefs';
 import { colors, font, radii, space } from '@/theme';
 
@@ -131,13 +131,11 @@ function CategoryPager() {
   if (pages.length === 0) return null;
 
   const open = (c: CatNode) => {
-    if (c.hasChildren) {
-      router.push(`/browse/${c.slug}`);
-    } else if (c.href.startsWith('/search')) {
+    if (c.href.startsWith('/search')) {
       router.push({ pathname: '/search', params: { q: c.name } });
     } else {
-      const slug = c.href.split('?')[0]?.split('/').filter(Boolean).pop() ?? c.slug;
-      router.push(`/category/${slug}`);
+      const cslug = catalogSlugOf(c.href) || c.slug;
+      router.push(`/category/${cslug}?taxo=${c.slug}`);
     }
   };
 

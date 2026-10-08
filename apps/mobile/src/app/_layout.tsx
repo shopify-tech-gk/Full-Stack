@@ -53,7 +53,6 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="search" options={{ headerShown: false }} />
                 <Stack.Screen name="category/[slug]" options={{ headerShown: true, title: '' }} />
-                <Stack.Screen name="browse/[...path]" options={{ headerShown: true, title: '' }} />
                 <Stack.Screen name="product/[slug]" options={{ headerShown: true, title: '' }} />
                 <Stack.Screen name="auth/login" options={{ headerShown: true, title: 'Sign in' }} />
                 <Stack.Screen name="auth/otp" options={{ headerShown: true, title: 'Verify' }} />

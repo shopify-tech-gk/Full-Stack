@@ -41,6 +41,12 @@ function subHasChildren(children: { name: string }[], subName: string): boolean 
   return true;
 }
 
+/** The catalog slug a taxonomy href points at (its last path segment); '' for search links. */
+export function catalogSlugOf(href: string): string {
+  if (href.startsWith('/search')) return '';
+  return href.split('?')[0]?.split('/').filter(Boolean).pop() ?? '';
+}
+
 /** All main categories, as portrait-card nodes (each drills into its sub-categories). */
 export function mainCategories(): CatNode[] {
   return tree().map((m) => ({
@@ -99,4 +105,49 @@ export function browseNode(path: string[]): BrowseNode | null {
       hasChildren: false,
     })),
   };
+}
+
+/** One step in the category breadcrumb (main › sub › leaf). */
+export interface TrailNode {
+  name: string;
+  /** Taxonomy path to this node, '~'-joined (what the listing screen passes as `taxo`). */
+  taxo: string;
+  href: string;
+}
+
+/**
+ * The breadcrumb from the main down to the node at `path` (1–3 taxonomy slugs). Lets the listing
+ * screen offer "jump back up" links to parent categories.
+ */
+export function taxonomyTrail(path: string[]): TrailNode[] {
+  const [mainSlug, subSlug, leafSlug] = path;
+  const main = tree().find((m) => m.slug === mainSlug);
+  if (!main) return [];
+  const out: TrailNode[] = [{ name: main.name, taxo: main.slug, href: main.href }];
+  if (!subSlug) return out;
+
+  const sub = main.subcategories.find((s) => s.slug === subSlug);
+  if (!sub) return out;
+  out.push({ name: sub.name, taxo: `${main.slug}~${sub.slug}`, href: sub.href });
+  if (!leafSlug) return out;
+
+  const leaf = sub.children.find((c) => c.slug === leafSlug);
+  if (leaf)
+    out.push({ name: leaf.name, taxo: `${main.slug}~${sub.slug}~${leaf.slug}`, href: leaf.href });
+  return out;
+}
+
+/** Fallback for direct `/category/<slug>` links: find the taxonomy path whose node targets `slug`. */
+export function taxonomyPathForSlug(slug: string): string[] {
+  if (!slug) return [];
+  for (const main of tree()) {
+    if (catalogSlugOf(main.href) === slug) return [main.slug];
+    for (const sub of main.subcategories) {
+      if (catalogSlugOf(sub.href) === slug) return [main.slug, sub.slug];
+      for (const leaf of sub.children) {
+        if (catalogSlugOf(leaf.href) === slug) return [main.slug, sub.slug, leaf.slug];
+      }
+    }
+  }
+  return [];
 }
