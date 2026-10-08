@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { CategoryBar } from '@/components/category/CategoryBar';
-import { ProductCard } from '@/components/product/ProductCard';
-import { searchProducts } from '@/lib/catalog';
+import { InfiniteProductGrid } from '@/components/listing/InfiniteProductGrid';
+import { searchProductsPage } from '@/lib/catalog';
 import { categoryBarMains } from '@/lib/category-taxonomy';
 
 interface SearchPageProps {
@@ -18,26 +18,41 @@ export function generateMetadata({ searchParams }: SearchPageProps): Metadata {
   return { title: q ? `Search results for “${q}” - You Mart` : 'Search - You Mart' };
 }
 
-// Header search target. Layout follows the listing grid (live's results page is not measured).
+// Header search target. Infinite-scrolls like the category listing.
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const q = queryOf(searchParams);
-  const products = await searchProducts(q);
+  const { products, total } = await searchProductsPage(q, 1);
+
+  async function loadMore(page: number) {
+    'use server';
+    const res = await searchProductsPage(q, page);
+    return res.products;
+  }
 
   return (
     <>
       <CategoryBar mains={categoryBarMains()} />
       <div className="mx-auto max-w-[1240px] px-[10px] py-[20px] lg:mb-[64px] lg:mt-[44px] lg:px-[20px]">
         <h1 className="mb-[20px] font-ui text-[20px] font-semibold leading-[1.3] text-heading lg:text-[25px]">
-          {q ? <>Search results for: &ldquo;{q}&rdquo;</> : 'Search'}
+          {q ? (
+            <>
+              Search results for: &ldquo;{q}&rdquo;{' '}
+              <span className="font-sans text-[15px] font-normal text-ink-body">
+                ({total} {total === 1 ? 'result' : 'results'})
+              </span>
+            </>
+          ) : (
+            'Search'
+          )}
         </h1>
         {products.length > 0 ? (
-          <ul className="grid grid-cols-2 gap-x-[10px] md:grid-cols-3 md:gap-x-[20px] lg:grid-cols-5">
-            {products.map((product, index) => (
-              <li key={product.id} className="mb-[10px]">
-                <ProductCard product={product} variant="listing" priority={index < 5} />
-              </li>
-            ))}
-          </ul>
+          <InfiniteProductGrid
+            initial={products}
+            total={total}
+            loadMore={loadMore}
+            gridClassName="grid grid-cols-2 gap-x-[10px] md:grid-cols-3 md:gap-x-[20px] lg:grid-cols-5"
+            priorityCount={5}
+          />
         ) : (
           <p className="my-[30px] font-ui text-[16px] text-ink-body">
             {q

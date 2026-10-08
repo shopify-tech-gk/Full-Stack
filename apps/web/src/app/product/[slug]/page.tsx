@@ -7,16 +7,20 @@ import {
   SAFE_CHECKOUT_METHODS,
   discountPercent,
   formatMoney,
+  parseListingQuery,
 } from '@youmart/shared-client';
 import { CategoryBar } from '@/components/category/CategoryBar';
-import { ProductCard } from '@/components/product/ProductCard';
+import { InfiniteProductGrid } from '@/components/listing/InfiniteProductGrid';
 import { ProductGallery } from '@/components/product/ProductGallery';
+import { ProductRail } from '@/components/product/ProductRail';
+import { ProductSectionNav } from '@/components/product/ProductSectionNav';
 import { ProductTabs } from '@/components/product/ProductTabs';
 import { PurchasePanel } from '@/components/product/PurchasePanel';
 import { ProductViewTracker } from '@/components/product/ProductViewTracker';
 import { ShareButtons } from '@/components/product/ShareButtons';
+import { ShopWithAssurance } from '@/components/product/ShopWithAssurance';
 import { StarRating } from '@/components/product/StarRating';
-import { getProductDetail } from '@/lib/catalog';
+import { getProductDetail, listMoreCategoryProducts } from '@/lib/catalog';
 import { WishlistButton } from '@/components/product/WishlistButton';
 import { categoryBarMains } from '@/lib/category-taxonomy';
 
@@ -47,6 +51,27 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const off = discountPercent(product.mrp, product.sellingPrice);
   const reviewCount = product.ratingCount;
 
+  // "More to Explore": the product's category feed powers the Similar rail + the infinite grid.
+  const catHref = product.categories[product.categories.length - 1]?.href ?? '';
+  const catSlug = catHref.split('?')[0]?.split('/').filter(Boolean).pop() ?? '';
+  const excludeArr = [product.id, ...product.related.map((r) => r.id)];
+  const moreRes = catSlug
+    ? await listMoreCategoryProducts([catSlug], parseListingQuery({}))
+    : { products: [], total: 0 };
+  const moreAll = moreRes.products.filter((p) => !excludeArr.includes(p.id));
+  const similar = moreAll.slice(0, 12);
+  const gridInitial = moreAll.slice(12);
+
+  async function loadMoreExplore(page: number) {
+    'use server';
+    if (!catSlug) return [];
+    const res = await listMoreCategoryProducts([catSlug], { ...parseListingQuery({}), page });
+    const ex = new Set(excludeArr);
+    return res.products.filter((p) => !ex.has(p.id));
+  }
+
+  const hasExplore = product.related.length > 0 || similar.length > 0 || gridInitial.length > 0;
+
   return (
     <>
       <ProductViewTracker productId={product.id} />
@@ -56,7 +81,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <ProductGallery images={product.images} title={product.title} />
 
           <div className="mb-[32px] lg:w-[552px]">
-            {/* Live renders the title at 13px on mobile (smaller than body text); 20px is the flagged fix. */}
             <h1 className="font-ui text-[20px] font-semibold leading-[1.3] text-heading md:text-[25px] lg:text-[34px]">
               {product.title}
             </h1>
@@ -109,6 +133,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
               }
             />
 
+            <div className="mt-[16px]">
+              <ShopWithAssurance />
+            </div>
+
             <div className="mb-[11.52px] border-t border-catalog-rule pt-[7.2px] font-sans text-[14.4px] font-medium leading-[25.6px] text-ink-body">
               Categories:{' '}
               {product.categories.map((category, index) => (
@@ -160,38 +188,42 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 }
               />
             </div>
-            {/* Live's back-in-stock "Notify" button is left out until a stock-alert API exists
-                (W6 deferred) - a button that does nothing would be demo UI. */}
 
             <ShareButtons title={product.title} />
           </div>
         </div>
 
-        <div id="reviews">
-          <ProductTabs
-            slug={product.slug}
-            description={product.description}
-            specifications={product.specifications}
-            title={product.title}
-          />
-        </div>
+        <ProductSectionNav />
 
-        {product.related.length > 0 && (
-          <section aria-labelledby="related-products">
-            {/* Live: 13px on mobile like the title; matched to the title fix. */}
-            <h2
-              id="related-products"
-              className="font-ui text-[20px] font-semibold leading-[1.3] text-heading md:text-[25px] lg:text-[34px]"
-            >
-              Related products
-            </h2>
-            <ul className="mb-[16px] grid grid-cols-2 gap-x-[10px] md:grid-cols-3 md:gap-x-[20px] lg:grid-cols-4">
-              {product.related.map((item) => (
-                <li key={item.id} className="mb-[10px]">
-                  <ProductCard product={item} variant="listing" shadow={false} />
-                </li>
-              ))}
-            </ul>
+        <section id="product-details" aria-label="Product details">
+          <div id="reviews">
+            <ProductTabs
+              slug={product.slug}
+              description={product.description}
+              specifications={product.specifications}
+              title={product.title}
+            />
+          </div>
+        </section>
+
+        {hasExplore && (
+          <section id="more-to-explore" aria-label="More to explore" className="scroll-mt-[72px]">
+            <ProductRail title="Complete your choice" products={product.related} />
+            <ProductRail title="Similar products" products={similar} />
+            {gridInitial.length > 0 && (
+              <div className="mt-[28px]">
+                <h2 className="mb-[14px] flex items-center gap-[12px] font-ui text-[18px] font-bold text-heading lg:text-[24px]">
+                  <span aria-hidden className="h-[4px] w-[30px] rounded-full bg-brand" />
+                  More to Explore
+                </h2>
+                <InfiniteProductGrid
+                  initial={gridInitial}
+                  total={moreRes.total}
+                  loadMore={loadMoreExplore}
+                  gridClassName="mb-[16px] grid grid-cols-2 gap-x-[10px] md:grid-cols-3 md:gap-x-[20px] lg:grid-cols-4"
+                />
+              </div>
+            )}
           </section>
         )}
       </div>

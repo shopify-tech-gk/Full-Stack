@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReviewForm, ReviewList, useProductReviews } from './ProductReviews';
 
@@ -18,6 +18,22 @@ export function ProductTabs({ slug, description, specifications = [], title }: P
   const router = useRouter();
   const reviews = useProductReviews(slug);
   const [tab, setTab] = useState<'description' | 'reviews'>('description');
+
+  // The in-page nav / "(N reviews)" link opens the Reviews tab (custom event + #reviews hash).
+  useEffect(() => {
+    const showReviews = () => setTab('reviews');
+    const onHash = () => {
+      if (window.location.hash === '#reviews') setTab('reviews');
+    };
+    onHash();
+    window.addEventListener('ym:show-reviews', showReviews);
+    window.addEventListener('hashchange', onHash);
+    return () => {
+      window.removeEventListener('ym:show-reviews', showReviews);
+      window.removeEventListener('hashchange', onHash);
+    };
+  }, []);
+
   const tabs = [
     { key: 'description' as const, label: 'Description' },
     { key: 'reviews' as const, label: `Reviews (${reviews.total})` },

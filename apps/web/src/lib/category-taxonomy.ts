@@ -116,3 +116,35 @@ export function categoryContext(path: readonly string[]): CategoryContext | null
   }
   return { main, trail };
 }
+
+export interface RelatedCategory {
+  slug: string;
+  name: string;
+  href: string;
+  /** Portrait tile (subs/leaves) or landscape banner (mains); null = placeholder. */
+  image: string | null;
+}
+
+/** Sibling categories of the /category/... page — the parent's other children, for "Related categories". */
+export function relatedCategories(path: readonly string[]): RelatedCategory[] {
+  const ctx = categoryContext(path);
+  if (!ctx) return [];
+  const { main } = ctx;
+  const curHref = categoryHref(...path);
+
+  if (path.length <= 1) {
+    return categoryTaxonomy
+      .filter((m) => m.href !== main.href)
+      .map((m) => ({ slug: m.slug, name: m.name, href: m.href, image: m.image.desktop }));
+  }
+  if (path.length === 2) {
+    return main.subcategories
+      .filter((s) => s.href !== curHref)
+      .map((s) => ({ slug: s.slug, name: s.name, href: s.href, image: s.image }));
+  }
+  const parentSub = main.subcategories.find((s) => s.children.some((c) => c.href === curHref));
+  if (!parentSub) return [];
+  return parentSub.children
+    .filter((c) => c.href !== curHref)
+    .map((c) => ({ slug: c.slug, name: c.name, href: c.href, image: c.image }));
+}

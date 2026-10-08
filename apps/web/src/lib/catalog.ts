@@ -119,6 +119,32 @@ export async function getProductDetail(slug: string): Promise<ProductDetailData 
   }
 }
 
+/** Products-only fetch for infinite scroll "load more" — skips the (unchanged) filter definition. */
+export async function listMoreCategoryProducts(
+  path: readonly string[],
+  query: ListingQuery,
+): Promise<{ products: ProductCardData[]; total: number }> {
+  const category = path[path.length - 1];
+  try {
+    const page = await catalogApi.catalog.listProducts(catalogQuery(query, { category }));
+    return { products: page.items.map(toCardData), total: page.total };
+  } catch (err) {
+    if (isNotFound(err)) return { products: [], total: 0 };
+    throw err;
+  }
+}
+
+/** Search a page of products (infinite scroll). `total` is the full match count (`found`). */
+export async function searchProductsPage(
+  q: string,
+  page: number,
+  perPage = 50,
+): Promise<{ products: ProductCardData[]; total: number }> {
+  if (!q.trim()) return { products: [], total: 0 };
+  const result = await catalogApi.search.products({ q: q.trim(), page, perPage });
+  return { products: result.results.map(searchResultToCardData), total: result.found };
+}
+
 export async function searchProducts(q: string): Promise<ProductCardData[]> {
   if (!q.trim()) return [];
   const result = await catalogApi.search.products({ q: q.trim(), perPage: 50 });

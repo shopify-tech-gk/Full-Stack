@@ -10,9 +10,9 @@ import { BrandSlider } from '@/components/listing/BrandSlider';
 import { CategorySidebar } from '@/components/listing/CategorySidebar';
 import { CheckoutSteps } from '@/components/listing/CheckoutSteps';
 import { FilterDrawer } from '@/components/listing/FilterDrawer';
-import { Pagination } from '@/components/listing/Pagination';
-import { ProductCard } from '@/components/product/ProductCard';
-import { getCategoryListing, resolveCategoryPath } from '@/lib/catalog';
+import { InfiniteProductGrid } from '@/components/listing/InfiniteProductGrid';
+import { RelatedCategories } from '@/components/listing/RelatedCategories';
+import { getCategoryListing, listMoreCategoryProducts, resolveCategoryPath } from '@/lib/catalog';
 import { categoryBarMains, categoryContext } from '@/lib/category-taxonomy';
 
 interface CategoryPageProps {
@@ -32,15 +32,18 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     notFound();
   }
   const query = parseListingQuery(searchParams);
-  const listing = await getCategoryListing(path, query);
-  if (query.page > listing.totalPages) {
-    notFound();
-  }
+  const listing = await getCategoryListing(path, { ...query, page: 1 });
   const basePath = categoryHref(...path);
   // `brand` is the one conventional attribute key (IMPORT-SPEC.md) - shown as live's brand strip.
   const brandFilter = listing.filters?.filters.find((f) => f.key === 'brand' && f.type !== 'range');
   const context = categoryContext(path);
   const title = context?.trail[context.trail.length - 1]?.name ?? node.name;
+
+  async function loadMore(page: number) {
+    'use server';
+    const res = await listMoreCategoryProducts(path, { ...query, page });
+    return res.products;
+  }
 
   return (
     <>
@@ -78,25 +81,22 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           {brandFilter && <BrandSlider filter={brandFilter} basePath={basePath} query={query} />}
 
           {listing.products.length > 0 ? (
-            <ul className="mb-[16px] mt-[10px] grid grid-cols-2 gap-x-[10px] md:grid-cols-3 md:gap-x-[20px] lg:grid-cols-4">
-              {listing.products.map((product, index) => (
-                <li key={product.id} className="mb-[10px]">
-                  <ProductCard product={product} variant="listing" priority={index < 4} />
-                </li>
-              ))}
-            </ul>
+            <div className="mt-[10px]">
+              <InfiniteProductGrid
+                initial={listing.products}
+                total={listing.total}
+                loadMore={loadMore}
+                gridClassName="mb-[16px] grid grid-cols-2 gap-x-[10px] md:grid-cols-3 md:gap-x-[20px] lg:grid-cols-4"
+                priorityCount={4}
+              />
+            </div>
           ) : (
             <p className="my-[30px] font-ui text-[16px] text-ink-body">
               No products were found matching your selection.
             </p>
           )}
 
-          <Pagination
-            current={query.page}
-            totalPages={listing.totalPages}
-            basePath={basePath}
-            query={listingQueryString(query)}
-          />
+          <RelatedCategories path={path} />
         </div>
       </div>
     </>
