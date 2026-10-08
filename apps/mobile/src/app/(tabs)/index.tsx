@@ -21,8 +21,9 @@ import { BrandStrip } from '@/components/BrandStrip';
 import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
+import { CategoryCard } from '@/components/CategoryCard';
 import { getHome, type HomeData } from '@/lib/catalog';
-import { allCategories, type HomeCategory } from '@/lib/home-categories';
+import { mainCategories, type CatNode } from '@/lib/home-categories';
 import { useRailLayout, type RailLayout } from '@/stores/prefs';
 import { colors, font, radii, space } from '@/theme';
 
@@ -112,14 +113,14 @@ export default function HomeScreen() {
   );
 }
 
-const CATEGORIES_PER_PAGE = 8; // 2 rows x 4 circles — roomy, not congested
+const CATEGORIES_PER_PAGE = 6; // 2 rows x 3 portrait cards — premium, not congested
 
 function CategoryPager() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const cats = useMemo(() => allCategories(), []);
+  const cats = useMemo(() => mainCategories(), []);
   const pages = useMemo(() => {
-    const out: HomeCategory[][] = [];
+    const out: CatNode[][] = [];
     for (let i = 0; i < cats.length; i += CATEGORIES_PER_PAGE) {
       out.push(cats.slice(i, i + CATEGORIES_PER_PAGE));
     }
@@ -129,8 +130,10 @@ function CategoryPager() {
 
   if (pages.length === 0) return null;
 
-  const open = (c: HomeCategory) => {
-    if (c.href.startsWith('/search')) {
+  const open = (c: CatNode) => {
+    if (c.hasChildren) {
+      router.push(`/browse/${c.slug}`);
+    } else if (c.href.startsWith('/search')) {
       router.push({ pathname: '/search', params: { q: c.name } });
     } else {
       const slug = c.href.split('?')[0]?.split('/').filter(Boolean).pop() ?? c.slug;
@@ -152,14 +155,9 @@ function CategoryPager() {
         renderItem={({ item }) => (
           <View style={[styles.catPage, { width }]}>
             {item.map((c) => (
-              <Pressable key={c.slug} style={styles.catChip} onPress={() => open(c)}>
-                <View style={styles.catIcon}>
-                  <Ionicons name="pricetag" size={24} color={colors.brand.DEFAULT} />
-                </View>
-                <Text numberOfLines={2} style={styles.catLabel}>
-                  {c.name}
-                </Text>
-              </Pressable>
+              <View key={c.slug} style={styles.catCardSlot}>
+                <CategoryCard name={c.name} hasChildren={c.hasChildren} onPress={() => open(c)} />
+              </View>
             ))}
           </View>
         )}
@@ -286,25 +284,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: space.md,
-    rowGap: space.xl,
+    rowGap: space.md,
   },
-  catChip: { width: '25%', alignItems: 'center', gap: 6, paddingHorizontal: 2 },
-  catIcon: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.card.border,
-  },
-  catLabel: {
-    fontFamily: font.uiSemibold,
-    fontSize: 11,
-    color: colors.text.body,
-    textAlign: 'center',
-  },
+  catCardSlot: { width: '33.333%', paddingHorizontal: space.xs },
   catDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: space.lg },
   catDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.card.border },
   catDotActive: { backgroundColor: colors.brand.DEFAULT, width: 18 },
