@@ -3,6 +3,10 @@ import {
   CATEGORY_IMAGE_PATHS,
   CATEGORY_TAXONOMY_SOURCE,
 } from '@youmart/shared-client/src/category-taxonomy.data';
+import {
+  CATEGORY_BRAND_INDEX,
+  CATEGORY_BRAND_NAMES,
+} from '@youmart/shared-client/src/category-brands.data';
 
 // The full static category taxonomy (same ~32 mains the desktop "Explore Categories" shows),
 // alphabetical. The home portrait cards page through all of these, and the browse flow drills into
@@ -45,6 +49,85 @@ function subHasChildren(children: { name: string }[], subName: string): boolean 
 export function catalogSlugOf(href: string): string {
   if (href.startsWith('/search')) return '';
   return href.split('?')[0]?.split('/').filter(Boolean).pop() ?? '';
+}
+
+/** A node anywhere in the taxonomy (main, sub or sub-to-sub), addressed by its slug path. */
+export interface TaxNode {
+  slug: string;
+  name: string;
+  /** Catalog link: /category/<slug>, or /search?q=<name> when the catalog has no match. */
+  href: string;
+  /** [main] | [main, sub] | [main, sub, leaf] */
+  path: string[];
+  /** Bundled artwork key for lookupCategoryImage(). */
+  imageKey: string;
+  /** True when it has its own sub-to-sub list (a sub whose only item is itself does not). */
+  hasChildren: boolean;
+}
+
+export function taxNode(path: string[]): TaxNode | null {
+  const [m, s, l] = path;
+  const main = tree().find((x) => x.slug === m);
+  if (!main) return null;
+  if (!s) {
+    return {
+      slug: main.slug,
+      name: main.name,
+      href: main.href,
+      path: [main.slug],
+      imageKey: `mobile/${main.slug}`,
+      hasChildren: main.subcategories.length > 0,
+    };
+  }
+  const sub = main.subcategories.find((x) => x.slug === s);
+  if (!sub) return null;
+  if (!l) {
+    return {
+      slug: sub.slug,
+      name: sub.name,
+      href: sub.href,
+      path: [main.slug, sub.slug],
+      imageKey: `${main.slug}/${sub.slug}`,
+      hasChildren: subHasChildren(sub.children, sub.name),
+    };
+  }
+  const leaf = sub.children.find((x) => x.slug === l);
+  if (!leaf) return null;
+  return {
+    slug: leaf.slug,
+    name: leaf.name,
+    href: leaf.href,
+    path: [main.slug, sub.slug, leaf.slug],
+    imageKey: `${main.slug}/${sub.slug}/${leaf.slug}`,
+    hasChildren: false,
+  };
+}
+
+/** The direct children of the node at `path` (subs of a main, sub-to-subs of a sub). */
+export function taxChildren(path: string[]): TaxNode[] {
+  const node = taxNode(path);
+  if (!node || !node.hasChildren || path.length >= 3) return [];
+  const main = tree().find((x) => x.slug === path[0])!;
+  if (path.length === 1) {
+    return main.subcategories
+      .map((sub) => taxNode([main.slug, sub.slug]))
+      .filter((n): n is TaxNode => n !== null);
+  }
+  const sub = main.subcategories.find((x) => x.slug === path[1])!;
+  return sub.children
+    .map((leaf) => taxNode([main.slug, sub.slug, leaf.slug]))
+    .filter((n): n is TaxNode => n !== null);
+}
+
+/** Brands the client's category sheet lists for this main / sub / sub-to-sub (most-stocked first). */
+export function brandsFor(path: string[]): string[] {
+  for (let depth = path.length; depth > 0; depth -= 1) {
+    const indexes = CATEGORY_BRAND_INDEX[path.slice(0, depth).join('/')];
+    if (indexes?.length) {
+      return indexes.map((i) => CATEGORY_BRAND_NAMES[i]).filter((b): b is string => Boolean(b));
+    }
+  }
+  return [];
 }
 
 export interface BestSlideItem {

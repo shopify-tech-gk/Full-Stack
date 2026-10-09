@@ -145,9 +145,15 @@ export async function searchProductsPage(
   q: string,
   page: number,
   perPage = 50,
+  brand?: string,
 ): Promise<{ products: ProductCardData[]; total: number }> {
   if (!q.trim()) return { products: [], total: 0 };
-  const result = await api.search.products({ q: q.trim(), page, perPage });
+  const result = await api.search.products({
+    q: q.trim(),
+    page,
+    perPage,
+    ...(brand ? { brand } : {}),
+  });
   return { products: result.results.map(searchResultToCardData), total: result.found };
 }
 

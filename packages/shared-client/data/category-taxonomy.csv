@@ -225,14 +225,14 @@ Baby Care,Baby Bedding,Baby Pillows
 Baby Care,Baby Bedding,Baby Bedding Sets
 Baby Care,Baby Bedding,Baby Mats
 Baby Care,Baby Cots & Cradles,Baby Cots & Cradles
-Baby Care,Diapering,Baby Wipes
-Baby Care,Diapering,Diaper Changing Mats
-Baby Care,Diapering,Nappy Pads
-Baby Care,Diapering,Potty Training
-Baby Care,Diapering,Disposable Diapers
-Baby Care,Diapering,Cloth Diapers
-Baby Care,Diapering,Diaper Pants
-Baby Care,Diapering,Diaper Rash Cream
+Baby Care,Baby Diapering & Wipes,Baby Wipes
+Baby Care,Baby Diapering & Wipes,Diaper Changing Mats
+Baby Care,Baby Diapering & Wipes,Nappy Pads
+Baby Care,Baby Diapering & Wipes,Potty Training
+Baby Care,Baby Diapering & Wipes,Disposable Diapers
+Baby Care,Baby Diapering & Wipes,Cloth Diapers
+Baby Care,Baby Diapering & Wipes,Diaper Pants
+Baby Care,Baby Diapering & Wipes,Diaper Rash Cream
 Baby Care,Baby Feeding Bottles,Bottle Accessories
 Baby Care,Baby Feeding Bottles,Bottle Cleaners
 Baby Care,Baby Feeding Bottles,Breast Pumps
@@ -240,15 +240,6 @@ Baby Care,Baby Feeding Bottles,Sterilizers & Warmers
 Baby Care,Baby Feeding Bottles,Feeding Bottles
 Baby Care,Baby Feeding Bottles,Bottle Sterilizers
 Baby Care,Baby Feeding Bottles,Bottle Warmers
-Baby Care,Baby Food,Baby Bibs
-Baby Care,Baby Food,Baby Cereals
-Baby Care,Baby Food,Baby Feeding Utensils
-Baby Care,Baby Food,Baby Sippers
-Baby Care,Baby Food,Infant Formula
-Baby Care,Baby Food,Soothers
-Baby Care,Baby Food,Teethers
-Baby Care,Baby Food,Baby Snacks
-Baby Care,Baby Food,Baby Food Pouches
 Baby Care,Baby Grooming,Baby Hair Brushes
 Baby Care,Baby Grooming,Baby Nail Clippers
 Baby Care,Baby Grooming,Baby Oral Care
@@ -266,7 +257,6 @@ Baby Care,Baby Strollers & Prams,Baby Walkers
 Baby Care,Baby Strollers & Prams,Strollers
 Baby Care,Baby Strollers & Prams,Prams
 Baby Care,Baby Strollers & Prams,Travel Systems
-Baby Care,Baby Thermometers,Baby Thermometers
 Baby Care,Baby Toys,Baby Toys
 Baby Care,Baby Toys,Rattles
 Baby Care,Baby Toys,Teethers
@@ -277,7 +267,6 @@ Bath Fittings,Bath Tubs,Bath Tubs
 Bath Fittings,Bath Tubs,Freestanding Tubs
 Bath Fittings,Bath Tubs,Corner Tubs
 Bath Fittings,Bath Tubs,Whirlpool Tubs
-Bath Fittings,Bath Tubs,Bathtubs
 Bath Fittings,Bathroom Accessories,Bathroom Hooks
 Bath Fittings,Bathroom Accessories,Bathroom Mirrors
 Bath Fittings,Bathroom Accessories,Bathroom Shelves
@@ -310,7 +299,6 @@ Bath Fittings,Toilet Accessories,Toilet Seats
 Bath Fittings,Toilet Accessories,Waste Couplings
 Bath Fittings,Toilet Accessories,Toilet Brushes
 Bath Fittings,Toilet Accessories,Toilet Paper Holders
-Bath Fittings,Toilet Accessories,Health Faucets
 Cleaning Products,Air Fresheners,Air Fresheners
 Cleaning Products,Air Fresheners,Room Sprays
 Cleaning Products,Air Fresheners,Gel Fresheners
@@ -331,7 +319,6 @@ Cleaning Products,Floor Cleaners,Toilet Cleaners
 Cleaning Products,Floor Cleaners,Floor Disinfectants
 Cleaning Products,Floor Cleaners,Tile Cleaners
 Cleaning Products,Floor Cleaners,Marble Cleaners
-Cleaning Products,Floor Cleaners,All-Purpose Cleaners
 Cleaning Products,Garbage Bags,Garbage Bags
 Cleaning Products,Garbage Bags,Small Garbage Bags
 Cleaning Products,Garbage Bags,Large Garbage Bags
@@ -399,53 +386,6 @@ Cosmetics,Skin Care,Face Wash
 Cosmetics,Skin Care,Moisturizers
 Cosmetics,Skin Care,Serums
 Cosmetics,Skin Care,Sunscreen
-Crockery,Bowls,Serving Bowls
-Crockery,Bowls,Soup Bowls
-Crockery,Casseroles,Casseroles
-Crockery,Condiment Sets,Condiment Sets
-Crockery,Crockery Organizers,Crockery Organizers
-Crockery,Cups & Mugs,Coffee Mugs
-Crockery,Cups & Mugs,Tea Cups
-Crockery,Cutlery Sets,Fork Sets
-Crockery,Cutlery Sets,Knife Sets
-Crockery,Cutlery Sets,Spoon Sets
-Crockery,Dinner Sets,Melamine Crockery
-Crockery,Dinner Sets,Porcelain Crockery
-Crockery,Dinner Sets,Stoneware
-Crockery,Dinner Sets,Dinner Plates
-Crockery,Dinner Sets,Kadhai Serving Sets
-Crockery,Dinner Sets,Plate Sets
-Crockery,Dinner Sets,Side Plates
-Crockery,Glasses,Glassware
-Crockery,Glasses,Tumblers
-Crockery,Kids Crockery,Kids Crockery
-Crockery,Salt & Pepper Sets,Salt & Pepper Sets
-Crockery,Serving Trays,Serving Platters
-Crockery,Storage Jars,Storage Jars
-Disposable Items,Biodegradable Disposables,Biodegradable Disposables
-Disposable Items,Disposable Bowls,Paper Bowls
-Disposable Items,Disposable Cups & Glasses,Disposable Glasses
-Disposable Items,Disposable Cups & Glasses,Paper Cups
-Disposable Items,Disposable Cups & Glasses,Plastic Cups
-Disposable Items,Disposable Gloves,Disposable Aprons
-Disposable Items,Disposable Gloves,Hair Caps
-Disposable Items,Disposable Gloves,Shoe Covers
-Disposable Items,Disposable Plates,Paper Plates
-Disposable Items,Disposable Plates,Plastic Plates
-Disposable Items,Disposable Spoons,Disposable Forks
-Disposable Items,Disposable Spoons,Disposable Knives
-Disposable Items,Disposable Spoons,Straws
-Disposable Items,Disposable Spoons,Wooden Cutlery
-Disposable Items,Food Containers,Aluminium Foil
-Disposable Items,Food Containers,Cling Film
-Disposable Items,Food Containers,Foil Containers
-Disposable Items,Food Containers,Food Wrapping Sheets
-Disposable Items,Food Containers,Takeaway Containers
-Disposable Items,Garbage Bags,Garbage Bags
-Disposable Items,Paper Napkins,Paper Napkins
-Disposable Items,Party Disposable Sets,Party Disposable Sets
-Disposable Items,Table Covers,Table Covers
-Disposable Items,Tissue Paper,Tissue Paper
 Electronics,Cameras,Action Cameras
 Electronics,Cameras,Camera Accessories
 Electronics,Cameras,Digital Cameras
@@ -555,25 +495,32 @@ Furniture,Sofas,Recliners
 Furniture,Sofas,Sofa Beds
 Furniture,Sofas,Sofa Sets
 Furniture,Sofas,Sectional Sofas
-Furniture,Storage Furniture,Bookshelves
-Furniture,Storage Furniture,Cabinets
-Furniture,Storage Furniture,Shoe Racks
-Furniture,Storage Furniture,Storage Units
-Furniture,Storage Furniture,TV Units
-Furniture,Storage Furniture,Storage Cabinets
 Furniture,Tables,Coffee Tables
 Furniture,Tables,Dining Tables
 Furniture,Tables,Office Tables
 Furniture,Tables,Side Tables
 Furniture,Tables,Study Tables
+Furniture,Wardrobes,Bookshelves
+Furniture,Wardrobes,Cabinets
+Furniture,Wardrobes,Shoe Racks
+Furniture,Wardrobes,Storage Units
+Furniture,Wardrobes,TV Units
+Furniture,Wardrobes,Storage Cabinets
 Furniture,Wardrobes,Wooden Wardrobes
 Furniture,Wardrobes,Plastic Wardrobes
 Fashion Jewellery,Anklets,Anklets
-Fashion Jewellery,Bangles & Bracelets,Bangles
-Fashion Jewellery,Bangles & Bracelets,Cuffs
-Fashion Jewellery,Bangles & Bracelets,Charm Bracelets
-Fashion Jewellery,Bangles & Bracelets,Chain Bracelets
+Fashion Jewellery,Artificial Jewellery,Kundan Jewellery
+Fashion Jewellery,Artificial Jewellery,Meenakari Jewellery
+Fashion Jewellery,Artificial Jewellery,Oxidised Jewellery
+Fashion Jewellery,Artificial Jewellery,Pearl Jewellery
+Fashion Jewellery,Artificial Jewellery,Gold-Plated Jewellery
+Fashion Jewellery,Artificial Jewellery,Temple Jewellery
+Fashion Jewellery,Artificial Jewellery,CZ Jewellery
 Fashion Jewellery,Body Jewellery,Body Jewellery
+Fashion Jewellery,Body Jewellery,Bangles
+Fashion Jewellery,Body Jewellery,Cuffs
+Fashion Jewellery,Body Jewellery,Charm Bracelets
+Fashion Jewellery,Body Jewellery,Chain Bracelets
 Fashion Jewellery,Bridal Jewellery,Bridal Jewellery
 Fashion Jewellery,Brooches,Brooches
 Fashion Jewellery,Charms,Charms
@@ -590,22 +537,15 @@ Fashion Jewellery,Jewellery Boxes,Jewellery Organizers
 Fashion Jewellery,Jewellery Boxes,Travel Jewellery Cases
 Fashion Jewellery,Jewellery Boxes,Jewellery Stands
 Fashion Jewellery,Jewellery Sets,Jewellery Sets
-Fashion Jewellery,Jewellery Styles,Kundan Jewellery
-Fashion Jewellery,Jewellery Styles,Meenakari Jewellery
-Fashion Jewellery,Jewellery Styles,Oxidised Jewellery
-Fashion Jewellery,Jewellery Styles,Pearl Jewellery
-Fashion Jewellery,Jewellery Styles,Gold-Plated Jewellery
-Fashion Jewellery,Jewellery Styles,Temple Jewellery
-Fashion Jewellery,Jewellery Styles,CZ Jewellery
 Fashion Jewellery,Kamarband,Kamarband
 Fashion Jewellery,Kids Jewellery,Kids Jewellery
 Fashion Jewellery,Maang Tikka,Maang Tikka
-Fashion Jewellery,Necklaces & Chains,Chains
-Fashion Jewellery,Necklaces & Chains,Chokers
-Fashion Jewellery,Necklaces & Chains,Mangalsutra
-Fashion Jewellery,Necklaces & Chains,Pendant Sets
-Fashion Jewellery,Necklaces & Chains,Pendant Necklaces
-Fashion Jewellery,Necklaces & Chains,Layered Necklaces
+Fashion Jewellery,Necklaces,Chains
+Fashion Jewellery,Necklaces,Chokers
+Fashion Jewellery,Necklaces,Mangalsutra
+Fashion Jewellery,Necklaces,Pendant Sets
+Fashion Jewellery,Necklaces,Pendant Necklaces
+Fashion Jewellery,Necklaces,Layered Necklaces
 Fashion Jewellery,Rings,Nose Rings
 Fashion Jewellery,Rings,Adjustable Rings
 Fashion Jewellery,Rings,Cocktail Rings
@@ -614,46 +554,46 @@ Footwear,Kids Footwear,Boys Footwear
 Footwear,Kids Footwear,Girls Footwear
 Footwear,Kids Footwear,Infant Footwear
 Footwear,Kids Footwear,School Shoes
-Footwear,Kids Footwear,Sports Shoes
-Footwear,Men's Casual Shoes,Men's Ethnic Shoes
-Footwear,Men's Casual Shoes,Men's Formal Shoes
-Footwear,Men's Casual Shoes,Men's Sandals
-Footwear,Men's Casual Shoes,Men's Slippers & Flip Flops
-Footwear,Men's Casual Shoes,Men's Sneakers
-Footwear,Men's Casual Shoes,Men's Sports Shoes
-Footwear,Men's Casual Shoes,Sneakers
-Footwear,Men's Casual Shoes,Loafers
-Footwear,Men's Casual Shoes,Casual Shoes
-Footwear,Men's Casual Shoes,Canvas Shoes
+Footwear,Men's Footwear,Men's Ethnic Shoes
+Footwear,Men's Footwear,Men's Formal Shoes
+Footwear,Men's Footwear,Men's Sandals
+Footwear,Men's Footwear,Men's Slippers & Flip Flops
+Footwear,Men's Footwear,Men's Sneakers
+Footwear,Men's Footwear,Men's Sports Shoes
+Footwear,Men's Footwear,Sneakers
+Footwear,Men's Footwear,Loafers
+Footwear,Men's Footwear,Casual Shoes
+Footwear,Men's Footwear,Canvas Shoes
 Footwear,Shoe Care,Insoles
 Footwear,Shoe Care,Shoe Accessories
 Footwear,Shoe Care,Shoe Laces
 Footwear,Shoe Care,Shoe Polish
 Footwear,Shoe Care,Shoe Cleaning Kits
 Footwear,Shoe Care,Shoe Trees
+Footwear,Sports Footwear,Sports Shoes
 Footwear,Sports Footwear,Running Shoes
 Footwear,Sports Footwear,Trekking Shoes
 Footwear,Sports Footwear,Walking Shoes
 Footwear,Sports Footwear,Training Shoes
-Footwear,Women's Flats,Women's Ballerinas
-Footwear,Women's Flats,Women's Ethnic Shoes
-Footwear,Women's Flats,Women's Formal Shoes
-Footwear,Women's Flats,Women's Heels
-Footwear,Women's Flats,Women's Sandals
-Footwear,Women's Flats,Women's Slippers & Flip Flops
-Footwear,Women's Flats,Women's Sneakers
-Footwear,Women's Flats,Women's Sports Shoes
-Footwear,Women's Flats,Women's Wedges
-Footwear,Women's Flats,Ballerinas
-Footwear,Women's Flats,Loafers
-Footwear,Women's Flats,Mules
-Footwear,Women's Flats,Casual Flats
+Footwear,Women's Footwear,Women's Ballerinas
+Footwear,Women's Footwear,Women's Ethnic Shoes
+Footwear,Women's Footwear,Women's Formal Shoes
+Footwear,Women's Footwear,Women's Heels
+Footwear,Women's Footwear,Women's Sandals
+Footwear,Women's Footwear,Women's Slippers & Flip Flops
+Footwear,Women's Footwear,Women's Sneakers
+Footwear,Women's Footwear,Women's Sports Shoes
+Footwear,Women's Footwear,Women's Wedges
+Footwear,Women's Footwear,Ballerinas
+Footwear,Women's Footwear,Loafers
+Footwear,Women's Footwear,Mules
+Footwear,Women's Footwear,Casual Flats
 Gifts & Frames,Decorative Showpieces,Decorative Showpieces
-Gifts & Frames,Decorative Showpieces,Corporate Gifts
-Gifts & Frames,Decorative Showpieces,Gift Boxes
-Gifts & Frames,Decorative Showpieces,Greeting Cards
-Gifts & Frames,Decorative Showpieces,Personalised Gift Sets
-Gifts & Frames,Personalized Gifts,Couple Gift Sets
+Gifts & Frames,Gift Sets & Greeting Cards,Corporate Gifts
+Gifts & Frames,Gift Sets & Greeting Cards,Gift Boxes
+Gifts & Frames,Gift Sets & Greeting Cards,Greeting Cards
+Gifts & Frames,Gift Sets & Greeting Cards,Personalised Gift Sets
+Gifts & Frames,Gift Sets & Greeting Cards,Couple Gift Sets
 Gifts & Frames,Personalized Gifts,Cushions
 Gifts & Frames,Personalized Gifts,Diaries
 Gifts & Frames,Personalized Gifts,Keychains
@@ -677,12 +617,12 @@ Gifts & Frames,Trophies & Awards,Medals
 Gifts & Frames,Trophies & Awards,Trophies
 Gifts & Frames,Trophies & Awards,Plaques
 Gifts & Frames,Trophies & Awards,Certificates
-Gifts & Frames,Wedding Gifts,Anniversary Gifts
-Gifts & Frames,Wedding Gifts,Baby Gifts
-Gifts & Frames,Wedding Gifts,Birthday Gifts
-Gifts & Frames,Wedding Gifts,Festive Gifts
-Gifts & Frames,Wedding Gifts,Couple Gifts
-Gifts & Frames,Wedding Gifts,Wedding Gift Sets
+Gifts & Frames,Wedding & Occasion Gifts,Anniversary Gifts
+Gifts & Frames,Wedding & Occasion Gifts,Baby Gifts
+Gifts & Frames,Wedding & Occasion Gifts,Birthday Gifts
+Gifts & Frames,Wedding & Occasion Gifts,Festive Gifts
+Gifts & Frames,Wedding & Occasion Gifts,Couple Gifts
+Gifts & Frames,Wedding & Occasion Gifts,Wedding Gift Sets
 Hardwares,Adhesives & Tapes,Adhesives
 Hardwares,Adhesives & Tapes,Sealants
 Hardwares,Adhesives & Tapes,Adhesive Tapes
@@ -696,6 +636,13 @@ Hardwares,Building Hardware,Fasteners
 Hardwares,Building Hardware,Nails
 Hardwares,Building Hardware,Screws
 Hardwares,Clamps,Clamps
+Hardwares,Door & Cabinet Handles,Brackets
+Hardwares,Door & Cabinet Handles,Cabinet Handles
+Hardwares,Door & Cabinet Handles,Hinges
+Hardwares,Door & Cabinet Handles,Hooks
+Hardwares,Door & Cabinet Handles,Door Handles
+Hardwares,Door & Cabinet Handles,Knobs
+Hardwares,Door & Cabinet Handles,Pull Handles
 Hardwares,Door Locks,Door Stoppers
 Hardwares,Door Locks,Latches
 Hardwares,Door Locks,Padlocks
@@ -714,17 +661,10 @@ Hardwares,Furniture Fittings,Drawer Slides
 Hardwares,Furniture Fittings,Castors
 Hardwares,Furniture Fittings,Hinges
 Hardwares,Furniture Fittings,Handles
-Hardwares,Handles & Hinges,Brackets
-Hardwares,Handles & Hinges,Cabinet Handles
-Hardwares,Handles & Hinges,Hinges
-Hardwares,Handles & Hinges,Hooks
-Hardwares,Handles & Hinges,Door Handles
-Hardwares,Handles & Hinges,Knobs
-Hardwares,Handles & Hinges,Pull Handles
-Hardwares,Ropes,Chains
-Hardwares,Ropes,Wire Ropes
-Hardwares,Ropes,Nylon Ropes
-Hardwares,Ropes,Cotton Ropes
+Hardwares,Ropes & Chains,Chains
+Hardwares,Ropes & Chains,Wire Ropes
+Hardwares,Ropes & Chains,Nylon Ropes
+Hardwares,Ropes & Chains,Cotton Ropes
 Hardwares,Safety Hardware,Safety Hardware
 Hardwares,Safety Hardware,Safety Gloves
 Hardwares,Safety Hardware,Safety Goggles
@@ -739,26 +679,26 @@ Home Appliances,Air Purifiers,Air Purifiers
 Home Appliances,Air Purifiers,Dehumidifiers
 Home Appliances,Air Purifiers,Humidifiers
 Home Appliances,Chimneys,Chimneys
-Home Appliances,Irons & Sewing Machines,Irons
-Home Appliances,Irons & Sewing Machines,Sewing Machines
-Home Appliances,Kitchen Appliances,Dishwashers
-Home Appliances,Kitchen Appliances,Electric Kettles
-Home Appliances,Kitchen Appliances,Induction Cooktops
-Home Appliances,Kitchen Appliances,Air Fryers
-Home Appliances,Kitchen Appliances,Sandwich Makers
-Home Appliances,Kitchen Appliances,Toasters
-Home Appliances,Kitchen Appliances,Rice Cookers
-Home Appliances,Kitchen Appliances,Electric Cookers
+Home Appliances,Cooking Appliances,Electric Kettles
+Home Appliances,Cooking Appliances,Induction Cooktops
+Home Appliances,Cooking Appliances,OTG Ovens
+Home Appliances,Cooking Appliances,Microwave Ovens
+Home Appliances,Cooking Appliances,Convection Ovens
+Home Appliances,Dishwashers,Dishwashers
+Home Appliances,Irons,Irons
 Home Appliances,Mixer Grinders,Food Processors
 Home Appliances,Mixer Grinders,Hand Blenders
 Home Appliances,Mixer Grinders,Juicers
 Home Appliances,Mixer Grinders,Wet Grinders
 Home Appliances,Mixer Grinders,Mixer Grinders
-Home Appliances,Ovens & Microwaves,OTG Ovens
-Home Appliances,Ovens & Microwaves,Microwave Ovens
-Home Appliances,Ovens & Microwaves,Convection Ovens
 Home Appliances,Refrigerators,Refrigerators
 Home Appliances,Room Heaters,Room Heaters
+Home Appliances,Sewing Machines,Sewing Machines
+Home Appliances,Small Kitchen Appliances,Air Fryers
+Home Appliances,Small Kitchen Appliances,Sandwich Makers
+Home Appliances,Small Kitchen Appliances,Toasters
+Home Appliances,Small Kitchen Appliances,Rice Cookers
+Home Appliances,Small Kitchen Appliances,Electric Cookers
 Home Appliances,Vacuum Cleaners,Vacuum Cleaners
 Home Appliances,Vacuum Cleaners,Upright
 Home Appliances,Vacuum Cleaners,Canister
@@ -787,27 +727,27 @@ Home Furnishing,Curtains,Door Curtains
 Home Furnishing,Curtains,Window Curtains
 Home Furnishing,Curtains,Blackout Curtains
 Home Furnishing,Curtains,Sheer Curtains
+Home Furnishing,Cushions & Pillows,Cushion Covers
+Home Furnishing,Cushions & Pillows,Cushions
+Home Furnishing,Cushions & Pillows,Pillow Covers
+Home Furnishing,Cushions & Pillows,Sleeping Pillows
+Home Furnishing,Cushions & Pillows,Memory Foam Pillows
+Home Furnishing,Cushions & Pillows,Pillow Protectors
 Home Furnishing,Home Furnishing Sets,Home Furnishing Sets
-Home Furnishing,Home Furnishing Sets,Laundry Bags
-Home Furnishing,Home Furnishing Sets,Mosquito Nets
-Home Furnishing,Home Furnishing Sets,Cushion Covers
-Home Furnishing,Home Furnishing Sets,Cushions
-Home Furnishing,Pillows,Pillow Covers
-Home Furnishing,Pillows,Sleeping Pillows
-Home Furnishing,Pillows,Memory Foam Pillows
-Home Furnishing,Pillows,Pillow Protectors
-Home Furnishing,Rugs,Bath Mats
-Home Furnishing,Rugs,Carpets
-Home Furnishing,Rugs,Mats
-Home Furnishing,Rugs,Area Rugs
-Home Furnishing,Rugs,Door Mats
-Home Furnishing,Rugs,Runner Rugs
-Home Furnishing,Sofa Covers,Chair Covers
-Home Furnishing,Sofa Covers,Sofa Covers
-Home Furnishing,Sofa Covers,Recliner Covers
-Home Furnishing,Sofa Covers,Cushion Covers
-Home Furnishing,Table Covers,Table Cloths
-Home Furnishing,Table Covers,Table Runners
+Home Furnishing,Laundry Bags & Mosquito Nets,Laundry Bags
+Home Furnishing,Laundry Bags & Mosquito Nets,Mosquito Nets
+Home Furnishing,Rugs & Mats,Bath Mats
+Home Furnishing,Rugs & Mats,Carpets
+Home Furnishing,Rugs & Mats,Mats
+Home Furnishing,Rugs & Mats,Area Rugs
+Home Furnishing,Rugs & Mats,Door Mats
+Home Furnishing,Rugs & Mats,Runner Rugs
+Home Furnishing,Sofa & Chair Covers,Chair Covers
+Home Furnishing,Sofa & Chair Covers,Sofa Covers
+Home Furnishing,Sofa & Chair Covers,Recliner Covers
+Home Furnishing,Sofa & Chair Covers,Cushion Covers
+Home Furnishing,Table Linen,Table Cloths
+Home Furnishing,Table Linen,Table Runners
 Home Furnishing,Towels,Bath Towels
 Home Furnishing,Towels,Hand Towels
 Home Furnishing,Towels,Kitchen Towels
@@ -819,10 +759,57 @@ Kitchenware,Cookware,Kadhai
 Kitchenware,Cookware,Pots
 Kitchenware,Cookware,Sauce Pans
 Kitchenware,Cookware,Tawas
+Kitchenware,Crockery,Serving Bowls
+Kitchenware,Crockery,Soup Bowls
+Kitchenware,Crockery,Casseroles
+Kitchenware,Crockery,Melamine Crockery
+Kitchenware,Crockery,Porcelain Crockery
+Kitchenware,Crockery,Stoneware
+Kitchenware,Crockery,Condiment Sets
+Kitchenware,Crockery,Crockery Organizers
+Kitchenware,Crockery,Coffee Mugs
+Kitchenware,Crockery,Tea Cups
+Kitchenware,Crockery,Fork Sets
+Kitchenware,Crockery,Knife Sets
+Kitchenware,Crockery,Spoon Sets
+Kitchenware,Crockery,Dinner Plates
+Kitchenware,Crockery,Kadhai Serving Sets
+Kitchenware,Crockery,Plate Sets
+Kitchenware,Crockery,Side Plates
+Kitchenware,Crockery,Glassware
+Kitchenware,Crockery,Tumblers
+Kitchenware,Crockery,Kids Crockery
+Kitchenware,Crockery,Salt & Pepper Sets
+Kitchenware,Crockery,Serving Platters
+Kitchenware,Crockery,Storage Jars
 Kitchenware,Dish Racks,Dish Racks
 Kitchenware,Dish Racks,Dish Drainers
 Kitchenware,Dish Racks,Plate Racks
 Kitchenware,Dish Racks,Cutlery Holders
+Kitchenware,Disposable Items,Biodegradable Disposables
+Kitchenware,Disposable Items,Paper Bowls
+Kitchenware,Disposable Items,Disposable Glasses
+Kitchenware,Disposable Items,Paper Cups
+Kitchenware,Disposable Items,Plastic Cups
+Kitchenware,Disposable Items,Disposable Aprons
+Kitchenware,Disposable Items,Hair Caps
+Kitchenware,Disposable Items,Shoe Covers
+Kitchenware,Disposable Items,Paper Plates
+Kitchenware,Disposable Items,Plastic Plates
+Kitchenware,Disposable Items,Disposable Forks
+Kitchenware,Disposable Items,Disposable Knives
+Kitchenware,Disposable Items,Straws
+Kitchenware,Disposable Items,Wooden Cutlery
+Kitchenware,Disposable Items,Aluminium Foil
+Kitchenware,Disposable Items,Cling Film
+Kitchenware,Disposable Items,Foil Containers
+Kitchenware,Disposable Items,Food Wrapping Sheets
+Kitchenware,Disposable Items,Takeaway Containers
+Kitchenware,Disposable Items,Garbage Bags
+Kitchenware,Disposable Items,Paper Napkins
+Kitchenware,Disposable Items,Party Disposable Sets
+Kitchenware,Disposable Items,Table Covers
+Kitchenware,Disposable Items,Tissue Paper
 Kitchenware,Kitchen Organizers,Kitchen Organizers
 Kitchenware,Kitchen Tools,Colanders
 Kitchenware,Kitchen Tools,Cutting Boards
@@ -835,25 +822,48 @@ Kitchenware,Kitchen Tools,Tongs
 Kitchenware,Kitchen Tools,Whisks
 Kitchenware,Kitchen Tools,Graters
 Kitchenware,Knives,Choppers
-Kitchenware,Knives,Graters
 Kitchenware,Knives,Knife Sets
 Kitchenware,Knives,Peelers
 Kitchenware,Knives,Slicers
 Kitchenware,Knives,Chef Knives
 Kitchenware,Knives,Kitchen Knife Sets
 Kitchenware,Knives,Vegetable Knives
+Kitchenware,Plastic Household,Drawer Organizers
+Kitchenware,Plastic Household,Kitchen Organizers
+Kitchenware,Plastic Household,Plastic Racks
+Kitchenware,Plastic Household,Plastic Shelves
+Kitchenware,Plastic Household,Household Utility Sets
+Kitchenware,Plastic Household,Food Containers
+Kitchenware,Plastic Household,Lunch Boxes
+Kitchenware,Plastic Household,Plastic Jars
+Kitchenware,Plastic Household,Plastic Trays
+Kitchenware,Plastic Household,Spice Containers
+Kitchenware,Plastic Household,Water Bottles
+Kitchenware,Plastic Household,Clothes Hangers
+Kitchenware,Plastic Household,Dustbins
+Kitchenware,Plastic Household,Mugs
+Kitchenware,Plastic Household,Water Buckets
+Kitchenware,Plastic Household,Plastic Mats
+Kitchenware,Plastic Household,Plastic Chairs
+Kitchenware,Plastic Household,Plastic Tables
+Kitchenware,Plastic Household,Plastic Bins
+Kitchenware,Plastic Household,Plastic Crates
+Kitchenware,Plastic Household,Plastic Drums
+Kitchenware,Plastic Household,Plastic Storage Boxes
+Kitchenware,Plastic Household,Plastic Tubs
+Kitchenware,Plastic Household,Storage Baskets
 Kitchenware,Pressure Cookers,Cooker Accessories
 Kitchenware,Pressure Cookers,Spare Gaskets
 Kitchenware,Pressure Cookers,Cooker Handles
 Kitchenware,Pressure Cookers,Safety Valves
-Kitchenware,Stainless Steel,Food Storage Jars
-Kitchenware,Stainless Steel,Lunch Boxes
-Kitchenware,Stainless Steel,Water Bottles
-Kitchenware,Stainless Steel,Plastic Bins
-Kitchenware,Stainless Steel,Airtight Containers
-Kitchenware,Stainless Steel,Spice Containers
 Kitchenware,Stainless Steel,Stainless Steel Utensils
 Kitchenware,Stainless Steel,Stainless Steel Containers
+Kitchenware,Storage Containers,Food Storage Jars
+Kitchenware,Storage Containers,Lunch Boxes
+Kitchenware,Storage Containers,Water Bottles
+Kitchenware,Storage Containers,Plastic Bins
+Kitchenware,Storage Containers,Airtight Containers
+Kitchenware,Storage Containers,Spice Containers
 Musical Instruments,Drums & Percussion,Cajon
 Musical Instruments,Drums & Percussion,Electronic Drums
 Musical Instruments,Drums & Percussion,Percussion Instruments
@@ -861,8 +871,6 @@ Musical Instruments,Drums & Percussion,Tabla
 Musical Instruments,Drums & Percussion,Drum Sets
 Musical Instruments,Drums & Percussion,Snare Drums
 Musical Instruments,Drums & Percussion,Cymbals
-Musical Instruments,Flutes,Mouth Organs
-Musical Instruments,Flutes,Saxophones
 Musical Instruments,Guitars,Acoustic Guitars
 Musical Instruments,Guitars,Electric Guitars
 Musical Instruments,Guitars,Guitar Strings
@@ -875,21 +883,23 @@ Musical Instruments,Keyboards,Pianos
 Musical Instruments,Keyboards,Digital Pianos
 Musical Instruments,Keyboards,MIDI Keyboards
 Musical Instruments,Keyboards,Keyboard Stands
-Musical Instruments,Music Accessories,Amplifiers
-Musical Instruments,Music Accessories,DJ Equipment
-Musical Instruments,Music Accessories,Instrument Cases
-Musical Instruments,Music Accessories,Instrument Stands
-Musical Instruments,Music Accessories,Karaoke Machines
-Musical Instruments,Music Accessories,Metronomes
-Musical Instruments,Music Accessories,Microphones
-Musical Instruments,Music Accessories,Tuners
-Musical Instruments,Music Accessories,Cables
-Musical Instruments,Music Accessories,Stands
+Musical Instruments,Music Accessories & Audio,Amplifiers
+Musical Instruments,Music Accessories & Audio,DJ Equipment
+Musical Instruments,Music Accessories & Audio,Instrument Cases
+Musical Instruments,Music Accessories & Audio,Instrument Stands
+Musical Instruments,Music Accessories & Audio,Karaoke Machines
+Musical Instruments,Music Accessories & Audio,Metronomes
+Musical Instruments,Music Accessories & Audio,Microphones
+Musical Instruments,Music Accessories & Audio,Tuners
+Musical Instruments,Music Accessories & Audio,Cables
+Musical Instruments,Music Accessories & Audio,Stands
 Musical Instruments,Musical Toys,Musical Toys
 Musical Instruments,String Instruments,Cellos
 Musical Instruments,String Instruments,Violins
 Musical Instruments,String Instruments,Violas
 Musical Instruments,String Instruments,Violin Accessories
+Musical Instruments,Wind Instruments,Mouth Organs
+Musical Instruments,Wind Instruments,Saxophones
 Party Decorations,Backdrop Decorations,Confetti
 Party Decorations,Backdrop Decorations,Party Lights
 Party Decorations,Backdrop Decorations,Ribbons
@@ -917,7 +927,7 @@ Party Decorations,Party Decoration Kits,Costume Props
 Party Decorations,Party Tableware,Disposable Cups
 Party Decorations,Party Tableware,Disposable Plates
 Party Decorations,Party Tableware,Table Decorations
-Party Decorations,Party Tableware,Return Gifts
+Party Decorations,Return Gifts,Return Gifts
 Party Decorations,Wedding Decorations,Anniversary Decorations
 Party Decorations,Wedding Decorations,Baby Shower Decorations
 Party Decorations,Wedding Decorations,Wedding Backdrops
@@ -930,21 +940,21 @@ Pet Supplies,Aquariums,Filters
 Pet Supplies,Aquariums,Pumps
 Pet Supplies,Aquariums,Heaters
 Pet Supplies,Aquariums,Aquarium Lights
-Pet Supplies,Collars & Leashes,Dog Leashes
-Pet Supplies,Collars & Leashes,Harnesses
-Pet Supplies,Collars & Leashes,Cat Collars
-Pet Supplies,Collars & Leashes,ID Tags
-Pet Supplies,Dog Bowls,Cat Bowls
-Pet Supplies,Dog Bowls,Pet Feeding Accessories
-Pet Supplies,Dog Bowls,Stainless Steel Bowls
-Pet Supplies,Dog Bowls,Automatic Feeders
-Pet Supplies,Pet Beds,Bird Cages
-Pet Supplies,Pet Beds,Cat Houses
-Pet Supplies,Pet Beds,Dog Kennels
-Pet Supplies,Pet Beds,Dog Beds
-Pet Supplies,Pet Beds,Cat Beds
-Pet Supplies,Pet Beds,Kennels
+Pet Supplies,Pet Beds & Houses,Bird Cages
+Pet Supplies,Pet Beds & Houses,Cat Houses
+Pet Supplies,Pet Beds & Houses,Dog Kennels
+Pet Supplies,Pet Beds & Houses,Dog Beds
+Pet Supplies,Pet Beds & Houses,Cat Beds
+Pet Supplies,Pet Beds & Houses,Kennels
+Pet Supplies,Pet Bowls & Feeders,Cat Bowls
+Pet Supplies,Pet Bowls & Feeders,Pet Feeding Accessories
+Pet Supplies,Pet Bowls & Feeders,Stainless Steel Bowls
+Pet Supplies,Pet Bowls & Feeders,Automatic Feeders
 Pet Supplies,Pet Clothing,Pet Clothing
+Pet Supplies,Pet Collars & Leashes,Dog Leashes
+Pet Supplies,Pet Collars & Leashes,Harnesses
+Pet Supplies,Pet Collars & Leashes,Cat Collars
+Pet Supplies,Pet Collars & Leashes,ID Tags
 Pet Supplies,Pet Food,Bird Food
 Pet Supplies,Pet Food,Cat Food
 Pet Supplies,Pet Food,Fish Food
@@ -966,30 +976,6 @@ Pet Supplies,Pet Toys,Chew Toys
 Pet Supplies,Pet Toys,Interactive Toys
 Pet Supplies,Pet Training,Pet Training
 Pet Supplies,Pet Waste Bags,Pet Waste Bags
-Plastic Household,Kitchen Containers,Food Containers
-Plastic Household,Kitchen Containers,Lunch Boxes
-Plastic Household,Kitchen Containers,Plastic Jars
-Plastic Household,Kitchen Containers,Plastic Trays
-Plastic Household,Kitchen Containers,Spice Containers
-Plastic Household,Kitchen Containers,Water Bottles
-Plastic Household,Laundry Baskets,Clothes Hangers
-Plastic Household,Organizers & Racks,Drawer Organizers
-Plastic Household,Organizers & Racks,Kitchen Organizers
-Plastic Household,Organizers & Racks,Plastic Racks
-Plastic Household,Organizers & Racks,Plastic Shelves
-Plastic Household,Organizers & Racks,Household Utility Sets
-Plastic Household,Plastic Buckets,Dustbins
-Plastic Household,Plastic Buckets,Mugs
-Plastic Household,Plastic Buckets,Water Buckets
-Plastic Household,Plastic Furniture,Plastic Mats
-Plastic Household,Plastic Furniture,Plastic Chairs
-Plastic Household,Plastic Furniture,Plastic Tables
-Plastic Household,Storage Containers,Plastic Bins
-Plastic Household,Storage Containers,Plastic Crates
-Plastic Household,Storage Containers,Plastic Drums
-Plastic Household,Storage Containers,Plastic Storage Boxes
-Plastic Household,Storage Containers,Plastic Tubs
-Plastic Household,Storage Containers,Storage Baskets
 Sports & Fitness,Badminton,Badminton Rackets
 Sports & Fitness,Badminton,Badminton Shuttlecocks
 Sports & Fitness,Badminton,Shuttlecocks
@@ -1008,16 +994,15 @@ Sports & Fitness,Cricket,Pads
 Sports & Fitness,Cycling,Cycling
 Sports & Fitness,Darts,Darts
 Sports & Fitness,Fishing,Fishing
-Sports & Fitness,Fitness Accessories,Fitness Accessories
-Sports & Fitness,Fitness Accessories,Gym Gloves
-Sports & Fitness,Fitness Accessories,Resistance Bands
-Sports & Fitness,Fitness Accessories,Skipping Ropes
-Sports & Fitness,Fitness Accessories,Yoga Mats
-Sports & Fitness,Fitness Accessories,Dumbbells
-Sports & Fitness,Fitness Accessories,Exercise Bikes
-Sports & Fitness,Fitness Accessories,Kettlebells
-Sports & Fitness,Fitness Accessories,Treadmills
-Sports & Fitness,Fitness Accessories,Benches
+Sports & Fitness,Fitness & Gym,Fitness Accessories
+Sports & Fitness,Fitness & Gym,Gym Gloves
+Sports & Fitness,Fitness & Gym,Resistance Bands
+Sports & Fitness,Fitness & Gym,Skipping Ropes
+Sports & Fitness,Fitness & Gym,Dumbbells
+Sports & Fitness,Fitness & Gym,Exercise Bikes
+Sports & Fitness,Fitness & Gym,Kettlebells
+Sports & Fitness,Fitness & Gym,Treadmills
+Sports & Fitness,Fitness & Gym,Benches
 Sports & Fitness,Football,Football Accessories
 Sports & Fitness,Football,Footballs
 Sports & Fitness,Football,Football Shoes
@@ -1036,18 +1021,16 @@ Sports & Fitness,Swimming,Swimming Accessories
 Sports & Fitness,Table Tennis,Table Tennis
 Sports & Fitness,Tennis,Tennis
 Sports & Fitness,Volleyball,Volleyball
-Sports & Fitness,Yoga,Yoga Blocks
 Sports & Fitness,Yoga,Yoga Mats
+Sports & Fitness,Yoga,Yoga Blocks
 Sports & Fitness,Yoga,Yoga Straps
 Sports & Fitness,Yoga,Bolsters
-Stationary,Art Supplies,Glue Sticks
 Stationary,Art Supplies,Art Supplies
 Stationary,Calculators,Calculators
 Stationary,Calculators,Basic
 Stationary,Calculators,Scientific
 Stationary,Calculators,Financial
 Stationary,Calculators,Printing Calculators
-Stationary,Erasers,Erasers
 Stationary,Files & Folders,Document Folders
 Stationary,Files & Folders,Folders
 Stationary,Files & Folders,Ring Binders
@@ -1058,6 +1041,7 @@ Stationary,Geometry Boxes,Scales
 Stationary,Geometry Boxes,Compasses
 Stationary,Geometry Boxes,Protractors
 Stationary,Geometry Boxes,Geometry Sets
+Stationary,Glue & Adhesives,Glue Sticks
 Stationary,Markers,Highlighters
 Stationary,Markers,Sketch Pens
 Stationary,Markers,Permanent Markers
@@ -1071,9 +1055,11 @@ Stationary,Notebooks,Sketchbooks
 Stationary,Office Supplies,Office Supplies
 Stationary,Office Supplies,Labels
 Stationary,Office Supplies,Printer Paper
-Stationary,Pencils & Colours,Color Pencils
-Stationary,Pencils & Colours,Crayons
-Stationary,Pencils & Colours,Mechanical Pencils
+Stationary,Office Supplies,Scissors
+Stationary,Pencils & Erasers,Erasers
+Stationary,Pencils & Erasers,Color Pencils
+Stationary,Pencils & Erasers,Crayons
+Stationary,Pencils & Erasers,Mechanical Pencils
 Stationary,Pens,Ball Pens
 Stationary,Pens,Correction Pens
 Stationary,Pens,Fountain Pens
@@ -1084,35 +1070,34 @@ Stationary,School Supplies,Pencil Cases
 Stationary,School Supplies,School Bags
 Stationary,School Supplies,Lunch Boxes
 Stationary,School Supplies,Art Supplies
-Stationary,School Supplies,Scissors
-Tailoring Materials,Buttons,Hooks & Eyes
-Tailoring Materials,Buttons,Velcro
-Tailoring Materials,Buttons,Zippers
-Tailoring Materials,Elastic,Bias Tapes
-Tailoring Materials,Elastic,Laces
-Tailoring Materials,Elastic,Ribbons
-Tailoring Materials,Elastic,Elastic Bands
-Tailoring Materials,Elastic,Waistband Elastic
-Tailoring Materials,Embroidery Hoops,Embroidery Kits
-Tailoring Materials,Embroidery Hoops,Patches
-Tailoring Materials,Embroidery Hoops,Embroidery Hoops
-Tailoring Materials,Embroidery Hoops,Frames
+Tailoring Materials,Buttons & Fasteners,Hooks & Eyes
+Tailoring Materials,Buttons & Fasteners,Velcro
+Tailoring Materials,Buttons & Fasteners,Zippers
+Tailoring Materials,Elastic & Trims,Bias Tapes
+Tailoring Materials,Elastic & Trims,Laces
+Tailoring Materials,Elastic & Trims,Ribbons
+Tailoring Materials,Elastic & Trims,Elastic Bands
+Tailoring Materials,Elastic & Trims,Waistband Elastic
+Tailoring Materials,Embroidery,Embroidery Kits
+Tailoring Materials,Embroidery,Patches
+Tailoring Materials,Embroidery,Embroidery Hoops
+Tailoring Materials,Embroidery,Frames
 Tailoring Materials,Interfacing,Fabric Glue
 Tailoring Materials,Interfacing,Fusible Interlining
 Tailoring Materials,Interfacing,Non-Woven Interfacing
-Tailoring Materials,Measuring Tapes,Marking Tools
-Tailoring Materials,Measuring Tapes,Tailor Chalk
+Tailoring Materials,Measuring & Marking,Marking Tools
+Tailoring Materials,Measuring & Marking,Tailor Chalk
 Tailoring Materials,Needles,Hand Sewing Needles
 Tailoring Materials,Needles,Machine Needles
 Tailoring Materials,Needles,Embroidery Needles
+Tailoring Materials,Needles,Needles
 Tailoring Materials,Scissors,Tailoring Scissors
 Tailoring Materials,Scissors,Embroidery Scissors
 Tailoring Materials,Scissors,Fabric Cutters
 Tailoring Materials,Sewing Kits,Sewing Kits
-Tailoring Materials,Sewing Kits,Bobbin Cases
-Tailoring Materials,Sewing Kits,Bobbins
-Tailoring Materials,Sewing Kits,Presser Feet
-Tailoring Materials,Sewing Kits,Needles
+Tailoring Materials,Sewing Machine Accessories,Bobbin Cases
+Tailoring Materials,Sewing Machine Accessories,Bobbins
+Tailoring Materials,Sewing Machine Accessories,Presser Feet
 Tailoring Materials,Sewing Threads,Cotton Threads
 Tailoring Materials,Sewing Threads,Embroidery Threads
 Tailoring Materials,Sewing Threads,Polyester Threads
@@ -1153,28 +1138,28 @@ Tools,Safety Equipment,Safety Glasses
 Tools,Safety Equipment,Gloves
 Tools,Safety Equipment,Helmets
 Tools,Safety Equipment,Ear Protection
-Tools,Tool Kits,Tool Boxes
-Tools,Tool Kits,Tool Organizers
-Toys & Games,Baby Toys,Baby Toys
-Toys & Games,Baby Toys,Bath Toys
-Toys & Games,Dolls,Action Figures
-Toys & Games,Dolls,Doll Houses
-Toys & Games,Dolls,Fashion Dolls
-Toys & Games,Dolls,Doll Accessories
-Toys & Games,Games,Card Games
-Toys & Games,Games,Games Accessories
-Toys & Games,Games,Party Games
-Toys & Games,Games,Puzzles
-Toys & Games,Games,Strategy Games
-Toys & Games,Games,Family Games
-Toys & Games,Games,Educational Games
-Toys & Games,Learning & Building Toys,Art & Craft Toys
-Toys & Games,Learning & Building Toys,Building Blocks
-Toys & Games,Learning & Building Toys,Construction Sets
-Toys & Games,Learning & Building Toys,Learning Toys
-Toys & Games,Learning & Building Toys,STEM Toys
-Toys & Games,Learning & Building Toys,Learning Kits
-Toys & Games,Learning & Building Toys,Montessori Toys
+Tools,Tool Boxes & Organizers,Tool Boxes
+Tools,Tool Boxes & Organizers,Tool Organizers
+Toys & Games,Baby & Bath Toys,Baby Toys
+Toys & Games,Baby & Bath Toys,Bath Toys
+Toys & Games,Board Games & Puzzles,Card Games
+Toys & Games,Board Games & Puzzles,Games Accessories
+Toys & Games,Board Games & Puzzles,Party Games
+Toys & Games,Board Games & Puzzles,Puzzles
+Toys & Games,Board Games & Puzzles,Strategy Games
+Toys & Games,Board Games & Puzzles,Family Games
+Toys & Games,Board Games & Puzzles,Educational Games
+Toys & Games,Dolls & Action Figures,Action Figures
+Toys & Games,Dolls & Action Figures,Doll Houses
+Toys & Games,Dolls & Action Figures,Fashion Dolls
+Toys & Games,Dolls & Action Figures,Doll Accessories
+Toys & Games,Educational & Building Toys,Art & Craft Toys
+Toys & Games,Educational & Building Toys,Building Blocks
+Toys & Games,Educational & Building Toys,Construction Sets
+Toys & Games,Educational & Building Toys,Learning Toys
+Toys & Games,Educational & Building Toys,STEM Toys
+Toys & Games,Educational & Building Toys,Learning Kits
+Toys & Games,Educational & Building Toys,Montessori Toys
 Toys & Games,Musical Toys,Musical Toys
 Toys & Games,Outdoor & Ride-On Toys,Ride Ons
 Toys & Games,Outdoor & Ride-On Toys,Scooters
@@ -1187,24 +1172,18 @@ Toys & Games,Role Play Toys,Doctor Sets
 Toys & Games,Role Play Toys,Kitchen Sets
 Toys & Games,Role Play Toys,Slime & Putty
 Toys & Games,Soft Toys,Soft Toys
-Toys & Games,Toy Cars,Remote Control Toys
-Toys & Games,Toy Cars,Toy Bikes
-Toys & Games,Toy Cars,Toy Trains
-Toys & Games,Toy Cars,Die-Cast Cars
-Toys & Games,Toy Cars,Toy Trucks
-Toys & Games,Toy Cars,Construction Vehicles
-Travel & Accessories,Bags & Backpacks,Backpacks
-Travel & Accessories,Bags & Backpacks,Duffel Bags
-Travel & Accessories,Bags & Backpacks,Garment Bags
-Travel & Accessories,Bags & Backpacks,Laptop Bags
-Travel & Accessories,Bags & Backpacks,Sling Bags
-Travel & Accessories,Bags & Backpacks,Travel Backpacks
-Travel & Accessories,Bags & Backpacks,Waist Bags
-Travel & Accessories,Neck Pillows,Eye Masks
-Travel & Accessories,Neck Pillows,Travel Blankets
-Travel & Accessories,Passport Covers,Travel Wallets
-Travel & Accessories,Passport Covers,Passport Holders
-Travel & Accessories,Passport Covers,RFID Passport Covers
+Toys & Games,Toy Cars & Vehicles,Remote Control Toys
+Toys & Games,Toy Cars & Vehicles,Toy Bikes
+Toys & Games,Toy Cars & Vehicles,Toy Trains
+Toys & Games,Toy Cars & Vehicles,Die-Cast Cars
+Toys & Games,Toy Cars & Vehicles,Toy Trucks
+Toys & Games,Toy Cars & Vehicles,Construction Vehicles
+Travel & Accessories,Luggage Accessories,Luggage Straps
+Travel & Accessories,Luggage Accessories,Luggage Tags
+Travel & Accessories,Luggage Accessories,Travel Locks
+Travel & Accessories,Luggage Accessories,Travel Wallets
+Travel & Accessories,Luggage Accessories,Passport Holders
+Travel & Accessories,Luggage Accessories,RFID Passport Covers
 Travel & Accessories,Rain Covers,Rain Covers
 Travel & Accessories,Suitcases,Cabin Luggage
 Travel & Accessories,Suitcases,Luggage Sets
@@ -1212,16 +1191,22 @@ Travel & Accessories,Suitcases,Trolley Bags
 Travel & Accessories,Suitcases,Check-in Luggage
 Travel & Accessories,Suitcases,Hard Shell
 Travel & Accessories,Suitcases,Soft Luggage
-Travel & Accessories,Travel Accessories,Luggage Straps
-Travel & Accessories,Travel Accessories,Luggage Tags
-Travel & Accessories,Travel Accessories,Travel Locks
 Travel & Accessories,Travel Accessories,Travel Accessories
 Travel & Accessories,Travel Accessories,Power Banks
 Travel & Accessories,Travel Accessories,Travel Chargers
 Travel & Accessories,Travel Accessories,Universal Adapters
+Travel & Accessories,Travel Bags,Backpacks
+Travel & Accessories,Travel Bags,Duffel Bags
+Travel & Accessories,Travel Bags,Garment Bags
+Travel & Accessories,Travel Bags,Laptop Bags
+Travel & Accessories,Travel Bags,Sling Bags
+Travel & Accessories,Travel Bags,Travel Backpacks
+Travel & Accessories,Travel Bags,Waist Bags
 Travel & Accessories,Travel Bottles,Water Bottles
 Travel & Accessories,Travel Bottles,Toiletry Bottles
 Travel & Accessories,Travel Bottles,Travel Containers
+Travel & Accessories,Travel Comfort,Eye Masks
+Travel & Accessories,Travel Comfort,Travel Blankets
 Travel & Accessories,Travel Organizers,Packing Cubes
 Travel & Accessories,Travel Organizers,Toiletry Bags
 Travel & Accessories,Travel Organizers,Passport Organizers
@@ -1231,9 +1216,6 @@ Wall Clock & Watches,Alarm Clocks,Table Clocks
 Wall Clock & Watches,Alarm Clocks,Digital Alarm Clocks
 Wall Clock & Watches,Alarm Clocks,Projection Clocks
 Wall Clock & Watches,Alarm Clocks,Travel Alarm Clocks
-Wall Clock & Watches,Analog Watches,Analog Watches
-Wall Clock & Watches,Analog Watches,Digital Watches
-Wall Clock & Watches,Analog Watches,Chronograph Watches
 Wall Clock & Watches,Smart Watches,Fitness Bands
 Wall Clock & Watches,Smart Watches,Smart Bands
 Wall Clock & Watches,Smart Watches,GPS Watches
@@ -1256,6 +1238,23 @@ Wall Clock & Watches,Watches,Kids Watches
 Wall Clock & Watches,Watches,Luxury Watches
 Wall Clock & Watches,Watches,Sports Watches
 Wall Clock & Watches,Watches,Women's Watches
+Wall Clock & Watches,Watches,Analog Watches
+Clothing,Accessories,Applique Patch
+Clothing,Accessories,Bandanas
+Clothing,Accessories,Caps
+Clothing,Accessories,Collar Stays
+Clothing,Accessories,Garters
+Clothing,Accessories,Handkerchiefs
+Clothing,Accessories,Hats
+Clothing,Accessories,Mittens
+Clothing,Accessories,Socks
+Clothing,Accessories,Stockings
+Clothing,Accessories,Stoles
+Clothing,Accessories,Suspenders
+Clothing,Accessories,Ties and Cufflinks
+Clothing,Accessories,Turbans
+Clothing,Accessories,Wristbands
+Clothing,Accessories,Clothing and Accessories
 Clothing,Bottomwear,Cargos
 Clothing,Bottomwear,Harem Pants
 Clothing,Bottomwear,Jeans
@@ -1266,31 +1265,28 @@ Clothing,Bottomwear,Skirts
 Clothing,Bottomwear,Three-Fourths
 Clothing,Bottomwear,Track Pants
 Clothing,Bottomwear,Trousers
-Clothing,Clothing and Accessories,Clothing
-Clothing,Clothing and Accessories,Applique Patch
-Clothing,Clothing and Accessories,Bandanas
-Clothing,Clothing and Accessories,Caps
-Clothing,Clothing and Accessories,Collar Stays
-Clothing,Clothing and Accessories,Garters
-Clothing,Clothing and Accessories,Handkerchiefs
-Clothing,Clothing and Accessories,Hats
-Clothing,Clothing and Accessories,Mittens
-Clothing,Clothing and Accessories,Socks
-Clothing,Clothing and Accessories,Stockings
-Clothing,Clothing and Accessories,Stoles
-Clothing,Clothing and Accessories,Suspenders
-Clothing,Clothing and Accessories,Ties and Cufflinks
-Clothing,Clothing and Accessories,Turbans
-Clothing,Clothing and Accessories,Wristbands
-Clothing,Clothing and Accessories,Clothing and Accessories
-Clothing,Dresses and Gowns,Dresses and Gowns
-Clothing,Dresses and Gowns,Co-ords
-Clothing,Dresses and Gowns,Dresses
-Clothing,Dresses and Gowns,Gowns
-Clothing,Dresses and Gowns,Jumpsuits and Dungarees
-Clothing,Dresses and Gowns,Men's Dungarees
-Clothing,Dresses and Gowns,Twinning Sets
-Clothing,Dresses and Gowns,Women's Jumpsuits and Dungarees
+Clothing,Dresses & Western Wear,Dresses and Gowns
+Clothing,Dresses & Western Wear,Co-ords
+Clothing,Dresses & Western Wear,Dresses
+Clothing,Dresses & Western Wear,Gowns
+Clothing,Dresses & Western Wear,Jumpsuits and Dungarees
+Clothing,Dresses & Western Wear,Men's Dungarees
+Clothing,Dresses & Western Wear,Twinning Sets
+Clothing,Dresses & Western Wear,Women's Jumpsuits and Dungarees
+Clothing,Dresses & Western Wear,Women's Clothing
+Clothing,Ethnic Wear,Abayas and Burqas
+Clothing,Ethnic Wear,Dhoti Pants
+Clothing,Ethnic Wear,Dhotis
+Clothing,Ethnic Wear,Dupattas
+Clothing,Ethnic Wear,Ethnic Pyjamas
+Clothing,Ethnic Wear,Ethnic Sets
+Clothing,Ethnic Wear,Kurtas
+Clothing,Ethnic Wear,Lehenga Cholis
+Clothing,Ethnic Wear,Salwars and Patialas
+Clothing,Ethnic Wear,Shararas
+Clothing,Ethnic Wear,Sherwanis
+Clothing,Ethnic Wear,Women's Lehenga Cholis
+Clothing,Ethnic Wear,"Kurtas, Ethnic Sets and Bottoms"
 Clothing,Fabrics,Blouse Material
 Clothing,Fabrics,Dress Materials
 Clothing,Fabrics,Formal Suit Fabrics
@@ -1302,28 +1298,13 @@ Clothing,Formal Wear,Waistcoats
 Clothing,Kids' & Infant Footwear,Boys Footwear
 Clothing,Kids' & Infant Footwear,Girls Footwear
 Clothing,Kids' & Infant Footwear,Infants
-Clothing,Kids' Combos and Costumes,Kids' Clothing
-Clothing,Kids' Combos and Costumes,Kids' Apparel Combos
-Clothing,Kids' Combos and Costumes,Kids' Costume Wear
-Clothing,Kids' Combos and Costumes,Kids' Lehenga Cholis
-Clothing,Kids' Combos and Costumes,Kids' Raincoats
-Clothing,Kids' Combos and Costumes,Kids' Rompers and Dungarees
-Clothing,Kids' Combos and Costumes,Kids' Windcheaters
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Abayas and Burqas
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Blouses
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Dhoti Pants
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Dhotis
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Dupattas
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Ethnic Pyjamas
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Ethnic Sets
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Kurtas
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Lehenga Cholis
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Petticoats
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Salwars and Patialas
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Shararas
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Sherwanis
-Clothing,"Kurtas, Ethnic Sets and Bottoms",Women's Lehenga Cholis
-Clothing,"Kurtas, Ethnic Sets and Bottoms","Kurtas, Ethnic Sets and Bottoms"
+Clothing,Kids' Clothing,Kids' Clothing
+Clothing,Kids' Clothing,Kids' Apparel Combos
+Clothing,Kids' Clothing,Kids' Costume Wear
+Clothing,Kids' Clothing,Kids' Lehenga Cholis
+Clothing,Kids' Clothing,Kids' Raincoats
+Clothing,Kids' Clothing,Kids' Rompers and Dungarees
+Clothing,Kids' Clothing,Kids' Windcheaters
 Clothing,"Lingerie, Sleep & Swimwear",Babydolls
 Clothing,"Lingerie, Sleep & Swimwear",Bras
 Clothing,"Lingerie, Sleep & Swimwear",Briefs and Trunks
@@ -1336,6 +1317,8 @@ Clothing,"Lingerie, Sleep & Swimwear","Lingerie, Sleep & Swimwear"
 Clothing,"Lingerie, Sleep & Swimwear",Night Dresses and Nighties
 Clothing,"Lingerie, Sleep & Swimwear",Night Suits
 Clothing,"Lingerie, Sleep & Swimwear",Pyjamas and Lounge Pants
+Clothing,Men's Clothing,Clothing
+Clothing,Men's Clothing,Men's Clothing
 Clothing,Men's Footwear,Men's Casual Shoes
 Clothing,Men's Footwear,Men's Ethnic Shoes
 Clothing,Men's Footwear,Men's Formal Shoes
@@ -1347,16 +1330,17 @@ Clothing,Men's Footwear,Sneakers
 Clothing,Men's Footwear,Sandals
 Clothing,Men's Footwear,Slippers
 Clothing,Men's Footwear,Boots
-Clothing,Men's Footwear,Shoe Care
-Clothing,Men's Footwear,Shoe Laces
+Clothing,Sarees and Saree Essentials,Blouses
+Clothing,Sarees and Saree Essentials,Petticoats
 Clothing,Sarees and Saree Essentials,Saree Falls
 Clothing,Sarees and Saree Essentials,Sarees
 Clothing,Sarees and Saree Essentials,Sarees and Saree Essentials
+Clothing,Shoe Care,Shoe Care
+Clothing,Shoe Care,Shoe Laces
 Clothing,Sports & Gym Wear,Kids' Tracksuits
 Clothing,Sports & Gym Wear,Men's Tracksuits
 Clothing,Sports & Gym Wear,Tracksuits
 Clothing,Sports & Gym Wear,Women's Tracksuits
-Clothing,Topwear,Men's Clothing
 Clothing,Topwear,Shirts
 Clothing,Topwear,T-Shirts
 Clothing,Topwear,Tops
@@ -1371,7 +1355,6 @@ Clothing,Winter Wear,Sweaters and Cardigans
 Clothing,Winter Wear,Sweatshirts
 Clothing,Winter Wear,Thermals
 Clothing,Winter Wear,Windcheaters
-Clothing,Women's Clothing,Women's Clothing
 Clothing,Women's Footwear,Women's Ballerinas
 Clothing,Women's Footwear,Women's Casual Shoes
 Clothing,Women's Footwear,Women's Ethnic Shoes
@@ -1387,3 +1370,47 @@ Clothing,Women's Footwear,Flats
 Clothing,Women's Footwear,Sandals
 Clothing,Women's Footwear,Sneakers
 Clothing,Women's Footwear,Boots
+Religion,Aarti & Puja Accessories,Aarti Thalis
+Religion,Aarti & Puja Accessories,Agarbatti Stands
+Religion,Aarti & Puja Accessories,Diyas & Akhand Lamps
+Religion,Aarti & Puja Accessories,Incense Holders
+Religion,Aarti & Puja Accessories,Kalash & Panchpatra
+Religion,Aarti & Puja Accessories,Puja Bells
+Religion,Aarti & Puja Accessories,Puja Chowki & Aasan
+Religion,Aarti & Puja Accessories,Puja Thali Sets
+Religion,Buddhist & Jain Items,Buddha Statues
+Religion,Buddhist & Jain Items,Jain Idols
+Religion,Buddhist & Jain Items,Prayer Wheels
+Religion,Buddhist & Jain Items,Singing Bowls
+Religion,Buddhist & Jain Items,Tibetan Thangka
+Religion,Buddhist & Jain Items,Bibles
+Religion,Buddhist & Jain Items,Crosses & Crucifixes
+Religion,Buddhist & Jain Items,Jesus & Mary Statues
+Religion,Buddhist & Jain Items,Rosary Beads
+Religion,Festival Decor,Diwali Diyas
+Religion,Festival Decor,Festival Wall Decor
+Religion,Festival Decor,Rangoli
+Religion,Festival Decor,Toran & Door Hangings
+Religion,Islamic Items,Attars
+Religion,Islamic Items,Prayer Caps
+Religion,Islamic Items,Prayer Mats
+Religion,Islamic Items,Quran
+Religion,Islamic Items,Quran Stands (Rehal)
+Religion,Islamic Items,Tasbih
+Religion,Malas & Rosaries,Crystal Malas
+Religion,Malas & Rosaries,Japa Mala Bags (Gomukhi)
+Religion,Malas & Rosaries,Rudraksha Malas
+Religion,Malas & Rosaries,Sandalwood Malas
+Religion,Malas & Rosaries,Tulsi Malas
+Religion,Religious Books,Bhagavad Gita
+Religion,Religious Books,Hanuman Chalisa & Aarti Sangrah
+Religion,Religious Books,Puranas & Stotras
+Religion,Religious Books,Ramayana & Mahabharata
+Religion,Religious Jewellery,Kadas (Religious)
+Religion,Religious Jewellery,Om Pendants
+Religion,Religious Jewellery,Religious Pendants
+Religion,Religious Jewellery,Rudraksha Bracelets
+Religion,Religious Posters & Frames,God Photo Frames
+Religion,Religious Posters & Frames,Religious Wall Art
+Religion,Religious Posters & Frames,Religious Wall Posters
+Religion,Religious Posters & Frames,Tanjore Paintings

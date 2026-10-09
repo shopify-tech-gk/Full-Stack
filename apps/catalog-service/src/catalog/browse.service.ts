@@ -77,6 +77,12 @@ export async function resolveCategory(
     parentId = parent.parentId;
   }
   const owner = chain.find((node) => readDefinition(node.filterDefinition));
+  const definition = owner ? readDefinition(owner.filterDefinition)! : [];
+  // `brand` is the one conventional attribute (IMPORT-SPEC.md): every category can filter by it,
+  // including top-level categories that declare no definition of their own.
+  if (!definition.some((entry) => entry.key === 'brand')) {
+    definition.unshift({ key: 'brand', label: 'Brand', type: 'multi_select', order: 0 });
+  }
   return {
     id: category.id,
     name: category.name,
@@ -86,7 +92,7 @@ export async function resolveCategory(
       .slice()
       .reverse()
       .map((node) => ({ id: node.id, name: node.name, slug: node.slug })),
-    definition: owner ? readDefinition(owner.filterDefinition)! : [],
+    definition,
     definitionFrom: owner?.slug ?? null,
   };
 }

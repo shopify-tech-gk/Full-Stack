@@ -47,16 +47,23 @@ export function Price({
 }: {
   mrp: Money;
   price: Money;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
 }) {
   const off = discountPercent(mrp, price);
+  const xs = size === 'xs';
   return (
-    <View style={styles.priceRow}>
-      <Text style={[styles.price, size === 'lg' && styles.priceLg]}>{formatMoney(price)}</Text>
+    <View style={[styles.priceRow, xs && styles.priceRowXs]}>
+      <Text style={[styles.price, size === 'lg' && styles.priceLg, xs && styles.priceXs]}>
+        {formatMoney(price)}
+      </Text>
       {off > 0 && (
         <>
-          <Text style={[styles.mrp, size === 'lg' && styles.mrpLg]}>{formatMoney(mrp)}</Text>
-          <Text style={[styles.off, size === 'lg' && styles.offLg]}>{off}% OFF</Text>
+          <Text style={[styles.mrp, size === 'lg' && styles.mrpLg, xs && styles.mrpXs]}>
+            {formatMoney(mrp)}
+          </Text>
+          <Text style={[styles.off, size === 'lg' && styles.offLg, xs && styles.offXs]}>
+            {off}% OFF
+          </Text>
         </>
       )}
     </View>
@@ -99,6 +106,10 @@ const styles = StyleSheet.create({
   mrpLg: { fontSize: 15 },
   off: { fontFamily: font.uiSemibold, fontSize: 11.5, color: colors.price.discount },
   offLg: { fontSize: 14 },
+  priceRowXs: { gap: 4, rowGap: 0 },
+  priceXs: { fontSize: 13 },
+  mrpXs: { fontSize: 10.5 },
+  offXs: { fontSize: 10.5 },
   stars: { flexDirection: 'row', gap: 1 },
   sectionTitle: { fontFamily: font.uiBold, fontSize: 18, color: colors.heading },
 });

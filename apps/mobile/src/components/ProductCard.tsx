@@ -21,9 +21,11 @@ interface Props {
   width?: number;
   /** Subtle per-rail accent (themes the border, a thin divider, and a soft lift shadow). */
   accent?: string;
+  /** Tighter card for narrow grids (category screen beside the sub-category rail). */
+  compact?: boolean;
 }
 
-function ProductCardBase({ product, width, accent }: Props) {
+function ProductCardBase({ product, width, accent, compact }: Props) {
   const router = useRouter();
   const cart = useCart();
   const wishlist = useWishlist();
@@ -89,6 +91,7 @@ function ProductCardBase({ product, width, accent }: Props) {
             hitSlop={8}
             style={({ pressed }) => [
               styles.heart,
+              compact && styles.heartCompact,
               saved && styles.heartSaved,
               pressed && styles.heartPressed,
             ]}
@@ -96,7 +99,7 @@ function ProductCardBase({ product, width, accent }: Props) {
             <Animated.View style={heartStyle}>
               <Ionicons
                 name={saved ? 'heart' : 'heart-outline'}
-                size={18}
+                size={compact ? 14 : 18}
                 color={saved ? colors.price.discount : colors.brand.DEFAULT}
               />
             </Animated.View>
@@ -104,19 +107,23 @@ function ProductCardBase({ product, width, accent }: Props) {
         ) : null}
       </View>
 
-      <View style={styles.body}>
-        <Text numberOfLines={2} style={styles.title}>
+      <View style={[styles.body, compact && styles.bodyCompact]}>
+        <Text numberOfLines={2} style={[styles.title, compact && styles.titleCompact]}>
           {product.title}
         </Text>
-        <Stars rating={product.rating} />
-        <Price mrp={product.mrp} price={product.sellingPrice} size="sm" />
+        <Stars rating={product.rating} size={compact ? 10 : 13} />
+        <Price mrp={product.mrp} price={product.sellingPrice} size={compact ? 'xs' : 'sm'} />
         {product.skuId ? (
           <Pressable
             onPress={add}
-            style={({ pressed }) => [styles.add, pressed && styles.addPressed]}
+            style={({ pressed }) => [
+              styles.add,
+              compact && styles.addCompact,
+              pressed && styles.addPressed,
+            ]}
           >
-            <Ionicons name="cart-outline" size={15} color={colors.white} />
-            <Text style={styles.addText}>Add</Text>
+            <Ionicons name="cart-outline" size={compact ? 13 : 15} color={colors.white} />
+            <Text style={[styles.addText, compact && styles.addTextCompact]}>Add</Text>
           </Pressable>
         ) : null}
       </View>
@@ -172,4 +179,9 @@ const styles = StyleSheet.create({
   },
   addPressed: { backgroundColor: colors.brand.accent },
   addText: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.white },
+  heartCompact: { width: 26, height: 26, borderRadius: 13, top: 6, right: 6 },
+  bodyCompact: { padding: 8, gap: 3 },
+  titleCompact: { fontSize: 11.5, lineHeight: 15 },
+  addCompact: { paddingVertical: 6, marginTop: 2, gap: 4 },
+  addTextCompact: { fontSize: 12 },
 });

@@ -7,119 +7,123 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import type { ListingQuery } from '@youmart/shared-client';
-import { emptyListingQuery, getListing, listMoreProducts, type Listing } from '@/lib/catalog';
-import { ProductCard } from '@/components/ProductCard';
-import { CategoryCard } from '@/components/CategoryCard';
-import { FilterSheet } from '@/components/FilterSheet';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
+import type { ListingQuery, ProductCardData } from '@youmart/shared-client';
 import {
-  browseNode,
+  emptyListingQuery,
+  getListing,
+  listMoreProducts,
+  searchProductsPage,
+  type Listing,
+} from '@/lib/catalog';
+import { lookupCategoryImage } from '@/lib/category-images';
+import {
+  brandsFor,
   catalogSlugOf,
-  relatedCategories,
+  taxChildren,
+  taxNode,
   taxonomyPathForSlug,
-  taxonomyTrail,
-  type CatNode,
-  type TrailNode,
 } from '@/lib/home-categories';
-import { colors, font, space } from '@/theme';
+import { ProductCard } from '@/components/ProductCard';
+import { FilterSheet } from '@/components/FilterSheet';
+import { avatarColor } from '@/components/Avatar';
+import { colors, font, radii, space } from '@/theme';
 
+const RAIL_W = 86;
+const MAX_BRANDS = 40;
+
+type Results = { products: ProductCardData[]; total: number; filters: Listing['filters'] };
+
+/**
+ * Category screen: a sub-category rail on the left (a sub with its own items swaps the rail to
+ * its sub-to-sub list), the category's brands across the top (tap to filter), and a compact
+ * product grid. Navigation inside the category happens in place, like a native store app.
+ */
 export default function CategoryScreen() {
   const { slug, taxo } = useLocalSearchParams<{ slug: string; taxo?: string }>();
-  const category = String(slug ?? '');
+  const routeSlug = String(slug ?? '');
   const navigation = useNavigation();
-  const router = useRouter();
+  const { width } = useWindowDimensions();
+
+  const startPath = useMemo(
+    () => (typeof taxo === 'string' && taxo ? taxo.split('~') : taxonomyPathForSlug(routeSlug)),
+    [taxo, routeSlug],
+  );
+  const [path, setPath] = useState<string[]>(startPath);
+  const node = useMemo(() => (path.length ? taxNode(path) : null), [path]);
+
+  // The rail lists the children of a "level": the main, or a sub that has its own items.
+  const levelPath = useMemo(() => {
+    if (path.length >= 2 && taxNode(path.slice(0, 2))?.hasChildren) return path.slice(0, 2);
+    return path.slice(0, 1);
+  }, [path]);
+  const rail = useMemo(() => (levelPath.length ? taxChildren(levelPath) : []), [levelPath]);
+  const levelNode = useMemo(() => (levelPath.length ? taxNode(levelPath) : null), [levelPath]);
+  const mainNode = useMemo(() => (path.length ? taxNode(path.slice(0, 1)) : null), [path]);
+  const selectedSlug = path.length > levelPath.length ? path[levelPath.length] : null;
+
+  // Where the products come from: the node's catalog category, or a search for nodes the
+  // catalog doesn't hold yet. Off-taxonomy links fall back to the route's catalog slug.
+  const searchTerm = node && node.href.startsWith('/search') ? node.name : null;
+  const catalogSlug = node ? catalogSlugOf(node.href) : routeSlug;
+
   const [query, setQuery] = useState<ListingQuery>(emptyListingQuery());
-  const [data, setData] = useState<Listing | null>(null);
+  const [data, setData] = useState<Results | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [sheet, setSheet] = useState(false);
-
+  const brand = query.filters.brand ?? '';
   const filterKey = JSON.stringify(query.filters);
 
-  // Which taxonomy node we're at — from the passed `taxo` path, or resolved from the slug.
-  const taxoPath = useMemo(
-    () => (typeof taxo === 'string' && taxo ? taxo.split('~') : taxonomyPathForSlug(category)),
-    [taxo, category],
-  );
-  // The sub-categories (or sub-to-sub) to show as a row; only mains/subs have a child level.
-  const subNode = useMemo(
-    () => (taxoPath.length >= 1 && taxoPath.length <= 2 ? browseNode(taxoPath) : null),
-    [taxoPath],
-  );
-  const trail = useMemo(() => taxonomyTrail(taxoPath), [taxoPath]);
-  const related = useMemo(() => relatedCategories(taxoPath).slice(0, 12), [taxoPath]);
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: node?.name ?? data?.filters?.category.name ?? 'Category' });
+  }, [navigation, node, data]);
 
-  const openSibling = useCallback(
-    (node: CatNode) => {
-      if (node.href.startsWith('/search')) {
-        router.push({ pathname: '/search', params: { q: node.name } });
-        return;
-      }
-      const cslug = catalogSlugOf(node.href) || node.slug;
-      const sibTaxo = [...taxoPath.slice(0, -1), node.slug].join('~');
-      router.push(`/category/${cslug}?taxo=${sibTaxo}`);
-    },
-    [router, taxoPath],
-  );
-  const siblingImageKey = useCallback(
-    (node: CatNode) =>
-      taxoPath.length <= 1
-        ? `mobile/${node.slug}`
-        : [...taxoPath.slice(0, -1), node.slug].join('/'),
-    [taxoPath],
-  );
+  // Changing category starts clean (filters belong to the category they were picked in).
+  const go = useCallback((next: string[]) => {
+    setPath(next);
+    setQuery(emptyListingQuery());
+  }, []);
 
-  // Reload page 1 whenever the category or applied filters/sort change (not on page append).
   useEffect(() => {
     let active = true;
     setLoading(true);
-    getListing(category, { ...query, page: 1 })
+    const load: Promise<Results> = searchTerm
+      ? searchProductsPage(searchTerm, 1, 40, brand || undefined).then((r) => ({
+          ...r,
+          filters: null,
+        }))
+      : getListing(catalogSlug, { ...query, page: 1 });
+    load
       .then((res) => active && setData(res))
       .catch(() => active && setData({ products: [], total: 0, filters: null }))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, [category, query.sort, query.minRating, query.minPrice, query.maxPrice, filterKey]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: data?.filters?.category.name ?? trail[trail.length - 1]?.name ?? 'Category',
-    });
-  }, [navigation, data, trail]);
-
-  const openNode = useCallback(
-    (node: CatNode) => {
-      if (node.href.startsWith('/search')) {
-        router.push({ pathname: '/search', params: { q: node.name } });
-        return;
-      }
-      const cslug = catalogSlugOf(node.href) || node.slug;
-      router.push(`/category/${cslug}?taxo=${[...taxoPath, node.slug].join('~')}`);
-    },
-    [router, taxoPath],
-  );
-
-  const openTrail = useCallback(
-    (t: TrailNode) => {
-      if (t.href.startsWith('/search')) {
-        router.push({ pathname: '/search', params: { q: t.name } });
-        return;
-      }
-      router.push(`/category/${catalogSlugOf(t.href)}?taxo=${t.taxo}`);
-    },
-    [router],
-  );
+  }, [
+    catalogSlug,
+    searchTerm,
+    brand,
+    query.sort,
+    query.minRating,
+    query.minPrice,
+    query.maxPrice,
+    filterKey,
+  ]);
 
   const loadMore = useCallback(async () => {
     if (!data || loadingMore || loading || data.products.length >= data.total) return;
     setLoadingMore(true);
     const nextPage = query.page + 1;
     try {
-      const res = await listMoreProducts(category, { ...query, page: nextPage });
+      const res = searchTerm
+        ? await searchProductsPage(searchTerm, nextPage, 40, brand || undefined)
+        : await listMoreProducts(catalogSlug, { ...query, page: nextPage });
       setData((prev) =>
         prev ? { ...prev, products: [...prev.products, ...res.products], total: res.total } : prev,
       );
@@ -129,196 +133,379 @@ export default function CategoryScreen() {
     } finally {
       setLoadingMore(false);
     }
-  }, [data, loadingMore, loading, query, category]);
+  }, [data, loadingMore, loading, query, catalogSlug, searchTerm, brand]);
 
-  const header =
-    trail.length > 0 || (subNode && subNode.children.length > 0) ? (
-      <View style={styles.header}>
-        {trail.length > 0 ? (
-          <View style={styles.trail}>
-            <Pressable onPress={() => router.navigate('/')} hitSlop={6}>
-              <Ionicons name="home-outline" size={13} color={colors.text.body} />
-            </Pressable>
-            {trail.map((t, i) => {
-              const last = i === trail.length - 1;
-              return (
-                <View key={t.taxo} style={styles.trailItem}>
-                  <Ionicons name="chevron-forward" size={11} color={colors.text.body} />
-                  {last ? (
-                    <Text style={styles.trailCurrent} numberOfLines={1}>
-                      {t.name}
-                    </Text>
-                  ) : (
-                    <Pressable onPress={() => openTrail(t)} hitSlop={4}>
-                      <Text style={styles.trailLink} numberOfLines={1}>
-                        {t.name}
-                      </Text>
-                    </Pressable>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        ) : null}
+  // Brands: the ones with products here first (most products first), then the rest of the
+  // category sheet's brands for this node.
+  const brands = useMemo(() => {
+    const facet =
+      data?.filters?.filters.find((f) => f.key === 'brand')?.values?.filter((v) => v.count > 0) ??
+      [];
+    const stocked = [...facet].sort((a, b) => b.count - a.count).map((v) => v.value);
+    const seen = new Set(stocked.map((b) => b.toLowerCase()));
+    const listed = brandsFor(path).filter((b) => !seen.has(b.toLowerCase()));
+    return [...stocked, ...listed].slice(0, MAX_BRANDS);
+  }, [data, path]);
 
-        {subNode && subNode.children.length > 0 ? (
-          <View style={styles.strip}>
-            <Text style={styles.stripTitle}>Explore in {subNode.name}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.stripRow}
-            >
-              {subNode.children.map((c) => (
-                <View key={c.slug} style={styles.stripCard}>
-                  <CategoryCard
-                    name={c.name}
-                    hasChildren={c.hasChildren}
-                    imageKey={[...taxoPath, c.slug].join('/')}
-                    onPress={() => openNode(c)}
-                  />
-                </View>
+  const pickBrand = (b: string) =>
+    setQuery((q) => {
+      const filters = { ...q.filters };
+      if (!b || filters.brand === b) delete filters.brand;
+      else filters.brand = b;
+      return { ...q, page: 1, filters };
+    });
+
+  const gridWidth = width - (rail.length ? RAIL_W : 0);
+  const cardWidth = (gridWidth - space.sm * 3) / 2;
+
+  return (
+    <View style={styles.screen}>
+      <View style={styles.body}>
+        {rail.length ? (
+          <View style={styles.rail}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {levelPath.length === 2 && mainNode ? (
+                <RailItem
+                  label={mainNode.name}
+                  back
+                  active={false}
+                  onPress={() => go(mainNode.path)}
+                />
+              ) : null}
+              <RailItem
+                label={`All ${levelNode?.name ?? ''}`.trim()}
+                imageKey={levelNode?.imageKey}
+                all
+                active={selectedSlug === null}
+                onPress={() => go(levelPath)}
+              />
+              {rail.map((item) => (
+                <RailItem
+                  key={item.slug}
+                  label={item.name}
+                  imageKey={item.imageKey}
+                  more={item.hasChildren}
+                  active={selectedSlug === item.slug}
+                  onPress={() => go(item.path)}
+                />
               ))}
             </ScrollView>
           </View>
         ) : null}
-      </View>
-    ) : null;
 
-  const allLoaded = Boolean(data && data.total > 0 && data.products.length >= data.total);
-  const footer = (
-    <View>
-      {loadingMore ? (
-        <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
-      ) : null}
-      {allLoaded && related.length > 0 ? (
-        <View style={styles.related}>
-          <Text style={styles.relatedTitle}>Related categories</Text>
-          <View style={styles.relatedGrid}>
-            {related.map((c) => (
-              <View key={c.slug} style={styles.relatedSlot}>
-                <CategoryCard
-                  name={c.name}
-                  hasChildren={c.hasChildren}
-                  imageKey={siblingImageKey(c)}
-                  onPress={() => openSibling(c)}
-                />
-              </View>
-            ))}
+        <View style={styles.main}>
+          <View style={styles.topBar}>
+            <Text style={styles.count} numberOfLines={1}>
+              {data ? `${data.total} ${data.total === 1 ? 'item' : 'items'}` : ' '}
+            </Text>
+            {data?.filters ? (
+              <Pressable style={styles.filterBtn} onPress={() => setSheet(true)}>
+                <Ionicons name="options-outline" size={14} color={colors.brand.DEFAULT} />
+                <Text style={styles.filterText}>Filter & Sort</Text>
+              </Pressable>
+            ) : null}
           </View>
+
+          {brands.length ? (
+            <View style={styles.brandWrap}>
+              <Text style={styles.brandLabel}>Shop by brand</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.brandRow}
+              >
+                <BrandChip label="All" active={!brand} onPress={() => pickBrand('')} />
+                {brands.map((b) => (
+                  <BrandChip key={b} label={b} active={brand === b} onPress={() => pickBrand(b)} />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
+
+          {loading ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" color={colors.brand.DEFAULT} />
+            </View>
+          ) : data && data.products.length > 0 ? (
+            <FlatList
+              key={path.join('/')}
+              data={data.products}
+              keyExtractor={(p) => p.id}
+              numColumns={2}
+              columnWrapperStyle={styles.col}
+              contentContainerStyle={styles.grid}
+              renderItem={({ item }) => <ProductCard product={item} width={cardWidth} compact />}
+              onEndReached={loadMore}
+              onEndReachedThreshold={1.2}
+              showsVerticalScrollIndicator={false}
+              ListFooterComponent={
+                loadingMore ? (
+                  <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
+                ) : null
+              }
+            />
+          ) : (
+            <View style={styles.center}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="cube-outline" size={30} color={colors.brand.DEFAULT} />
+              </View>
+              <Text style={styles.emptyTitle}>
+                {brand ? `No ${brand} products here yet` : 'No products here yet'}
+              </Text>
+              <Text style={styles.emptyText}>
+                {brand ? 'Try another brand or "All".' : 'Check another category from the list.'}
+              </Text>
+              {brand ? (
+                <Pressable style={styles.emptyBtn} onPress={() => pickBrand('')}>
+                  <Text style={styles.emptyBtnText}>Show all brands</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          )}
         </View>
+      </View>
+
+      {data?.filters ? (
+        <FilterSheet
+          visible={sheet}
+          filters={data.filters}
+          query={query}
+          onClose={() => setSheet(false)}
+          onApply={setQuery}
+        />
       ) : null}
     </View>
   );
+}
 
+function RailItem({
+  label,
+  imageKey,
+  active,
+  all,
+  back,
+  more,
+  onPress,
+}: {
+  label: string;
+  imageKey?: string;
+  active: boolean;
+  all?: boolean;
+  back?: boolean;
+  more?: boolean;
+  onPress: () => void;
+}) {
+  const image = imageKey ? lookupCategoryImage(imageKey) : undefined;
   return (
-    <View style={styles.screen}>
-      <View style={styles.bar}>
-        <Text style={styles.count}>{data ? `${data.total} products` : ''}</Text>
-        <Pressable style={styles.filterBtn} onPress={() => setSheet(true)}>
-          <Ionicons name="options-outline" size={16} color={colors.white} />
-          <Text style={styles.filterText}>Filter &amp; Sort</Text>
-        </Pressable>
+    <Pressable onPress={onPress} style={[styles.railItem, active && styles.railItemOn]}>
+      {active ? <View style={styles.railBar} /> : null}
+      <View style={[styles.railThumb, active && styles.railThumbOn, back && styles.railThumbBack]}>
+        {back ? (
+          <Ionicons name="chevron-back" size={22} color={colors.brand.DEFAULT} />
+        ) : image ? (
+          <Image source={image} style={styles.railImg} contentFit="cover" transition={120} />
+        ) : (
+          <Ionicons
+            name={all ? 'apps' : 'pricetags-outline'}
+            size={20}
+            color={colors.brand.DEFAULT}
+          />
+        )}
       </View>
+      {more ? (
+        <View style={styles.railMore}>
+          <Ionicons name="chevron-forward" size={9} color={colors.white} />
+        </View>
+      ) : null}
+      <Text numberOfLines={2} style={[styles.railText, active && styles.railTextOn]}>
+        {back ? `Back to ${label}` : label}
+      </Text>
+    </Pressable>
+  );
+}
 
-      {loading ? (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {header}
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.brand.DEFAULT} />
-          </View>
-        </ScrollView>
-      ) : data && data.products.length > 0 ? (
-        <FlatList
-          data={data.products}
-          keyExtractor={(p) => p.id}
-          numColumns={2}
-          columnWrapperStyle={styles.col}
-          contentContainerStyle={styles.grid}
-          ListHeaderComponent={header}
-          renderItem={({ item }) => <ProductCard product={item} />}
-          onEndReached={loadMore}
-          onEndReachedThreshold={1.2}
-          showsVerticalScrollIndicator={false}
-          ListFooterComponent={footer}
-        />
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {header}
-          <View style={styles.center}>
-            <Ionicons name="cube-outline" size={48} color={colors.card.border} />
-            <Text style={styles.emptyText}>No products in this category yet.</Text>
-          </View>
-        </ScrollView>
+function BrandChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const all = label === 'All';
+  return (
+    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
+      {all ? null : (
+        <View
+          style={[styles.mono, { backgroundColor: active ? colors.white : avatarColor(label) }]}
+        >
+          <Text style={[styles.monoText, active && { color: colors.brand.DEFAULT }]}>
+            {label
+              .replace(/[^a-z0-9]/gi, '')
+              .charAt(0)
+              .toUpperCase() || '•'}
+          </Text>
+        </View>
       )}
-
-      <FilterSheet
-        visible={sheet}
-        filters={data?.filters ?? null}
-        query={query}
-        onClose={() => setSheet(false)}
-        onApply={setQuery}
-      />
-    </View>
+      <Text numberOfLines={1} style={[styles.chipText, active && styles.chipTextOn]}>
+        {all ? 'All brands' : label}
+      </Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  bar: {
+  body: { flex: 1, flexDirection: 'row' },
+  rail: {
+    width: RAIL_W,
+    backgroundColor: '#eef3f9',
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: colors.brandPopup.border,
+  },
+  railItem: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    gap: 5,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#dde6f0',
+  },
+  railItemOn: { backgroundColor: colors.page },
+  railBar: {
+    position: 'absolute',
+    left: 0,
+    top: 10,
+    bottom: 10,
+    width: 4,
+    borderTopRightRadius: 4,
+    borderBottomRightRadius: 4,
+    backgroundColor: colors.brand.DEFAULT,
+  },
+  railThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  railThumbOn: { borderColor: colors.brand.DEFAULT },
+  railThumbBack: { backgroundColor: colors.brandPopup.bg },
+  railImg: { width: '100%', height: '100%' },
+  railMore: {
+    position: 'absolute',
+    top: 46,
+    right: 16,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colors.white,
+    backgroundColor: colors.brand.DEFAULT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  railText: {
+    fontFamily: font.uiMedium,
+    fontSize: 10.5,
+    lineHeight: 13,
+    color: colors.text.body,
+    textAlign: 'center',
+  },
+  railTextOn: { fontFamily: font.uiBold, color: colors.brand.DEFAULT },
+  main: { flex: 1 },
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.menu,
+    paddingHorizontal: space.sm + 2,
+    paddingTop: space.sm,
   },
-  count: { fontFamily: font.uiMedium, fontSize: 13.5, color: colors.text.body },
+  count: { fontFamily: font.uiSemibold, fontSize: 12.5, color: colors.text.body, flexShrink: 1 },
   filterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.brand.DEFAULT,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    gap: 5,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.brandPopup.border,
+    borderRadius: radii.pill,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
   },
-  filterText: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.white },
-  header: { paddingTop: space.md },
-  trail: {
+  filterText: { fontFamily: font.uiSemibold, fontSize: 12, color: colors.brand.DEFAULT },
+  brandWrap: { paddingTop: space.sm },
+  brandLabel: {
+    fontFamily: font.uiBold,
+    fontSize: 12,
+    color: colors.heading,
+    paddingHorizontal: space.sm + 2,
+    marginBottom: 6,
+  },
+  brandRow: { paddingHorizontal: space.sm, gap: 6, paddingBottom: 2 },
+  chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 2,
+    gap: 6,
+    height: 32,
+    paddingLeft: 4,
+    paddingRight: 11,
+    borderRadius: radii.pill,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.brandPopup.border,
+  },
+  chipOn: { backgroundColor: colors.brand.DEFAULT, borderColor: colors.brand.DEFAULT },
+  mono: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monoText: { fontFamily: font.uiBold, fontSize: 11, color: colors.white },
+  chipText: { fontFamily: font.uiSemibold, fontSize: 12, color: colors.heading, maxWidth: 110 },
+  chipTextOn: { color: colors.white },
+  grid: { padding: space.sm, paddingBottom: space.xxxl },
+  col: { gap: space.sm, marginBottom: space.sm },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
     paddingHorizontal: space.lg,
-    marginBottom: space.sm,
   },
-  trailItem: { flexDirection: 'row', alignItems: 'center', gap: 2, maxWidth: 160 },
-  trailLink: { fontFamily: font.uiMedium, fontSize: 12, color: colors.brand.DEFAULT },
-  trailCurrent: { fontFamily: font.uiSemibold, fontSize: 12, color: colors.text.body },
-  strip: { marginBottom: space.sm },
-  stripTitle: {
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.brandPopup.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
     fontFamily: font.uiBold,
-    fontSize: 15,
+    fontSize: 14.5,
     color: colors.heading,
-    paddingHorizontal: space.lg,
-    marginBottom: space.sm,
+    textAlign: 'center',
   },
-  stripRow: { paddingHorizontal: space.lg, gap: space.md },
-  stripCard: { width: 108 },
-  related: { paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.xxl },
-  relatedTitle: {
-    fontFamily: font.uiBold,
-    fontSize: 17,
-    color: colors.heading,
-    marginBottom: space.md,
+  emptyText: {
+    fontFamily: font.body,
+    fontSize: 12.5,
+    color: colors.text.body,
+    textAlign: 'center',
   },
-  relatedGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: space.md },
-  relatedSlot: { width: '33.333%', paddingHorizontal: space.xs },
-  center: { alignItems: 'center', justifyContent: 'center', gap: space.md, paddingVertical: 60 },
-  emptyText: { fontFamily: font.body, fontSize: 14, color: colors.text.body },
-  grid: { padding: space.lg, gap: space.md },
-  col: { gap: space.md },
+  emptyBtn: {
+    marginTop: space.sm,
+    backgroundColor: colors.brand.DEFAULT,
+    borderRadius: radii.pill,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+  },
+  emptyBtnText: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.white },
 });
