@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { addressLines, type Address } from '@youmart/shared-client';
@@ -32,15 +32,24 @@ const TYPE_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
 export function DeliveryBar() {
   const router = useRouter();
   const session = useSession();
-  const { addresses, selected, loading, select } = useAddresses();
+  const { addresses, selected, loading, reload, select } = useAddresses();
   const [open, setOpen] = useState(false);
   const authed = session.status === 'authenticated';
+
+  // Refresh when the screen regains focus (e.g. after adding an address) so the bar updates.
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload]),
+  );
 
   const summary = selected
     ? `${selected.line1}, ${selected.city}`
     : authed
       ? 'Add a delivery address'
       : 'Sign in to set delivery';
+
+  const user = session.status === 'authenticated' ? session.user : null;
 
   return (
     <>
@@ -57,6 +66,8 @@ export function DeliveryBar() {
         visible={open}
         onClose={() => setOpen(false)}
         authed={authed}
+        userName={user?.name ?? ''}
+        userPhone={user?.phone ?? ''}
         addresses={addresses}
         selectedId={selected?.id ?? null}
         loading={loading}
@@ -85,6 +96,8 @@ function AddressSheet({
   visible,
   onClose,
   authed,
+  userName,
+  userPhone,
   addresses,
   selectedId,
   loading,
@@ -96,6 +109,8 @@ function AddressSheet({
   visible: boolean;
   onClose: () => void;
   authed: boolean;
+  userName: string;
+  userPhone: string;
   addresses: Address[] | null;
   selectedId: string | null;
   loading: boolean;
@@ -133,7 +148,11 @@ function AddressSheet({
         .filter((p): p is string => Boolean(p))
         .filter((p, i, arr) => arr.indexOf(p) === i)
         .join(', ');
-      const params: Record<string, string> = {};
+      // Prefill everything we can — incl. the account's name/phone — so the detected form is
+      // essentially ready to save, and `source` lets the form show a "detected" banner.
+      const params: Record<string, string> = { source: 'location' };
+      if (userName) params.fullName = userName;
+      if (userPhone) params.phone = userPhone;
       if (line1) params.line1 = line1;
       if (place?.district) params.landmark = place.district;
       if (place?.city || place?.subregion) params.city = place.city ?? place.subregion ?? '';

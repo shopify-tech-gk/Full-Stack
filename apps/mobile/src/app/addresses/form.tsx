@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import {
   ADDRESS_TYPES,
@@ -30,6 +31,9 @@ export default function AddressFormScreen() {
   const navigation = useNavigation();
   const params = useLocalSearchParams<{
     id?: string;
+    source?: string;
+    fullName?: string;
+    phone?: string;
     line1?: string;
     line2?: string;
     landmark?: string;
@@ -39,6 +43,7 @@ export default function AddressFormScreen() {
   }>();
   const { id } = params;
   const editing = Boolean(id);
+  const fromLocation = params.source === 'location';
 
   const [values, setValues] = useState<AddressFormValues>(() => {
     if (id) return EMPTY_ADDRESS_FORM;
@@ -46,6 +51,8 @@ export default function AddressFormScreen() {
     const pick = (v?: string) => (typeof v === 'string' ? v : '');
     return {
       ...EMPTY_ADDRESS_FORM,
+      fullName: pick(params.fullName),
+      phone: pick(params.phone),
       line1: pick(params.line1),
       line2: pick(params.line2),
       landmark: pick(params.landmark),
@@ -106,6 +113,14 @@ export default function AddressFormScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        {fromLocation ? (
+          <View style={styles.detectedBanner}>
+            <Ionicons name="navigate-circle" size={20} color={colors.feature.guarantee} />
+            <Text style={styles.detectedText}>
+              Location detected — review the details and save.
+            </Text>
+          </View>
+        ) : null}
         <Field
           label="Full name"
           value={values.fullName}
@@ -242,11 +257,23 @@ const styles = StyleSheet.create({
     height: 48,
     fontFamily: font.body,
     fontSize: 15,
-    color: colors.text.input,
+    color: colors.text.strong,
     backgroundColor: colors.white,
   },
   inputError: { borderColor: colors.price.discount },
   error: { fontFamily: font.uiMedium, fontSize: 12, color: colors.price.discount },
+  detectedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#eafaf0',
+    borderWidth: 1,
+    borderColor: colors.feature.guarantee,
+    borderRadius: radii.button,
+    paddingHorizontal: space.md,
+    paddingVertical: 10,
+  },
+  detectedText: { flex: 1, fontFamily: font.uiSemibold, fontSize: 13, color: colors.text.strong },
   chips: { flexDirection: 'row', gap: space.sm },
   chip: {
     borderWidth: 1,
