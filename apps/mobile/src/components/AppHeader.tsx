@@ -10,7 +10,8 @@ import { useCart } from '@/stores/cart';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const LOGO = require('../../assets/images/logo.png');
 
-/** App header for the tab screens: the real YouMart logo, a search entry, and a cart icon. */
+/** App header for the tab screens: the real YouMart logo, Track Order + Customer Care quick tiles
+ * (like youmartshop.com), a search entry, and a cart icon. */
 export function AppHeader() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -20,14 +21,28 @@ export function AppHeader() {
     <View style={[styles.wrap, { paddingTop: insets.top + 6 }]}>
       <View style={styles.row}>
         <Image source={LOGO} style={styles.logo} contentFit="contain" />
-        <Pressable style={styles.cart} onPress={() => router.push('/cart')} hitSlop={8}>
-          <Ionicons name="cart-outline" size={25} color={colors.brand.DEFAULT} />
-          {itemCount > 0 ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{itemCount > 99 ? '99+' : itemCount}</Text>
-            </View>
-          ) : null}
-        </Pressable>
+        <View style={styles.actions}>
+          <Pressable style={styles.tile} onPress={() => router.push('/track-order')} hitSlop={6}>
+            <Ionicons name="cube-outline" size={22} color={colors.brand.DEFAULT} />
+            <Text style={styles.tileLabel}>Track{'\n'}Order</Text>
+          </Pressable>
+          <Pressable
+            style={styles.tile}
+            onPress={() => router.push('/info/customer-care')}
+            hitSlop={6}
+          >
+            <Ionicons name="headset-outline" size={22} color={colors.brand.DEFAULT} />
+            <Text style={styles.tileLabel}>Customer{'\n'}Care</Text>
+          </Pressable>
+          <Pressable style={styles.cart} onPress={() => router.push('/cart')} hitSlop={6}>
+            <Ionicons name="cart-outline" size={24} color={colors.brand.DEFAULT} />
+            {itemCount > 0 ? (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{itemCount > 99 ? '99+' : itemCount}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        </View>
       </View>
       <Pressable style={styles.search} onPress={() => router.push('/search')}>
         <Ionicons name="search" size={18} color={colors.text.placeholder} />
@@ -46,8 +61,17 @@ const styles = StyleSheet.create({
     paddingBottom: space.md,
   },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  logo: { width: 122, height: 44 },
-  cart: { padding: 4 },
+  logo: { width: 112, height: 42 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  tile: { alignItems: 'center', gap: 2, width: 52 },
+  tileLabel: {
+    fontFamily: font.uiSemibold,
+    fontSize: 9.5,
+    lineHeight: 11,
+    color: colors.brand.DEFAULT,
+    textAlign: 'center',
+  },
+  cart: { padding: 2 },
   badge: {
     position: 'absolute',
     top: -2,

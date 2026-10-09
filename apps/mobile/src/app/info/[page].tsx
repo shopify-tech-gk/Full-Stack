@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import {
@@ -130,16 +130,33 @@ function ContactView() {
 function CareView() {
   return (
     <View style={styles.body}>
+      <Text style={styles.eyebrow}>Customer Care</Text>
+      <Text style={styles.h1}>{CUSTOMER_CARE_PAGE.title}</Text>
       <Inline source={CUSTOMER_CARE_PAGE.text} style={styles.p} />
-      {CUSTOMER_CARE_PAGE.cards.map((card) => (
-        <View key={card.id} style={styles.card}>
-          <Text style={styles.cardTitle}>{card.title}</Text>
-          <Text style={styles.p}>{card.text}</Text>
-          <Text style={styles.link} onPress={() => Linking.openURL(card.href)}>
-            {card.id === 'whatsapp' ? 'Open WhatsApp' : `Call ${BUSINESS.phone}`}
-          </Text>
-        </View>
-      ))}
+      {CUSTOMER_CARE_PAGE.cards.map((card) => {
+        const isWa = card.id === 'whatsapp';
+        return (
+          <Pressable
+            key={card.id}
+            style={styles.careCard}
+            onPress={() => Linking.openURL(card.href)}
+          >
+            <View style={[styles.careIcon, isWa ? styles.careIconWa : styles.careIconCall]}>
+              <Ionicons name={isWa ? 'logo-whatsapp' : 'call'} size={24} color={colors.white} />
+            </View>
+            <View style={styles.careBody}>
+              <Text style={styles.cardTitle}>{card.title}</Text>
+              <Text style={styles.p}>{card.text}</Text>
+              <View style={styles.careAction}>
+                <Text style={styles.careActionText}>
+                  {isWa ? 'Open WhatsApp' : `Call ${BUSINESS.phone}`}
+                </Text>
+                <Ionicons name="arrow-forward" size={14} color={colors.brand.DEFAULT} />
+              </View>
+            </View>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -228,4 +245,30 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.text.strong },
   contactRow: { fontFamily: font.body, fontSize: 14, lineHeight: 24, color: colors.text.body },
+  careCard: {
+    flexDirection: 'row',
+    gap: space.md,
+    backgroundColor: colors.white,
+    borderRadius: radii.tile,
+    borderWidth: 1,
+    borderColor: colors.brandPopup.border,
+    padding: space.lg,
+    shadowColor: colors.brand.DEFAULT,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  careIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  careIconWa: { backgroundColor: '#25D366' },
+  careIconCall: { backgroundColor: colors.brand.DEFAULT },
+  careBody: { flex: 1, gap: 6 },
+  careAction: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  careActionText: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.brand.DEFAULT },
 });
