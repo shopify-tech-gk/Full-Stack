@@ -1,8 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { bestCategoryRotation, resolveStoreCategories } from '@youmart/shared-client';
+import { lookupCategoryImage } from '@/lib/category-images';
+import { imageKeyByHref } from '@/lib/home-categories';
 import { colors, font, radii, space } from '@/theme';
 
 const CARD_WIDTH = 150;
@@ -103,21 +106,33 @@ export function BestCategories() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.track}
           ItemSeparatorComponent={() => <View style={{ width: space.md }} />}
-          renderItem={({ item }) => (
-            <Pressable style={styles.tile} onPress={() => router.push(`/category/${item.slug}`)}>
-              <View style={styles.tileImage}>
-                <Ionicons name="pricetags-outline" size={30} color={colors.card.border} />
-              </View>
-              <View style={styles.tileBar}>
-                <Text numberOfLines={1} style={styles.tileName}>
-                  {item.name}
-                </Text>
-                <View style={styles.tileArrow}>
-                  <Ionicons name="chevron-forward" size={12} color={colors.brand.DEFAULT} />
+          renderItem={({ item }) => {
+            const image = lookupCategoryImage(imageKeyByHref(item.href));
+            return (
+              <Pressable style={styles.tile} onPress={() => router.push(`/category/${item.slug}`)}>
+                <View style={styles.tileImage}>
+                  {image ? (
+                    <Image
+                      source={image}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                      transition={150}
+                    />
+                  ) : (
+                    <Ionicons name="pricetags-outline" size={30} color={colors.card.border} />
+                  )}
                 </View>
-              </View>
-            </Pressable>
-          )}
+                <View style={styles.tileBar}>
+                  <Text numberOfLines={1} style={styles.tileName}>
+                    {item.name}
+                  </Text>
+                  <View style={styles.tileArrow}>
+                    <Ionicons name="chevron-forward" size={12} color={colors.brand.DEFAULT} />
+                  </View>
+                </View>
+              </Pressable>
+            );
+          }}
         />
       </View>
     </View>
@@ -208,10 +223,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tileImage: {
-    aspectRatio: 1,
+    aspectRatio: 2 / 3,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.rail.thumb,
+    backgroundColor: colors.brandPopup.bg,
+    overflow: 'hidden',
   },
   tileBar: {
     flexDirection: 'row',

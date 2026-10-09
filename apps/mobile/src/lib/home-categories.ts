@@ -47,6 +47,22 @@ export function catalogSlugOf(href: string): string {
   return href.split('?')[0]?.split('/').filter(Boolean).pop() ?? '';
 }
 
+/**
+ * The bundled-image key (e.g. `fashion-jewellery/anklets`) for a store-category href, found via the
+ * taxonomy which links each node to the store catalog. Used by Best Categories tiles.
+ */
+export function imageKeyByHref(href: string): string | undefined {
+  for (const main of tree()) {
+    for (const sub of main.subcategories) {
+      if (sub.href === href) return `${main.slug}/${sub.slug}`;
+      for (const leaf of sub.children) {
+        if (leaf.href === href) return `${main.slug}/${sub.slug}/${leaf.slug}`;
+      }
+    }
+  }
+  return undefined;
+}
+
 /** All main categories, as portrait-card nodes (each drills into its sub-categories). */
 export function mainCategories(): CatNode[] {
   return tree().map((m) => ({

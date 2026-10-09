@@ -4,9 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
-import { BEST_CATEGORIES_IMAGE, bestCategoryRotation } from '@youmart/shared-client';
+import { CATEGORY_TILE_PLACEHOLDER, bestCategoryRotation } from '@youmart/shared-client';
 import { storeCategories } from '@/lib/categories';
-import { SUB_CATEGORY_IMAGES } from '@/lib/sub-category-images';
 import { DESKTOP_QUERY, REDUCED_MOTION_QUERY, useMedia, usePageHidden } from '@/lib/useMedia';
 
 /** How long each category stays before the next one rotates in. */
@@ -15,16 +14,14 @@ const ROTATE_MS = 7000;
 const ROUND =
   'flex size-[38px] shrink-0 items-center justify-center rounded-full border border-card-border bg-white text-brand shadow-carousel-arrow transition-colors hover:bg-brand hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-brand';
 
-const tileImage = (key: string) =>
-  SUB_CATEGORY_IMAGES.has(key) ? `/categories/sub/${key}.webp` : BEST_CATEGORIES_IMAGE;
-
 /**
  * DESKTOP ONLY (>= 1025px): live's "Best Categories Today" for EVERY category - the featured
  * category rotates automatically (pausing on hover/focus, off-screen, in a hidden tab, with the
  * pause button, and never for reduced motion) and only its sub-categories slide below.
- * Below 1025px BestCategoriesCarousel is unchanged.
+ * Below 1025px BestCategoriesCarousel is unchanged. `images` maps a sub-category href to its
+ * portrait artwork (the shared taxonomy sub-category images).
  */
-export function BestCategoriesShowcase() {
+export function BestCategoriesShowcase({ images }: { images: Record<string, string> }) {
   const slides = useMemo(() => bestCategoryRotation(storeCategories), []);
   const count = slides.length;
   const sectionRef = useRef<HTMLElement>(null);
@@ -230,12 +227,12 @@ export function BestCategoriesShowcase() {
                   href={item.href}
                   className="group/tile block overflow-hidden rounded-[18px] border border-cart-line bg-white shadow-rail-card transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-[4px] hover:border-brand hover:shadow-cart-table focus:outline-none focus-visible:ring-2 focus-visible:ring-brand motion-reduce:transition-none motion-reduce:hover:translate-y-0"
                 >
-                  <span className="relative block aspect-square overflow-hidden bg-white">
+                  <span className="relative block aspect-[2/3] overflow-hidden bg-brand-popup-bg">
                     <Image
-                      src={tileImage(item.key)}
+                      src={images[item.href] ?? CATEGORY_TILE_PLACEHOLDER}
                       alt=""
                       fill
-                      unoptimized={!SUB_CATEGORY_IMAGES.has(item.key)}
+                      unoptimized={!images[item.href]}
                       sizes="176px"
                       className="object-cover transition-transform duration-500 ease-out group-hover/tile:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover/tile:scale-100"
                     />

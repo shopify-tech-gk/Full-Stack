@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.9 },
   imageArea: {
-    aspectRatio: 0.92,
+    aspectRatio: 2 / 3,
     backgroundColor: colors.brandPopup.bg,
     alignItems: 'center',
     justifyContent: 'center',

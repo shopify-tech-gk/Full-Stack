@@ -1,5 +1,4 @@
 import {
-  BEST_CATEGORIES_IMAGE,
   BRAND_OFFERS,
   EXPLORE_FEATURES,
   FEATURE_CARDS,
@@ -19,10 +18,11 @@ import { PromoBanners } from '@/components/home/PromoBanners';
 import { PromoSlider } from '@/components/home/PromoSlider';
 import { getHomeProducts } from '@/lib/catalog';
 import { storeCategories } from '@/lib/categories';
-import { exploreCategories } from '@/lib/category-taxonomy';
+import { exploreCategories, bestCategorySubImages } from '@/lib/category-taxonomy';
 
 export default async function HomePage() {
   const best = bestCategories(storeCategories);
+  const subImages = bestCategorySubImages();
   const { rails, sliders, showcase } = await getHomeProducts();
 
   return (
@@ -46,13 +46,9 @@ export default async function HomePage() {
         <BrandStrip brands={BRAND_OFFERS} />
         <ProductShowcase productsFor={showcase} />
         {best && (
-          <BestCategoriesCarousel
-            title={best.title}
-            image={BEST_CATEGORIES_IMAGE}
-            items={best.items}
-          />
+          <BestCategoriesCarousel title={best.title} images={subImages} items={best.items} />
         )}
-        <BestCategoriesShowcase />
+        <BestCategoriesShowcase images={subImages} />
         <FeatureCards cards={FEATURE_CARDS} />
       </div>
     </div>

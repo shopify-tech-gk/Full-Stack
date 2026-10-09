@@ -4,10 +4,12 @@ import { useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CATEGORY_TILE_PLACEHOLDER } from '@youmart/shared-client';
 
 interface BestCategoriesCarouselProps {
   title: string;
-  image: string;
+  /** href -> portrait sub-category image (shared taxonomy images); missing = placeholder. */
+  images: Record<string, string>;
   items: readonly { slug: string; name: string; href: string }[];
 }
 
@@ -15,7 +17,7 @@ const GAP = 16;
 
 // Below 1025px only (desktop: BestCategoriesShowcase). Live: 3-column grid on mobile; from 769px a
 // single scrollable row of 200px cards with round arrow buttons that scroll two cards at a time.
-export function BestCategoriesCarousel({ title, image, items }: BestCategoriesCarouselProps) {
+export function BestCategoriesCarousel({ title, images, items }: BestCategoriesCarouselProps) {
   const track = useRef<HTMLUListElement>(null);
 
   const scroll = (direction: 1 | -1) => {
@@ -53,26 +55,29 @@ export function BestCategoriesCarousel({ title, image, items }: BestCategoriesCa
             ref={track}
             className="grid grid-cols-3 gap-[12px] min-[769px]:scrollbar-none min-[769px]:flex min-[769px]:gap-[16px] min-[769px]:overflow-x-auto min-[769px]:scroll-smooth min-[769px]:pb-[6px]"
           >
-            {items.map((item) => (
-              <li key={item.slug} className="min-[769px]:w-[200px] min-[769px]:shrink-0">
-                <Link
-                  href={item.href}
-                  className="relative block aspect-[3/4] overflow-hidden rounded-category-card bg-category-card-bg min-[769px]:shadow-category-card"
-                >
-                  <Image
-                    src={image}
-                    alt=""
-                    fill
-                    unoptimized={image.endsWith('.svg')}
-                    sizes="(min-width: 769px) 200px, 30vw"
-                    className="object-cover"
-                  />
-                  <span className="absolute inset-x-[8px] bottom-[8px] rounded-[8px] bg-white/85 px-[4px] py-[8px] text-center font-ui text-[13px] font-bold capitalize leading-[1.2] text-category-card-label">
-                    {item.name}
-                  </span>
-                </Link>
-              </li>
-            ))}
+            {items.map((item) => {
+              const img = images[item.href] ?? CATEGORY_TILE_PLACEHOLDER;
+              return (
+                <li key={item.slug} className="min-[769px]:w-[200px] min-[769px]:shrink-0">
+                  <Link
+                    href={item.href}
+                    className="relative block aspect-[2/3] overflow-hidden rounded-category-card bg-brand-popup-bg min-[769px]:shadow-category-card"
+                  >
+                    <Image
+                      src={img}
+                      alt=""
+                      fill
+                      unoptimized={img.endsWith('.svg')}
+                      sizes="(min-width: 769px) 200px, 30vw"
+                      className="object-cover"
+                    />
+                    <span className="absolute inset-x-[8px] bottom-[8px] rounded-[8px] bg-white/85 px-[4px] py-[8px] text-center font-ui text-[13px] font-bold capitalize leading-[1.2] text-category-card-label">
+                      {item.name}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
           <button
             type="button"

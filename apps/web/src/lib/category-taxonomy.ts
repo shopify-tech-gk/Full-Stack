@@ -125,6 +125,24 @@ export interface RelatedCategory {
   image: string | null;
 }
 
+/**
+ * Best Categories Today tiles: a store-category href -> its new portrait sub-category image
+ * (apps/web/public/categories/explore/...). Built from the taxonomy, which links each node to the
+ * store catalog, so it keys by the same href the store sub-categories use.
+ */
+export function bestCategorySubImages(): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const main of categoryTaxonomy) {
+    for (const sub of main.subcategories) {
+      if (sub.image) map[sub.href] = sub.image;
+      for (const leaf of sub.children) {
+        if (leaf.image) map[leaf.href] = leaf.image;
+      }
+    }
+  }
+  return map;
+}
+
 /** Sibling categories of the /category/... page — the parent's other children, for "Related categories". */
 export function relatedCategories(path: readonly string[]): RelatedCategory[] {
   const ctx = categoryContext(path);
