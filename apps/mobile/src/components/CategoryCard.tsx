@@ -39,7 +39,7 @@ export function CategoryCard({
           <Image
             source={image}
             style={StyleSheet.absoluteFill}
-            contentFit={compact ? 'contain' : 'cover'}
+            contentFit="cover"
             transition={150}
           />
         ) : (
