@@ -1,14 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -22,9 +20,10 @@ import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
 import { SwipeTabs, HScrollZone } from '@/components/SwipeTabs';
-import { CategoryCard } from '@/components/CategoryCard';
+import { DraggableCategoryGrid } from '@/components/DraggableCategoryGrid';
 import { getHome, type HomeData } from '@/lib/catalog';
 import { mainCategories, catalogSlugOf, type CatNode } from '@/lib/home-categories';
+import { useCategoryOrder } from '@/stores/category-order';
 import { useRailLayout, type RailLayout } from '@/stores/prefs';
 import { colors, font, radii, space } from '@/theme';
 
@@ -137,22 +136,10 @@ export default function HomeScreen() {
   );
 }
 
-const CATEGORIES_PER_PAGE = 9; // 3 rows x 3 compact cards — all visible, swipe for the next set
-
 function CategoryPager() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const cats = useMemo(() => mainCategories(), []);
-  const pages = useMemo(() => {
-    const out: CatNode[][] = [];
-    for (let i = 0; i < cats.length; i += CATEGORIES_PER_PAGE) {
-      out.push(cats.slice(i, i + CATEGORIES_PER_PAGE));
-    }
-    return out;
-  }, [cats]);
-  const [page, setPage] = useState(0);
-
-  if (pages.length === 0) return null;
+  const { ordered, move } = useCategoryOrder(cats);
 
   const open = (c: CatNode) => {
     if (c.href.startsWith('/search')) {
@@ -163,42 +150,7 @@ function CategoryPager() {
     }
   };
 
-  return (
-    <View style={styles.catWrap}>
-      <Text style={styles.catTitle}>Shop by category</Text>
-      <FlatList
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        data={pages}
-        keyExtractor={(_, i) => String(i)}
-        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
-        decelerationRate="fast"
-        renderItem={({ item }) => (
-          <View style={[styles.catPage, { width }]}>
-            {item.map((c) => (
-              <View key={c.slug} style={styles.catCardSlot}>
-                <CategoryCard
-                  name={c.name}
-                  hasChildren={c.hasChildren}
-                  imageKey={`mobile/${c.slug}`}
-                  compact
-                  onPress={() => open(c)}
-                />
-              </View>
-            ))}
-          </View>
-        )}
-      />
-      {pages.length > 1 ? (
-        <View style={styles.catDots}>
-          {pages.map((_, i) => (
-            <View key={i} style={[styles.catDot, i === page && styles.catDotActive]} />
-          ))}
-        </View>
-      ) : null}
-    </View>
-  );
+  return <DraggableCategoryGrid cats={ordered} onOpen={open} onMove={move} />;
 }
 
 function RailsHeader({
@@ -301,25 +253,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   segmentActive: { backgroundColor: colors.brand.DEFAULT },
-  catWrap: { marginTop: space.xl },
-  catTitle: {
-    fontFamily: font.uiBold,
-    fontSize: 17,
-    color: colors.heading,
-    paddingHorizontal: space.lg,
-    marginBottom: space.md,
-  },
-  catList: { paddingHorizontal: space.lg, gap: space.md },
-  catPage: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: space.md,
-    rowGap: space.sm,
-  },
-  catCardSlot: { width: '33.333%', paddingHorizontal: space.xs, paddingVertical: space.xs / 2 },
-  catDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: space.lg },
-  catDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.card.border },
-  catDotActive: { backgroundColor: colors.brand.DEFAULT, width: 18 },
   features: {
     flexDirection: 'row',
     gap: space.sm,
