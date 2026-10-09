@@ -54,6 +54,25 @@ export async function updateProfile(userId: string, input: { name: string }): Pr
   return toSessionUser(user);
 }
 
+/** The customer's home "Shop by category" order (slugs), empty when never personalised. */
+export async function getCategoryOrder(userId: string): Promise<string[]> {
+  const user = await loadActiveUser(userId);
+  const prefs = user.preferences as { categoryOrder?: unknown } | null;
+  const order = prefs?.categoryOrder;
+  return Array.isArray(order) ? order.filter((s): s is string => typeof s === 'string') : [];
+}
+
+/** Persists the customer's category order, merging into the existing preferences blob. */
+export async function setCategoryOrder(userId: string, order: string[]): Promise<string[]> {
+  const user = await loadActiveUser(userId);
+  const prefs = (user.preferences as Record<string, unknown> | null) ?? {};
+  await prisma.user.update({
+    where: { id: userId },
+    data: { preferences: { ...prefs, categoryOrder: order } },
+  });
+  return order;
+}
+
 export async function issueSession(userId: string, userAgent?: string): Promise<SessionResult> {
   const user = await loadActiveUser(userId);
 

@@ -7,6 +7,8 @@ import Animated, {
   useAnimatedRef,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { CategoryCard } from '@/components/CategoryCard';
@@ -58,6 +60,7 @@ export function DraggableCategoryGrid({
   const slotHSV = useSharedValue(slotW * 1.32);
   const pageSV = useSharedValue(0);
   const edgeDir = useSharedValue(0);
+  const lift = useSharedValue(0); // 0 = resting, 1 = picked up (drives scale/shadow)
 
   const clearEdge = useCallback(() => {
     if (edgeTimer.current) {
@@ -129,6 +132,7 @@ export function DraggableCategoryGrid({
         overlayX.value = e.absoluteX;
         overlayY.value = e.absoluteY;
         edgeDir.value = 0;
+        lift.value = withSpring(1, { damping: 16, stiffness: 220, mass: 0.6 });
         runOnJS(beginDrag)(globalIndex);
       })
       .onUpdate((e) => {
@@ -155,6 +159,7 @@ export function DraggableCategoryGrid({
         if (row < 0) row = 0;
         if (row > 2) row = 2;
         const target = pageSV.value * PER_PAGE + row * COLS + col;
+        lift.value = withTiming(0, { duration: 160 });
         runOnJS(endDrag)(target);
       })
       .onFinalize(() => {
@@ -167,11 +172,15 @@ export function DraggableCategoryGrid({
 
   const overlayStyle = useAnimatedStyle(() => {
     const sw = (viewW.value - HPAD * 2) / COLS;
+    const scale = 1 + lift.value * 0.08;
     return {
+      opacity: 0.6 + lift.value * 0.4,
+      shadowOpacity: lift.value * 0.3,
+      shadowRadius: 6 + lift.value * 10,
       transform: [
         { translateX: overlayX.value - gridX.value - sw / 2 },
-        { translateY: overlayY.value - gridY.value - slotHSV.value / 2 },
-        { scale: 1.08 },
+        { translateY: overlayY.value - gridY.value - slotHSV.value / 2 - lift.value * 6 },
+        { scale },
       ],
     };
   });
@@ -305,6 +314,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xs,
     zIndex: 20,
     elevation: 12,
+    shadowColor: colors.brand.DEFAULT,
+    shadowOffset: { width: 0, height: 8 },
   },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: space.lg },
   dot: { height: 7, borderRadius: 4 },

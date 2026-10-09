@@ -7,6 +7,8 @@ import {
   rotateSession,
   revokeSession,
   updateProfile,
+  getCategoryOrder,
+  setCategoryOrder,
 } from '../auth/session.service';
 import { REFRESH_COOKIE_OPTIONS } from '../auth/cookie.util';
 import { requireAuth } from '../authMiddleware';
@@ -58,6 +60,28 @@ sessionRouter.patch('/me', requireAuth, async (req, res) => {
   }
   const body = UpdateProfileBody.parse(req.body);
   res.status(200).json(await updateProfile(userId, body));
+});
+
+// W8: the customer's home "Shop by category" order (drag-and-drop), stored on the account.
+const CategoryOrderBody = z.object({
+  categoryOrder: z.array(z.string().trim().min(1).max(80)).max(200),
+});
+
+sessionRouter.get('/me/preferences', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  res.status(200).json({ categoryOrder: await getCategoryOrder(userId) });
+});
+
+sessionRouter.put('/me/preferences', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  const body = CategoryOrderBody.parse(req.body);
+  res.status(200).json({ categoryOrder: await setCategoryOrder(userId, body.categoryOrder) });
 });
 
 sessionRouter.post('/logout', async (req, res) => {

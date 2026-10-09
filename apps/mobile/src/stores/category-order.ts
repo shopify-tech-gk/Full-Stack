@@ -1,41 +1,56 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from '@/lib/api';
+import { useSession } from '@/stores/session';
 import type { CatNode } from '@/lib/home-categories';
 
-// The user's custom home category order (like rearranging a home screen), persisted on-device.
+// The user's custom home category order (like rearranging a home screen). Signed-in: saved to the
+// ACCOUNT (auth-service preferences). Guests: cached on-device so it still persists per device.
 const KEY = 'ym.categoryOrder.v1';
 
 /**
  * Returns the categories in the user's saved order (unknown/new categories appended in natural
- * order) and a `move(from, to)` that reorders by insert-and-shift and persists.
+ * order) and a `move(from, to)` that reorders by insert-and-shift and persists — to the account
+ * when signed in, otherwise to on-device storage.
  */
 export function useCategoryOrder(all: CatNode[]): {
   ordered: CatNode[];
   move: (from: number, to: number) => void;
 } {
   const [order, setOrder] = useState<string[] | null>(null);
+  const authed = useSession().status === 'authenticated';
+  const authedRef = useRef(authed);
+  authedRef.current = authed;
 
   useEffect(() => {
     let active = true;
-    AsyncStorage.getItem(KEY)
-      .then((raw) => {
-        if (!active) return;
-        let saved: string[] = [];
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) saved = parsed.filter((s) => typeof s === 'string');
-          } catch {
-            /* ignore corrupt value */
+    const load = async () => {
+      if (authed) {
+        try {
+          const { categoryOrder } = await api.auth.getPreferences();
+          if (active) {
+            setOrder(categoryOrder);
+            return;
           }
+        } catch {
+          /* fall through to the local cache */
         }
-        setOrder(saved);
-      })
-      .catch(() => active && setOrder([]));
+      }
+      try {
+        const raw = await AsyncStorage.getItem(KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (active) {
+          setOrder(Array.isArray(parsed) ? parsed.filter((s) => typeof s === 'string') : []);
+        }
+      } catch {
+        if (active) setOrder([]);
+      }
+    };
+    void load();
     return () => {
       active = false;
     };
-  }, []);
+  }, [authed]);
 
   const ordered = useMemo<CatNode[]>(() => {
     if (!order) return all;
@@ -61,7 +76,12 @@ export function useCategoryOrder(all: CatNode[]): {
       if (moved === undefined) return;
       slugs.splice(Math.min(to, slugs.length), 0, moved);
       setOrder(slugs);
-      AsyncStorage.setItem(KEY, JSON.stringify(slugs)).catch(() => {});
+      // Persist: account when signed in, device cache otherwise. Best-effort (UI already updated).
+      if (authedRef.current) {
+        api.auth.setCategoryOrder(slugs).catch(() => {});
+      } else {
+        AsyncStorage.setItem(KEY, JSON.stringify(slugs)).catch(() => {});
+      }
     },
     [ordered],
   );

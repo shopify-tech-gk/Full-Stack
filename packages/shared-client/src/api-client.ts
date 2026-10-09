@@ -180,6 +180,13 @@ export function createApiClient(options: ApiClientOptions) {
       me: () => json<AuthUser>('GET', '/auth/me'),
       /** v1.6: display name only (phone/email are OTP-verified login identifiers). */
       updateProfile: (body: { name: string }) => json<AuthUser>('PATCH', '/auth/me', { body }),
+      /** W8: the customer's saved home category order (empty array when never personalised). */
+      getPreferences: () =>
+        json<{ categoryOrder: string[] }>('GET', '/auth/me/preferences'),
+      setCategoryOrder: (categoryOrder: string[]) =>
+        json<{ categoryOrder: string[] }>('PUT', '/auth/me/preferences', {
+          body: { categoryOrder },
+        }),
     },
     catalog: {
       /** Generic listing: attribute filters are passed as extra query keys. */
