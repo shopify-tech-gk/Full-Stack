@@ -15,21 +15,31 @@ export function CategoryCard({
   onPress,
   hasChildren,
   imageKey,
+  compact,
 }: {
   name: string;
   onPress: () => void;
   hasChildren?: boolean;
   imageKey?: string;
+  /** Smaller, square tile that shows the whole image (no crop) — for dense grids (home 3×3). */
+  compact?: boolean;
 }) {
   const image = lookupCategoryImage(imageKey);
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-      <View style={styles.imageArea}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        compact && styles.cardCompact,
+        pressed && styles.pressed,
+      ]}
+    >
+      <View style={[styles.imageArea, compact && styles.imageAreaCompact]}>
         {image ? (
           <Image
             source={image}
             style={StyleSheet.absoluteFill}
-            contentFit="cover"
+            contentFit={compact ? 'contain' : 'cover'}
             transition={150}
           />
         ) : (
@@ -42,21 +52,21 @@ export function CategoryCard({
                 <View key={i} style={styles.dot} />
               ))}
             </View>
-            <View style={styles.iconWrap}>
-              <Ionicons name="pricetags" size={26} color={colors.brand.DEFAULT} />
+            <View style={[styles.iconWrap, compact && styles.iconWrapCompact]}>
+              <Ionicons name="pricetags" size={compact ? 18 : 26} color={colors.brand.DEFAULT} />
             </View>
           </>
         )}
       </View>
-      <View style={styles.footer}>
-        <Text numberOfLines={2} style={styles.name}>
+      <View style={[styles.footer, compact && styles.footerCompact]}>
+        <Text numberOfLines={2} style={[styles.name, compact && styles.nameCompact]}>
           {name}
         </Text>
         <Ionicons
           name="chevron-forward"
           size={14}
           color={colors.brand.DEFAULT}
-          style={styles.chevron}
+          style={[styles.chevron, compact && styles.chevronHidden]}
         />
       </View>
       {hasChildren ? <View style={styles.badge} /> : null}
@@ -123,6 +133,18 @@ const styles = StyleSheet.create({
     color: colors.heading,
   },
   chevron: { opacity: 0.8 },
+  chevronHidden: { display: 'none' },
+  cardCompact: {
+    borderRadius: radii.categoryCard,
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  imageAreaCompact: { aspectRatio: 1 },
+  iconWrapCompact: { width: 34, height: 34, borderRadius: 17 },
+  footerCompact: { paddingHorizontal: 6, paddingVertical: 6, justifyContent: 'center' },
+  nameCompact: { fontSize: 10.5, lineHeight: 13, textAlign: 'center' },
   badge: {
     position: 'absolute',
     top: 8,

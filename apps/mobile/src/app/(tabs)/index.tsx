@@ -137,7 +137,7 @@ export default function HomeScreen() {
   );
 }
 
-const CATEGORIES_PER_PAGE = 6; // 2 rows x 3 portrait cards — premium, not congested
+const CATEGORIES_PER_PAGE = 9; // 3 rows x 3 compact cards — all visible, swipe for the next set
 
 function CategoryPager() {
   const router = useRouter();
@@ -182,6 +182,7 @@ function CategoryPager() {
                   name={c.name}
                   hasChildren={c.hasChildren}
                   imageKey={`mobile/${c.slug}`}
+                  compact
                   onPress={() => open(c)}
                 />
               </View>
@@ -313,9 +314,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: space.md,
-    rowGap: space.md,
+    rowGap: space.sm,
   },
-  catCardSlot: { width: '33.333%', paddingHorizontal: space.xs },
+  catCardSlot: { width: '33.333%', paddingHorizontal: space.xs, paddingVertical: space.xs / 2 },
   catDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: space.lg },
   catDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.card.border },
   catDotActive: { backgroundColor: colors.brand.DEFAULT, width: 18 },

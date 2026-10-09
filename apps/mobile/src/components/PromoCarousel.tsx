@@ -11,7 +11,11 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { PROMO_BANNER_SLIDES, PROMO_SLIDER_INTERVAL_MS } from '@youmart/shared-client';
+import {
+  PROMO_BANNER_SLIDES,
+  PROMO_SLIDER_INTERVAL_MS,
+  type PromoBanner,
+} from '@youmart/shared-client';
 import { colors, radii, space } from '@/theme';
 
 // Real desktop banner poster images (our own assets), bundled for native. Keyed by banner id.
@@ -24,11 +28,11 @@ const POSTERS: Record<string, number> = {
 };
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-const BANNERS = PROMO_BANNER_SLIDES.flat();
+const SLIDES = PROMO_BANNER_SLIDES;
 const RATIO = 3.2; // posters are 1536x480
 
-/** Promo slider — the desktop design with the real banner poster images: full-width landscape
- * banners, native paging swipe, auto-advance with a pause/play control, and dots (like desktop). */
+/** Promo slider — the desktop design with the real banner poster images: TWO posters per page
+ * (a pair) side by side, native paging swipe, auto-advance with a pause/play control, and dots. */
 export function PromoCarousel() {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -36,8 +40,9 @@ export function PromoCarousel() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const slideWidth = width - space.lg * 2;
-  const bannerHeight = slideWidth / RATIO;
+  const gap = space.md;
+  const bannerWidth = (width - space.lg * 2 - gap) / 2;
+  const bannerHeight = bannerWidth / RATIO;
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setIndex(Math.round(e.nativeEvent.contentOffset.x / width));
@@ -48,7 +53,7 @@ export function PromoCarousel() {
     if (paused) return;
     const t = setInterval(() => {
       setIndex((i) => {
-        const next = (i + 1) % BANNERS.length;
+        const next = (i + 1) % SLIDES.length;
         listRef.current?.scrollToOffset({ offset: next * width, animated: true });
         return next;
       });
@@ -68,28 +73,33 @@ export function PromoCarousel() {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        data={BANNERS}
-        keyExtractor={(b) => b.id}
+        data={SLIDES}
+        keyExtractor={(pair) => pair[0].id}
         onMomentumScrollEnd={onScroll}
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => openBanner(item.href)}
-            style={({ pressed }) => [{ width }, pressed && styles.pressed]}
-          >
-            <Image
-              source={POSTERS[item.id]}
-              style={[styles.banner, { width: slideWidth, height: bannerHeight }]}
-              contentFit="cover"
-              transition={200}
-            />
-          </Pressable>
+        renderItem={({ item: pair }: { item: readonly PromoBanner[] }) => (
+          <View style={[styles.page, { width }]}>
+            {pair.map((banner) => (
+              <Pressable
+                key={banner.id}
+                onPress={() => openBanner(banner.href)}
+                style={({ pressed }) => [styles.slot, pressed && styles.pressed]}
+              >
+                <Image
+                  source={POSTERS[banner.id]}
+                  style={[styles.banner, { width: bannerWidth, height: bannerHeight }]}
+                  contentFit="cover"
+                  transition={200}
+                />
+              </Pressable>
+            ))}
+          </View>
         )}
       />
 
       <View style={styles.controls}>
         <View style={styles.dots}>
-          {BANNERS.map((b, i) => (
-            <View key={b.id} style={[styles.dot, i === index && styles.dotActive]} />
+          {SLIDES.map((pair, i) => (
+            <View key={pair[0].id} style={[styles.dot, i === index && styles.dotActive]} />
           ))}
         </View>
         <Pressable onPress={() => setPaused((p) => !p)} hitSlop={8} style={styles.pause}>
@@ -102,10 +112,11 @@ export function PromoCarousel() {
 
 const styles = StyleSheet.create({
   wrap: { marginTop: space.md },
+  page: { flexDirection: 'row', paddingHorizontal: space.lg, gap: space.md },
+  slot: { flex: 1 },
   pressed: { opacity: 0.95 },
   banner: {
-    marginHorizontal: space.lg,
-    borderRadius: radii.banner + 6,
+    borderRadius: radii.banner + 4,
     backgroundColor: colors.brandPopup.bg,
   },
   controls: {
