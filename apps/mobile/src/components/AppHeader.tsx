@@ -34,13 +34,16 @@ export function AppHeader() {
             <Ionicons name="headset-outline" size={22} color={colors.brand.DEFAULT} />
             <Text style={styles.tileLabel}>Customer{'\n'}Care</Text>
           </Pressable>
-          <Pressable style={styles.cart} onPress={() => router.push('/cart')} hitSlop={6}>
-            <Ionicons name="cart-outline" size={24} color={colors.brand.DEFAULT} />
-            {itemCount > 0 ? (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{itemCount > 99 ? '99+' : itemCount}</Text>
-              </View>
-            ) : null}
+          <Pressable style={styles.tile} onPress={() => router.push('/cart')} hitSlop={6}>
+            <View style={styles.cartIconWrap}>
+              <Ionicons name="cart-outline" size={22} color={colors.brand.DEFAULT} />
+              {itemCount > 0 ? (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{itemCount > 99 ? '99+' : itemCount}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.tileLabel}>My{'\n'}Cart</Text>
           </Pressable>
         </View>
       </View>
@@ -71,7 +74,7 @@ const styles = StyleSheet.create({
     color: colors.brand.DEFAULT,
     textAlign: 'center',
   },
-  cart: { padding: 2 },
+  cartIconWrap: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
   badge: {
     position: 'absolute',
     top: -2,

@@ -37,7 +37,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Cart',
+          title: 'My Cart',
           tabBarBadge: itemCount > 0 ? (itemCount > 99 ? '99+' : itemCount) : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.price.discount, fontSize: 10 },
           tabBarIcon: ({ color, size, focused }) => (
