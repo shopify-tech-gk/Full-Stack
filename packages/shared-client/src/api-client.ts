@@ -187,6 +187,11 @@ export function createApiClient(options: ApiClientOptions) {
         json<{ categoryOrder: string[] }>('PUT', '/auth/me/preferences', {
           body: { categoryOrder },
         }),
+      /** W8: the account's profile photo (image data URL), null = initials avatar. */
+      getAvatar: () => json<{ avatar: string | null }>('GET', '/auth/me/avatar'),
+      setAvatar: (image: string) =>
+        json<{ avatar: string | null }>('PUT', '/auth/me/avatar', { body: { image } }),
+      removeAvatar: () => json<{ avatar: string | null }>('DELETE', '/auth/me/avatar'),
     },
     catalog: {
       /** Generic listing: attribute filters are passed as extra query keys. */

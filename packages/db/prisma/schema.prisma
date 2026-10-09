@@ -186,6 +186,9 @@ model User {
   /// W8: per-customer storefront preferences (e.g. `categoryOrder`), a small JSON blob owned by
   /// the account. Null until the customer first personalises something.
   preferences     Json?
+  /// W8: profile photo as a small (resized, ~20-40 KB) image data URL, owned by the account so it
+  /// follows the customer across devices. Null = initials avatar.
+  avatar          String?    @db.Text
   createdAt       DateTime   @default(now()) @map("created_at")
   updatedAt       DateTime   @updatedAt @map("updated_at")
   deletedAt       DateTime?  @map("deleted_at")

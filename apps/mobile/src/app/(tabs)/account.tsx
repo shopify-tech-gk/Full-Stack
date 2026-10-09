@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,20 +29,24 @@ export default function AccountScreen() {
   const session = useSession();
   const { count } = useWishlist();
   const { itemCount } = useCart();
-  const { uri, setAvatar, removeAvatar } = useAvatar();
+  const { uri, saving, setAvatar, removeAvatar } = useAvatar();
 
   const loggedIn = session.status === 'authenticated';
   const label = loggedIn ? authUserLabel(session.user) : 'Guest';
   const avatarName = loggedIn ? label : '';
 
   const pickPhoto = async () => {
+    if (!loggedIn) {
+      router.push('/auth/login');
+      return;
+    }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return;
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.7,
+      quality: 0.9,
     });
     if (!res.canceled && res.assets[0]) await setAvatar(res.assets[0].uri);
   };
@@ -54,8 +58,13 @@ export default function AccountScreen() {
         contentContainerStyle={[styles.body, { paddingTop: insets.top + space.lg }]}
       >
         <View style={styles.hero}>
-          <Pressable style={styles.avatarWrap} onPress={pickPhoto}>
+          <Pressable style={styles.avatarWrap} onPress={pickPhoto} disabled={saving}>
             <Avatar name={avatarName} uri={uri} size={88} />
+            {saving ? (
+              <View style={styles.avatarBusy}>
+                <ActivityIndicator color={colors.white} />
+              </View>
+            ) : null}
             <View style={styles.avatarEdit}>
               <Ionicons name="camera" size={14} color={colors.white} />
             </View>
@@ -67,10 +76,12 @@ export default function AccountScreen() {
               : 'Browse as a guest — your cart & wishlist are saved on this device.'}
           </Text>
           <View style={styles.photoActions}>
-            <Pressable onPress={pickPhoto} hitSlop={6}>
-              <Text style={styles.photoLink}>{uri ? 'Change photo' : 'Add photo'}</Text>
+            <Pressable onPress={pickPhoto} hitSlop={6} disabled={saving}>
+              <Text style={styles.photoLink}>
+                {!loggedIn ? 'Sign in to add a photo' : uri ? 'Change photo' : 'Add photo'}
+              </Text>
             </Pressable>
-            {uri ? (
+            {loggedIn && uri && !saving ? (
               <>
                 <Text style={styles.photoDot}>·</Text>
                 <Pressable onPress={removeAvatar} hitSlop={6}>
@@ -192,6 +203,17 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
     elevation: 4,
+  },
+  avatarBusy: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 44,
+    backgroundColor: 'rgba(1,66,170,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarEdit: {
     position: 'absolute',

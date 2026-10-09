@@ -9,6 +9,8 @@ import {
   updateProfile,
   getCategoryOrder,
   setCategoryOrder,
+  getAvatar,
+  setAvatar,
 } from '../auth/session.service';
 import { REFRESH_COOKIE_OPTIONS } from '../auth/cookie.util';
 import { requireAuth } from '../authMiddleware';
@@ -82,6 +84,40 @@ sessionRouter.put('/me/preferences', requireAuth, async (req, res) => {
   }
   const body = CategoryOrderBody.parse(req.body);
   res.status(200).json({ categoryOrder: await setCategoryOrder(userId, body.categoryOrder) });
+});
+
+// W8: profile photo on the account. Clients resize to a small JPEG first; ~450 KB is a generous cap
+// (well under the 1 MB JSON body limit) and only raster image data URLs are accepted.
+const AvatarBody = z.object({
+  image: z
+    .string()
+    .max(450_000, 'Image is too large')
+    .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/, 'Unsupported image'),
+});
+
+sessionRouter.get('/me/avatar', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  res.status(200).json({ avatar: await getAvatar(userId) });
+});
+
+sessionRouter.put('/me/avatar', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  const body = AvatarBody.parse(req.body);
+  res.status(200).json({ avatar: await setAvatar(userId, body.image) });
+});
+
+sessionRouter.delete('/me/avatar', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  res.status(200).json({ avatar: await setAvatar(userId, null) });
 });
 
 sessionRouter.post('/logout', async (req, res) => {

@@ -73,6 +73,19 @@ export async function setCategoryOrder(userId: string, order: string[]): Promise
   return order;
 }
 
+/** The customer's profile photo (image data URL), or null for the initials avatar. */
+export async function getAvatar(userId: string): Promise<string | null> {
+  const user = await loadActiveUser(userId);
+  return user.avatar ?? null;
+}
+
+/** Sets (data URL) or clears (null) the customer's profile photo. */
+export async function setAvatar(userId: string, avatar: string | null): Promise<string | null> {
+  await loadActiveUser(userId);
+  await prisma.user.update({ where: { id: userId }, data: { avatar } });
+  return avatar;
+}
+
 export async function issueSession(userId: string, userAgent?: string): Promise<SessionResult> {
   const user = await loadActiveUser(userId);
 
