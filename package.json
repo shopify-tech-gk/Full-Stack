@@ -17,6 +17,8 @@
     "dev:otp": "node scripts/dev-otp.mjs",
     "dev:razorpay-webhook": "node scripts/dev-razorpay-webhook.mjs",
     "dev:seed-catalog": "node scripts/dev-seed-catalog.mjs",
+    "dev:seed-demo": "node scripts/dev-seed-demo.mjs",
+    "dev:remove-demo": "node scripts/dev-remove-demo.mjs",
     "build:category-taxonomy": "node scripts/build-category-taxonomy.mjs"
   },
   "devDependencies": {
