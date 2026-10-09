@@ -28,10 +28,32 @@ import { colors, font, radii, space } from '@/theme';
 export default function AddressFormScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<{
+    id?: string;
+    line1?: string;
+    line2?: string;
+    landmark?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+  }>();
+  const { id } = params;
   const editing = Boolean(id);
 
-  const [values, setValues] = useState<AddressFormValues>(EMPTY_ADDRESS_FORM);
+  const [values, setValues] = useState<AddressFormValues>(() => {
+    if (id) return EMPTY_ADDRESS_FORM;
+    // Prefill from a detected current location (optional params).
+    const pick = (v?: string) => (typeof v === 'string' ? v : '');
+    return {
+      ...EMPTY_ADDRESS_FORM,
+      line1: pick(params.line1),
+      line2: pick(params.line2),
+      landmark: pick(params.landmark),
+      city: pick(params.city),
+      state: pick(params.state),
+      pincode: pick(params.pincode),
+    };
+  });
   const [errors, setErrors] = useState<AddressFormErrors>({});
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(editing);

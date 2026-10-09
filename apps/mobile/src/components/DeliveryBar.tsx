@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -11,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
 import { addressLines, type Address } from '@youmart/shared-client';
 import { useAddresses } from '@/stores/address';
 import { useSession } from '@/stores/session';
@@ -24,8 +26,8 @@ const TYPE_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 /**
  * "Deliver to" bar for the home header + a premium bottom-sheet to choose the delivery address.
- * Our own YouMart style: a frosted brand pill that expands into a rounded sheet with pin-marked
- * address cards, a selected accent, and quick Add-new / Sign-in actions.
+ * Our own YouMart style: a slim brand pill that opens a rounded sheet with pin-marked address
+ * cards, a current-location detector, and quick Add-new / Sign-in actions.
  */
 export function DeliveryBar() {
   const router = useRouter();
@@ -39,21 +41,16 @@ export function DeliveryBar() {
     : authed
       ? 'Add a delivery address'
       : 'Sign in to set delivery';
-  const label = selected ? selected.addressType : 'Deliver to';
 
   return (
     <>
       <Pressable style={styles.bar} onPress={() => setOpen(true)}>
-        <View style={styles.pin}>
-          <Ionicons name="location" size={14} color={colors.white} />
-        </View>
-        <View style={styles.barText}>
-          <Text style={styles.barLabel}>{label}</Text>
-          <Text numberOfLines={1} style={styles.barValue}>
-            {summary}
-          </Text>
-        </View>
-        <Ionicons name="chevron-down" size={16} color={colors.brand.DEFAULT} />
+        <Ionicons name="location" size={14} color={colors.brand.DEFAULT} />
+        <Text style={styles.barLabel}>Deliver to</Text>
+        <Text numberOfLines={1} style={styles.barValue}>
+          {summary}
+        </Text>
+        <Ionicons name="chevron-down" size={15} color={colors.brand.DEFAULT} />
       </Pressable>
 
       <AddressSheet
@@ -75,6 +72,10 @@ export function DeliveryBar() {
           setOpen(false);
           router.push('/auth/login');
         }}
+        onClose2Add={(params) => {
+          setOpen(false);
+          router.push({ pathname: '/addresses/form', params });
+        }}
       />
     </>
   );
@@ -90,6 +91,7 @@ function AddressSheet({
   onSelect,
   onAdd,
   onSignIn,
+  onClose2Add,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -100,8 +102,51 @@ function AddressSheet({
   onSelect: (id: string) => void;
   onAdd: () => void;
   onSignIn: () => void;
+  onClose2Add: (params: Record<string, string>) => void;
 }) {
   const insets = useSafeAreaInsets();
+  const [locating, setLocating] = useState(false);
+
+  const useCurrentLocation = async () => {
+    if (!authed) {
+      onSignIn();
+      return;
+    }
+    setLocating(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Location permission needed',
+          'Allow location access to detect your current address, or add one manually.',
+        );
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const [place] = await Location.reverseGeocodeAsync({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+      });
+      const line1 = [place?.name, place?.street]
+        .filter((p): p is string => Boolean(p))
+        .filter((p, i, arr) => arr.indexOf(p) === i)
+        .join(', ');
+      const params: Record<string, string> = {};
+      if (line1) params.line1 = line1;
+      if (place?.district) params.landmark = place.district;
+      if (place?.city || place?.subregion) params.city = place.city ?? place.subregion ?? '';
+      if (place?.region) params.state = place.region;
+      if (place?.postalCode) params.pincode = place.postalCode;
+      onClose2Add(params);
+    } catch {
+      Alert.alert('Could not detect location', 'Please add your address manually.');
+    } finally {
+      setLocating(false);
+    }
+  };
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
@@ -116,6 +161,21 @@ function AddressSheet({
             <Ionicons name="close" size={20} color={colors.text.strong} />
           </Pressable>
         </View>
+
+        <Pressable style={styles.locTile} onPress={useCurrentLocation} disabled={locating}>
+          <View style={styles.locIcon}>
+            {locating ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Ionicons name="navigate" size={18} color={colors.white} />
+            )}
+          </View>
+          <View style={styles.locBody}>
+            <Text style={styles.locTitle}>Use my current location</Text>
+            <Text style={styles.locSub}>Detect your address automatically</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.brand.DEFAULT} />
+        </Pressable>
 
         <Pressable style={styles.addTile} onPress={onAdd}>
           <View style={styles.addIcon}>
@@ -192,32 +252,29 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: space.md,
+    gap: 6,
+    marginTop: space.sm,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
     backgroundColor: colors.brandPopup.bg,
     borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.brandPopup.border,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingLeft: 10,
+    paddingRight: 8,
+    paddingVertical: 5,
   },
-  pin: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.brand.DEFAULT,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  barText: { flex: 1 },
   barLabel: {
     fontFamily: font.uiSemibold,
-    fontSize: 10,
+    fontSize: 11.5,
     color: colors.brand.DEFAULT,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
-  barValue: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.text.strong },
+  barValue: {
+    flexShrink: 1,
+    fontFamily: font.uiSemibold,
+    fontSize: 11.5,
+    color: colors.text.strong,
+  },
 
   backdrop: {
     position: 'absolute',
@@ -269,6 +326,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  locTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    backgroundColor: colors.white,
+    borderRadius: radii.tile,
+    borderWidth: 1,
+    borderColor: colors.brandPopup.border,
+    paddingHorizontal: space.md,
+    paddingVertical: space.md,
+    marginBottom: space.sm,
+  },
+  locIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.brand.DEFAULT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locBody: { flex: 1 },
+  locTitle: { fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
+  locSub: { fontFamily: font.body, fontSize: 12, color: colors.text.muted, marginTop: 1 },
   addTile: {
     flexDirection: 'row',
     alignItems: 'center',
