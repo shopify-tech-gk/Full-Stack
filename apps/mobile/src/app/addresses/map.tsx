@@ -26,6 +26,7 @@ const INDIA: Region = {
   longitudeDelta: 18,
 };
 const STREET_DELTA = 0.0045;
+const CITY_DELTA = 0.06;
 
 type Coords = { latitude: number; longitude: number };
 type Place = {
@@ -77,7 +78,15 @@ export default function MapPickerScreen() {
   const mapRef = useRef<MapView>(null);
   const reqId = useRef(0);
   const center = useRef<Coords | null>(startAt);
+  const mapReady = useRef(false);
+  const pendingFly = useRef<{ c: Coords; duration: number } | null>(null);
   const [gps, setGps] = useState<Coords | null>(null);
+  // Where the map first opens. null = still finding the customer (branded loader, no map yet),
+  // so the map never starts on a country-wide view when we can place them on their street.
+  const [initial, setInitial] = useState<Region | null>(
+    startAt ? { ...startAt, latitudeDelta: STREET_DELTA, longitudeDelta: STREET_DELTA } : null,
+  );
+  const [denied, setDenied] = useState(false);
   const [card, setCard] = useState<CardState>(startAt ? { kind: 'loading' } : { kind: 'locating' });
 
   const lift = useSharedValue(0);
@@ -102,41 +111,76 @@ export default function MapPickerScreen() {
     }
   }, []);
 
-  const flyTo = useCallback((c: Coords, duration = 1400) => {
-    mapRef.current?.animateToRegion(
+  // Camera moves sent before the native map is ready are silently dropped, so queue them.
+  const flyTo = useCallback((c: Coords, duration = 1200) => {
+    if (!mapReady.current || !mapRef.current) {
+      pendingFly.current = { c, duration };
+      return;
+    }
+    mapRef.current.animateToRegion(
       { ...c, latitudeDelta: STREET_DELTA, longitudeDelta: STREET_DELTA },
       duration,
     );
   }, []);
 
-  // Find the customer: fly in from the country view to their street (unless reopening a spot).
+  const onMapReady = () => {
+    mapReady.current = true;
+    if (pendingFly.current) {
+      const { c, duration } = pendingFly.current;
+      pendingFly.current = null;
+      flyTo(c, duration);
+    }
+  };
+
+  // Find the customer before showing the map: last-known fix opens it instantly at their city,
+  // then it zooms to the street; a fresher GPS fix glides there. Reopening a spot skips this.
   useEffect(() => {
     let active = true;
+    const openAt = (c: Coords) => {
+      setInitial((prev) => prev ?? { ...c, latitudeDelta: CITY_DELTA, longitudeDelta: CITY_DELTA });
+      flyTo(c);
+    };
+    const fallback = setTimeout(() => {
+      if (!active) return;
+      setInitial((prev) => prev ?? INDIA);
+    }, 6000);
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
+      if (!active) return;
       if (status !== 'granted') {
-        if (!active) return;
+        clearTimeout(fallback);
+        setDenied(true);
+        setInitial((prev) => prev ?? INDIA);
         if (!startAt) setCard({ kind: 'error' });
         return;
       }
-      const last = await Location.getLastKnownPositionAsync().catch(() => null);
+      const last = await Location.getLastKnownPositionAsync({ maxAge: 30 * 60 * 1000 }).catch(
+        () => null,
+      );
       if (last && active) {
         const c = { latitude: last.coords.latitude, longitude: last.coords.longitude };
         setGps(c);
-        if (!startAt) flyTo(c);
+        if (!startAt) openAt(c);
       }
       const now = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+        accuracy: Location.Accuracy.High,
       }).catch(() => null);
-      if (now && active) {
+      if (!active) return;
+      clearTimeout(fallback);
+      if (now) {
         const c = { latitude: now.coords.latitude, longitude: now.coords.longitude };
         setGps(c);
-        if (!startAt && (!last || detect)) flyTo(c);
+        if (!startAt) openAt(c);
+      } else if (!last) {
+        setInitial((prev) => prev ?? INDIA);
+        if (!startAt) setCard({ kind: 'error' });
       }
     })();
     return () => {
       active = false;
+      clearTimeout(fallback);
     };
+    // Runs once on open; startAt/flyTo are stable for this screen's lifetime.
   }, []);
 
   const onMoveStart = () => {
@@ -178,58 +222,67 @@ export default function MapPickerScreen() {
 
   return (
     <View style={styles.screen}>
-      <MapView
-        ref={mapRef}
-        style={StyleSheet.absoluteFill}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-        customMapStyle={YOUMART_MAP_STYLE}
-        mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
-        initialRegion={
-          startAt
-            ? { ...startAt, latitudeDelta: STREET_DELTA, longitudeDelta: STREET_DELTA }
-            : INDIA
-        }
-        onRegionChangeStart={onMoveStart}
-        onRegionChangeComplete={onMoveEnd}
-        showsUserLocation={false}
-        showsMyLocationButton={false}
-        showsCompass={false}
-        showsScale={false}
-        showsBuildings={false}
-        showsTraffic={false}
-        showsIndoors={false}
-        showsPointsOfInterests={false}
-        toolbarEnabled={false}
-        pitchEnabled={false}
-        rotateEnabled={false}
-        userInterfaceStyle="light"
-      >
-        {gps ? (
-          <Marker coordinate={gps} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
-            <View style={styles.gpsHalo}>
-              <View style={styles.gpsDot} />
-            </View>
-          </Marker>
-        ) : null}
-      </MapView>
+      {initial ? (
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFill}
+          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+          customMapStyle={YOUMART_MAP_STYLE}
+          mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
+          initialRegion={initial}
+          onMapReady={onMapReady}
+          onRegionChangeStart={onMoveStart}
+          onRegionChangeComplete={onMoveEnd}
+          showsUserLocation={false}
+          showsMyLocationButton={false}
+          showsCompass={false}
+          showsScale={false}
+          showsBuildings={false}
+          showsTraffic={false}
+          showsIndoors={false}
+          showsPointsOfInterests={false}
+          toolbarEnabled={false}
+          pitchEnabled={false}
+          rotateEnabled={false}
+          userInterfaceStyle="light"
+        >
+          {gps ? (
+            <Marker coordinate={gps} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+              <View style={styles.gpsHalo}>
+                <View style={styles.gpsDot} />
+              </View>
+            </Marker>
+          ) : null}
+        </MapView>
+      ) : (
+        <View style={styles.finding}>
+          <Animated.View style={[styles.findingRing, shimmerStyle]} />
+          <View style={styles.pinHead}>
+            <Ionicons name="cart" size={18} color={colors.white} />
+          </View>
+          <Text style={styles.findingText}>Finding your location…</Text>
+        </View>
+      )}
 
       {/* Light brand wash so Apple's muted map shares the YouMart palette (Android is styled). */}
-      {Platform.OS === 'ios' ? <View pointerEvents="none" style={styles.tint} /> : null}
+      {initial && Platform.OS === 'ios' ? <View pointerEvents="none" style={styles.tint} /> : null}
 
       {/* Fixed centre pin: its tip sits exactly on the map centre. */}
-      <View pointerEvents="none" style={styles.pinLayer}>
-        <View style={styles.pinBox}>
-          <Animated.View style={[styles.pin, pinStyle]}>
-            <View style={styles.pinHead}>
-              <Ionicons name="cart" size={18} color={colors.white} />
+      {initial ? (
+        <View pointerEvents="none" style={styles.pinLayer}>
+          <View style={styles.pinBox}>
+            <Animated.View style={[styles.pin, pinStyle]}>
+              <View style={styles.pinHead}>
+                <Ionicons name="cart" size={18} color={colors.white} />
+              </View>
+              <View style={styles.pinStem} />
+            </Animated.View>
+            <View style={styles.pinSpacer}>
+              <Animated.View style={[styles.ground, groundStyle]} />
             </View>
-            <View style={styles.pinStem} />
-          </Animated.View>
-          <View style={styles.pinSpacer}>
-            <Animated.View style={[styles.ground, groundStyle]} />
           </View>
         </View>
-      </View>
+      ) : null}
 
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
         <Pressable style={styles.roundBtn} onPress={() => router.back()} hitSlop={6}>
@@ -288,9 +341,11 @@ export default function MapPickerScreen() {
               <Ionicons name="alert-circle-outline" size={18} color={colors.price.discount} />
             </View>
             <Text style={styles.errText}>
-              {gps || center.current
-                ? "Couldn't read this spot. Move the pin slightly and try again."
-                : 'Allow location access, or zoom in on the map to your area.'}
+              {denied
+                ? 'Location is off for YouMart. Zoom into your area on the map, or allow location in Settings.'
+                : gps || center.current
+                  ? "Couldn't read this spot. Move the pin slightly and try again."
+                  : "Couldn't get your GPS position. Zoom into your area on the map."}
             </Text>
           </View>
         ) : (
@@ -323,6 +378,31 @@ const STEM = 14;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
+  finding: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandPopup.bg,
+    gap: space.lg,
+  },
+  findingRing: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(1,66,170,0.12)',
+  },
+  findingText: {
+    position: 'absolute',
+    top: '58%',
+    fontFamily: font.uiSemibold,
+    fontSize: 14,
+    color: colors.brand.DEFAULT,
+  },
   tint: {
     position: 'absolute',
     top: 0,
