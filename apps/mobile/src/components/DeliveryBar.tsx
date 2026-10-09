@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -12,10 +11,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
-import { addressLines, type Address } from '@youmart/shared-client';
+import { addressLines } from '@youmart/shared-client';
 import { useAddresses } from '@/stores/address';
 import { useSession } from '@/stores/session';
+import { AddAddressOptions, useAddAddress } from '@/components/AddAddressOptions';
 import { colors, font, radii, space } from '@/theme';
 
 const TYPE_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -25,18 +24,19 @@ const TYPE_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 /**
- * "Deliver to" bar for the home header + a premium bottom-sheet to choose the delivery address.
- * Our own YouMart style: a slim brand pill that opens a rounded sheet with pin-marked address
- * cards, a current-location detector, and quick Add-new / Sign-in actions.
+ * "Deliver to" pill for the home header + a premium bottom sheet to choose the delivery address:
+ * three ways to add one (map pin, GPS detect, manual) and the saved addresses to switch between.
  */
 export function DeliveryBar() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const session = useSession();
   const { addresses, selected, loading, reload, select } = useAddresses();
+  const addAddress = useAddAddress();
   const [open, setOpen] = useState(false);
   const authed = session.status === 'authenticated';
 
-  // Refresh when the screen regains focus (e.g. after adding an address) so the bar updates.
+  // Refresh when the screen regains focus (e.g. after adding an address) so the pill updates.
   useFocusEffect(
     useCallback(() => {
       reload();
@@ -49,8 +49,6 @@ export function DeliveryBar() {
       ? 'Add a delivery address'
       : 'Sign in to set delivery';
 
-  const user = session.status === 'authenticated' ? session.user : null;
-
   return (
     <>
       <Pressable style={styles.bar} onPress={() => setOpen(true)}>
@@ -62,208 +60,94 @@ export function DeliveryBar() {
         <Ionicons name="chevron-down" size={15} color={colors.brand.DEFAULT} />
       </Pressable>
 
-      <AddressSheet
-        visible={open}
-        onClose={() => setOpen(false)}
-        authed={authed}
-        userName={user?.name ?? ''}
-        userPhone={user?.phone ?? ''}
-        addresses={addresses}
-        selectedId={selected?.id ?? null}
-        loading={loading}
-        onSelect={async (id) => {
-          await select(id);
-          setOpen(false);
-        }}
-        onAdd={() => {
-          setOpen(false);
-          router.push(authed ? '/addresses/form' : '/auth/login');
-        }}
-        onSignIn={() => {
-          setOpen(false);
-          router.push('/auth/login');
-        }}
-        onClose2Add={(params) => {
-          setOpen(false);
-          router.push({ pathname: '/addresses/form', params });
-        }}
-      />
-    </>
-  );
-}
-
-function AddressSheet({
-  visible,
-  onClose,
-  authed,
-  userName,
-  userPhone,
-  addresses,
-  selectedId,
-  loading,
-  onSelect,
-  onAdd,
-  onSignIn,
-  onClose2Add,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  authed: boolean;
-  userName: string;
-  userPhone: string;
-  addresses: Address[] | null;
-  selectedId: string | null;
-  loading: boolean;
-  onSelect: (id: string) => void;
-  onAdd: () => void;
-  onSignIn: () => void;
-  onClose2Add: (params: Record<string, string>) => void;
-}) {
-  const insets = useSafeAreaInsets();
-  const [locating, setLocating] = useState(false);
-
-  const useCurrentLocation = async () => {
-    if (!authed) {
-      onSignIn();
-      return;
-    }
-    setLocating(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Location permission needed',
-          'Allow location access to detect your current address, or add one manually.',
-        );
-        return;
-      }
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      const [place] = await Location.reverseGeocodeAsync({
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-      });
-      const line1 = [place?.name, place?.street]
-        .filter((p): p is string => Boolean(p))
-        .filter((p, i, arr) => arr.indexOf(p) === i)
-        .join(', ');
-      // Prefill everything we can — incl. the account's name/phone — so the detected form is
-      // essentially ready to save, and `source` lets the form show a "detected" banner.
-      const params: Record<string, string> = { source: 'location' };
-      if (userName) params.fullName = userName;
-      if (userPhone) params.phone = userPhone;
-      if (line1) params.line1 = line1;
-      if (place?.district) params.landmark = place.district;
-      if (place?.city || place?.subregion) params.city = place.city ?? place.subregion ?? '';
-      if (place?.region) params.state = place.region;
-      if (place?.postalCode) params.pincode = place.postalCode;
-      onClose2Add(params);
-    } catch {
-      Alert.alert('Could not detect location', 'Please add your address manually.');
-    } finally {
-      setLocating(false);
-    }
-  };
-
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>
-        <View style={styles.grabber} />
-        <View style={styles.sheetHead}>
-          <View>
-            <Text style={styles.sheetEyebrow}>Delivery</Text>
-            <Text style={styles.sheetTitle}>Where should we deliver?</Text>
-          </View>
-          <Pressable onPress={onClose} hitSlop={8} style={styles.closeBtn}>
-            <Ionicons name="close" size={20} color={colors.text.strong} />
-          </Pressable>
-        </View>
-
-        <Pressable style={styles.locTile} onPress={useCurrentLocation} disabled={locating}>
-          <View style={styles.locIcon}>
-            {locating ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <Ionicons name="navigate" size={18} color={colors.white} />
-            )}
-          </View>
-          <View style={styles.locBody}>
-            <Text style={styles.locTitle}>Use my current location</Text>
-            <Text style={styles.locSub}>Detect your address automatically</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.brand.DEFAULT} />
-        </Pressable>
-
-        <Pressable style={styles.addTile} onPress={onAdd}>
-          <View style={styles.addIcon}>
-            <Ionicons name="add" size={20} color={colors.brand.DEFAULT} />
-          </View>
-          <Text style={styles.addText}>Add a new address</Text>
-          <Ionicons name="chevron-forward" size={16} color={colors.brand.DEFAULT} />
-        </Pressable>
-
-        {!authed ? (
-          <View style={styles.signInBox}>
-            <Ionicons name="lock-closed-outline" size={22} color={colors.brand.DEFAULT} />
-            <Text style={styles.signInText}>Sign in to save and choose delivery addresses.</Text>
-            <Pressable style={styles.signInBtn} onPress={onSignIn}>
-              <Text style={styles.signInBtnText}>Sign in</Text>
+      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>
+          <View style={styles.grabber} />
+          <View style={styles.sheetHead}>
+            <View>
+              <Text style={styles.sheetEyebrow}>Delivery</Text>
+              <Text style={styles.sheetTitle}>Where should we deliver?</Text>
+            </View>
+            <Pressable onPress={() => setOpen(false)} hitSlop={8} style={styles.closeBtn}>
+              <Ionicons name="close" size={20} color={colors.text.strong} />
             </Pressable>
           </View>
-        ) : loading && !addresses ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={colors.brand.DEFAULT} />
-          </View>
-        ) : addresses && addresses.length > 0 ? (
-          <>
-            <Text style={styles.savedLabel}>Saved addresses</Text>
-            <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-              {addresses.map((a) => {
-                const on = a.id === selectedId;
-                const lines = addressLines(a);
-                return (
-                  <Pressable
-                    key={a.id}
-                    style={[styles.addrCard, on && styles.addrCardOn]}
-                    onPress={() => onSelect(a.id)}
-                  >
-                    <View style={[styles.addrIcon, on && styles.addrIconOn]}>
-                      <Ionicons
-                        name={TYPE_ICON[a.addressType] ?? 'location'}
-                        size={20}
-                        color={on ? colors.white : colors.brand.DEFAULT}
-                      />
-                    </View>
-                    <View style={styles.addrBody}>
-                      <View style={styles.addrTop}>
-                        <Text style={styles.addrName}>{lines[0]}</Text>
-                        {on ? (
-                          <View style={styles.selectedPill}>
-                            <Ionicons name="checkmark" size={11} color={colors.white} />
-                            <Text style={styles.selectedPillText}>Delivering here</Text>
-                          </View>
-                        ) : null}
+
+          {authed ? (
+            <AddAddressOptions
+              onPick={(mode) => {
+                setOpen(false);
+                addAddress(mode);
+              }}
+            />
+          ) : (
+            <View style={styles.signInBox}>
+              <Ionicons name="lock-closed-outline" size={22} color={colors.brand.DEFAULT} />
+              <Text style={styles.signInText}>Sign in to save and choose delivery addresses.</Text>
+              <Pressable
+                style={styles.signInBtn}
+                onPress={() => {
+                  setOpen(false);
+                  router.push('/auth/login');
+                }}
+              >
+                <Text style={styles.signInBtnText}>Sign in</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {authed && loading && !addresses ? (
+            <View style={styles.center}>
+              <ActivityIndicator color={colors.brand.DEFAULT} />
+            </View>
+          ) : authed && addresses && addresses.length > 0 ? (
+            <>
+              <Text style={styles.savedLabel}>Saved addresses</Text>
+              <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+                {addresses.map((a) => {
+                  const on = a.id === selected?.id;
+                  const lines = addressLines(a);
+                  return (
+                    <Pressable
+                      key={a.id}
+                      style={[styles.addrCard, on && styles.addrCardOn]}
+                      onPress={async () => {
+                        await select(a.id);
+                        setOpen(false);
+                      }}
+                    >
+                      <View style={[styles.addrIcon, on && styles.addrIconOn]}>
+                        <Ionicons
+                          name={TYPE_ICON[a.addressType] ?? 'location'}
+                          size={20}
+                          color={on ? colors.white : colors.brand.DEFAULT}
+                        />
                       </View>
-                      <Text numberOfLines={2} style={styles.addrLines}>
-                        {lines.slice(1).join(', ')}
-                      </Text>
-                      <Text style={styles.addrPhone}>{a.phone}</Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </>
-        ) : (
-          <View style={styles.center}>
-            <Ionicons name="location-outline" size={40} color={colors.card.border} />
-            <Text style={styles.emptyText}>No saved addresses yet.</Text>
-          </View>
-        )}
-      </View>
-    </Modal>
+                      <View style={styles.addrBody}>
+                        <View style={styles.addrTop}>
+                          <Text style={styles.addrName}>{lines[0]}</Text>
+                          {on ? (
+                            <View style={styles.selectedPill}>
+                              <Ionicons name="checkmark" size={11} color={colors.white} />
+                              <Text style={styles.selectedPillText}>Delivering here</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        <Text numberOfLines={2} style={styles.addrLines}>
+                          {lines.slice(1).join(', ')}
+                        </Text>
+                        <Text style={styles.addrPhone}>{a.phone}</Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </>
+          ) : null}
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -283,18 +167,13 @@ const styles = StyleSheet.create({
     paddingRight: 8,
     paddingVertical: 5,
   },
-  barLabel: {
-    fontFamily: font.uiSemibold,
-    fontSize: 11.5,
-    color: colors.brand.DEFAULT,
-  },
+  barLabel: { fontFamily: font.uiSemibold, fontSize: 11.5, color: colors.brand.DEFAULT },
   barValue: {
     flexShrink: 1,
     fontFamily: font.uiSemibold,
     fontSize: 11.5,
     color: colors.text.strong,
   },
-
   backdrop: {
     position: 'absolute',
     top: 0,
@@ -345,51 +224,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  locTile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1,
-    borderColor: colors.brandPopup.border,
-    paddingHorizontal: space.md,
-    paddingVertical: space.md,
-    marginBottom: space.sm,
-  },
-  locIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.brand.DEFAULT,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  locBody: { flex: 1 },
-  locTitle: { fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
-  locSub: { fontFamily: font.body, fontSize: 12, color: colors.text.muted, marginTop: 1 },
-  addTile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1,
-    borderColor: colors.brandPopup.border,
-    borderStyle: 'dashed',
-    paddingHorizontal: space.md,
-    paddingVertical: space.md,
-    marginBottom: space.md,
-  },
-  addIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.brandPopup.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addText: { flex: 1, fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.brand.DEFAULT },
   signInBox: {
     alignItems: 'center',
     gap: space.sm,
@@ -419,6 +253,7 @@ const styles = StyleSheet.create({
     color: colors.text.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
+    marginTop: space.lg,
     marginBottom: space.sm,
   },
   scroll: { flexGrow: 0 },
@@ -443,7 +278,12 @@ const styles = StyleSheet.create({
   },
   addrIconOn: { backgroundColor: colors.brand.DEFAULT },
   addrBody: { flex: 1, gap: 2 },
-  addrTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  addrTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
   addrName: { fontFamily: font.uiBold, fontSize: 15, color: colors.text.strong },
   selectedPill: {
     flexDirection: 'row',
@@ -457,6 +297,5 @@ const styles = StyleSheet.create({
   selectedPillText: { fontFamily: font.uiSemibold, fontSize: 10, color: colors.white },
   addrLines: { fontFamily: font.body, fontSize: 12.5, lineHeight: 18, color: colors.text.body },
   addrPhone: { fontFamily: font.uiMedium, fontSize: 12.5, color: colors.text.muted, marginTop: 2 },
-  center: { alignItems: 'center', justifyContent: 'center', gap: space.sm, paddingVertical: 40 },
-  emptyText: { fontFamily: font.body, fontSize: 14, color: colors.text.body },
+  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 30 },
 });

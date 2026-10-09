@@ -49,6 +49,7 @@ export default function RootLayout() {
                   <Stack
                     screenOptions={{
                       headerShown: false,
+                      headerBackButtonDisplayMode: 'minimal',
                       contentStyle: { backgroundColor: colors.page },
                       headerTintColor: colors.brand.DEFAULT,
                       headerTitleStyle: { fontFamily: 'Outfit_600SemiBold', color: colors.heading },
@@ -84,6 +85,7 @@ export default function RootLayout() {
                       name="addresses/form"
                       options={{ headerShown: true, title: 'Address' }}
                     />
+                    <Stack.Screen name="addresses/map" options={{ headerShown: false }} />
                     <Stack.Screen
                       name="checkout"
                       options={{ headerShown: true, title: 'Checkout' }}

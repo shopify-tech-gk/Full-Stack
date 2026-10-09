@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -10,8 +11,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addressLines, type Address } from '@youmart/shared-client';
 import { api } from '@/lib/api';
+import { AddAddressOptions, useAddAddress } from '@/components/AddAddressOptions';
 import { colors, font, radii, space } from '@/theme';
 
 // Address book: list + add/edit/delete/set-default via /api/addresses. `select=1` -> picking one
@@ -21,6 +24,9 @@ export default function AddressesScreen() {
   const { select } = useLocalSearchParams<{ select?: string }>();
   const selecting = select === '1';
   const [list, setList] = useState<Address[] | null>(null);
+  const [adding, setAdding] = useState(false);
+  const addAddress = useAddAddress();
+  const insets = useSafeAreaInsets();
 
   const load = useCallback(() => {
     api.addresses
@@ -111,10 +117,29 @@ export default function AddressesScreen() {
           </Pressable>
         )}
       />
-      <Pressable style={styles.addBtn} onPress={() => router.push('/addresses/form')}>
+      <Pressable style={styles.addBtn} onPress={() => setAdding(true)}>
         <Ionicons name="add" size={20} color={colors.white} />
         <Text style={styles.addText}>Add a new address</Text>
       </Pressable>
+
+      <Modal
+        visible={adding}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAdding(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setAdding(false)} />
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>
+          <View style={styles.grabber} />
+          <Text style={styles.sheetTitle}>Add a new address</Text>
+          <AddAddressOptions
+            onPick={(mode) => {
+              setAdding(false);
+              addAddress(mode);
+            }}
+          />
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -158,4 +183,37 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   addText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.white },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.overlay,
+  },
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.page,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 42,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.card.border,
+    marginBottom: space.md,
+  },
+  sheetTitle: {
+    fontFamily: font.uiBold,
+    fontSize: 19,
+    color: colors.heading,
+    marginBottom: space.md,
+  },
 });
