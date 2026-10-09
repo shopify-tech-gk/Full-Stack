@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SEARCH_PLACEHOLDER } from '@youmart/shared-client';
 import { colors, font, radii, space } from '@/theme';
 import { useCart } from '@/stores/cart';
+import { DeliveryBar } from '@/components/DeliveryBar';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const LOGO = require('../../assets/images/logo.png');
@@ -47,6 +48,7 @@ export function AppHeader() {
           </Pressable>
         </View>
       </View>
+      <DeliveryBar />
       <Pressable style={styles.search} onPress={() => router.push('/search')}>
         <Ionicons name="search" size={18} color={colors.text.placeholder} />
         <Text style={styles.searchText} numberOfLines={1}>
