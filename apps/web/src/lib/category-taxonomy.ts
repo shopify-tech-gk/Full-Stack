@@ -134,6 +134,8 @@ export interface BestCategoryItem {
   slug: string;
   name: string;
   href: string;
+  /** Stable, globally-unique list key (`<main>/<sub>`); hrefs can repeat for non-catalog nodes. */
+  key: string;
   image: string | null;
 }
 export interface BestCategorySlide {
@@ -154,6 +156,7 @@ export function taxonomyBestSlides(first = 'fashion-jewellery'): BestCategorySli
         slug: sub.slug,
         name: sub.name,
         href: sub.href,
+        key: `${main.slug}/${sub.slug}`,
         image: sub.image,
       })),
     }));

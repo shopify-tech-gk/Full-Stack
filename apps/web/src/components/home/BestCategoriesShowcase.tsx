@@ -218,7 +218,7 @@ export function BestCategoriesShowcase({ slides }: { slides: BestCategorySlide[]
           >
             {slide.items.map((item, i) => (
               <li
-                key={item.href}
+                key={item.key}
                 className="w-[176px] shrink-0 snap-start animate-rise-in motion-reduce:animate-none"
                 style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
               >

@@ -57,7 +57,7 @@ export function BestCategoriesCarousel({ title, items }: BestCategoriesCarouselP
             {items.map((item) => {
               const img = item.image ?? CATEGORY_TILE_PLACEHOLDER;
               return (
-                <li key={item.slug} className="min-[769px]:w-[200px] min-[769px]:shrink-0">
+                <li key={item.key} className="min-[769px]:w-[200px] min-[769px]:shrink-0">
                   <Link
                     href={item.href}
                     className="relative block aspect-[2/3] overflow-hidden rounded-category-card bg-brand-popup-bg min-[769px]:shadow-category-card"

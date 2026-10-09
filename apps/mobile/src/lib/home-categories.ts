@@ -51,6 +51,8 @@ export interface BestSlideItem {
   slug: string;
   name: string;
   href: string;
+  /** Stable, globally-unique list key (`<main>/<sub>`). */
+  key: string;
   /** Bundled-image key for lookupCategoryImage(). */
   imageKey: string;
 }
@@ -77,6 +79,7 @@ export function bestCategorySlides(first = 'fashion-jewellery'): BestSlide[] {
         slug: sub.slug,
         name: sub.name,
         href: sub.href,
+        key: `${main.slug}/${sub.slug}`,
         imageKey: `${main.slug}/${sub.slug}`,
       })),
     }));
