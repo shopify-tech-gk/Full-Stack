@@ -1,10 +1,20 @@
 import { Tabs } from 'expo-router';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { authUserLabel } from '@youmart/shared-client';
 import { colors, font } from '@/theme';
 import { useCart } from '@/stores/cart';
+import { useSession } from '@/stores/session';
+import { useAvatar } from '@/stores/profile';
+import { Avatar } from '@/components/Avatar';
 
 export default function TabsLayout() {
   const { itemCount } = useCart();
+  const session = useSession();
+  const { uri } = useAvatar();
+  const avatarName = session.status === 'authenticated' ? authUserLabel(session.user) : '';
+  const hasAvatar = Boolean(uri) || avatarName.length > 0;
+
   return (
     <Tabs
       screenOptions={{
@@ -49,9 +59,21 @@ export default function TabsLayout() {
         name="account"
         options={{
           title: 'Account',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size, focused }) =>
+            hasAvatar ? (
+              <View
+                style={{
+                  borderRadius: (size + 6) / 2,
+                  borderWidth: focused ? 2 : 0,
+                  borderColor: colors.brand.DEFAULT,
+                  padding: focused ? 1 : 0,
+                }}
+              >
+                <Avatar name={avatarName} uri={uri} size={size} />
+              </View>
+            ) : (
+              <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+            ),
         }}
       />
     </Tabs>
