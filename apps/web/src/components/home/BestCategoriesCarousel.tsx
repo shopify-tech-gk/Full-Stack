@@ -5,19 +5,18 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { CATEGORY_TILE_PLACEHOLDER } from '@youmart/shared-client';
+import type { BestCategoryItem } from '@/lib/category-taxonomy';
 
 interface BestCategoriesCarouselProps {
   title: string;
-  /** href -> portrait sub-category image (shared taxonomy images); missing = placeholder. */
-  images: Record<string, string>;
-  items: readonly { slug: string; name: string; href: string }[];
+  items: readonly BestCategoryItem[];
 }
 
 const GAP = 16;
 
 // Below 1025px only (desktop: BestCategoriesShowcase). Live: 3-column grid on mobile; from 769px a
 // single scrollable row of 200px cards with round arrow buttons that scroll two cards at a time.
-export function BestCategoriesCarousel({ title, images, items }: BestCategoriesCarouselProps) {
+export function BestCategoriesCarousel({ title, items }: BestCategoriesCarouselProps) {
   const track = useRef<HTMLUListElement>(null);
 
   const scroll = (direction: 1 | -1) => {
@@ -56,7 +55,7 @@ export function BestCategoriesCarousel({ title, images, items }: BestCategoriesC
             className="grid grid-cols-3 gap-[12px] min-[769px]:scrollbar-none min-[769px]:flex min-[769px]:gap-[16px] min-[769px]:overflow-x-auto min-[769px]:scroll-smooth min-[769px]:pb-[6px]"
           >
             {items.map((item) => {
-              const img = images[item.href] ?? CATEGORY_TILE_PLACEHOLDER;
+              const img = item.image ?? CATEGORY_TILE_PLACEHOLDER;
               return (
                 <li key={item.slug} className="min-[769px]:w-[200px] min-[769px]:shrink-0">
                   <Link

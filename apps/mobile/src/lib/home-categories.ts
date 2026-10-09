@@ -47,20 +47,44 @@ export function catalogSlugOf(href: string): string {
   return href.split('?')[0]?.split('/').filter(Boolean).pop() ?? '';
 }
 
+export interface BestSlideItem {
+  slug: string;
+  name: string;
+  href: string;
+  /** Bundled-image key for lookupCategoryImage(). */
+  imageKey: string;
+}
+export interface BestSlide {
+  slug: string;
+  name: string;
+  href: string;
+  items: BestSlideItem[];
+}
+
 /**
- * The bundled-image key (e.g. `fashion-jewellery/anklets`) for a store-category href, found via the
- * taxonomy which links each node to the store catalog. Used by Best Categories tiles.
+ * Best Categories Today built from the SAME taxonomy as the home category cards / Explore
+ * Categories, so every tile has its portrait artwork. Mains with sub-categories, alphabetical,
+ * rotated to start at `first`.
  */
-export function imageKeyByHref(href: string): string | undefined {
-  for (const main of tree()) {
-    for (const sub of main.subcategories) {
-      if (sub.href === href) return `${main.slug}/${sub.slug}`;
-      for (const leaf of sub.children) {
-        if (leaf.href === href) return `${main.slug}/${sub.slug}/${leaf.slug}`;
-      }
-    }
-  }
-  return undefined;
+export function bestCategorySlides(first = 'fashion-jewellery'): BestSlide[] {
+  const slides: BestSlide[] = tree()
+    .filter((main) => main.subcategories.length > 0)
+    .map((main) => ({
+      slug: main.slug,
+      name: main.name,
+      href: main.href,
+      items: main.subcategories.map((sub) => ({
+        slug: sub.slug,
+        name: sub.name,
+        href: sub.href,
+        imageKey: `${main.slug}/${sub.slug}`,
+      })),
+    }));
+  const start = Math.max(
+    0,
+    slides.findIndex((s) => s.slug === first),
+  );
+  return [...slides.slice(start), ...slides.slice(0, start)];
 }
 
 /** All main categories, as portrait-card nodes (each drills into its sub-categories). */

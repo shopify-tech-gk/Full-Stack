@@ -126,21 +126,42 @@ export interface RelatedCategory {
 }
 
 /**
- * Best Categories Today tiles: a store-category href -> its new portrait sub-category image
- * (apps/web/public/categories/explore/...). Built from the taxonomy, which links each node to the
- * store catalog, so it keys by the same href the store sub-categories use.
+ * Best Categories Today, built from the SAME taxonomy as Explore Categories, so every tile has the
+ * shared sub-category artwork. Mains (with sub-categories) rotate alphabetically from `first`; each
+ * item carries its portrait image (null = placeholder).
  */
-export function bestCategorySubImages(): Record<string, string> {
-  const map: Record<string, string> = {};
-  for (const main of categoryTaxonomy) {
-    for (const sub of main.subcategories) {
-      if (sub.image) map[sub.href] = sub.image;
-      for (const leaf of sub.children) {
-        if (leaf.image) map[leaf.href] = leaf.image;
-      }
-    }
-  }
-  return map;
+export interface BestCategoryItem {
+  slug: string;
+  name: string;
+  href: string;
+  image: string | null;
+}
+export interface BestCategorySlide {
+  slug: string;
+  name: string;
+  href: string;
+  items: BestCategoryItem[];
+}
+
+export function taxonomyBestSlides(first = 'fashion-jewellery'): BestCategorySlide[] {
+  const slides: BestCategorySlide[] = categoryTaxonomy
+    .filter((main) => main.subcategories.length > 0)
+    .map((main) => ({
+      slug: main.slug,
+      name: main.name,
+      href: main.href,
+      items: main.subcategories.map((sub) => ({
+        slug: sub.slug,
+        name: sub.name,
+        href: sub.href,
+        image: sub.image,
+      })),
+    }));
+  const start = Math.max(
+    0,
+    slides.findIndex((s) => s.slug === first),
+  );
+  return [...slides.slice(start), ...slides.slice(0, start)];
 }
 
 /** Sibling categories of the /category/... page — the parent's other children, for "Related categories". */

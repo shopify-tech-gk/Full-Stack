@@ -3,9 +3,8 @@ import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { bestCategoryRotation, resolveStoreCategories } from '@youmart/shared-client';
 import { lookupCategoryImage } from '@/lib/category-images';
-import { imageKeyByHref } from '@/lib/home-categories';
+import { bestCategorySlides, catalogSlugOf } from '@/lib/home-categories';
 import { colors, font, radii, space } from '@/theme';
 
 const CARD_WIDTH = 150;
@@ -13,17 +12,26 @@ const CARD_WIDTH = 150;
 /**
  * "Best Categories Today" — the DESKTOP design, adapted natively: a white rounded card with a
  * tinted header (eyebrow + category title + sub-count + Shop button + prev/next arrows), a
- * scrollable category chip bar, and a horizontal row of sub-category tiles (placeholder image area
- * + name + circular arrow). Images are placeholders. Same data as web (bestCategoryRotation).
+ * scrollable category chip bar, and a horizontal row of sub-category tiles. Uses the SAME taxonomy
+ * categories/sub-categories as the home cards / Explore Categories, so every tile has its artwork.
  */
 export function BestCategories() {
   const router = useRouter();
-  const slides = useMemo(() => bestCategoryRotation(resolveStoreCategories()), []);
+  const slides = useMemo(() => bestCategorySlides(), []);
   const [index, setIndex] = useState(0);
   const chipsRef = useRef<ScrollView>(null);
   const trackRef = useRef<FlatList>(null);
   const slide = slides[index];
   if (!slide) return null;
+
+  // Open a taxonomy node's listing (carry the taxo path so the sub-category strip shows).
+  const open = (href: string, name: string, taxo: string) => {
+    if (href.startsWith('/search')) {
+      router.push({ pathname: '/search', params: { q: name } });
+    } else {
+      router.push(`/category/${catalogSlugOf(href)}?taxo=${taxo}`);
+    }
+  };
 
   const go = (next: number) => {
     const wrapped = (next + slides.length) % slides.length;
@@ -50,7 +58,7 @@ export function BestCategories() {
           <View style={styles.actions}>
             <Pressable
               style={styles.shopBtn}
-              onPress={() => router.push(`/category/${slide.slug}`)}
+              onPress={() => open(slide.href, slide.name, slide.slug)}
             >
               <Text style={styles.shopText}>Shop {slide.name}</Text>
               <Ionicons name="arrow-forward" size={14} color={colors.white} />
@@ -107,9 +115,12 @@ export function BestCategories() {
           contentContainerStyle={styles.track}
           ItemSeparatorComponent={() => <View style={{ width: space.md }} />}
           renderItem={({ item }) => {
-            const image = lookupCategoryImage(imageKeyByHref(item.href));
+            const image = lookupCategoryImage(item.imageKey);
             return (
-              <Pressable style={styles.tile} onPress={() => router.push(`/category/${item.slug}`)}>
+              <Pressable
+                style={styles.tile}
+                onPress={() => open(item.href, item.name, `${slide.slug}~${item.slug}`)}
+              >
                 <View style={styles.tileImage}>
                   {image ? (
                     <Image

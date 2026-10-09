@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
-import { CATEGORY_TILE_PLACEHOLDER, bestCategoryRotation } from '@youmart/shared-client';
-import { storeCategories } from '@/lib/categories';
+import { CATEGORY_TILE_PLACEHOLDER } from '@youmart/shared-client';
+import type { BestCategorySlide } from '@/lib/category-taxonomy';
 import { DESKTOP_QUERY, REDUCED_MOTION_QUERY, useMedia, usePageHidden } from '@/lib/useMedia';
 
 /** How long each category stays before the next one rotates in. */
@@ -18,11 +18,10 @@ const ROUND =
  * DESKTOP ONLY (>= 1025px): live's "Best Categories Today" for EVERY category - the featured
  * category rotates automatically (pausing on hover/focus, off-screen, in a hidden tab, with the
  * pause button, and never for reduced motion) and only its sub-categories slide below.
- * Below 1025px BestCategoriesCarousel is unchanged. `images` maps a sub-category href to its
- * portrait artwork (the shared taxonomy sub-category images).
+ * Below 1025px BestCategoriesCarousel is unchanged. `slides` comes from the taxonomy (the same
+ * categories/sub-categories Explore Categories uses), each item carrying its portrait artwork.
  */
-export function BestCategoriesShowcase({ images }: { images: Record<string, string> }) {
-  const slides = useMemo(() => bestCategoryRotation(storeCategories), []);
+export function BestCategoriesShowcase({ slides }: { slides: BestCategorySlide[] }) {
   const count = slides.length;
   const sectionRef = useRef<HTMLElement>(null);
   const chipsRef = useRef<HTMLUListElement>(null);
@@ -219,7 +218,7 @@ export function BestCategoriesShowcase({ images }: { images: Record<string, stri
           >
             {slide.items.map((item, i) => (
               <li
-                key={item.key}
+                key={item.href}
                 className="w-[176px] shrink-0 snap-start animate-rise-in motion-reduce:animate-none"
                 style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
               >
@@ -229,10 +228,10 @@ export function BestCategoriesShowcase({ images }: { images: Record<string, stri
                 >
                   <span className="relative block aspect-[2/3] overflow-hidden bg-brand-popup-bg">
                     <Image
-                      src={images[item.href] ?? CATEGORY_TILE_PLACEHOLDER}
+                      src={item.image ?? CATEGORY_TILE_PLACEHOLDER}
                       alt=""
                       fill
-                      unoptimized={!images[item.href]}
+                      unoptimized={!item.image}
                       sizes="176px"
                       className="object-cover transition-transform duration-500 ease-out group-hover/tile:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover/tile:scale-100"
                     />
