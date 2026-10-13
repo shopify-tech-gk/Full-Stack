@@ -11,7 +11,7 @@ const CARD_WIDTH = 150;
 
 /**
  * "Best Categories Today" — the DESKTOP design, adapted natively: a white rounded card with a
- * tinted header (eyebrow + category title + sub-count + Shop button + prev/next arrows), a
+ * tinted header (eyebrow + category title + Shop button + prev/next arrows), a
  * scrollable category chip bar, and a horizontal row of sub-category tiles. Uses the SAME taxonomy
  * categories/sub-categories as the home cards / Explore Categories, so every tile has its artwork.
  */
@@ -52,7 +52,6 @@ export function BestCategories() {
 
           <View style={styles.titleRow}>
             <Text style={styles.title}>{slide.name}</Text>
-            <Text style={styles.sub}>{slide.items.length} sub-categories</Text>
           </View>
 
           <View style={styles.actions}>
@@ -182,7 +181,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   title: { fontFamily: font.uiBold, fontSize: 24, color: colors.heading },
-  sub: { fontFamily: font.body, fontSize: 13, color: colors.text.muted },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',

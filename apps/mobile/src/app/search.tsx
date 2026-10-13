@@ -149,12 +149,7 @@ export default function SearchScreen() {
           onEndReached={loadMore}
           onEndReachedThreshold={1.2}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <Text style={styles.count}>
-              {state.results.total} result{state.results.total === 1 ? '' : 's'} for “
-              {state.results.term}”
-            </Text>
-          }
+          ListHeaderComponent={<Text style={styles.count}>Results for “{state.results.term}”</Text>}
           renderItem={({ item }) => <ProductCard product={item} />}
           ListFooterComponent={
             loadingMore ? (

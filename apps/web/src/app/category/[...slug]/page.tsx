@@ -59,14 +59,9 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           {context && (
             <div className="mb-[12px] hidden rounded-[16px] border border-cart-line bg-white px-[18px] py-[14px] shadow-rail-card lg:block">
               <CategoryBreadcrumb trail={context.trail} />
-              <div className="mt-[6px] flex items-baseline gap-[12px]">
-                <h1 className="font-ui text-[26px] font-bold leading-[1.2] text-heading">
-                  {title}
-                </h1>
-                <p className="font-sans text-[13px] text-ink-body">
-                  {listing.total} product{listing.total === 1 ? '' : 's'}
-                </p>
-              </div>
+              <h1 className="mt-[6px] font-ui text-[26px] font-bold leading-[1.2] text-heading">
+                {title}
+              </h1>
             </div>
           )}
           <div className="lg:hidden">

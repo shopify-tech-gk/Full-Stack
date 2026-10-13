@@ -119,8 +119,8 @@ export function taxChildren(path: string[]): TaxNode[] {
     .filter((n): n is TaxNode => n !== null);
 }
 
-/** Brands the client's category sheet lists for this main / sub / sub-to-sub (most-stocked first). */
-export function brandsFor(path: string[]): string[] {
+/** Brands the client's category sheet lists for exactly this node (nearest ancestor if none). */
+function sheetBrands(path: string[]): string[] {
   for (let depth = path.length; depth > 0; depth -= 1) {
     const indexes = CATEGORY_BRAND_INDEX[path.slice(0, depth).join('/')];
     if (indexes?.length) {
@@ -128,6 +128,39 @@ export function brandsFor(path: string[]): string[] {
     }
   }
   return [];
+}
+
+/**
+ * A sub's core brands: the ones its sub-to-subs share (listed for 2+ of them), most widely listed
+ * first. A brand the sheet lists for just one item (GM Modular, only under Universal Adapters)
+ * stays on that item and doesn't leak into the whole sub. Falls back to the sheet's list when no
+ * brand is shared (or the sub has fewer than two items).
+ */
+function coreBrands(path: string[]): string[] {
+  const items = taxChildren(path);
+  if (items.length < 2) return sheetBrands(path);
+  const count = new Map<string, number>();
+  for (const item of items) {
+    for (const b of new Set(sheetBrands(item.path))) count.set(b, (count.get(b) ?? 0) + 1);
+  }
+  const shared = [...count].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]);
+  return shared.length ? shared.map(([b]) => b) : sheetBrands(path);
+}
+
+/**
+ * Brands to offer for this main / sub / sub-to-sub. The sheet's lists for a main or a sub are the
+ * union of everything beneath them, so they mix unrelated brands (electrical brands under Travel
+ * Accessories); this keeps them specific: a sub-to-sub shows its own list, a sub its core brands,
+ * and a main the union of its subs' core brands.
+ */
+export function brandsFor(path: string[]): string[] {
+  if (path.length >= 3 || !taxNode(path)?.hasChildren) return sheetBrands(path);
+  if (path.length === 2) return coreBrands(path);
+  const out: string[] = [];
+  for (const sub of taxChildren(path)) {
+    for (const b of coreBrands(sub.path)) if (!out.includes(b)) out.push(b);
+  }
+  return out.length ? out : sheetBrands(path);
 }
 
 export interface BestSlideItem {

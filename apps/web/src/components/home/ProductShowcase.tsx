@@ -137,7 +137,7 @@ export function ProductShowcase({ productsFor }: ProductShowcaseProps) {
                     <span className={t.wordTone}>{t.word}</span>
                   </span>
                   <span className="mt-[4px] block font-sans text-[13px] font-medium opacity-85">
-                    {t.note} &middot; {productsFor[tab.key].length} products
+                    {t.note}
                   </span>
                 </span>
                 <span

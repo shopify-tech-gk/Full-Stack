@@ -128,9 +128,6 @@ export function BestCategoriesShowcase({ slides }: { slides: BestCategorySlide[]
                 <span key={slide.slug} className="animate-rise-in motion-reduce:animate-none">
                   {slide.name}
                 </span>
-                <span className="font-sans text-[13px] font-normal text-ink-body">
-                  {slide.items.length} sub-categories
-                </span>
               </h2>
             </div>
             <div className="flex shrink-0 items-center gap-[10px]">

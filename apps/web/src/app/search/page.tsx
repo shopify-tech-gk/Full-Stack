@@ -36,10 +36,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         <h1 className="mb-[20px] font-ui text-[20px] font-semibold leading-[1.3] text-heading lg:text-[25px]">
           {q ? (
             <>
-              Search results for: &ldquo;{q}&rdquo;{' '}
-              <span className="font-sans text-[15px] font-normal text-ink-body">
-                ({total} {total === 1 ? 'result' : 'results'})
-              </span>
+              Search results for: &ldquo;{q}&rdquo;
             </>
           ) : (
             'Search'

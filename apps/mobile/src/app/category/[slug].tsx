@@ -33,7 +33,7 @@ import { FilterSheet } from '@/components/FilterSheet';
 import { BrandLogo } from '@/components/BrandLogo';
 import { colors, font, radii, space } from '@/theme';
 
-const RAIL_W = 86;
+const RAIL_W = 80;
 const MAX_BRANDS = 40;
 const TILE_W = 84;
 const TILE_H = 48;
@@ -196,17 +196,14 @@ export default function CategoryScreen() {
         ) : null}
 
         <View style={styles.main}>
-          <View style={styles.topBar}>
-            <Text style={styles.count} numberOfLines={1}>
-              {data ? `${data.total} ${data.total === 1 ? 'item' : 'items'}` : ' '}
-            </Text>
-            {data?.filters ? (
+          {data?.filters ? (
+            <View style={styles.topBar}>
               <Pressable style={styles.filterBtn} onPress={() => setSheet(true)}>
                 <Ionicons name="options-outline" size={14} color={colors.brand.DEFAULT} />
                 <Text style={styles.filterText}>Filter & Sort</Text>
               </Pressable>
-            ) : null}
-          </View>
+            </View>
+          ) : null}
 
           {brands.length ? (
             <View style={styles.brandWrap}>
@@ -298,30 +295,53 @@ function RailItem({
   onPress: () => void;
 }) {
   const image = imageKey ? lookupCategoryImage(imageKey) : undefined;
+  // Portrait curved card - the Explore Categories look (CategoryCard), sized for the rail.
   return (
-    <Pressable onPress={onPress} style={[styles.railItem, active && styles.railItemOn]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.railItem,
+        active && styles.railItemOn,
+        pressed && styles.railPressed,
+      ]}
+    >
       {active ? <View style={styles.railBar} /> : null}
-      <View style={[styles.railThumb, active && styles.railThumbOn, back && styles.railThumbBack]}>
-        {back ? (
-          <Ionicons name="chevron-back" size={22} color={colors.brand.DEFAULT} />
-        ) : image ? (
-          <Image source={image} style={styles.railImg} contentFit="cover" transition={120} />
-        ) : (
-          <Ionicons
-            name={all ? 'apps' : 'pricetags-outline'}
-            size={20}
-            color={colors.brand.DEFAULT}
-          />
-        )}
-      </View>
-      {more ? (
-        <View style={styles.railMore}>
-          <Ionicons name="chevron-forward" size={9} color={colors.white} />
+      <View style={[styles.railCard, active && styles.railCardOn]}>
+        <View style={[styles.railArt, back && styles.railArtBack]}>
+          {back ? (
+            <Ionicons name="chevron-back" size={22} color={colors.brand.DEFAULT} />
+          ) : image ? (
+            <Image
+              source={image}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={120}
+            />
+          ) : (
+            <>
+              <View style={[styles.railBlob, styles.railBlobTop]} />
+              <View style={[styles.railBlob, styles.railBlobBottom]} />
+              <View style={styles.railIcon}>
+                <Ionicons
+                  name={all ? 'apps' : 'pricetags'}
+                  size={16}
+                  color={colors.brand.DEFAULT}
+                />
+              </View>
+            </>
+          )}
+          {more ? (
+            <View style={styles.railMore}>
+              <Ionicons name="chevron-forward" size={9} color={colors.white} />
+            </View>
+          ) : null}
         </View>
-      ) : null}
-      <Text numberOfLines={2} style={[styles.railText, active && styles.railTextOn]}>
-        {back ? `Back to ${label}` : label}
-      </Text>
+        <View style={[styles.railFooter, active && styles.railFooterOn]}>
+          <Text numberOfLines={2} style={[styles.railText, active && styles.railTextOn]}>
+            {back ? `Back to ${label}` : label}
+          </Text>
+        </View>
+      </View>
     </Pressable>
   );
 }
@@ -375,14 +395,12 @@ const styles = StyleSheet.create({
     borderRightColor: colors.brandPopup.border,
   },
   railItem: {
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    gap: 5,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#dde6f0',
+    paddingVertical: 5,
+    paddingLeft: 8,
+    paddingRight: 6,
   },
   railItemOn: { backgroundColor: colors.page },
+  railPressed: { opacity: 0.9 },
   railBar: {
     position: 'absolute',
     left: 0,
@@ -393,24 +411,48 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
     backgroundColor: colors.brand.DEFAULT,
   },
-  railThumb: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  railCard: {
+    borderRadius: radii.categoryCard,
     backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.brandPopup.border,
+    overflow: 'hidden',
+    shadowColor: colors.brand.DEFAULT,
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  railCardOn: { borderColor: colors.brand.DEFAULT, borderWidth: 1.5 },
+  railArt: {
+    aspectRatio: 3 / 4,
+    backgroundColor: colors.brandPopup.bg,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
   },
-  railThumbOn: { borderColor: colors.brand.DEFAULT },
-  railThumbBack: { backgroundColor: colors.brandPopup.bg },
-  railImg: { width: '100%', height: '100%' },
+  railArtBack: { aspectRatio: 4 / 3 },
+  railBlob: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.55)' },
+  railBlobTop: { width: 40, height: 40, top: -14, right: -12 },
+  railBlobBottom: {
+    width: 30,
+    height: 30,
+    bottom: -10,
+    left: -8,
+    backgroundColor: 'rgba(1,66,170,0.06)',
+  },
+  railIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   railMore: {
     position: 'absolute',
-    top: 46,
-    right: 16,
+    top: 5,
+    right: 5,
     width: 16,
     height: 16,
     borderRadius: 8,
@@ -420,11 +462,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  railFooter: {
+    minHeight: 28,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    borderTopWidth: 1,
+    borderTopColor: colors.brandPopup.border,
+  },
+  railFooterOn: { backgroundColor: colors.brandPopup.bg },
   railText: {
-    fontFamily: font.uiMedium,
-    fontSize: 10.5,
-    lineHeight: 13,
-    color: colors.text.body,
+    fontFamily: font.uiSemibold,
+    fontSize: 9.5,
+    lineHeight: 12,
+    color: colors.heading,
     textAlign: 'center',
   },
   railTextOn: { fontFamily: font.uiBold, color: colors.brand.DEFAULT },
@@ -432,11 +483,10 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     paddingHorizontal: space.sm + 2,
     paddingTop: space.sm,
   },
-  count: { fontFamily: font.uiSemibold, fontSize: 12.5, color: colors.text.body, flexShrink: 1 },
   filterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
