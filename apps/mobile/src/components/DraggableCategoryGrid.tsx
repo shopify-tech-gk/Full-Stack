@@ -288,7 +288,7 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: space.xl },
+  wrap: { marginTop: space.md },
   header: {
     flexDirection: 'row',
     alignItems: 'baseline',

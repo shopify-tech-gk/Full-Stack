@@ -9,7 +9,6 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import {
   PROMO_BANNER_SLIDES,
@@ -32,13 +31,12 @@ const SLIDES = PROMO_BANNER_SLIDES;
 const RATIO = 3.2; // posters are 1536x480
 
 /** Promo slider — the desktop design with the real banner poster images: TWO posters per page
- * (a pair) side by side, native paging swipe, auto-advance with a pause/play control, and dots. */
+ * (a pair) side by side, native paging swipe, auto-advance, and dots. */
 export function PromoCarousel() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const listRef = useRef<FlatList>(null);
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
 
   const gap = space.md;
   const bannerWidth = (width - space.lg * 2 - gap) / 2;
@@ -48,9 +46,8 @@ export function PromoCarousel() {
     setIndex(Math.round(e.nativeEvent.contentOffset.x / width));
   };
 
-  // Auto-advance (pausable), like the desktop slider.
+  // Auto-advance, like the desktop slider.
   useEffect(() => {
-    if (paused) return;
     const t = setInterval(() => {
       setIndex((i) => {
         const next = (i + 1) % SLIDES.length;
@@ -59,7 +56,7 @@ export function PromoCarousel() {
       });
     }, PROMO_SLIDER_INTERVAL_MS);
     return () => clearInterval(t);
-  }, [paused, width]);
+  }, [width]);
 
   const openBanner = (href: string) => {
     const slug = href.split('?')[0]?.split('/').filter(Boolean).pop() ?? '';
@@ -67,7 +64,7 @@ export function PromoCarousel() {
   };
 
   return (
-    <View style={styles.wrap}>
+    <View>
       <FlatList
         ref={listRef}
         horizontal
@@ -96,22 +93,16 @@ export function PromoCarousel() {
         )}
       />
 
-      <View style={styles.controls}>
-        <View style={styles.dots}>
-          {SLIDES.map((pair, i) => (
-            <View key={pair[0].id} style={[styles.dot, i === index && styles.dotActive]} />
-          ))}
-        </View>
-        <Pressable onPress={() => setPaused((p) => !p)} hitSlop={8} style={styles.pause}>
-          <Ionicons name={paused ? 'play' : 'pause'} size={12} color={colors.brand.DEFAULT} />
-        </Pressable>
+      <View style={styles.dots}>
+        {SLIDES.map((pair, i) => (
+          <View key={pair[0].id} style={[styles.dot, i === index && styles.dotActive]} />
+        ))}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: space.md },
   page: { flexDirection: 'row', paddingHorizontal: space.lg, gap: space.md },
   slot: { flex: 1 },
   pressed: { opacity: 0.95 },
@@ -119,24 +110,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.banner + 4,
     backgroundColor: colors.brandPopup.bg,
   },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginTop: space.md,
-  },
-  dots: { flexDirection: 'row', gap: 6 },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: space.sm },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.card.border },
   dotActive: { backgroundColor: colors.brand.DEFAULT, width: 18 },
-  pause: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: colors.card.border,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });
