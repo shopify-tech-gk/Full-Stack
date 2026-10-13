@@ -5,7 +5,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { formatMoney, type PayOrderResult } from '@youmart/shared-client';
 import { api } from '@/lib/api';
-import { parseRazorpayMessage, razorpayCheckoutHtml } from '@/lib/razorpay';
+import {
+  parseRazorpayMessage,
+  razorpayCheckoutHtml,
+  razorpayPrefill,
+  type RazorpaySuccess,
+} from '@/lib/razorpay';
+import { useSession } from '@/stores/session';
 import { colors, font, radii, space } from '@/theme';
 
 // Payment (W9): YouMart Wallet first when the customer chose it, Razorpay (in a WebView) for any
@@ -16,6 +22,8 @@ type Phase = 'creating' | 'paying' | 'verifying' | 'failed';
 
 export default function PaymentScreen() {
   const router = useRouter();
+  const session = useSession();
+  const user = session.status === 'authenticated' ? session.user : null;
   const { orderId, useWallet } = useLocalSearchParams<{ orderId: string; useWallet?: string }>();
   const id = String(orderId ?? '');
   const withWallet = useWallet === '1';
@@ -50,6 +58,7 @@ export default function PaymentScreen() {
             amount: result.razorpay.amount,
             currency: result.razorpay.currency,
             description: 'Order payment',
+            prefill: user ? razorpayPrefill(user) : undefined,
           }),
         );
         setPhase('paying');
@@ -62,36 +71,49 @@ export default function PaymentScreen() {
     return () => {
       active = false;
     };
-  }, [id, withWallet, done]);
+  }, [id, withWallet, done, user]);
 
   // 3. Poll the order until the WEBHOOK confirms it (server-authoritative).
-  const pollConfirmation = useCallback(async () => {
-    if (polling.current) return;
-    polling.current = true;
-    setPhase('verifying');
-    for (let i = 0; i < 20; i += 1) {
-      try {
-        const o = await api.orders.get(id);
-        if (o.status === 'CONFIRMED') {
+  const pollConfirmation = useCallback(
+    async (proof: RazorpaySuccess | null) => {
+      if (polling.current) return;
+      polling.current = true;
+      setPhase('verifying');
+      // Confirm with the server straight away (signature + Razorpay check); the webhook is the
+      // backup, so polling below still covers a failed or PENDING verify.
+      if (proof) {
+        const verified = await api.payments.verify(proof).catch(() => null);
+        if (verified?.status === 'PAID') {
           polling.current = false;
           done();
           return;
         }
-        if (o.status === 'CANCELLED') break;
-      } catch {
-        /* keep polling */
       }
-      await new Promise((r) => setTimeout(r, 2000));
-    }
-    polling.current = false;
-    setError('Payment is taking longer than expected. Check "My Orders" in a moment.');
-    setPhase('failed');
-  }, [id, done]);
+      for (let i = 0; i < 20; i += 1) {
+        try {
+          const o = await api.orders.get(id);
+          if (o.status === 'CONFIRMED') {
+            polling.current = false;
+            done();
+            return;
+          }
+          if (o.status === 'CANCELLED') break;
+        } catch {
+          /* keep polling */
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      polling.current = false;
+      setError('Payment is taking longer than expected. Check "My Orders" in a moment.');
+      setPhase('failed');
+    },
+    [id, done],
+  );
 
   // 2. Razorpay widget result (we still confirm via the webhook poll, not this callback).
   const onMessage = (e: WebViewMessageEvent) => {
     const msg = parseRazorpayMessage(e.nativeEvent.data);
-    if (msg?.type === 'success') void pollConfirmation();
+    if (msg?.type === 'success') void pollConfirmation(msg.payment);
     else if (msg?.type === 'failed') {
       setError('The payment failed. Your order is saved - you can retry from My Orders.');
       setPhase('failed');

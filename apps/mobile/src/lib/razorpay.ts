@@ -9,12 +9,35 @@ export interface RazorpayCheckoutOptions {
   amount: number;
   currency: string;
   description: string;
+  /** The signed-in customer - shown as "Using as" in Checkout. Without it Razorpay falls back to
+   * whichever contact it remembered on this device from an earlier payment. */
+  prefill?: { name?: string | null; email?: string | null; contact?: string | null };
 }
 
-/** Messages the page posts back: success / failed / dismiss. */
-export type RazorpayMessage = { type: 'success' } | { type: 'failed' } | { type: 'dismiss' };
+/** The customer's own details for Razorpay Checkout (only the fields we know). */
+export function razorpayPrefill(user: {
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+}): RazorpayCheckoutOptions['prefill'] {
+  return { name: user.name, email: user.email, contact: user.phone };
+}
+
+/** Razorpay Checkout's success response - verified server-side (POST /api/payments/verify). */
+export interface RazorpaySuccess {
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+}
+
+/** Messages the page posts back: success (with the response) / failed / dismiss. */
+export type RazorpayMessage =
+  { type: 'success'; payment: RazorpaySuccess | null } | { type: 'failed' } | { type: 'dismiss' };
 
 export function razorpayCheckoutHtml(opts: RazorpayCheckoutOptions): string {
+  const prefill = Object.fromEntries(
+    Object.entries(opts.prefill ?? {}).filter(([, v]) => typeof v === 'string' && v.length > 0),
+  );
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1" />
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script></head>
 <body style="margin:0;background:#dcf0fa;font-family:sans-serif">
@@ -30,6 +53,9 @@ export function razorpayCheckoutHtml(opts: RazorpayCheckoutOptions): string {
       currency: ${JSON.stringify(opts.currency)},
       name: 'YouMart',
       description: ${JSON.stringify(opts.description)},
+      prefill: ${JSON.stringify(prefill)},
+      // Never reuse a contact remembered from another account's payment on this device.
+      remember_customer: false,
       theme: { color: '#0142aa' },
       handler: function(r){ post({ type: 'success', payment: r }); },
       modal: { ondismiss: function(){ post({ type: 'dismiss' }); }, escape: true }
@@ -43,8 +69,32 @@ export function razorpayCheckoutHtml(opts: RazorpayCheckoutOptions): string {
 
 export function parseRazorpayMessage(data: string): RazorpayMessage | null {
   try {
-    const msg = JSON.parse(data) as { type?: string };
-    if (msg.type === 'success' || msg.type === 'failed' || msg.type === 'dismiss') {
+    const msg = JSON.parse(data) as {
+      type?: string;
+      payment?: {
+        razorpay_order_id?: unknown;
+        razorpay_payment_id?: unknown;
+        razorpay_signature?: unknown;
+      };
+    };
+    if (msg.type === 'success') {
+      const p = msg.payment;
+      const ok =
+        typeof p?.razorpay_order_id === 'string' &&
+        typeof p.razorpay_payment_id === 'string' &&
+        typeof p.razorpay_signature === 'string';
+      return {
+        type: 'success',
+        payment: ok
+          ? {
+              razorpayOrderId: p.razorpay_order_id as string,
+              razorpayPaymentId: p.razorpay_payment_id as string,
+              razorpaySignature: p.razorpay_signature as string,
+            }
+          : null,
+      };
+    }
+    if (msg.type === 'failed' || msg.type === 'dismiss') {
       return { type: msg.type };
     }
   } catch {

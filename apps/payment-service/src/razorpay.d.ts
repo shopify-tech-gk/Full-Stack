@@ -26,6 +26,17 @@ declare module 'razorpay' {
     status: string;
   }
 
+  /** W9: the fields read when verifying a Checkout payment server-side. */
+  interface RazorpayPayment {
+    id: string;
+    entity: string;
+    order_id: string;
+    amount: number;
+    currency: string;
+    /** created | authorized | captured | refunded | failed */
+    status: string;
+  }
+
   interface RazorpayRefundParams {
     amount?: number;
     notes?: Record<string, string>;
@@ -43,6 +54,8 @@ declare module 'razorpay' {
     };
     payments: {
       refund(paymentId: string, params: RazorpayRefundParams): Promise<RazorpayRefund>;
+      fetch(paymentId: string): Promise<RazorpayPayment>;
+      capture(paymentId: string, amount: number, currency: string): Promise<RazorpayPayment>;
     };
   }
 

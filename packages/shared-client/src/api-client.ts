@@ -313,6 +313,15 @@ export function createApiClient(options: ApiClientOptions) {
       /** W9: pay an order - wallet first when `useWallet`, Razorpay for any rest. */
       pay: (orderId: Uuid, useWallet: boolean) =>
         json<PayOrderResult>('POST', '/payments/pay', { body: { orderId, useWallet } }),
+      /** W9: confirm a Razorpay Checkout payment (order or top-up) right after it succeeds. */
+      verify: (body: {
+        razorpayOrderId: string;
+        razorpayPaymentId: string;
+        razorpaySignature: string;
+      }) =>
+        json<{ kind: 'ORDER' | 'TOPUP'; status: 'PAID' | 'PENDING' }>('POST', '/payments/verify', {
+          body,
+        }),
       /** W9: how an order was paid (wallet / online) and what was refunded. */
       orderSummary: (orderId: Uuid) =>
         json<OrderPaymentSummary>('GET', `/payments/orders/${orderId}`),

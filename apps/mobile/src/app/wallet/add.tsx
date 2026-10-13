@@ -16,7 +16,13 @@ import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { formatMoney, type WalletSummary } from '@youmart/shared-client';
 import { ApiError } from '@youmart/shared-client';
 import { api } from '@/lib/api';
-import { parseRazorpayMessage, razorpayCheckoutHtml } from '@/lib/razorpay';
+import {
+  parseRazorpayMessage,
+  razorpayCheckoutHtml,
+  razorpayPrefill,
+  type RazorpaySuccess,
+} from '@/lib/razorpay';
+import { useSession } from '@/stores/session';
 import { colors, font, radii, space } from '@/theme';
 
 const QUICK = ['100', '500', '1000', '2000'];
@@ -34,6 +40,8 @@ function toAmount(input: string): string | null {
 /** W9: add money to the YouMart Wallet through Razorpay; the webhook credits it (we poll). */
 export default function AddMoneyScreen() {
   const router = useRouter();
+  const session = useSession();
+  const user = session.status === 'authenticated' ? session.user : null;
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [input, setInput] = useState('');
   const [phase, setPhase] = useState<Phase>('form');
@@ -76,6 +84,7 @@ export default function AddMoneyScreen() {
           amount: topup.amountPaise,
           currency: topup.currency,
           description: 'Add money to YouMart Wallet',
+          prefill: user ? razorpayPrefill(user) : undefined,
         }),
       );
       setPhase('paying');
@@ -88,33 +97,45 @@ export default function AddMoneyScreen() {
     }
   };
 
-  const poll = useCallback(async () => {
-    if (!topupId || polling.current) return;
-    polling.current = true;
-    setPhase('verifying');
-    for (let i = 0; i < 20; i += 1) {
-      try {
-        const t = await api.wallet.getTopup(topupId);
-        if (t.status === 'PAID') {
+  const poll = useCallback(
+    async (proof: RazorpaySuccess | null) => {
+      if (!topupId || polling.current) return;
+      polling.current = true;
+      setPhase('verifying');
+      // Confirm with the server straight away; the webhook is the backup (polled below).
+      if (proof) {
+        const verified = await api.payments.verify(proof).catch(() => null);
+        if (verified?.status === 'PAID') {
           polling.current = false;
           setPhase('done');
           return;
         }
-      } catch {
-        /* keep polling */
       }
-      await new Promise((r) => setTimeout(r, 2000));
-    }
-    polling.current = false;
-    setError(
-      'Your payment is taking longer than expected. The money will show in your wallet once it is confirmed.',
-    );
-    setPhase('failed');
-  }, [topupId]);
+      for (let i = 0; i < 20; i += 1) {
+        try {
+          const t = await api.wallet.getTopup(topupId);
+          if (t.status === 'PAID') {
+            polling.current = false;
+            setPhase('done');
+            return;
+          }
+        } catch {
+          /* keep polling */
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      polling.current = false;
+      setError(
+        'Your payment is taking longer than expected. The money will show in your wallet once it is confirmed.',
+      );
+      setPhase('failed');
+    },
+    [topupId],
+  );
 
   const onMessage = (e: WebViewMessageEvent) => {
     const msg = parseRazorpayMessage(e.nativeEvent.data);
-    if (msg?.type === 'success') void poll();
+    if (msg?.type === 'success') void poll(msg.payment);
     else if (msg?.type === 'failed') {
       setError('The payment failed. No money was added.');
       setPhase('failed');

@@ -14,6 +14,14 @@ export const CreateRefundBody = z.object({
   idempotencyKey: z.string().min(1).max(200).optional(),
 });
 
+/** W9: the Razorpay Checkout success response, sent by the client right after paying. */
+export const VerifyPaymentBody = z.object({
+  razorpayOrderId: z.string().min(1).max(64),
+  razorpayPaymentId: z.string().min(1).max(64),
+  razorpaySignature: z.string().min(1).max(256),
+});
+export type VerifyPaymentBody = z.infer<typeof VerifyPaymentBody>;
+
 /** W9: pay a PENDING_PAYMENT order, optionally with wallet money first. */
 export const PayOrderBody = z.object({
   orderId: z.string().uuid(),

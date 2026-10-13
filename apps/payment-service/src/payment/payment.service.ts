@@ -10,7 +10,7 @@ import { orderClient } from '../serviceClients';
 import { razorpay } from '../razorpayClient';
 import { logger } from '../logger';
 import { moneyToPaise } from './money-paise';
-import { RazorpayWebhookPayload, CreateRefundBody } from './payment.schema';
+import { RazorpayWebhookPayload, CreateRefundBody, type VerifyPaymentBody } from './payment.schema';
 import {
   captureHold,
   creditRefundInTx,
@@ -613,4 +613,84 @@ export async function handleWebhook(input: HandleWebhookInput): Promise<void> {
   }
 
   await markProcessed();
+}
+
+export interface VerifyPaymentResult {
+  kind: 'ORDER' | 'TOPUP';
+  /** PAID = applied now (order confirmed / wallet credited); PENDING = Razorpay hasn't captured
+   * it yet - the webhook will apply it when it does. */
+  status: 'PAID' | 'PENDING';
+}
+
+/**
+ * W9: client-side confirmation, so the customer doesn't wait on the webhook (and local
+ * development works without a tunnel). Razorpay Checkout's success handler returns
+ * { razorpay_order_id, razorpay_payment_id, razorpay_signature }; the app sends them here.
+ * 1. The signature must be HMAC-SHA256(order_id + "|" + payment_id, key_secret) - Razorpay's
+ *    documented check (constant-time compare). Anything else is a 400; nothing changes.
+ * 2. The Razorpay order must belong to the caller (their top-up or their order) - else 404.
+ * 3. The payment is re-read from Razorpay's API (never trusting the client): it must be for this
+ *    Razorpay order; an `authorized` payment is captured; anything not `captured` is PENDING.
+ * 4. The capture is applied exactly like the webhook does (same idempotent steps), so whichever of
+ *    the two arrives first does the work and the other is a no-op.
+ */
+export async function verifyClientPayment(
+  userId: string,
+  input: VerifyPaymentBody,
+): Promise<VerifyPaymentResult> {
+  const expected = Buffer.from(
+    createHmac('sha256', config.razorpayKeySecret)
+      .update(`${input.razorpayOrderId}|${input.razorpayPaymentId}`)
+      .digest('hex'),
+  );
+  const actual = Buffer.from(input.razorpaySignature);
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+    throw new AppError('VALIDATION_ERROR', 400, 'Invalid payment signature');
+  }
+
+  const topup = await prisma.walletTopup.findFirst({
+    where: { razorpayOrderId: input.razorpayOrderId, deletedAt: null },
+  });
+  const payment = topup
+    ? null
+    : await prisma.payment.findFirst({
+        where: { razorpayOrderId: input.razorpayOrderId, deletedAt: null },
+      });
+  if (topup ? topup.userId !== userId : !payment) {
+    throw new AppError('NOT_FOUND', 404, 'Payment not found');
+  }
+  if (payment) {
+    const order = await orderClient.getInternalOrder(payment.orderId);
+    if (order.userId !== userId) {
+      throw new AppError('NOT_FOUND', 404, 'Payment not found');
+    }
+  }
+  const kind: VerifyPaymentResult['kind'] = topup ? 'TOPUP' : 'ORDER';
+
+  let rp = await razorpay.payments.fetch(input.razorpayPaymentId);
+  if (rp.order_id !== input.razorpayOrderId) {
+    throw new AppError('VALIDATION_ERROR', 400, 'Payment does not belong to this order');
+  }
+  if (rp.status === 'authorized') {
+    rp = await razorpay.payments.capture(rp.id, rp.amount, rp.currency);
+  }
+  if (rp.status !== 'captured') {
+    return { kind, status: 'PENDING' };
+  }
+
+  if (topup) {
+    await handleTopupCaptured(input.razorpayOrderId, rp.id, rp.amount);
+    return { kind, status: 'PAID' };
+  }
+
+  const row = payment!;
+  if (rp.amount !== moneyToPaise(decimalToMoney(row.amount))) {
+    throw new AppError('VALIDATION_ERROR', 400, 'Payment amount does not match the order');
+  }
+  await prisma.payment.update({
+    where: { id: row.id },
+    data: { status: 'CAPTURED', razorpayPaymentId: rp.id },
+  });
+  await handleOrderCaptured(row.id, row.orderId, decimalToMoney(row.amount));
+  return { kind, status: 'PAID' };
 }

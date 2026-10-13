@@ -1,12 +1,18 @@
 import { Router } from 'express';
 import { AppError } from '@youmart/errors';
-import { CreateRazorpayOrderBody, CreateRefundBody, PayOrderBody } from '../payment/payment.schema';
+import {
+  CreateRazorpayOrderBody,
+  CreateRefundBody,
+  PayOrderBody,
+  VerifyPaymentBody,
+} from '../payment/payment.schema';
 import {
   createRazorpayOrder,
   createRefund,
   getOrderPaymentSummary,
   handleWebhook,
   payOrder,
+  verifyClientPayment,
 } from '../payment/payment.service';
 import { requireAuth, requireServiceAuth } from '../authMiddleware';
 import { requireUserId } from '../authToken';
@@ -24,6 +30,13 @@ paymentRouter.post('/razorpay-order', requireAuth, async (req, res) => {
 paymentRouter.post('/pay', requireAuth, async (req, res) => {
   const body = PayOrderBody.parse(req.body);
   res.status(200).json(await payOrder(requireUserId(req), body.orderId, body.useWallet));
+});
+
+// W9: the app confirms a Razorpay Checkout payment right away (signature + Razorpay API check)
+// instead of waiting for the webhook - see verifyClientPayment.
+paymentRouter.post('/verify', requireAuth, async (req, res) => {
+  const body = VerifyPaymentBody.parse(req.body);
+  res.status(200).json(await verifyClientPayment(requireUserId(req), body));
 });
 
 // W9: how the customer's own order was paid (wallet / online) and its refunds.

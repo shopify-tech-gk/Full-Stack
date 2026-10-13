@@ -17,9 +17,13 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      // Solid icons on every tab (active = brand blue, inactive = grey): outline icons in the same
+      // grey read too pale.
       screenOptions={{
         headerShown: false,
-        animation: 'shift',
+        // No tab transition: the 'shift' animation sometimes left the new tab parked off-screen
+        // (a blank page until the tab was tapped again), especially on quick taps / swipe-to-tab.
+        animation: 'none',
         tabBarActiveTintColor: colors.brand.DEFAULT,
         tabBarInactiveTintColor: colors.nav.inactiveIcon,
         tabBarLabelStyle: { fontFamily: font.uiMedium, fontSize: 11 },
@@ -30,18 +34,14 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="buy-again"
         options={{
           title: 'Buy Again',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'heart' : 'heart-outline'} size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <Ionicons name="heart" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -50,9 +50,7 @@ export default function TabsLayout() {
           title: 'My Cart',
           tabBarBadge: itemCount > 0 ? (itemCount > 99 ? '99+' : itemCount) : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.price.discount, fontSize: 10 },
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'cart' : 'cart-outline'} size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <Ionicons name="cart" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -72,7 +70,7 @@ export default function TabsLayout() {
                 <Avatar name={avatarName} uri={uri} size={size} />
               </View>
             ) : (
-              <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+              <Ionicons name="person" size={size} color={color} />
             ),
         }}
       />
