@@ -19,7 +19,8 @@
     "dev:seed-catalog": "node scripts/dev-seed-catalog.mjs",
     "dev:seed-demo": "node scripts/dev-seed-demo.mjs",
     "dev:remove-demo": "node scripts/dev-remove-demo.mjs",
-    "build:category-taxonomy": "node scripts/build-category-taxonomy.mjs"
+    "build:category-taxonomy": "node scripts/build-category-taxonomy.mjs",
+    "build:brand-domains": "node scripts/build-brand-domains.mjs"
   },
   "devDependencies": {
     "@types/node": "20.19.43",

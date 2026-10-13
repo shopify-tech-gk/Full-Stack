@@ -30,11 +30,13 @@ import {
 } from '@/lib/home-categories';
 import { ProductCard } from '@/components/ProductCard';
 import { FilterSheet } from '@/components/FilterSheet';
-import { avatarColor } from '@/components/Avatar';
+import { BrandLogo } from '@/components/BrandLogo';
 import { colors, font, radii, space } from '@/theme';
 
 const RAIL_W = 86;
 const MAX_BRANDS = 40;
+const TILE_W = 84;
+const TILE_H = 48;
 
 type Results = { products: ProductCardData[]; total: number; filters: Listing['filters'] };
 
@@ -214,9 +216,9 @@ export default function CategoryScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.brandRow}
               >
-                <BrandChip label="All" active={!brand} onPress={() => pickBrand('')} />
+                <BrandTile label="All" active={!brand} onPress={() => pickBrand('')} />
                 {brands.map((b) => (
-                  <BrandChip key={b} label={b} active={brand === b} onPress={() => pickBrand(b)} />
+                  <BrandTile key={b} label={b} active={brand === b} onPress={() => pickBrand(b)} />
                 ))}
               </ScrollView>
             </View>
@@ -324,7 +326,7 @@ function RailItem({
   );
 }
 
-function BrandChip({
+function BrandTile({
   label,
   active,
   onPress,
@@ -335,22 +337,30 @@ function BrandChip({
 }) {
   const all = label === 'All';
   return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
-      {all ? null : (
-        <View
-          style={[styles.mono, { backgroundColor: active ? colors.white : avatarColor(label) }]}
-        >
-          <Text style={[styles.monoText, active && { color: colors.brand.DEFAULT }]}>
-            {label
-              .replace(/[^a-z0-9]/gi, '')
-              .charAt(0)
-              .toUpperCase() || '•'}
-          </Text>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={all ? 'All brands' : label}
+      style={({ pressed }) => [styles.tile, active && styles.tileOn, pressed && styles.tilePressed]}
+    >
+      {all ? (
+        <View style={styles.allTile}>
+          <Ionicons
+            name="grid-outline"
+            size={16}
+            color={active ? colors.brand.DEFAULT : colors.text.body}
+          />
+          <Text style={[styles.allText, active && styles.allTextOn]}>All</Text>
         </View>
+      ) : (
+        <BrandLogo name={label} width={TILE_W - 18} height={TILE_H - 18} />
       )}
-      <Text numberOfLines={1} style={[styles.chipText, active && styles.chipTextOn]}>
-        {all ? 'All brands' : label}
-      </Text>
+      {active ? (
+        <View style={styles.tick}>
+          <Ionicons name="checkmark" size={10} color={colors.white} />
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -447,30 +457,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.sm + 2,
     marginBottom: 6,
   },
-  brandRow: { paddingHorizontal: space.sm, gap: 6, paddingBottom: 2 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    height: 32,
-    paddingLeft: 4,
-    paddingRight: 11,
-    borderRadius: radii.pill,
+  brandRow: { paddingHorizontal: space.sm, gap: 8, paddingTop: 6, paddingBottom: 4 },
+  tile: {
+    width: TILE_W,
+    height: TILE_H,
+    borderRadius: 12,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.brandPopup.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0b2a5b',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
-  chipOn: { backgroundColor: colors.brand.DEFAULT, borderColor: colors.brand.DEFAULT },
-  mono: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  tileOn: { borderColor: colors.brand.DEFAULT, borderWidth: 1.5, backgroundColor: '#f4f8ff' },
+  tilePressed: { transform: [{ scale: 0.96 }] },
+  allTile: { alignItems: 'center', gap: 2 },
+  allText: { fontFamily: font.uiSemibold, fontSize: 11, color: colors.text.body },
+  allTextOn: { fontFamily: font.uiBold, color: colors.brand.DEFAULT },
+  tick: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: colors.white,
+    backgroundColor: colors.brand.DEFAULT,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  monoText: { fontFamily: font.uiBold, fontSize: 11, color: colors.white },
-  chipText: { fontFamily: font.uiSemibold, fontSize: 12, color: colors.heading, maxWidth: 110 },
-  chipTextOn: { color: colors.white },
   grid: { padding: space.sm, paddingBottom: space.xxxl },
   col: { gap: space.sm, marginBottom: space.sm },
   center: {
