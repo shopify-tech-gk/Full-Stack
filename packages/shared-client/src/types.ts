@@ -300,6 +300,8 @@ export interface OrderView {
   createdAt: IsoDateTime;
   /** v1.6: order status history, oldest first. */
   timeline: OrderTimelineEntry[];
+  /** W9: the latest cancellation request of a paid order (null = never requested). */
+  cancelRequest?: { status: CancelRequestStatus; reason: string; createdAt: IsoDateTime } | null;
 }
 export interface OrderTimelineEntry {
   status: OrderStatus;
@@ -447,6 +449,114 @@ export interface ReturnView {
   reason: string;
   status: ReturnStatus;
   refundAmount: Money | null;
+  createdAt: IsoDateTime;
+  updatedAt: IsoDateTime;
+  /** W9 (customer views): what the return is for - null if the order line can't be read. */
+  orderId?: Uuid | null;
+  orderNumber?: string | null;
+  title?: string | null;
+  quantity?: number | null;
+  /** W9: refunds are always credited to the YouMart Wallet. */
+  refundTo?: 'WALLET';
+}
+
+// --- YouMart Wallet (W9) ---
+export interface WalletSummary {
+  /** Everything in the wallet. */
+  balance: Money;
+  /** Reserved for orders waiting for the rest of their payment. */
+  held: Money;
+  /** Spendable now (balance - held). */
+  available: Money;
+  topupLimits: { min: Money; max: Money; maxBalance: Money };
+}
+export type WalletTxnType = 'TOPUP' | 'REFUND' | 'ORDER_PAYMENT' | 'FORFEIT';
+export interface WalletTransaction {
+  id: Uuid;
+  type: WalletTxnType;
+  direction: 'CREDIT' | 'DEBIT';
+  amount: Money;
+  balanceAfter: Money;
+  description: string;
+  orderId: Uuid | null;
+  orderNumber: string | null;
+  createdAt: IsoDateTime;
+}
+export interface WalletTransactionPage {
+  items: WalletTransaction[];
+  nextCursor: Uuid | null;
+}
+export type WalletTopupStatus = 'CREATED' | 'PAID' | 'FAILED';
+export interface WalletTopup {
+  topupId: Uuid;
+  amount: Money;
+  status: WalletTopupStatus;
+  createdAt: IsoDateTime;
+}
+/** POST /api/wallet/topups: open Razorpay Checkout with `razorpayOrderId` / `amountPaise`. */
+export interface CreateWalletTopupResult extends WalletTopup {
+  razorpayOrderId: string;
+  razorpayKeyId: string;
+  amountPaise: number;
+  currency: 'INR';
+}
+/** POST /api/payments/pay: PAID = the wallet covered everything; otherwise pay `razorpay`. */
+export interface PayOrderResult {
+  status: 'PAID' | 'PAYMENT_REQUIRED';
+  orderId: Uuid;
+  walletAmount: Money;
+  onlineAmount: Money;
+  razorpay: RazorpayOrder | null;
+}
+/** GET /api/payments/orders/:orderId - how an order was paid and its refunds. */
+export interface OrderPaymentSummary {
+  orderId: Uuid;
+  walletAmount: Money;
+  onlineAmount: Money;
+  refundedTotal: Money;
+  refunds: {
+    refundId: Uuid;
+    amount: Money;
+    method: 'ORIGINAL_PAYMENT' | 'WALLET';
+    status: 'PENDING' | 'PROCESSED' | 'FAILED';
+    reason: string | null;
+    createdAt: IsoDateTime;
+  }[];
+}
+
+// --- Account settings (W9) ---
+export interface NotificationSettings {
+  /** Order placed / shipped / delivered, refunds and wallet credits. */
+  orderUpdates: { whatsapp: boolean; email: boolean };
+  /** Offers and promotions. */
+  offers: { whatsapp: boolean; email: boolean };
+}
+export interface AccountDeletionCheck {
+  canDelete: boolean;
+  openOrders: number;
+  walletBalance: Money;
+  walletHeld: Money;
+}
+
+// --- Help Center (W9) ---
+export type HelpTopic =
+  | 'ORDER_STATUS'
+  | 'CANCELLATION'
+  | 'RETURN_REFUND'
+  | 'PAYMENT_WALLET'
+  | 'DAMAGED_WRONG_ITEM'
+  | 'ACCOUNT'
+  | 'OTHER';
+export interface HelpTicket {
+  ticketId: Uuid;
+  /** Short reference to quote to support, e.g. "HLP-1A2B3C4D". */
+  reference: string;
+  topic: HelpTopic;
+  topicLabel: string;
+  orderId: Uuid | null;
+  orderNumber: string | null;
+  message: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
 }

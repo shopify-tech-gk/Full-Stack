@@ -13,7 +13,8 @@
 //    the order server-side. The client only polls GET /api/orders/:id (`pollOrderStatus`) until
 //    it is CONFIRMED.
 import { ApiError } from './api-client';
-import type { OrderView, RazorpayOrder } from './types';
+import type { Money, OrderView, RazorpayOrder } from './types';
+import { fromPaise, toPaise } from './money';
 
 /** Razorpay's hosted Checkout script (web). */
 export const RAZORPAY_CHECKOUT_SCRIPT = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -93,4 +94,18 @@ export function paymentErrorMessage(error: unknown): string {
     return 'This order can no longer be paid for. Please check your orders.';
   }
   return 'We could not start the payment. Please try again in a moment.';
+}
+
+/**
+ * W9: how an order total splits between the YouMart Wallet and an online (Razorpay) payment when
+ * the customer pays with the wallet - the same rule payment-service applies: as much as the
+ * spendable balance covers, but never leaving an online part under Rs 1 (Razorpay's minimum).
+ */
+export function walletSplit(total: Money, available: Money): { wallet: Money; online: Money } {
+  const totalPaise = toPaise(total);
+  let walletPaise = Math.min(toPaise(available), totalPaise);
+  const restPaise = totalPaise - walletPaise;
+  if (restPaise > 0 && restPaise < 100) walletPaise = totalPaise - 100;
+  if (walletPaise < 0) walletPaise = 0;
+  return { wallet: fromPaise(walletPaise), online: fromPaise(totalPaise - walletPaise) };
 }

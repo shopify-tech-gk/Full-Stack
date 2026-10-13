@@ -9,6 +9,13 @@ export interface UserContactView {
   email: string | null;
 }
 
+/** W9: which channels the customer wants for each kind of message (`GET
+ * /auth/internal/users/:userId/notification-settings`). Security messages (OTP) ignore this. */
+export interface NotificationSettings {
+  orderUpdates: { whatsapp: boolean; email: boolean };
+  offers: { whatsapp: boolean; email: boolean };
+}
+
 export interface CreateAuthClientOptions {
   baseUrl: string;
   timeoutMs?: number;
@@ -23,6 +30,8 @@ export interface AuthClient {
    * (cross-schema isolation). Throws a `404` `AppError` if the user
    * doesn't exist. */
   getUserContact(userId: string): Promise<UserContactView>;
+  /** W9: the customer's notification settings (defaults when never changed). */
+  getNotificationSettings(userId: string): Promise<NotificationSettings>;
 }
 
 /** `baseUrl` (e.g. `AUTH_SERVICE_URL`) is injected by the caller - this
@@ -37,6 +46,16 @@ export function createAuthClient({
       return request<UserContactView>({
         baseUrl,
         path: `/auth/internal/users/${userId}/contact`,
+        method: 'GET',
+        authToken: mintCallerServiceToken(serviceAuth),
+        timeoutMs,
+      });
+    },
+
+    getNotificationSettings(userId) {
+      return request<NotificationSettings>({
+        baseUrl,
+        path: `/auth/internal/users/${userId}/notification-settings`,
         method: 'GET',
         authToken: mintCallerServiceToken(serviceAuth),
         timeoutMs,

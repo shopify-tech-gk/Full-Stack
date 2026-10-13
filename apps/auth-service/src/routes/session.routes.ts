@@ -14,6 +14,12 @@ import {
 } from '../auth/session.service';
 import { REFRESH_COOKIE_OPTIONS } from '../auth/cookie.util';
 import { requireAuth } from '../authMiddleware';
+import {
+  NotificationSettingsBody,
+  getNotificationSettings,
+  setNotificationSettings,
+} from '../user/notification-settings.service';
+import { checkAccountDeletion, deleteAccount } from '../user/account-deletion.service';
 
 export const sessionRouter: Router = Router();
 
@@ -118,6 +124,57 @@ sessionRouter.delete('/me/avatar', requireAuth, async (req, res) => {
     throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
   }
   res.status(200).json({ avatar: await setAvatar(userId, null) });
+});
+
+// W9: which channels the customer wants order updates / offers on.
+sessionRouter.get('/me/notification-settings', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  res.status(200).json(await getNotificationSettings(userId));
+});
+
+sessionRouter.put('/me/notification-settings', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  const body = NotificationSettingsBody.parse(req.body);
+  res.status(200).json(await setNotificationSettings(userId, body));
+});
+
+// W9: account deletion - what stands in the way (open orders, wallet balance), then the delete.
+sessionRouter.get('/me/deletion-check', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  res.status(200).json(await checkAccountDeletion(userId));
+});
+
+const DeleteAccountBody = z.object({
+  /** The customer typed/confirmed DELETE - guards against an accidental call. */
+  confirm: z.literal('DELETE'),
+  /** Required (true) when the wallet still has money: the customer gives it up. */
+  forfeitWallet: z.boolean().default(false),
+});
+
+sessionRouter.delete('/me', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  }
+  const body = DeleteAccountBody.parse(req.body);
+  const result = await deleteAccount(userId, { forfeitWallet: body.forfeitWallet });
+  res.clearCookie(config.refreshCookieName, {
+    httpOnly: REFRESH_COOKIE_OPTIONS.httpOnly,
+    secure: REFRESH_COOKIE_OPTIONS.secure,
+    sameSite: REFRESH_COOKIE_OPTIONS.sameSite,
+    path: REFRESH_COOKIE_OPTIONS.path,
+    domain: REFRESH_COOKIE_OPTIONS.domain,
+  });
+  res.status(200).json(result);
 });
 
 sessionRouter.post('/logout', async (req, res) => {

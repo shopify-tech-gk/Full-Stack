@@ -109,6 +109,17 @@ catalogRouter.get('/categories', optionalAuth, async (_req, res) => {
 });
 
 // --- View tracking: the CALLER's recently viewed products (customer token; own rows only) ---
+// W9: SERVICE-ONLY - auth-service erases a deleted account's viewing history.
+catalogRouter.delete(
+  '/internal/users/:userId/recently-viewed',
+  requireServiceAuth,
+  async (req, res) => {
+    const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
+    await clearRecentlyViewed(userId);
+    res.status(204).send();
+  },
+);
+
 catalogRouter.get('/recently-viewed', requireAuth, async (req, res) => {
   const { limit } = RecentlyViewedQuery.parse(req.query);
   res.status(200).json({ items: await listRecentlyViewed(requireUserId(req), limit) });

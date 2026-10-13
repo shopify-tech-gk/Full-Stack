@@ -32,6 +32,8 @@ export interface AddressClient {
    * SUBJECT (Ch6.5 caller-vs-subject design). Throws a `404` `AppError` if
    * the address doesn't exist or isn't that user's own. */
   getAddressForOrder(userId: string, addressId: string): Promise<AddressSnapshot>;
+  /** W9 account deletion: erases every saved address of the user. */
+  eraseAddressesForUser(userId: string): Promise<{ erased: number }>;
 }
 
 /** `baseUrl` (e.g. `ADDRESS_SERVICE_URL`) is injected by the caller - this
@@ -48,6 +50,16 @@ export function createAddressClient({
         baseUrl,
         path: `/addresses/internal/for-order?${query}`,
         method: 'GET',
+        authToken: mintCallerServiceToken(serviceAuth),
+        timeoutMs,
+      });
+    },
+
+    eraseAddressesForUser(userId) {
+      return request<{ erased: number }>({
+        baseUrl,
+        path: `/addresses/internal/users/${userId}`,
+        method: 'DELETE',
         authToken: mintCallerServiceToken(serviceAuth),
         timeoutMs,
       });

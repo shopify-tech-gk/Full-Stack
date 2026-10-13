@@ -1,8 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import type { Prisma } from '@youmart/db';
+import { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { AppError } from '@youmart/errors';
 import { sum, add, subtract, compare } from '@youmart/shared-utils';
+import type { InternalOrderView } from '@youmart/service-client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { orderClient } from '../serviceClients';
@@ -10,6 +11,19 @@ import { razorpay } from '../razorpayClient';
 import { logger } from '../logger';
 import { moneyToPaise } from './money-paise';
 import { RazorpayWebhookPayload, CreateRefundBody } from './payment.schema';
+import {
+  captureHold,
+  creditRefundInTx,
+  findLiveHold,
+  handleTopupCaptured,
+  holdForOrder,
+  isTopupOrder,
+  lockWalletInTx,
+  releaseHold,
+  runWalletTransaction,
+} from '../wallet/wallet.service';
+
+const ZERO = '0.00' as Money;
 
 function decimalToMoney(value: Prisma.Decimal): Money {
   return value.toFixed(2) as Money;
@@ -19,42 +33,39 @@ function toJsonInput(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
 
+async function loadOwnOrder(userId: string, orderId: string): Promise<InternalOrderView> {
+  const order = await orderClient.getInternalOrder(orderId);
+  if (order.userId !== userId) {
+    // Never reveal that the order exists but belongs to someone else.
+    throw new AppError('NOT_FOUND', 404, 'Order not found');
+  }
+  return order;
+}
+
 export interface RazorpayOrderResult {
   razorpayOrderId: string;
   razorpayKeyId: string;
+  /** Paise - the ONLINE part only when wallet money pays the rest (W9). */
   amount: number;
   currency: string;
   orderId: string;
 }
 
 /**
- * Creates (or reuses) a Razorpay order for a PENDING_PAYMENT order.
- * Reusing an existing CREATED payment avoids creating a duplicate Razorpay
- * order on retries/page-refreshes (idempotent-ish, not a full idempotency
- * key system - documented, matches the checkout double-click guard's
- * pragmatism in Ch4.5b).
+ * The Razorpay order for `amount` (the online part of `orderId`). Reuses the order's CREATED
+ * payment when its amount still matches (retries / page refreshes); a CREATED payment for a
+ * different amount (the customer switched the wallet on/off) is superseded - marked FAILED - and
+ * a fresh Razorpay order created. A capture that still arrives on a superseded order is handled
+ * by the webhook (see handleOrderCaptured).
  */
-export async function createRazorpayOrder(
-  userId: string,
-  orderId: string,
-): Promise<RazorpayOrderResult> {
-  const order = await orderClient.getInternalOrder(orderId);
-
-  if (order.userId !== userId) {
-    // Never reveal that the order exists but belongs to someone else.
-    throw new AppError('NOT_FOUND', 404, 'Order not found');
-  }
-  if (order.status !== 'PENDING_PAYMENT') {
-    throw new AppError('CONFLICT', 409, `Cannot pay for an order in status ${order.status}`);
-  }
-
-  const amountPaise = moneyToPaise(order.grandTotal);
-
+async function ensureRazorpayOrder(orderId: string, amount: Money): Promise<RazorpayOrderResult> {
+  const amountPaise = moneyToPaise(amount);
   const existing = await prisma.payment.findFirst({
     where: { orderId, status: 'CREATED', deletedAt: null },
+    orderBy: { createdAt: 'desc' },
   });
 
-  if (existing?.razorpayOrderId) {
+  if (existing?.razorpayOrderId && compare(decimalToMoney(existing.amount), amount) === 0) {
     return {
       razorpayOrderId: existing.razorpayOrderId,
       razorpayKeyId: config.razorpayKeyId,
@@ -62,6 +73,9 @@ export async function createRazorpayOrder(
       currency: existing.currency,
       orderId,
     };
+  }
+  if (existing) {
+    await prisma.payment.update({ where: { id: existing.id }, data: { status: 'FAILED' } });
   }
 
   const razorpayOrder = await razorpay.orders.create({
@@ -73,7 +87,7 @@ export async function createRazorpayOrder(
   await prisma.payment.create({
     data: {
       orderId,
-      amount: order.grandTotal,
+      amount,
       currency: 'INR',
       status: 'CREATED',
       razorpayOrderId: razorpayOrder.id,
@@ -89,149 +103,301 @@ export async function createRazorpayOrder(
   };
 }
 
+/**
+ * Creates (or reuses) a Razorpay order for a PENDING_PAYMENT order (the pre-W9 endpoint, kept
+ * for existing clients). W9: when wallet money is held for the order, Razorpay is only asked for
+ * the rest.
+ */
+export async function createRazorpayOrder(
+  userId: string,
+  orderId: string,
+): Promise<RazorpayOrderResult> {
+  const order = await loadOwnOrder(userId, orderId);
+  if (order.status !== 'PENDING_PAYMENT') {
+    throw new AppError('CONFLICT', 409, `Cannot pay for an order in status ${order.status}`);
+  }
+  const hold = await findLiveHold(orderId);
+  const held = hold?.status === 'HELD' ? hold.amount : ZERO;
+  return ensureRazorpayOrder(orderId, subtract(order.grandTotal, held));
+}
+
+export interface PayOrderResult {
+  /** PAID = done (the wallet covered everything); PAYMENT_REQUIRED = open Razorpay for the rest. */
+  status: 'PAID' | 'PAYMENT_REQUIRED';
+  orderId: string;
+  walletAmount: Money;
+  onlineAmount: Money;
+  razorpay: RazorpayOrderResult | null;
+}
+
+/**
+ * W9: pays a PENDING_PAYMENT order, optionally with YouMart Wallet money first.
+ * - useWallet: as much of the total as is spendable is held for the order. If that covers the
+ *   whole order it is captured at once and the order confirmed - no Razorpay step. Otherwise a
+ *   Razorpay order is created for the rest (the hold is captured when Razorpay confirms).
+ * - !useWallet: any hold is released and Razorpay is asked for the full total.
+ * Safe to call again (same order): holds and Razorpay orders are reused; a confirmed order
+ * answers PAID.
+ */
+export async function payOrder(
+  userId: string,
+  orderId: string,
+  useWallet: boolean,
+): Promise<PayOrderResult> {
+  const order = await loadOwnOrder(userId, orderId);
+
+  if (order.status === 'CONFIRMED') {
+    const hold = await findLiveHold(orderId);
+    const walletAmount = hold?.status === 'CAPTURED' ? hold.amount : ZERO;
+    return {
+      status: 'PAID',
+      orderId,
+      walletAmount,
+      onlineAmount: subtract(order.grandTotal, walletAmount),
+      razorpay: null,
+    };
+  }
+  if (order.status !== 'PENDING_PAYMENT') {
+    throw new AppError('CONFLICT', 409, `Cannot pay for an order in status ${order.status}`);
+  }
+
+  let hold = await findLiveHold(orderId);
+  if (useWallet && !hold) {
+    hold = await holdForOrder(userId, orderId, order.grandTotal);
+  } else if (!useWallet && hold?.status === 'HELD') {
+    await releaseHold(orderId);
+    hold = null;
+  }
+
+  const walletAmount = hold?.amount ?? ZERO;
+  const onlineAmount = subtract(order.grandTotal, walletAmount);
+
+  if (compare(onlineAmount, ZERO) <= 0) {
+    await captureHold(orderId, order.orderNumber);
+    try {
+      await orderClient.confirmOrder(orderId);
+    } catch (err: unknown) {
+      if (err instanceof AppError && err.httpStatus === 409) {
+        // The order was cancelled/expired in the meantime - the wallet money goes straight back.
+        await createRefund({
+          orderId,
+          amount: walletAmount,
+          reason: 'Order was no longer awaiting payment',
+          idempotencyKey: `wallet-pay-unconfirmed:${orderId}`,
+        });
+      }
+      throw err;
+    }
+    // Any Razorpay order made earlier for this order is no longer needed.
+    await prisma.payment.updateMany({
+      where: { orderId, status: 'CREATED', deletedAt: null },
+      data: { status: 'FAILED' },
+    });
+    return { status: 'PAID', orderId, walletAmount, onlineAmount: ZERO, razorpay: null };
+  }
+
+  return {
+    status: 'PAYMENT_REQUIRED',
+    orderId,
+    walletAmount,
+    onlineAmount,
+    razorpay: await ensureRazorpayOrder(orderId, onlineAmount),
+  };
+}
+
 export type RefundStatusValue = 'PENDING' | 'PROCESSED' | 'FAILED';
 
 export interface RefundResult {
   refundId: string;
-  paymentId: string;
+  /** The Razorpay payment refunded (pre-W9 refunds); null for wallet refunds. */
+  paymentId: string | null;
   amount: Money;
   status: RefundStatusValue;
   razorpayRefundId: string | null;
-  /** true when the Razorpay API call itself could not be reached/succeed
-   * (e.g. placeholder dev credentials) - the refund record still exists
-   * (status FAILED), but no money actually moved. Mirrors the same
-   * BLOCKED-on-creds honesty as `createRazorpayOrder`/Ch4.6's webhook
-   * testing - never faked as a success. */
+  /** W9: WALLET = credited to the customer's YouMart Wallet (every new refund). */
+  method: 'ORIGINAL_PAYMENT' | 'WALLET';
+  /** Kept for callers written before W9: a wallet credit can't be blocked, so always false. */
   blocked: boolean;
 }
 
+type RefundRow = Prisma.RefundGetPayload<object>;
+
+function toRefundResult(row: RefundRow): RefundResult {
+  return {
+    refundId: row.id,
+    paymentId: row.paymentId,
+    amount: decimalToMoney(row.amount),
+    status: row.status,
+    razorpayRefundId: row.razorpayRefundId,
+    method: row.method,
+    blocked: false,
+  };
+}
+
+/** What was actually paid for an order: captured Razorpay payments + spent wallet holds. */
+async function paidAndRefunded(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+): Promise<{ paid: Money; refunded: Money }> {
+  const [payments, holds, refunds] = await Promise.all([
+    tx.payment.findMany({
+      where: { orderId, status: { in: ['CAPTURED', 'REFUNDED'] }, deletedAt: null },
+    }),
+    tx.walletHold.findMany({ where: { orderId, status: 'CAPTURED', deletedAt: null } }),
+    tx.refund.findMany({ where: { orderId, status: 'PROCESSED', deletedAt: null } }),
+  ]);
+  return {
+    paid: sum([...payments, ...holds].map((row) => decimalToMoney(row.amount))),
+    refunded: sum(refunds.map((row) => decimalToMoney(row.amount))),
+  };
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
+}
+
 /**
- * Creates a refund against the CAPTURED payment for `orderId` (Ch5.5,
- * called by returns-service). Order of operations:
- * 1. Find the CAPTURED payment - 409 if none (can't refund an
- *    uncaptured/already-refunded-in-full/failed payment).
- * 2. NEVER OVER-REFUND: sum every existing PROCESSED refund against this
- *    payment (via shared-utils `sum`), and reject (400) if
- *    `amount > remaining = payment.amount - alreadyRefunded` (via
- *    shared-utils `compare`) - PENDING/FAILED refunds don't count against
- *    the cap (they never moved money).
- * 3. Persist a PENDING refund row FIRST (a durable record exists even if
- *    the Razorpay call itself throws/times out).
- * 4. Call `razorpay.payments.refund` (paise, via `moneyToPaise`). This
- *    hits Razorpay's real API - BLOCKED-on-placeholder-creds exactly like
- *    `createRazorpayOrder`, but UNLIKE that function, a failure here is
- *    caught (not left to throw/500) and the refund row is updated to
- *    FAILED with `blocked: true` returned - see the doc comment on
- *    `processRefund` (returns-service) for why: the rest of the return
- *    flow (restock, order status) must remain verifiable even when the
- *    live Razorpay call is blocked on dev credentials, without ever
- *    faking a successful refund.
- * 5. On success: refund row -> PROCESSED with `razorpay_refund_id`; if
- *    this refund brings cumulative PROCESSED refunds up to the full
- *    payment amount, `payment.status` -> REFUNDED.
+ * W9: every refund is credited to the customer's YouMart Wallet (store credit) - called by
+ * returns-service (a refunded return) and order-service (an approved cancellation), and by this
+ * service's own webhook (a capture on a cancelled order).
  *
- * RETRY-SAFETY: once `payment.status` is REFUNDED, a repeated call for
- * the SAME orderId (e.g. returns-service retrying `processRefund` after a
- * downstream step - restock, order status - failed post-refund) returns
- * the EXISTING PROCESSED refund instead of erroring or attempting a
- * second Razorpay call - this is what makes the whole return flow safe
- * to retry without double-refunding.
+ * NEVER OVER-REFUND: under the customer's wallet lock, the amount must fit in what was actually
+ * paid for the order (Razorpay captures + spent wallet money) minus what was already refunded.
+ * The refund row and the wallet credit are written in ONE transaction - there is no external call
+ * that can fail half way, so a refund can no longer be "blocked" and silently lost.
  *
- * A Razorpay `refund.processed` webhook could reconcile this
- * asynchronously later (not implemented) - for launch, the SDK call's own
- * response is treated as authoritative.
+ * RETRY-SAFE: `idempotencyKey` (the return / cancel-request id) makes a repeated call return the
+ * first refund instead of paying again - for partial refunds too (one item of a larger order),
+ * which the pre-W9 "payment fully REFUNDED" check didn't cover.
  */
 export async function createRefund(input: CreateRefundBody): Promise<RefundResult> {
-  const payment = await prisma.payment.findFirst({
-    where: { orderId: input.orderId, deletedAt: null },
-    orderBy: { createdAt: 'desc' },
-  });
-  if (!payment) {
-    throw new AppError('CONFLICT', 409, `No payment found for order ${input.orderId}`);
-  }
-
-  if (payment.status === 'REFUNDED') {
-    const existingRefund = await prisma.refund.findFirst({
-      where: { paymentId: payment.id, status: 'PROCESSED', deletedAt: null },
-      orderBy: { createdAt: 'desc' },
+  const key = input.idempotencyKey ?? null;
+  if (key) {
+    const existing = await prisma.refund.findFirst({
+      where: { idempotencyKey: key, deletedAt: null },
     });
-    if (existingRefund) {
-      return {
-        refundId: existingRefund.id,
-        paymentId: payment.id,
-        amount: decimalToMoney(existingRefund.amount),
-        status: existingRefund.status,
-        razorpayRefundId: existingRefund.razorpayRefundId,
-        blocked: false,
-      };
-    }
+    if (existing) return toRefundResult(existing);
   }
 
-  if (payment.status !== 'CAPTURED' || !payment.razorpayPaymentId) {
-    throw new AppError('CONFLICT', 409, `No CAPTURED payment found for order ${input.orderId}`);
-  }
-
-  const processedRefunds = await prisma.refund.findMany({
-    where: { paymentId: payment.id, status: 'PROCESSED', deletedAt: null },
-  });
-  const alreadyRefunded = sum(processedRefunds.map((r) => decimalToMoney(r.amount)));
-  const paymentAmount = decimalToMoney(payment.amount);
-  const remaining = subtract(paymentAmount, alreadyRefunded);
-
-  if (compare(input.amount, remaining) > 0) {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      400,
-      `Refund amount ${input.amount} exceeds the remaining refundable amount ${remaining}`,
-      { paymentId: payment.id, paymentAmount, alreadyRefunded, remaining },
-    );
-  }
-
-  const refundRow = await prisma.refund.create({
-    data: { paymentId: payment.id, amount: input.amount, reason: input.reason, status: 'PENDING' },
-  });
-
-  let razorpayRefundId: string | null = null;
-  let finalStatus: RefundStatusValue = 'PENDING';
-  let blocked = false;
+  const order = await orderClient.getInternalOrder(input.orderId);
 
   try {
-    const razorpayRefund = await razorpay.payments.refund(payment.razorpayPaymentId, {
-      amount: moneyToPaise(input.amount),
-      notes: input.reason ? { reason: input.reason } : undefined,
+    return await runWalletTransaction(async (tx) => {
+      await lockWalletInTx(tx, order.userId);
+      if (key) {
+        const existing = await tx.refund.findFirst({
+          where: { idempotencyKey: key, deletedAt: null },
+        });
+        if (existing) return toRefundResult(existing);
+      }
+
+      const { paid, refunded } = await paidAndRefunded(tx, input.orderId);
+      if (compare(paid, ZERO) <= 0) {
+        throw new AppError('CONFLICT', 409, `Nothing was paid for order ${input.orderId}`);
+      }
+      const remaining = subtract(paid, refunded);
+      if (compare(input.amount, remaining) > 0) {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          400,
+          `Refund amount ${input.amount} exceeds the remaining refundable amount ${remaining}`,
+          { orderId: input.orderId, paid, alreadyRefunded: refunded, remaining },
+        );
+      }
+
+      const refund = await tx.refund.create({
+        data: {
+          orderId: input.orderId,
+          paymentId: null,
+          method: 'WALLET',
+          amount: input.amount,
+          reason: input.reason ?? null,
+          status: 'PROCESSED',
+          idempotencyKey: key,
+        },
+      });
+      await creditRefundInTx(tx, {
+        userId: order.userId,
+        refundId: refund.id,
+        amount: input.amount,
+        orderId: input.orderId,
+        orderNumber: order.orderNumber,
+        reason: input.reason,
+      });
+      if (compare(add(refunded, input.amount), paid) >= 0) {
+        await tx.payment.updateMany({
+          where: { orderId: input.orderId, status: 'CAPTURED', deletedAt: null },
+          data: { status: 'REFUNDED' },
+        });
+      }
+      return toRefundResult(refund);
     });
-    razorpayRefundId = razorpayRefund.id;
-    finalStatus = 'PROCESSED';
   } catch (err: unknown) {
-    // BLOCKED-on-creds (or any other Razorpay-side failure) - recorded
-    // honestly as FAILED, never silently upgraded to PROCESSED.
-    finalStatus = 'FAILED';
-    blocked = true;
-    logger.error(
-      { err, paymentId: payment.id, orderId: input.orderId },
-      'Razorpay refund call failed - refund recorded as FAILED (see blocked:true)',
-    );
-  }
-
-  const updated = await prisma.refund.update({
-    where: { id: refundRow.id },
-    data: { status: finalStatus, razorpayRefundId },
-  });
-
-  if (finalStatus === 'PROCESSED') {
-    const newTotal = add(alreadyRefunded, input.amount);
-    if (compare(newTotal, paymentAmount) >= 0) {
-      await prisma.payment.update({ where: { id: payment.id }, data: { status: 'REFUNDED' } });
+    // A concurrent call with the same key won the race - return its refund.
+    if (key && isUniqueViolation(err)) {
+      const existing = await prisma.refund.findFirst({
+        where: { idempotencyKey: key, deletedAt: null },
+      });
+      if (existing) return toRefundResult(existing);
     }
+    throw err;
   }
+}
 
+/** Refunds whatever is still refundable for an order to the wallet (0 = nothing to do). */
+async function refundRemainder(orderId: string, reason: string, idempotencyKey: string) {
+  const { paid, refunded } = await paidAndRefunded(prisma, orderId);
+  const remaining = subtract(paid, refunded);
+  if (compare(remaining, ZERO) <= 0) return null;
+  return createRefund({ orderId, amount: remaining, reason, idempotencyKey });
+}
+
+export interface OrderPaymentSummary {
+  orderId: string;
+  /** Wallet money spent on (or reserved for) the order. */
+  walletAmount: Money;
+  /** Paid online through Razorpay. */
+  onlineAmount: Money;
+  refundedTotal: Money;
+  refunds: {
+    refundId: string;
+    amount: Money;
+    method: 'ORIGINAL_PAYMENT' | 'WALLET';
+    status: RefundStatusValue;
+    reason: string | null;
+    createdAt: string;
+  }[];
+}
+
+/** W9: how the customer's order was paid and what has been refunded (order details page). */
+export async function getOrderPaymentSummary(
+  userId: string,
+  orderId: string,
+): Promise<OrderPaymentSummary> {
+  await loadOwnOrder(userId, orderId);
+  const [payments, hold, refunds] = await Promise.all([
+    prisma.payment.findMany({
+      where: { orderId, status: { in: ['CAPTURED', 'REFUNDED'] }, deletedAt: null },
+    }),
+    findLiveHold(orderId),
+    prisma.refund.findMany({
+      where: { orderId, status: 'PROCESSED', deletedAt: null },
+      orderBy: { createdAt: 'asc' },
+    }),
+  ]);
   return {
-    refundId: updated.id,
-    paymentId: payment.id,
-    amount: input.amount,
-    status: updated.status,
-    razorpayRefundId: updated.razorpayRefundId,
-    blocked,
+    orderId,
+    walletAmount: hold?.amount ?? ZERO,
+    onlineAmount: sum(payments.map((p) => decimalToMoney(p.amount))),
+    refundedTotal: sum(refunds.map((r) => decimalToMoney(r.amount))),
+    refunds: refunds.map((r) => ({
+      refundId: r.id,
+      amount: decimalToMoney(r.amount),
+      method: r.method,
+      status: r.status,
+      reason: r.reason,
+      createdAt: r.createdAt.toISOString(),
+    })),
   };
 }
 
@@ -286,19 +452,82 @@ export interface HandleWebhookInput {
 }
 
 /**
+ * A captured ORDER payment (W9 split-payment aware). The online part plus the order's wallet hold
+ * must make the order total:
+ * - online alone covers it (e.g. the customer switched the wallet off and paid a superseded
+ *   full-amount Razorpay order): any hold is released, nothing spent from the wallet;
+ * - otherwise the HELD hold must be exactly the rest: it is captured (spent);
+ * - anything else (the hold was released meanwhile): the order can't be confirmed as paid - the
+ *   online money is credited to the wallet instead and the order stays unpaid.
+ * Then the order is confirmed; a capture on an order cancelled meanwhile is refunded in full to the
+ * wallet (W1 behaviour, now store credit).
+ */
+async function handleOrderCaptured(
+  paymentId: string,
+  orderId: string,
+  online: Money,
+): Promise<void> {
+  const order = await orderClient.getInternalOrder(orderId);
+
+  if (order.status === 'PENDING_PAYMENT') {
+    const need = subtract(order.grandTotal, online);
+    const hold = await findLiveHold(orderId);
+    if (compare(need, ZERO) <= 0) {
+      if (hold?.status === 'HELD') await releaseHold(orderId);
+    } else if (hold && compare(hold.amount, need) === 0) {
+      await captureHold(orderId, order.orderNumber);
+    } else {
+      const refund = await refundRemainder(
+        orderId,
+        'Online payment did not match the amount due - credited to wallet',
+        `underpaid:${paymentId}`,
+      );
+      logger.error(
+        { orderId, paymentId, online, need, hold, refundId: refund?.refundId },
+        'captured online amount does not complete the order - credited to wallet, order not confirmed',
+      );
+      return;
+    }
+  }
+
+  try {
+    await orderClient.confirmOrder(orderId);
+  } catch (err: unknown) {
+    // W1: the customer cancelled the unpaid order (stock already released) but the capture
+    // still arrived - refund it in full (W9: to the wallet) instead of failing every retry.
+    const current =
+      err instanceof AppError && err.httpStatus === 409
+        ? await orderClient.getInternalOrder(orderId)
+        : null;
+    if (current?.status !== 'CANCELLED') {
+      throw err;
+    }
+    const refund = await refundRemainder(
+      orderId,
+      'Payment captured after the order was cancelled',
+      `captured-after-cancel:${paymentId}`,
+    );
+    logger.warn(
+      { orderId, refundId: refund?.refundId },
+      'payment captured for a cancelled order - refunded to wallet',
+    );
+  }
+}
+
+/**
  * Processes a (already route-level-fetched) webhook request. Order:
  * 1. Verify signature - invalid => 400, NOTHING mutated (throws before any
  *    DB read/write).
  * 2. Parse payload shape - malformed => 400.
  * 3. Idempotency: an event_id already marked `processedAt` => no-op success
  *    (Razorpay retries must never double-confirm/double-commit).
- * 4. Amount validation: the captured amount must match the payment's own
+ * 4. W9: a wallet top-up's Razorpay order -> credit the wallet (idempotent).
+ * 5. Amount validation: the captured amount must match the payment's own
  *    expected amount (guards against a mismatched/tampered amount).
- * 5. Apply the event (payment.captured -> CAPTURED + confirm order;
- *    payment.failed -> recorded only, the order stays payable - W5) - the
- *    payment update and the order confirm call are themselves idempotent, so a retry
- *    that re-enters this branch (e.g. a crash before `processedAt` was set)
- *    is still safe.
+ * 6. Apply the event (payment.captured -> CAPTURED + spend the wallet hold +
+ *    confirm order; payment.failed -> recorded only, the order stays payable -
+ *    W5) - every step is itself idempotent, so a retry that re-enters this
+ *    branch (e.g. a crash before `processedAt` was set) is still safe.
  */
 export async function handleWebhook(input: HandleWebhookInput): Promise<void> {
   const { rawBody, signature, headerEventId, body } = input;
@@ -324,8 +553,25 @@ export async function handleWebhook(input: HandleWebhookInput): Promise<void> {
   const eventRow =
     existingEvent ??
     (await prisma.paymentWebhookEvent.create({ data: { eventId, payload: toJsonInput(body) } }));
+  const markProcessed = () =>
+    prisma.paymentWebhookEvent.update({
+      where: { id: eventRow.id },
+      data: { processedAt: new Date() },
+    });
 
   const paymentEntity = payload.payload.payment.entity;
+
+  // W9: "Add money" top-ups use their own Razorpay orders.
+  if (await isTopupOrder(paymentEntity.order_id)) {
+    if (payload.event === 'payment.captured') {
+      await handleTopupCaptured(paymentEntity.order_id, paymentEntity.id, paymentEntity.amount);
+    } else {
+      logger.info({ razorpayOrderId: paymentEntity.order_id }, 'wallet top-up attempt failed');
+    }
+    await markProcessed();
+    return;
+  }
+
   const payment = await prisma.payment.findFirst({
     where: { razorpayOrderId: paymentEntity.order_id, deletedAt: null },
   });
@@ -333,19 +579,13 @@ export async function handleWebhook(input: HandleWebhookInput): Promise<void> {
   if (!payment) {
     // Unknown order (not one we created) - mark processed so Razorpay's
     // retries don't loop forever, but there's nothing to update.
-    await prisma.paymentWebhookEvent.update({
-      where: { id: eventRow.id },
-      data: { processedAt: new Date() },
-    });
+    await markProcessed();
     return;
   }
 
   const expectedPaise = moneyToPaise(decimalToMoney(payment.amount));
   if (paymentEntity.amount !== expectedPaise) {
-    await prisma.paymentWebhookEvent.update({
-      where: { id: eventRow.id },
-      data: { processedAt: new Date() },
-    });
+    await markProcessed();
     throw new AppError(
       'VALIDATION_ERROR',
       400,
@@ -358,38 +598,13 @@ export async function handleWebhook(input: HandleWebhookInput): Promise<void> {
       where: { id: payment.id },
       data: { status: 'CAPTURED', razorpayPaymentId: paymentEntity.id },
     });
-    // Ch6.5: order-service's internal endpoints are now SERVICE-ONLY
-    // (requireServiceAuth) - the client mints its own short-lived service
-    // token per call, closing the "webhook has no user token" gap that
-    // previously required caching one (see git history for the old
-    // `pendingAuthTokens` stop-gap this replaced).
-    try {
-      await orderClient.confirmOrder(payment.orderId);
-    } catch (err: unknown) {
-      // W1: the customer cancelled the unpaid order (stock already released) but the capture
-      // still arrived - refund it in full instead of failing every Razorpay retry.
-      const order =
-        err instanceof AppError && err.httpStatus === 409
-          ? await orderClient.getInternalOrder(payment.orderId)
-          : null;
-      if (order?.status !== 'CANCELLED') {
-        throw err;
-      }
-      const refund = await createRefund({
-        orderId: payment.orderId,
-        amount: decimalToMoney(payment.amount),
-        reason: 'Payment captured after the order was cancelled',
-      });
-      logger.warn(
-        { orderId: payment.orderId, refundId: refund.refundId, blocked: refund.blocked },
-        'payment captured for a cancelled order - auto-refunded',
-      );
-    }
+    // Ch6.5: order-service's internal endpoints are SERVICE-ONLY (requireServiceAuth) - the
+    // client mints its own short-lived service token per call.
+    await handleOrderCaptured(payment.id, payment.orderId, decimalToMoney(payment.amount));
   } else if (payload.event === 'payment.failed') {
     // W5: one failed ATTEMPT is not a failed order - Razorpay Checkout lets the customer retry the
     // same Razorpay order (another card/UPI), so the order stays PENDING_PAYMENT with its stock held
-    // and the payment row stays CREATED (reused by the next razorpay-order call). Cancelling here
-    // used to turn "declined, then paid" into a capture on a cancelled order (auto-refunded).
+    // (and any wallet hold kept) and the payment row stays CREATED (reused by the next attempt).
     // The event itself is kept in payment_webhook_event for the audit trail.
     logger.info(
       { orderId: payment.orderId, razorpayOrderId: paymentEntity.order_id },
@@ -397,8 +612,5 @@ export async function handleWebhook(input: HandleWebhookInput): Promise<void> {
     );
   }
 
-  await prisma.paymentWebhookEvent.update({
-    where: { id: eventRow.id },
-    data: { processedAt: new Date() },
-  });
+  await markProcessed();
 }

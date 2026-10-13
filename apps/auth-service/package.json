@@ -14,25 +14,26 @@
     "@youmart/config": "workspace:*",
     "@youmart/db": "workspace:*",
     "@youmart/errors": "workspace:*",
-    "@youmart/request-context": "workspace:*",
-    "@youmart/queue": "workspace:*",
     "@youmart/notifications-client": "workspace:*",
+    "@youmart/queue": "workspace:*",
+    "@youmart/request-context": "workspace:*",
+    "@youmart/service-client": "workspace:*",
     "@youmart/shared-types": "workspace:*",
     "@youmart/shared-utils": "workspace:*",
-    "zod": "4.5.4",
+    "cookie-parser": "1.4.7",
+    "cors": "2.8.6",
     "express": "5.2.1",
     "helmet": "8.3.0",
-    "cors": "2.8.6",
-    "cookie-parser": "1.4.7",
+    "jsonwebtoken": "9.0.3",
     "pino": "10.3.1",
     "pino-http": "11.0.0",
-    "jsonwebtoken": "9.0.3"
+    "zod": "4.5.4"
   },
   "devDependencies": {
-    "tsx": "4.23.13",
-    "@types/express": "5.0.6",
-    "@types/cors": "2.8.19",
     "@types/cookie-parser": "1.4.10",
-    "@types/jsonwebtoken": "9.0.10"
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
+    "@types/jsonwebtoken": "9.0.10",
+    "tsx": "4.23.13"
   }
 }

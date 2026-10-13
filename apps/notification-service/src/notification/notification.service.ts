@@ -3,9 +3,37 @@ import type { NotificationJob } from '@youmart/notifications-client';
 import { prisma } from '../db';
 import { logger } from '../logger';
 import { config } from '../config';
-import { renderTemplate } from '../templates/template.registry';
+import { renderTemplate, TemplateUnavailableError } from '../templates/template.registry';
 import { resolveProvider } from '../providers/registry';
 import { redactJobDataForLog } from './log-redaction.util';
+import { authClient } from '../serviceClients';
+
+/** W9: which customer setting governs each template. Unlisted templates (login OTP, support
+ * inbox) are always sent - they are security / internal messages, not preferences. */
+const SETTING_FOR_TEMPLATE: Record<string, 'orderUpdates' | 'offers'> = {
+  ORDER_PLACED: 'orderUpdates',
+  ORDER_SHIPPED: 'orderUpdates',
+  ORDER_DELIVERED: 'orderUpdates',
+  REFUND_PROCESSED: 'orderUpdates',
+};
+
+/**
+ * True when the customer turned this channel off for this kind of message. Fails OPEN: if the
+ * settings can't be read, the (transactional) message is sent rather than silently lost.
+ */
+async function optedOut(payload: NotificationJob): Promise<boolean> {
+  const setting = SETTING_FOR_TEMPLATE[payload.templateKey];
+  if (!setting || !payload.userId) return false;
+  if (payload.channel !== 'WHATSAPP' && payload.channel !== 'EMAIL') return false;
+  try {
+    const settings = await authClient.getNotificationSettings(payload.userId);
+    const channels = settings[setting];
+    return payload.channel === 'WHATSAPP' ? !channels.whatsapp : !channels.email;
+  } catch (err) {
+    logger.warn({ err, userId: payload.userId }, 'could not read notification settings - sending');
+    return false;
+  }
+}
 
 function toJsonInput(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
@@ -66,6 +94,18 @@ export async function processNotificationJob(
     },
   });
 
+  if (await optedOut(payload)) {
+    await prisma.notificationLog.update({
+      where: { id: logRow.id },
+      data: { status: 'SKIPPED' },
+    });
+    logger.info(
+      { id: logRow.id, channel: payload.channel, templateKey: payload.templateKey },
+      'notification skipped - the customer turned this channel off',
+    );
+    return;
+  }
+
   if (!config.notificationsEnabled) {
     await prisma.notificationLog.update({
       where: { id: logRow.id },
@@ -86,6 +126,14 @@ export async function processNotificationJob(
   try {
     rendered = renderTemplate(payload.templateKey, payload.channel, payload.data);
   } catch (err) {
+    if (err instanceof TemplateUnavailableError) {
+      await prisma.notificationLog.update({
+        where: { id: logRow.id },
+        data: { status: 'SKIPPED' },
+      });
+      logger.warn({ id: logRow.id, reason: err.message }, 'notification skipped');
+      return;
+    }
     await prisma.notificationLog.update({ where: { id: logRow.id }, data: { status: 'FAILED' } });
     logger.error(
       { id: logRow.id, err },

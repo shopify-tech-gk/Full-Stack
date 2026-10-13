@@ -44,6 +44,8 @@ const ROUTES: Array<{ prefix: string; target: string }> = [
   { prefix: '/api/wishlist', target: config.services.cart },
   { prefix: '/api/orders', target: config.services.order },
   { prefix: '/api/payments', target: config.services.payment },
+  // W9: YouMart Wallet (balance, history, add money) lives in payment-service.
+  { prefix: '/api/wallet', target: config.services.payment },
   { prefix: '/api/sellers', target: config.services.seller },
   { prefix: '/api/logistics', target: config.services.logistics },
   { prefix: '/api/returns', target: config.services.returns },
@@ -93,6 +95,7 @@ const ALWAYS_AUTHENTICATED_PREFIXES = [
   '/api/cart',
   '/api/wishlist',
   '/api/addresses',
+  '/api/wallet',
   '/api/inventory',
   '/api/admin/sellers',
   '/api/admin/settlements',

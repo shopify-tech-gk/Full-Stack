@@ -27,6 +27,44 @@ export interface ReturnView {
   updatedAt: string;
 }
 
+/** W9: a customer's own return, with what it is for (My Returns & Refunds). */
+export interface CustomerReturnView extends ReturnView {
+  orderId: string | null;
+  orderNumber: string | null;
+  title: string | null;
+  quantity: number | null;
+  /** Where the refund goes - always the YouMart Wallet (W9). */
+  refundTo: 'WALLET';
+}
+
+/** Adds the item title / order number (best-effort: a lookup failure leaves them null). */
+async function withItemDetails(rows: ReturnView[]): Promise<CustomerReturnView[]> {
+  return Promise.all(
+    rows.map(async (row) => {
+      try {
+        const item = await orderClient.getInternalOrderItem(row.orderItemId);
+        return {
+          ...row,
+          orderId: item.orderId,
+          orderNumber: item.orderNumber,
+          title: item.title,
+          quantity: item.quantity,
+          refundTo: 'WALLET' as const,
+        };
+      } catch {
+        return {
+          ...row,
+          orderId: null,
+          orderNumber: null,
+          title: null,
+          quantity: null,
+          refundTo: 'WALLET' as const,
+        };
+      }
+    }),
+  );
+}
+
 interface ReturnRow {
   id: string;
   orderItemId: string;
@@ -131,10 +169,15 @@ export interface PaginatedReturns {
   nextCursor: string | null;
 }
 
+export interface PaginatedCustomerReturns {
+  items: CustomerReturnView[];
+  nextCursor: string | null;
+}
+
 export async function getMyReturns(
   userId: string,
   query: { cursor?: string; limit: number },
-): Promise<PaginatedReturns> {
+): Promise<PaginatedCustomerReturns> {
   const { cursor, limit } = query;
   const rows = await prisma.returnRequest.findMany({
     where: { userId, deletedAt: null },
@@ -145,15 +188,16 @@ export async function getMyReturns(
   const hasMore = rows.length > limit;
   const pageRows = hasMore ? rows.slice(0, limit) : rows;
   const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null;
-  return { items: pageRows.map(toReturnView), nextCursor };
+  return { items: await withItemDetails(pageRows.map(toReturnView)), nextCursor };
 }
 
-export async function getReturn(userId: string, id: string): Promise<ReturnView> {
+export async function getReturn(userId: string, id: string): Promise<CustomerReturnView> {
   const row = await prisma.returnRequest.findFirst({ where: { id, userId, deletedAt: null } });
   if (!row) {
     throw new AppError('NOT_FOUND', 404, 'Return request not found');
   }
-  return toReturnView(row);
+  const [view] = await withItemDetails([toReturnView(row)]);
+  return view!;
 }
 
 // ---------------------------------------------------------------------------
@@ -259,18 +303,15 @@ export interface ProcessRefundResult {
  * back). IDEMPOTENCY: an already-REFUNDED return is rejected outright
  * (409) - never re-processed.
  *
- * ORDERING (the money-correctness property, locked): the Razorpay refund
- * (via payment-service) is done FIRST - it is the IRREVERSIBLE EXTERNAL
- * step. Only once that call has returned (successfully OR
- * BLOCKED-on-creds - see payment.service.ts's createRefund doc comment)
- * do the RETRYABLE INTERNAL steps run: restock (inventory-service) then
- * order_item -> RETURNED (order-service), then return_request ->
- * REFUNDED. If either internal step throws, the refund has ALREADY
- * happened (or is honestly recorded as blocked) and is NEVER reversed -
- * the return stays at PICKED_UP so a retry can re-run just the internal
- * steps; payment-service's own retry-safety (see its createRefund doc
- * comment) means re-calling this function again is always safe, even
- * after a real refund already succeeded.
+ * ORDERING (the money-correctness property, locked): the refund (via
+ * payment-service; W9: credited to the customer's YouMart Wallet) is done
+ * FIRST. Then the RETRYABLE INTERNAL steps run: restock (inventory-service)
+ * then order_item -> RETURNED (order-service), then return_request ->
+ * REFUNDED. If either internal step throws, the refund has ALREADY happened
+ * and is NEVER reversed - the return stays at PICKED_UP so a retry can
+ * re-run just the internal steps. W9: the refund's idempotency key is this
+ * return's id, so the retry gets the SAME refund back - never a second one
+ * (before W9 a partial refund retried after a failed restock paid twice).
  */
 export async function processRefund(id: string): Promise<ProcessRefundResult> {
   const existing = await findActiveReturn(id);
@@ -292,18 +333,25 @@ export async function processRefund(id: string): Promise<ProcessRefundResult> {
   const item = await orderClient.getInternalOrderItem(existing.orderItemId);
   const refundAmount = decimalToMoney(existing.refundAmount);
 
-  // STEP 1 - IRREVERSIBLE EXTERNAL STEP. Never reversed below.
-  const refund = await paymentClient.createRefund(item.orderId, refundAmount, existing.reason);
-  if (refund.blocked) {
-    logger.warn(
-      { returnId: id, orderId: item.orderId },
-      'Razorpay refund BLOCKED (dev credentials) - continuing with restock/status for verification; reconcile manually once real credentials are configured',
-    );
-  }
+  // STEP 1 - the refund (to the wallet). Never reversed below; a retry returns this same refund.
+  const refund = await paymentClient.createRefund(
+    item.orderId,
+    refundAmount,
+    existing.reason,
+    `return:${id}`,
+  );
 
-  // STEPS 2+3 - RETRYABLE INTERNAL steps.
-  const restocked = await inventoryClient.restock(item.skuId, item.quantity, `return ${id}`);
-  await orderClient.setSellerItemStatus(existing.orderItemId, 'RETURNED');
+  // STEPS 2+3 - RETRYABLE INTERNAL steps. A retry after a failure further down must not restock
+  // twice: the item already RETURNED means the restock before it already happened.
+  let restocked: ProcessRefundResult['restocked'] = {
+    skuId: item.skuId,
+    available: 0,
+    reserved: 0,
+  };
+  if (item.sellerStatus !== 'RETURNED') {
+    restocked = await inventoryClient.restock(item.skuId, item.quantity, `return ${id}`);
+    await orderClient.setSellerItemStatus(existing.orderItemId, 'RETURNED');
+  }
 
   const updated = await prisma.returnRequest.update({
     where: { id },

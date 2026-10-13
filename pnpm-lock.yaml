@@ -221,6 +221,9 @@ importers:
       '@youmart/request-context':
         specifier: workspace:*
         version: link:../../packages/request-context
+      '@youmart/service-client':
+        specifier: workspace:*
+        version: link:../../packages/service-client
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -675,6 +678,9 @@ importers:
 
   apps/notification-service:
     dependencies:
+      '@youmart/auth-middleware':
+        specifier: workspace:*
+        version: link:../../packages/auth-middleware
       '@youmart/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -693,6 +699,9 @@ importers:
       '@youmart/request-context':
         specifier: workspace:*
         version: link:../../packages/request-context
+      '@youmart/service-client':
+        specifier: workspace:*
+        version: link:../../packages/service-client
       '@youmart/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -839,6 +848,9 @@ importers:
       razorpay:
         specifier: 2.9.8
         version: 2.9.8
+      uuid:
+        specifier: 14.0.2
+        version: 14.0.2
       zod:
         specifier: 4.5.4
         version: 4.5.4
@@ -8447,9 +8459,7 @@ snapshots:
       metro-runtime: 0.84.6
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

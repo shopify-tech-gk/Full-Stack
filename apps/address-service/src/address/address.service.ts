@@ -263,3 +263,13 @@ export async function getAddressForOrder(
     country: row.country,
   };
 }
+
+/**
+ * W9 account deletion (SERVICE-ONLY): erases every saved address of the user. Hard-deleted, not
+ * soft-deleted - the account is gone, and orders keep their own snapshot of the delivery address
+ * (`shippingAddressId` there is only a soft provenance pointer), so nothing needs these rows.
+ */
+export async function eraseAddressesForUser(userId: string): Promise<{ erased: number }> {
+  const result = await prisma.address.deleteMany({ where: { userId } });
+  return { erased: result.count };
+}

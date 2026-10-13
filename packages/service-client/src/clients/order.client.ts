@@ -75,6 +75,9 @@ export interface InternalOrderItemView {
   /** DELIVERED-time proxy (order_item has no `delivered_at` column) - same
    * approximation used by settlement-service's getSettleableItems. */
   updatedAt: string;
+  /** W9: the line's product title + its order's number (customer return lists). */
+  title: string;
+  orderNumber: string;
 }
 
 export interface CreateOrderClientOptions {
@@ -122,6 +125,10 @@ export interface OrderClient {
   /** Backed by `GET /orders/internal/purchases` (W6) - the user's most recent paid order item
    * for the product, or `null`; catalog-service uses it to verify a review's purchase. */
   findPurchase(userId: string, productId: string): Promise<{ orderItemId: string | null }>;
+  /** Backed by `GET /orders/internal/users/:userId/open-orders` (W9) - how many of the user's
+   * orders are still in progress (awaiting payment, or paid with an item not yet delivered,
+   * cancelled or returned). Account deletion is refused while any are. */
+  countOpenOrders(userId: string): Promise<{ openOrders: number }>;
 }
 
 /** `baseUrl` (e.g. `ORDER_SERVICE_URL`) is injected by the caller - this
@@ -214,6 +221,16 @@ export function createOrderClient({
       return request<{ orderItemId: string | null }>({
         baseUrl,
         path: `/orders/internal/purchases?${query}`,
+        method: 'GET',
+        authToken: authToken(),
+        timeoutMs,
+      });
+    },
+
+    countOpenOrders(userId) {
+      return request<{ openOrders: number }>({
+        baseUrl,
+        path: `/orders/internal/users/${userId}/open-orders`,
         method: 'GET',
         authToken: authToken(),
         timeoutMs,

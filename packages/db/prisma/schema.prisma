@@ -878,25 +878,175 @@ model Payment {
   @@schema("payments")
 }
 
-/// A refund against a Payment. `paymentId` is a same-schema relation to
-/// Payment (a real FK is fine here). `razorpayRefundId` uniqueness (when
-/// present) is enforced via a partial unique index (WHERE deleted_at IS
-/// NULL), hand-added in migration SQL - not a Prisma @unique.
+/// Where a refund's money went. W9: every new refund is credited to the customer's YouMart
+/// Wallet (store credit); ORIGINAL_PAYMENT marks the older Razorpay refunds made before W9.
+enum RefundMethod {
+  ORIGINAL_PAYMENT
+  WALLET
+
+  @@schema("payments")
+}
+
+/// A refund for an order. `orderId` is a SOFT reference to orders.order.id. `paymentId` is the
+/// Razorpay payment it was made against (ORIGINAL_PAYMENT refunds) - null for WALLET refunds,
+/// which may cover an order paid partly or wholly from the wallet. `idempotencyKey` (e.g. the
+/// return or cancel-request id) makes a retried refund return the first one instead of paying
+/// twice - unique when present via a partial unique index (hand-added in migration SQL).
+/// `razorpayRefundId` uniqueness (when present) is likewise a partial unique index.
 model Refund {
   id               String       @id @default(uuid(7))
-  paymentId        String       @map("payment_id")
-  payment          Payment      @relation(fields: [paymentId], references: [id])
+  orderId          String       @map("order_id")
+  paymentId        String?      @map("payment_id")
+  payment          Payment?     @relation(fields: [paymentId], references: [id])
+  method           RefundMethod @default(WALLET)
   amount           Decimal      @db.Decimal(12, 2)
   reason           String?
   status           RefundStatus @default(PENDING)
   razorpayRefundId String?      @map("razorpay_refund_id")
+  idempotencyKey   String?      @map("idempotency_key")
   createdAt        DateTime     @default(now()) @map("created_at")
   updatedAt        DateTime     @updatedAt @map("updated_at")
   deletedAt        DateTime?    @map("deleted_at")
 
+  @@index([orderId])
   @@index([paymentId])
   @@index([status])
   @@map("refund")
+  @@schema("payments")
+}
+
+// ---------------------------------------------------------------------------
+// W9: YouMart Wallet - closed-system store credit, kept by payment-service (payments schema).
+// Refunds are credited here, customers can add money (Razorpay top-up), and the balance pays
+// for orders on its own or together with Razorpay. Never withdrawable as cash.
+// ---------------------------------------------------------------------------
+
+enum WalletTxnType {
+  /// Money added by the customer (Razorpay top-up).
+  TOPUP
+  /// A refund (cancelled order / return) credited as store credit.
+  REFUND
+  /// Spent on an order.
+  ORDER_PAYMENT
+  /// Balance given up when the customer deleted their account.
+  FORFEIT
+
+  @@schema("payments")
+}
+
+enum WalletDirection {
+  CREDIT
+  DEBIT
+
+  @@schema("payments")
+}
+
+enum WalletHoldStatus {
+  /// Reserved for an order that is waiting for the rest of its payment.
+  HELD
+  /// Spent: the order was paid (a DEBIT ledger row exists).
+  CAPTURED
+  /// Given back: the order was cancelled/expired or paid another way.
+  RELEASED
+
+  @@schema("payments")
+}
+
+enum WalletTopupStatus {
+  CREATED
+  PAID
+  FAILED
+
+  @@schema("payments")
+}
+
+/// One wallet per customer. `userId` is a SOFT reference to auth.user.id, unique among live rows
+/// via a partial unique index (hand-added). `balance` is everything the customer owns; `held` is
+/// the part reserved for pending orders (spendable = balance - held). CHECKs (hand-added) keep
+/// 0 <= held <= balance. Every change to `balance` writes a WalletTransaction in the same
+/// database transaction, so the ledger always explains the balance.
+model Wallet {
+  id        String    @id @default(uuid(7))
+  userId    String    @map("user_id")
+  balance   Decimal   @default(0.00) @db.Decimal(12, 2)
+  held      Decimal   @default(0.00) @db.Decimal(12, 2)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  transactions WalletTransaction[]
+  holds        WalletHold[]
+
+  @@index([userId])
+  @@map("wallet")
+  @@schema("payments")
+}
+
+/// The wallet ledger (append-only). `idempotencyKey` (e.g. "refund:<refundId>",
+/// "topup:<topupId>", "hold:<holdId>") is unique when present via a partial unique index, so a
+/// retried credit/debit can never apply twice.
+model WalletTransaction {
+  id             String          @id @default(uuid(7))
+  walletId       String          @map("wallet_id")
+  wallet         Wallet          @relation(fields: [walletId], references: [id])
+  userId         String          @map("user_id")
+  type           WalletTxnType
+  direction      WalletDirection
+  amount         Decimal         @db.Decimal(12, 2)
+  balanceAfter   Decimal         @db.Decimal(12, 2) @map("balance_after")
+  orderId        String?         @map("order_id")
+  orderNumber    String?         @map("order_number")
+  description    String
+  idempotencyKey String?         @map("idempotency_key")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  deletedAt      DateTime?       @map("deleted_at")
+
+  @@index([walletId, createdAt])
+  @@index([userId])
+  @@index([orderId])
+  @@map("wallet_transaction")
+  @@schema("payments")
+}
+
+/// Wallet money reserved for one order while the rest is paid by Razorpay (or captured at once
+/// when the wallet covers the whole order). At most one live hold per order (partial unique
+/// index on order_id).
+model WalletHold {
+  id        String           @id @default(uuid(7))
+  walletId  String           @map("wallet_id")
+  wallet    Wallet           @relation(fields: [walletId], references: [id])
+  userId    String           @map("user_id")
+  orderId   String           @map("order_id")
+  amount    Decimal          @db.Decimal(12, 2)
+  status    WalletHoldStatus @default(HELD)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+  deletedAt DateTime?        @map("deleted_at")
+
+  @@index([walletId])
+  @@index([orderId])
+  @@index([status])
+  @@map("wallet_hold")
+  @@schema("payments")
+}
+
+/// "Add money" to the wallet - paid through Razorpay; credited by the payment.captured webhook.
+/// `razorpayOrderId` is unique when present via a partial unique index.
+model WalletTopup {
+  id                String            @id @default(uuid(7))
+  userId            String            @map("user_id")
+  amount            Decimal           @db.Decimal(12, 2)
+  status            WalletTopupStatus @default(CREATED)
+  razorpayOrderId   String?           @map("razorpay_order_id")
+  razorpayPaymentId String?           @map("razorpay_payment_id")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  deletedAt         DateTime?         @map("deleted_at")
+
+  @@index([userId])
+  @@index([razorpayOrderId])
+  @@map("wallet_topup")
   @@schema("payments")
 }
 
@@ -1032,6 +1182,8 @@ enum NotificationStatus {
   QUEUED
   SENT
   FAILED
+  /// W9: not sent because the customer turned that channel off in their notification settings.
+  SKIPPED
 
   @@schema("notifications")
 }
@@ -1083,6 +1235,48 @@ model SupportMessage {
   @@index([status])
   @@index([createdAt])
   @@map("support_message")
+  @@schema("notifications")
+}
+
+enum SupportTicketTopic {
+  ORDER_STATUS
+  CANCELLATION
+  RETURN_REFUND
+  PAYMENT_WALLET
+  DAMAGED_WRONG_ITEM
+  ACCOUNT
+  OTHER
+
+  @@schema("notifications")
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+
+  @@schema("notifications")
+}
+
+/// W9: a signed-in customer's help request ("Need help with this order?"). `userId` / `orderId`
+/// are SOFT references (auth.user / orders.order); `orderNumber` is a snapshot for the support
+/// inbox. Stored here and forwarded to the support inbox by email, like SupportMessage.
+model SupportTicket {
+  id          String              @id @default(uuid(7))
+  userId      String              @map("user_id")
+  orderId     String?             @map("order_id")
+  orderNumber String?             @map("order_number")
+  topic       SupportTicketTopic
+  message     String
+  status      SupportTicketStatus @default(OPEN)
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  deletedAt   DateTime?           @map("deleted_at")
+
+  @@index([userId, createdAt])
+  @@index([orderId])
+  @@index([status])
+  @@map("support_ticket")
   @@schema("notifications")
 }
 

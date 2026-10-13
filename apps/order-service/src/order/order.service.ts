@@ -12,6 +12,7 @@ import {
   inventoryClient,
   addressClient,
   authClient,
+  paymentClient,
 } from '../serviceClients';
 
 function decimalToMoney(value: Prisma.Decimal): Money {
@@ -66,6 +67,12 @@ export interface OrderView {
   createdAt: string;
   /** W6 (v1.6): the order's status history, oldest first (same data guest tracking shows). */
   timeline: { status: OrderStatusValue; at: string }[];
+  /** W9: the latest cancellation request of a paid order (null = never requested). */
+  cancelRequest: {
+    status: 'REQUESTED' | 'APPROVED' | 'REJECTED';
+    reason: string;
+    createdAt: string;
+  } | null;
 }
 
 export interface OrderListItem {
@@ -79,6 +86,7 @@ export interface OrderListItem {
 const ORDER_WITH_ITEMS_INCLUDE = {
   items: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' as const } },
   statusHistory: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' as const } },
+  cancelRequests: { where: { deletedAt: null }, orderBy: { createdAt: 'desc' as const }, take: 1 },
 } satisfies Prisma.OrderInclude;
 
 type OrderWithItems = Prisma.OrderGetPayload<{ include: typeof ORDER_WITH_ITEMS_INCLUDE }>;
@@ -136,6 +144,13 @@ function toOrderView(order: OrderWithItems): OrderView {
       status: h.toStatus,
       at: h.createdAt.toISOString(),
     })),
+    cancelRequest: order.cancelRequests[0]
+      ? {
+          status: order.cancelRequests[0].status,
+          reason: order.cancelRequests[0].reason,
+          createdAt: order.cancelRequests[0].createdAt.toISOString(),
+        }
+      : null,
   };
 }
 
@@ -573,6 +588,95 @@ export async function cancelOrderForPaymentFailure(orderId: string): Promise<voi
 
   await inventoryClient.releaseByOrder(orderId);
   await cancelOrder(orderId, 'Payment failed - stock released and order cancelled');
+  await releaseWalletHold(orderId);
+}
+
+/** W9: gives back wallet money reserved for an unpaid order. Best-effort - payment-service's
+ * release is idempotent, so a failure is logged and the next cancel/expiry attempt retries it. */
+export async function releaseWalletHold(orderId: string): Promise<void> {
+  try {
+    await paymentClient.releaseWalletHold(orderId);
+  } catch (err: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('failed to release the wallet hold of a cancelled order', { orderId, err });
+  }
+}
+
+/**
+ * W9: cancels orders still unpaid `ttlMinutes` after checkout (abandoned payments), releasing
+ * their held stock and any reserved wallet money - before this, an abandoned checkout held both
+ * forever. The status flip is CONDITIONAL on still being PENDING_PAYMENT, so a payment confirming
+ * at the same moment wins; a capture that arrives after the expiry is refunded to the wallet by
+ * payment-service's webhook (the same path as a customer cancel). Returns how many expired.
+ */
+export async function expireUnpaidOrders(ttlMinutes: number, batchSize = 50): Promise<number> {
+  const cutoff = new Date(Date.now() - ttlMinutes * 60 * 1000);
+  const stale = await prisma.order.findMany({
+    where: { status: 'PENDING_PAYMENT', deletedAt: null, createdAt: { lt: cutoff } },
+    orderBy: { createdAt: 'asc' },
+    take: batchSize,
+    select: { id: true },
+  });
+
+  let expired = 0;
+  for (const { id } of stale) {
+    const claimed = await prisma.$transaction(async (tx) => {
+      const flip = await tx.order.updateMany({
+        where: { id, status: 'PENDING_PAYMENT', deletedAt: null },
+        data: { status: 'CANCELLED' },
+      });
+      if (flip.count === 0) return false;
+      await tx.orderItem.updateMany({
+        where: { orderId: id, deletedAt: null },
+        data: { sellerStatus: 'CANCELLED' },
+      });
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          fromStatus: 'PENDING_PAYMENT',
+          toStatus: 'CANCELLED',
+          note: `Payment not completed within ${ttlMinutes} minutes - cancelled automatically`,
+        },
+      });
+      return true;
+    });
+    if (!claimed) continue;
+    expired += 1;
+    try {
+      await inventoryClient.releaseByOrder(id);
+    } catch (err: unknown) {
+      // eslint-disable-next-line no-console
+      console.error('failed to release stock of an expired order', { orderId: id, err });
+    }
+    await releaseWalletHold(id);
+  }
+  return expired;
+}
+
+/**
+ * W9 (account deletion): how many of the user's orders are still in progress - awaiting payment,
+ * or paid with an item not yet delivered / cancelled / returned.
+ */
+export async function countOpenOrders(userId: string): Promise<{ openOrders: number }> {
+  const openOrders = await prisma.order.count({
+    where: {
+      userId,
+      deletedAt: null,
+      OR: [
+        { status: 'PENDING_PAYMENT' },
+        {
+          status: 'CONFIRMED',
+          items: {
+            some: {
+              deletedAt: null,
+              sellerStatus: { in: ['PENDING', 'CONFIRMED', 'PACKED', 'SHIPPED'] },
+            },
+          },
+        },
+      ],
+    },
+  });
+  return { openOrders };
 }
 
 export interface GetMyOrdersQuery {
@@ -679,6 +783,9 @@ export interface InternalOrderItemView {
    * changes). Same approximation as settlement-service's
    * getSettleableItems (Ch5.3). */
   updatedAt: string;
+  /** W9: the line's product title + its order's number (customer return lists). */
+  title: string;
+  orderNumber: string;
 }
 
 /**
@@ -728,6 +835,8 @@ export async function getInternalOrderItem(orderItemId: string): Promise<Interna
     lineTotal: decimalToMoney(item.lineTotal),
     sellerStatus: item.sellerStatus,
     updatedAt: item.updatedAt.toISOString(),
+    title: item.titleSnapshot,
+    orderNumber: item.order.orderNumber,
   };
 }
 
@@ -794,5 +903,7 @@ export async function setSellerItemStatusInternal(
     lineTotal: decimalToMoney(updated.lineTotal),
     sellerStatus: updated.sellerStatus,
     updatedAt: updated.updatedAt.toISOString(),
+    title: updated.titleSnapshot,
+    orderNumber: item.order.orderNumber,
   };
 }

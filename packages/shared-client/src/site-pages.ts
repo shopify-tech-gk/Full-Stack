@@ -136,7 +136,11 @@ export const PRIVACY_POLICY: PolicyPage = {
         ul(
           'Access, update, or delete your personal information by logging into your account or contacting us directly.',
           'Opt-out of marketing communications by unsubscribing or updating your preferences.',
+          'Choose which order updates and offers you receive on WhatsApp or email under **Account > Notification settings**.',
           'Request information on how your data is used and shared.',
+        ),
+        p(
+          '**Deleting your account:** you can delete your account at any time from **Account > Privacy & account > Delete account**. Your name, mobile number, email, profile photo, saved addresses and browsing history are removed and you are signed out everywhere. Records of past orders and tax invoices are kept, without your contact details, for as long as the law requires (for example, GST record-keeping). Any YouMart Wallet balance is forfeited when the account is deleted - see our [Terms & Conditions](/terms).',
         ),
       ],
     },
@@ -204,8 +208,9 @@ export const TERMS_AND_CONDITIONS: PolicyPage = {
       blocks: [
         ul(
           'Orders are subject to availability and acceptance by Youmart.',
-          'Payment must be completed at checkout using the available payment methods.',
+          'Payment must be completed at checkout using the available payment methods, including your YouMart Wallet balance (see section 6). The wallet can pay for an order on its own or together with another payment method.',
           'In case of payment failure, the order will not be processed.',
+          'An order that is not paid within 30 minutes of being placed is cancelled automatically; any stock and wallet balance reserved for it are released.',
         ),
       ],
     },
@@ -224,11 +229,28 @@ export const TERMS_AND_CONDITIONS: PolicyPage = {
         ul(
           'Please review our [Refund Policy](/refund-policy) for detailed information on returns and refunds.',
           'Items marked as non-returnable or non-refundable cannot be returned or exchanged.',
+          '**All approved refunds - for cancelled orders and for returns - are credited to your YouMart Wallet**, not to the original payment method. The refunded amount can be used straight away to buy other products on Youmart (see section 6).',
         ),
       ],
     },
     {
-      heading: '6. Offers and Coupons',
+      heading: '6. YouMart Wallet',
+      blocks: [
+        ul(
+          'Every registered customer has a YouMart Wallet. It holds store credit that can be used only to buy products sold on Youmart.',
+          '**Refunds:** approved refunds for cancelled orders and returned items are added to your wallet as soon as they are processed.',
+          '**Adding money:** you can add money to your wallet through our payment partner, between ₹10 and ₹10,000 at a time, up to a wallet balance of ₹50,000. Money you add counts as store credit as soon as the payment succeeds.',
+          '**Paying with the wallet:** at checkout you can use your wallet balance for the whole order or for part of it, with the rest paid by another method. Wallet money is reserved for an order while its payment is being completed and is returned to your wallet if the order is cancelled or not paid in time.',
+          "**No cash withdrawal or transfer:** the wallet balance, including money you added and refunds credited to it, cannot be withdrawn as cash, transferred to a bank account or card, or moved to another customer's account. It does not earn interest.",
+          'Your wallet balance and every credit and debit can be seen under **Account > YouMart Wallet**.',
+          'If an order paid with the wallet is cancelled or returned, the refund is credited back to the wallet.',
+          '**Account deletion:** if you delete your account, any remaining wallet balance is forfeited and cannot be recovered. Please use your balance before deleting your account. An account with an order still in progress cannot be deleted until that order is delivered or cancelled.',
+          'Youmart may suspend a wallet, and reverse wallet credits, in case of fraud, misuse, payment reversals or chargebacks, or where required by law.',
+        ),
+      ],
+    },
+    {
+      heading: '7. Offers and Coupons',
       blocks: [
         ul(
           'Offers and coupons are subject to specific terms and conditions, including validity periods and usage limits.',
@@ -237,7 +259,7 @@ export const TERMS_AND_CONDITIONS: PolicyPage = {
       ],
     },
     {
-      heading: '7. Intellectual Property',
+      heading: '8. Intellectual Property',
       blocks: [
         ul(
           'All content on this website, including text, images, logos, and designs, is the property of Youmart and is protected by intellectual property laws.',
@@ -246,7 +268,7 @@ export const TERMS_AND_CONDITIONS: PolicyPage = {
       ],
     },
     {
-      heading: '8. Limitation of Liability',
+      heading: '9. Limitation of Liability',
       blocks: [
         ul(
           'Youmart is not liable for any direct, indirect, incidental, or consequential damages arising from the use of our website or products.',
@@ -255,7 +277,7 @@ export const TERMS_AND_CONDITIONS: PolicyPage = {
       ],
     },
     {
-      heading: '9. User Conduct',
+      heading: '10. User Conduct',
       blocks: [
         ul(
           'Users are prohibited from engaging in unlawful, abusive, or fraudulent activities on our website.',
@@ -264,7 +286,7 @@ export const TERMS_AND_CONDITIONS: PolicyPage = {
       ],
     },
     {
-      heading: '10. Privacy Policy',
+      heading: '11. Privacy Policy',
       blocks: [
         ul(
           'Your personal information is collected and used in accordance with our [Privacy Policy](/privacy-policy).',
@@ -272,7 +294,7 @@ export const TERMS_AND_CONDITIONS: PolicyPage = {
       ],
     },
     {
-      heading: '11. Changes to Terms',
+      heading: '12. Changes to Terms',
       blocks: [
         ul(
           'Youmart reserves the right to update or modify these terms at any time without prior notice. Continued use of the website implies acceptance of the updated terms.',
@@ -280,7 +302,7 @@ export const TERMS_AND_CONDITIONS: PolicyPage = {
       ],
     },
     {
-      heading: '12. Governing Law',
+      heading: '13. Governing Law',
       blocks: [
         // FIXED: live reads "[Insert Jurisdiction]" (unfilled template) - LEGAL TO CONFIRM.
         ul('These terms are governed by and construed in accordance with the laws of India.'),
@@ -348,7 +370,7 @@ export const REFUND_POLICY: PolicyPage = {
       heading: '3. Refund Policy',
       blocks: [
         p(
-          'Refunds will be processed once the returned item is received and inspected. Approved refunds will be credited to your original method of payment.',
+          'Refunds will be processed once the returned item is received and inspected. **Approved refunds are credited to your YouMart Wallet** - not to the original method of payment - and can be used straight away to buy other products on Youmart. Wallet balance cannot be withdrawn as cash. See section 6 of our [Terms & Conditions](/terms) for how the wallet works.',
         ),
         p(
           'Partial refunds may be issued for items that are not in their original condition or missing parts or accessories.',
@@ -359,7 +381,7 @@ export const REFUND_POLICY: PolicyPage = {
       heading: '4. Damaged or Defective Items',
       blocks: [
         p(
-          'If you receive a damaged or defective item, contact us immediately with supporting photos or videos. We will arrange a replacement or refund based on your preference.',
+          'If you receive a damaged or defective item, contact us immediately with supporting photos or videos. We will arrange a replacement or a refund to your YouMart Wallet, based on your preference.',
         ),
       ],
     },
@@ -376,6 +398,9 @@ export const REFUND_POLICY: PolicyPage = {
       blocks: [
         p(
           'Orders can be canceled within a limited time after placement. If the order has already been shipped, cancellations may not be possible, and you will need to initiate a return after receiving the product.',
+        ),
+        p(
+          'When a paid order is cancelled, the amount paid is credited to your YouMart Wallet. An unpaid order is simply cancelled, and any wallet balance reserved for it is released.',
         ),
       ],
     },
@@ -710,7 +735,7 @@ export const FAQ_PAGE: { title: string; subtitle: string; heading: string; items
     {
       question: 'When will I receive my refund?',
       answer: [
-        'Refunds are generally processed within **5–7 business days** after the returned product has been received and successfully inspected.',
+        'Refunds are credited to your **YouMart Wallet** as soon as they are processed - for a return, once the returned product has been received and successfully inspected; for a cancelled paid order, once the cancellation is approved. You can use the wallet balance right away on your next purchase.',
       ],
     },
     {

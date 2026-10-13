@@ -1,10 +1,12 @@
-# YouMart Public API Contract (v1.7)
+# YouMart Public API Contract (v1.8)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
 additive revision 2026-09-30 (W3), v1.4 additive revision 2026-10-01 (W4),
-v1.5 revision 2026-10-01 (W5), v1.6 additive revision 2026-10-01 (W6)
-— see §17 change log.**
+v1.5 revision 2026-10-01 (W5), v1.6 additive revision 2026-10-01 (W6),
+v1.7 additive revision 2026-10-05 (view tracking), v1.8 revision
+2026-10-13 (W9: YouMart Wallet, refunds as store credit, account
+settings, help tickets) — see §17 change log.**
 
 This is the single, authoritative, consolidated contract for the **public
 gateway API** — everything a frontend web app or mobile client calls. It
@@ -19,7 +21,7 @@ Every endpoint documented here has been verified against the real running
 system as of this freeze (see "Verification" note per section where
 relevant, and the full verification log in the Ch7.4 commit).
 
-**Versioning policy**: this is v1.6 of the contract. Changes after the
+**Versioning policy**: this is v1.8 of the contract. Changes after the
 freeze must be additive/backward-compatible (new optional fields, new
 endpoints) wherever possible; each additive revision bumps the MINOR
 version (v1.1, v1.2, ...) and is listed in §17. Any breaking change
@@ -933,9 +935,88 @@ being made, in which case: bump to v2, keep v1 endpoints working
 unchanged wherever possible (additive), and document the migration here.
 Purely additive changes bump the minor version instead (§17).
 
+## 13b. YouMart Wallet (`/api/wallet`, `/api/payments`) — v1.8
+
+Closed-system store credit kept by payment-service (`payments` schema). **Every refund is credited
+to the wallet** (cancelled paid orders and returns) - nothing is refunded to the original payment
+method any more. Customers can add money (Razorpay) and pay for orders with the wallet alone or
+wallet + Razorpay. The balance is never withdrawable. All routes need a customer token (the gateway
+fast-fails `401` without one); every call acts on the caller's own wallet.
+
+`WalletSummary` = `{ balance: Money, held: Money, available: Money, topupLimits: { min, max, maxBalance } }`
+- `held` is reserved for orders awaiting the rest of their payment; `available = balance - held`.
+
+- `GET /api/wallet` - **200** `WalletSummary` (a customer who never used the wallet gets zeros).
+- `GET /api/wallet/transactions?cursor&limit` (limit 1-50, default 20) - **200**
+  `{ items: WalletTransaction[], nextCursor }`, newest first.
+  `WalletTransaction` = `{ id, type: "TOPUP"|"REFUND"|"ORDER_PAYMENT"|"FORFEIT", direction: "CREDIT"|"DEBIT", amount, balanceAfter, description, orderId|null, orderNumber|null, createdAt }`.
+- `POST /api/wallet/topups { amount: Money }` - **201** `{ topupId, amount, status: "CREATED", createdAt, razorpayOrderId, razorpayKeyId, amountPaise, currency }` -
+  open Razorpay Checkout with it; the signed `payment.captured` webhook credits the wallet.
+  **Errors**: `400` amount outside `topupLimits.min..max` (default Rs 10-10,000) or the balance would
+  exceed `maxBalance` (default Rs 50,000).
+- `GET /api/wallet/topups/:id` - **200** `{ topupId, amount, status: "CREATED"|"PAID"|"FAILED", createdAt }` - poll until `PAID`.
+
+### `POST /api/payments/pay` — v1.8
+
+- **Body**: `{ orderId: Uuid, useWallet: boolean }` (order must be the caller's, `PENDING_PAYMENT`)
+- **200**: `{ status: "PAID"|"PAYMENT_REQUIRED", orderId, walletAmount: Money, onlineAmount: Money, razorpay: RazorpayOrder|null }`
+  - `useWallet: true`: as much of the total as is `available` is reserved (never leaving an online
+    part under Rs 1). If that covers everything the wallet is charged and the order **confirmed
+    immediately** (`PAID`, no Razorpay). Otherwise `PAYMENT_REQUIRED` with a Razorpay order for
+    `onlineAmount`; the reserved wallet money is spent when the webhook confirms the payment.
+  - `useWallet: false`: any reservation is released; Razorpay for the full total.
+  - Repeat calls are safe (reservations / Razorpay orders reused); a confirmed order answers `PAID`.
+- `POST /api/payments/razorpay-order` (§9) still works and asks Razorpay only for the part not
+  covered by a wallet reservation.
+- **Unpaid orders expire**: an order still `PENDING_PAYMENT` 30 minutes after checkout
+  (`UNPAID_ORDER_TTL_MINUTES`) is cancelled automatically; its stock and wallet reservation are
+  released. A payment captured after that is credited to the wallet.
+
+### `GET /api/payments/orders/:orderId` — v1.8
+
+- **200**: `{ orderId, walletAmount, onlineAmount, refundedTotal, refunds: [{ refundId, amount, method: "WALLET"|"ORIGINAL_PAYMENT", status, reason, createdAt }] }` - how the caller's order was paid and refunded. **404** for anyone else's order.
+
+## 13c. Account settings, help and invoices — v1.8
+
+- `GET /api/auth/me/notification-settings` / `PUT` same path with the full object -
+  `{ orderUpdates: { whatsapp, email }, offers: { whatsapp, email } }` (defaults: order updates on,
+  offers off). notification-service honours it (`SKIPPED` in its log); login OTPs are always sent.
+- `GET /api/auth/me/deletion-check` - **200** `{ canDelete, openOrders, walletBalance, walletHeld }`.
+- `DELETE /api/auth/me` - **Body** `{ confirm: "DELETE", forfeitWallet?: boolean }` - **200**
+  `{ deleted: true, walletForfeited }` and the refresh cookie is cleared. **409** `details.reason`:
+  `OPEN_ORDERS` (orders still in progress), `WALLET_HELD`, or `WALLET_BALANCE` (send
+  `forfeitWallet: true` once the customer agreed to give the balance up). The account is anonymised
+  (phone, email, name, photo, preferences cleared; saved addresses and viewing history erased; all
+  sessions revoked); orders and invoices are kept without contact details. The same phone/email can
+  sign up again as a new account.
+- `POST /api/support/tickets` - **Body** `{ orderId?: Uuid (caller's own), topic: "ORDER_STATUS"|"CANCELLATION"|"RETURN_REFUND"|"PAYMENT_WALLET"|"DAMAGED_WRONG_ITEM"|"ACCOUNT"|"OTHER", message: string (10-2000) }` -
+  **201** `HelpTicket` `{ ticketId, reference: "HLP-XXXXXXXX", topic, topicLabel, orderId, orderNumber, message, status: "OPEN"|"IN_PROGRESS"|"RESOLVED", createdAt, updatedAt }`;
+  forwarded to the support inbox by email. **404** for someone else's order; **429** after 10/hour.
+- `GET /api/support/tickets?cursor&limit` - the caller's help requests, newest first.
+- `POST /api/invoices/order/:orderId/download-link` - **201** `{ path, expiresAt }`: a 5-minute
+  signed link (relative to the `/api` base) that downloads the caller's invoice PDF **without** a
+  bearer token - for opening in a browser (mobile). `GET /api/invoices/download/:token` serves it;
+  an expired/altered link is a `404`.
+- `OrderView.cancelRequest` (§8): `{ status: "REQUESTED"|"APPROVED"|"REJECTED", reason, createdAt } | null` - the latest cancellation request of a paid order.
+- `ReturnView` (customer list/get, §11) adds `orderId`, `orderNumber`, `title`, `quantity`, `refundTo: "WALLET"`.
+
 ---
 
 ## 17. Change log
+
+### v1.8 — 2026-10-13 (W9: YouMart Wallet, refund policy change)
+
+- **Changed (policy)**: refunds - approved cancellations of paid orders and processed returns -
+  are now credited to the customer's **YouMart Wallet** instead of the original payment method
+  (`RefundResult.method: "WALLET"`, `paymentId: null`). Refunds are idempotent per return /
+  cancel request, so a retried refund can no longer pay twice; and a wallet credit can't be
+  "blocked", so `blocked` is always `false`.
+- **Added**: `/api/wallet` (balance, history, top-ups), `POST /api/payments/pay` (wallet + Razorpay
+  split), `GET /api/payments/orders/:orderId` - §13b. Unpaid orders now expire after 30 minutes.
+- **Added**: notification settings, account deletion, help tickets, invoice download links,
+  `OrderView.cancelRequest`, richer customer `ReturnView` - §13c.
+- Migration `20261013112034_w9_wallet_support_tickets` (wallet tables, `refund.order_id/method/idempotency_key`
+  back-filled, `support_ticket`, `NotificationStatus.SKIPPED`, user CHECK relaxed for deleted accounts).
 
 ### v1.7 — 2026-10-05 (view tracking, additive)
 

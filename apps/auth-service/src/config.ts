@@ -44,6 +44,13 @@ const authServiceEnvSchema = baseEnvSchema.extend({
   // W1: browsers reach this service only through the api-gateway's /api/auth/* - a cookie
   // scoped to this service's own /auth path was never sent back to /api/auth/refresh.
   REFRESH_COOKIE_PATH: z.string().startsWith('/').default('/api/auth'),
+  // W9 account deletion: auth_svc can only touch the auth schema, so the checks (open orders,
+  // wallet balance) and the clean-up (saved addresses, viewing history) go over HTTP.
+  ORDER_SERVICE_URL: z.string().url(),
+  PAYMENT_SERVICE_URL: z.string().url(),
+  ADDRESS_SERVICE_URL: z.string().url(),
+  CATALOG_SERVICE_URL: z.string().url(),
+  SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
 const parsed = loadConfigWith(authServiceEnvSchema);
@@ -77,6 +84,11 @@ export interface AuthServiceConfig {
   refreshCookiePath: string;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
+  orderServiceUrl: string;
+  paymentServiceUrl: string;
+  addressServiceUrl: string;
+  catalogServiceUrl: string;
+  serviceHttpTimeoutMs: number;
 }
 
 export const config: Readonly<AuthServiceConfig> = Object.freeze({
@@ -104,4 +116,9 @@ export const config: Readonly<AuthServiceConfig> = Object.freeze({
   refreshCookiePath: parsed.REFRESH_COOKIE_PATH,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
+  orderServiceUrl: parsed.ORDER_SERVICE_URL,
+  paymentServiceUrl: parsed.PAYMENT_SERVICE_URL,
+  addressServiceUrl: parsed.ADDRESS_SERVICE_URL,
+  catalogServiceUrl: parsed.CATALOG_SERVICE_URL,
+  serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
 });

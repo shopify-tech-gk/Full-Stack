@@ -8,6 +8,7 @@ import { logger } from './logger';
 import { prisma } from './db';
 import { config } from './config';
 import { paymentRouter } from './routes/payment.routes';
+import { walletRouter } from './routes/wallet.routes';
 
 /**
  * Builds the Express app without listening - mirrors the other services'
@@ -61,6 +62,8 @@ export function createApp(): Express {
   });
 
   app.use('/payments', paymentRouter);
+  // W9: YouMart Wallet (balance, history, add money) - gateway prefix /api/wallet.
+  app.use('/wallet', walletRouter);
 
   app.use((_req, _res, next) => {
     next(new AppError('NOT_FOUND', 404, 'Route not found'));

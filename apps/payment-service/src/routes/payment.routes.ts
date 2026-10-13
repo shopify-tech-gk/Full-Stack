@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { AppError } from '@youmart/errors';
-import { CreateRazorpayOrderBody, CreateRefundBody } from '../payment/payment.schema';
-import { createRazorpayOrder, createRefund, handleWebhook } from '../payment/payment.service';
+import { CreateRazorpayOrderBody, CreateRefundBody, PayOrderBody } from '../payment/payment.schema';
+import {
+  createRazorpayOrder,
+  createRefund,
+  getOrderPaymentSummary,
+  handleWebhook,
+  payOrder,
+} from '../payment/payment.service';
 import { requireAuth, requireServiceAuth } from '../authMiddleware';
 import { requireUserId } from '../authToken';
 
@@ -14,11 +20,21 @@ paymentRouter.post('/razorpay-order', requireAuth, async (req, res) => {
   res.status(201).json(result);
 });
 
-// SERVICE-ONLY (Ch6.5) - called by returns-service (Ch5.5) to issue a
-// Razorpay refund for an approved/picked-up return. Always 200 (even when
-// the Razorpay call itself is BLOCKED-on-creds) - the response body's
-// `status`/`blocked` fields carry the actual outcome; see
-// payment.service.ts's createRefund doc comment.
+// W9: pay an order - wallet first (optional), Razorpay for any rest. See payOrder.
+paymentRouter.post('/pay', requireAuth, async (req, res) => {
+  const body = PayOrderBody.parse(req.body);
+  res.status(200).json(await payOrder(requireUserId(req), body.orderId, body.useWallet));
+});
+
+// W9: how the customer's own order was paid (wallet / online) and its refunds.
+paymentRouter.get('/orders/:orderId', requireAuth, async (req, res) => {
+  const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
+  res.status(200).json(await getOrderPaymentSummary(requireUserId(req), orderId));
+});
+
+// SERVICE-ONLY (Ch6.5) - called by returns-service (a refunded return) and order-service (an
+// approved cancellation). W9: credits the customer's YouMart Wallet; `idempotencyKey` makes a
+// retry return the first refund. See payment.service.ts's createRefund doc comment.
 paymentRouter.post('/internal/refund', requireServiceAuth, async (req, res) => {
   const body = CreateRefundBody.parse(req.body);
   const result = await createRefund(body);

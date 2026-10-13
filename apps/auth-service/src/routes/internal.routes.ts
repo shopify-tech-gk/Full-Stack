@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getUserContact } from '../user/user.service';
+import { getNotificationSettings } from '../user/notification-settings.service';
 import { requireServiceAuth } from '../authMiddleware';
 
 export const internalRouter: Router = Router();
@@ -11,3 +12,13 @@ internalRouter.get('/internal/users/:userId/contact', requireServiceAuth, async 
   const contact = await getUserContact(userId);
   res.status(200).json(contact);
 });
+
+// W9: SERVICE-ONLY - notification-service checks the customer's channel settings before sending.
+internalRouter.get(
+  '/internal/users/:userId/notification-settings',
+  requireServiceAuth,
+  async (req, res) => {
+    const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
+    res.status(200).json(await getNotificationSettings(userId));
+  },
+);

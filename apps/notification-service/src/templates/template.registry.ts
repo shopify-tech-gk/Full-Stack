@@ -7,7 +7,12 @@ export type TemplateKey =
   | 'ORDER_SHIPPED'
   | 'ORDER_DELIVERED'
   | 'REFUND_PROCESSED'
-  | 'SUPPORT_MESSAGE';
+  | 'SUPPORT_MESSAGE'
+  | 'SUPPORT_TICKET';
+
+/** W9: the template exists, but this channel can't be sent right now (e.g. its MSG91 template
+ * isn't approved/configured yet) - the job is logged SKIPPED, not FAILED or retried. */
+export class TemplateUnavailableError extends Error {}
 type RenderableChannel = 'SMS' | 'WHATSAPP' | 'EMAIL';
 
 type ChannelRenderer = (data: Record<string, unknown>) => RenderedMessage;
@@ -165,24 +170,34 @@ const templates: Record<TemplateKey, Partial<Record<RenderableChannel, ChannelRe
   // "youmart_refund_processed": "Hi {{1}}, your refund of Rs {{2}} for
   // order {{3}} has been processed. It will reflect in 5-7 business
   // days." - {{1}}=customerName, {{2}}=amount, {{3}}=orderNumber.
+  // W9: refunds are credited to the YouMart Wallet. WhatsApp needs a NEW approved template (the
+  // old "youmart_refund_processed" text promises "5-7 business days") - see config.ts
+  // MSG91_WHATSAPP_WALLET_REFUND_TEMPLATE; until it is set the WhatsApp leg is SKIPPED.
   REFUND_PROCESSED: {
-    WHATSAPP: (data) => ({
-      channel: 'WHATSAPP',
-      templateName: config.msg91WhatsappRefundTemplate,
-      namespace: config.msg91WhatsappNamespace,
-      category: 'UTILITY',
-      components: {
-        bodyParams: [String(data.customerName), String(data.amount), String(data.orderNumber)],
-      },
-    }),
+    WHATSAPP: (data) => {
+      if (!config.msg91WhatsappWalletRefundTemplate) {
+        throw new TemplateUnavailableError(
+          'no wallet-refund WhatsApp template configured (MSG91_WHATSAPP_WALLET_REFUND_TEMPLATE)',
+        );
+      }
+      return {
+        channel: 'WHATSAPP',
+        templateName: config.msg91WhatsappWalletRefundTemplate,
+        namespace: config.msg91WhatsappNamespace,
+        category: 'UTILITY',
+        components: {
+          bodyParams: [String(data.customerName), String(data.amount), String(data.orderNumber)],
+        },
+      };
+    },
     EMAIL: (data) => ({
       channel: 'EMAIL',
-      subject: `Your refund for order ${String(data.orderNumber)} has been processed`,
-      html: `<p>Hi ${String(data.customerName)},</p><p>Your refund of Rs ${String(
+      subject: `Refund for order ${singleLine(data.orderNumber)} added to your YouMart Wallet`,
+      html: `<p>Hi ${escapeHtml(data.customerName)},</p><p>Your refund of Rs ${escapeHtml(
         data.amount,
-      )} for order <strong>${String(
+      )} for order <strong>${escapeHtml(
         data.orderNumber,
-      )}</strong> has been processed. It will reflect in 5-7 business days.</p>`,
+      )}</strong> has been added to your YouMart Wallet. You can use it right away on your next purchase.</p>`,
     }),
   },
 
@@ -195,6 +210,23 @@ const templates: Record<TemplateKey, Partial<Record<RenderableChannel, ChannelRe
       html: `<p><strong>Reference:</strong> ${escapeHtml(data.reference)}</p><p><strong>Name:</strong> ${escapeHtml(
         data.name,
       )}<br><strong>Phone:</strong> ${escapeHtml(data.phone)}<br><strong>Email:</strong> ${escapeHtml(
+        data.email ?? '-',
+      )}</p><p style="white-space:pre-wrap">${escapeHtml(data.message)}</p>`,
+    }),
+  },
+
+  // W9: a signed-in customer's help request, forwarded to the support inbox (EMAIL only).
+  SUPPORT_TICKET: {
+    EMAIL: (data) => ({
+      channel: 'EMAIL',
+      subject: `Help request ${singleLine(data.reference)} - ${singleLine(data.topic)}${
+        data.orderNumber ? ` - order ${singleLine(data.orderNumber)}` : ''
+      }`,
+      html: `<p><strong>Reference:</strong> ${escapeHtml(data.reference)}<br><strong>Topic:</strong> ${escapeHtml(
+        data.topic,
+      )}<br><strong>Order:</strong> ${escapeHtml(data.orderNumber ?? '-')}</p><p><strong>Customer:</strong> ${escapeHtml(
+        data.customerName ?? '-',
+      )}<br><strong>Phone:</strong> ${escapeHtml(data.phone ?? '-')}<br><strong>Email:</strong> ${escapeHtml(
         data.email ?? '-',
       )}</p><p style="white-space:pre-wrap">${escapeHtml(data.message)}</p>`,
     }),

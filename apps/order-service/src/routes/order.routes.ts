@@ -9,6 +9,7 @@ import {
   getInternalOrder,
   confirmOrder,
   cancelOrderForPaymentFailure,
+  countOpenOrders,
   findPurchase,
   getSettleableItems,
   getInternalOrderItem,
@@ -129,6 +130,12 @@ orderRouter.get('/internal/settleable', requireServiceAuth, async (req, res) => 
 orderRouter.get('/internal/purchases', requireServiceAuth, async (req, res) => {
   const query = PurchaseQuery.parse(req.query);
   res.status(200).json(await findPurchase(query.userId, query.productId));
+});
+
+// W9: auth-service refuses account deletion while an order is still in progress.
+orderRouter.get('/internal/users/:userId/open-orders', requireServiceAuth, async (req, res) => {
+  const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
+  res.status(200).json(await countOpenOrders(userId));
 });
 
 orderRouter.get('/internal/:orderId', requireServiceAuth, async (req, res) => {

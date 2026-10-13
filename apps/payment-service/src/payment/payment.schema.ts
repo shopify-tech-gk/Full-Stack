@@ -10,7 +10,16 @@ export const CreateRefundBody = z.object({
   orderId: z.string().uuid(),
   amount: Money,
   reason: z.string().min(1).max(500).optional(),
+  /** W9: the return / cancel-request id - a retry with the same key returns the first refund. */
+  idempotencyKey: z.string().min(1).max(200).optional(),
 });
+
+/** W9: pay a PENDING_PAYMENT order, optionally with wallet money first. */
+export const PayOrderBody = z.object({
+  orderId: z.string().uuid(),
+  useWallet: z.boolean().default(false),
+});
+export type PayOrderBody = z.infer<typeof PayOrderBody>;
 export type CreateRefundBody = z.infer<typeof CreateRefundBody>;
 
 // Only the fields this service actually reads from Razorpay's webhook

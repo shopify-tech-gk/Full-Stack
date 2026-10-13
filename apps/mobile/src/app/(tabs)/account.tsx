@@ -1,9 +1,11 @@
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { authUserLabel } from '@youmart/shared-client';
+import { authUserLabel, formatMoney } from '@youmart/shared-client';
+import { api } from '@/lib/api';
 import { logout, useSession } from '@/stores/session';
 import { useWishlist } from '@/stores/wishlist';
 import { useCart } from '@/stores/cart';
@@ -34,6 +36,21 @@ export default function AccountScreen() {
   const loggedIn = session.status === 'authenticated';
   const label = loggedIn ? authUserLabel(session.user) : 'Guest';
   const avatarName = loggedIn ? label : '';
+  const [walletBalance, setWalletBalance] = useState<string | null>(null);
+
+  // W9: the wallet balance on the Wallet row, refreshed whenever the tab is shown.
+  useFocusEffect(
+    useCallback(() => {
+      if (!loggedIn) {
+        setWalletBalance(null);
+        return;
+      }
+      api.wallet
+        .get()
+        .then((w) => setWalletBalance(w.balance))
+        .catch(() => setWalletBalance(null));
+    }, [loggedIn]),
+  );
 
   const pickPhoto = async () => {
     if (!loggedIn) {
@@ -106,6 +123,17 @@ export default function AccountScreen() {
             onPress={() => router.push(loggedIn ? '/orders' : '/auth/login')}
           />
           <Row
+            icon="wallet-outline"
+            label="YouMart Wallet"
+            value={walletBalance ? formatMoney(walletBalance) : undefined}
+            onPress={() => router.push(loggedIn ? '/wallet' : '/auth/login')}
+          />
+          <Row
+            icon="return-down-back-outline"
+            label="Returns & refunds"
+            onPress={() => router.push(loggedIn ? '/returns' : '/auth/login')}
+          />
+          <Row
             icon="location-outline"
             label="Addresses"
             onPress={() => router.push(loggedIn ? '/addresses' : '/auth/login')}
@@ -129,17 +157,30 @@ export default function AccountScreen() {
             last={!loggedIn}
           />
           {loggedIn ? (
-            <Row
-              icon="person-outline"
-              label="Account details"
-              onPress={() => router.push('/account/details')}
-              last
-            />
+            <>
+              <Row
+                icon="person-outline"
+                label="Account details"
+                onPress={() => router.push('/account/details')}
+              />
+              <Row
+                icon="notifications-outline"
+                label="Notification settings"
+                onPress={() => router.push('/account/notifications')}
+              />
+              <Row
+                icon="shield-checkmark-outline"
+                label="Privacy & account"
+                onPress={() => router.push('/account/privacy')}
+                last
+              />
+            </>
           ) : null}
         </View>
 
         <Text style={styles.sectionLabel}>Help &amp; information</Text>
         <View style={styles.rows}>
+          <Row icon="help-buoy-outline" label="Help Center" onPress={() => router.push('/help')} />
           {INFO_LINKS.map((link, i) => (
             <Row
               key={link.page}

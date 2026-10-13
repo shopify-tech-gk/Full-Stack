@@ -37,6 +37,9 @@ const orderServiceEnvSchema = baseEnvSchema.extend({
   PAYMENT_SERVICE_URL: z.string().url(),
   LOGISTICS_SERVICE_URL: z.string().url(),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
+  // W9: an order still unpaid this long after checkout is cancelled automatically - its held stock
+  // and any reserved wallet money are released. 0 disables the sweep.
+  UNPAID_ORDER_TTL_MINUTES: z.coerce.number().int().min(0).default(30),
 });
 
 const parsed = loadConfigWith(orderServiceEnvSchema);
@@ -64,6 +67,7 @@ export interface OrderServiceConfig {
   paymentServiceUrl: string;
   logisticsServiceUrl: string;
   serviceHttpTimeoutMs: number;
+  unpaidOrderTtlMinutes: number;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
 }
@@ -87,6 +91,7 @@ export const config: Readonly<OrderServiceConfig> = Object.freeze({
   paymentServiceUrl: parsed.PAYMENT_SERVICE_URL,
   logisticsServiceUrl: parsed.LOGISTICS_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
+  unpaidOrderTtlMinutes: parsed.UNPAID_ORDER_TTL_MINUTES,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

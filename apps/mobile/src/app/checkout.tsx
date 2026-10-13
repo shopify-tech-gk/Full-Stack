@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,14 +17,17 @@ import {
   cartTotals,
   defaultCheckoutAddress,
   formatMoney,
+  walletSplit,
   type Address,
+  type WalletSummary,
 } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { useCart } from '@/stores/cart';
 import { colors, font, radii, space } from '@/theme';
 
 // Checkout: pick a real saved address + order summary (server cart) -> create a PENDING_PAYMENT
-// order -> go to the payment screen. Server owns prices (anti-tampering).
+// order -> go to the payment screen. Server owns prices (anti-tampering). W9: the YouMart Wallet
+// balance can pay for the order on its own or together with Razorpay.
 export default function CheckoutScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -27,8 +38,13 @@ export default function CheckoutScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [wallet, setWallet] = useState<WalletSummary | null>(null);
+  const [useWallet, setUseWallet] = useState(true);
 
   const totals = cartTotals(cart, CART_SHIPPING_TOTAL);
+  const hasWallet = !!wallet && wallet.available !== '0.00';
+  const split = hasWallet && useWallet ? walletSplit(totals.total, wallet.available) : null;
+  const payNow = split ? split.online : totals.total;
 
   const load = useCallback(() => {
     api.addresses
@@ -38,6 +54,10 @@ export default function CheckoutScreen() {
         setSelectedId((cur) => cur ?? defaultCheckoutAddress(r.items)?.id ?? null);
       })
       .catch(() => setAddresses([]));
+    api.wallet
+      .get()
+      .then(setWallet)
+      .catch(() => setWallet(null));
   }, []);
 
   useFocusEffect(useCallback(() => load(), [load]));
@@ -57,7 +77,10 @@ export default function CheckoutScreen() {
     setError(null);
     try {
       const order = await api.orders.checkout(selectedId);
-      router.replace({ pathname: '/payment', params: { orderId: order.orderId } });
+      router.replace({
+        pathname: '/payment',
+        params: { orderId: order.orderId, useWallet: hasWallet && useWallet ? '1' : '0' },
+      });
     } catch {
       setError('We could not place your order. Please try again.');
     } finally {
@@ -132,13 +155,50 @@ export default function CheckoutScreen() {
           </View>
         </View>
 
+        {hasWallet ? (
+          <>
+            <Text style={styles.sectionTitle}>Payment</Text>
+            <View style={styles.walletCard}>
+              <View style={styles.walletRow}>
+                <View style={styles.walletIcon}>
+                  <Ionicons name="wallet" size={18} color={colors.white} />
+                </View>
+                <View style={styles.walletBody}>
+                  <Text style={styles.walletTitle}>Use YouMart Wallet</Text>
+                  <Text style={styles.walletSub}>{formatMoney(wallet.available)} available</Text>
+                </View>
+                <Switch
+                  value={useWallet}
+                  onValueChange={setUseWallet}
+                  trackColor={{ true: colors.brand.DEFAULT, false: colors.card.border }}
+                  thumbColor={colors.white}
+                />
+              </View>
+              {split ? (
+                <View style={styles.splitBox}>
+                  <View style={styles.sumLine}>
+                    <Text style={styles.sumLabel}>From wallet</Text>
+                    <Text style={styles.walletValue}>− {formatMoney(split.wallet)}</Text>
+                  </View>
+                  <View style={styles.sumLine}>
+                    <Text style={styles.sumLabel}>
+                      {split.online === '0.00' ? 'Nothing more to pay' : 'Pay online'}
+                    </Text>
+                    <Text style={styles.sumValue}>{formatMoney(split.online)}</Text>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          </>
+        ) : null}
+
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>
         <View>
-          <Text style={styles.footerLabel}>Total</Text>
-          <Text style={styles.footerTotal}>{formatMoney(totals.total)}</Text>
+          <Text style={styles.footerLabel}>{split ? 'To pay now' : 'Total'}</Text>
+          <Text style={styles.footerTotal}>{formatMoney(payNow)}</Text>
         </View>
         <Pressable
           style={[styles.payBtn, (!selected || placing) && styles.disabled]}
@@ -148,7 +208,9 @@ export default function CheckoutScreen() {
           {placing ? (
             <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.payText}>Place order</Text>
+            <Text style={styles.payText}>
+              {split && split.online === '0.00' ? 'Pay with wallet' : 'Place order'}
+            </Text>
           )}
         </Pressable>
       </View>
@@ -212,6 +274,33 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontFamily: font.uiBold, fontSize: 15, color: colors.text.strong },
   totalValue: { fontFamily: font.uiBold, fontSize: 17, color: colors.brand.DEFAULT },
+  walletCard: {
+    backgroundColor: colors.white,
+    borderRadius: radii.tile,
+    borderWidth: 1.5,
+    borderColor: colors.brand.DEFAULT,
+    padding: space.md,
+    gap: space.sm,
+  },
+  walletRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  walletIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.brand.DEFAULT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletBody: { flex: 1 },
+  walletTitle: { fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
+  walletSub: { fontFamily: font.body, fontSize: 12.5, color: colors.feature.guarantee },
+  walletValue: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.feature.guarantee },
+  splitBox: {
+    borderTopWidth: 1,
+    borderTopColor: colors.cart.line,
+    paddingTop: space.sm,
+    gap: 6,
+  },
   error: {
     fontFamily: font.uiMedium,
     fontSize: 13,

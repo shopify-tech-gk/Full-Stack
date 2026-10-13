@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { z } from 'zod';
 import { baseEnvSchema, loadConfigWith } from '@youmart/config';
+import { Money } from '@youmart/shared-types';
 
 process.loadEnvFile(path.resolve(__dirname, '../../../.env'));
 
@@ -26,6 +27,11 @@ const paymentServiceEnvSchema = baseEnvSchema.extend({
   RAZORPAY_KEY_SECRET: z.string().min(1),
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
+  // W9: YouMart Wallet limits (Rs, 2 decimals). A single top-up must be within MIN..MAX, and a
+  // top-up may not take the balance above MAX_BALANCE (refunds are always credited in full).
+  WALLET_TOPUP_MIN: Money.default('10.00'),
+  WALLET_TOPUP_MAX: Money.default('10000.00'),
+  WALLET_MAX_BALANCE: Money.default('50000.00'),
 });
 
 const parsed = loadConfigWith(paymentServiceEnvSchema);
@@ -51,6 +57,9 @@ export interface PaymentServiceConfig {
   serviceHttpTimeoutMs: number;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
+  walletTopupMin: Money;
+  walletTopupMax: Money;
+  walletMaxBalance: Money;
 }
 
 export const config: Readonly<PaymentServiceConfig> = Object.freeze({
@@ -70,4 +79,7 @@ export const config: Readonly<PaymentServiceConfig> = Object.freeze({
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
+  walletTopupMin: parsed.WALLET_TOPUP_MIN,
+  walletTopupMax: parsed.WALLET_TOPUP_MAX,
+  walletMaxBalance: parsed.WALLET_MAX_BALANCE,
 });

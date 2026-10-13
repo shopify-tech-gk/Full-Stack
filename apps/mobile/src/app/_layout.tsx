@@ -107,6 +107,34 @@ export default function RootLayout() {
                       name="account/details"
                       options={{ headerShown: true, title: 'Account details' }}
                     />
+                    <Stack.Screen
+                      name="account/notifications"
+                      options={{ headerShown: true, title: 'Notification settings' }}
+                    />
+                    <Stack.Screen
+                      name="account/privacy"
+                      options={{ headerShown: true, title: 'Privacy & account' }}
+                    />
+                    <Stack.Screen
+                      name="wallet/index"
+                      options={{ headerShown: true, title: 'YouMart Wallet' }}
+                    />
+                    <Stack.Screen
+                      name="wallet/add"
+                      options={{ headerShown: true, title: 'Add money' }}
+                    />
+                    <Stack.Screen
+                      name="returns/index"
+                      options={{ headerShown: true, title: 'Returns & refunds' }}
+                    />
+                    <Stack.Screen
+                      name="help/index"
+                      options={{ headerShown: true, title: 'Help Center' }}
+                    />
+                    <Stack.Screen
+                      name="help/new"
+                      options={{ headerShown: true, title: 'Get help' }}
+                    />
                     <Stack.Screen name="info/[page]" options={{ headerShown: true, title: '' }} />
                     <Stack.Screen
                       name="track-order"

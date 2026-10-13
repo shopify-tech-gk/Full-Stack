@@ -10,10 +10,8 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
   // Connection string for the least-privilege `notifications_svc` Postgres
   // role (Ch2 grants) - scoped to the notifications schema only.
   NOTIFICATION_DATABASE_URL: z.string().url(),
-  // Shared across every service that verifies access tokens. Not consumed
-  // by any route today (this service has no protected HTTP surface beyond
-  // health/ready) - reserved for a future authenticated admin endpoint
-  // (e.g. list/retry notification_log rows).
+  // Shared across every service that verifies access tokens - W9: the signed-in customer
+  // help-ticket routes (/support/tickets) verify the customer's token with it.
   JWT_PUBLIC_KEY: z.string().min(1),
   JWT_ISSUER: z.string().default('youmart-auth'),
   JWT_AUDIENCE: z.string().default('youmart'),
@@ -49,6 +47,12 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
   MSG91_WHATSAPP_ORDER_SHIPPED_TEMPLATE: z.string().min(1),
   MSG91_WHATSAPP_ORDER_DELIVERED_TEMPLATE: z.string().min(1),
   MSG91_WHATSAPP_REFUND_TEMPLATE: z.string().min(1),
+  // W9: refunds now go to the YouMart Wallet. The approved "youmart_refund_processed" text says
+  // the money "will reflect in 5-7 business days", which is no longer true - once a wallet-refund
+  // UTILITY template is approved in MSG91 ({{1}}=customerName, {{2}}=amount, {{3}}=orderNumber,
+  // e.g. "...Rs {{2}} for order {{3}} has been added to your YouMart Wallet"), set its name here.
+  // Until then refund WhatsApps are skipped (email still goes out) rather than sending wrong text.
+  MSG91_WHATSAPP_WALLET_REFUND_TEMPLATE: z.string().optional(),
   // Sender id for MSG91's legacy plain-text SMS API - SMS is DROPPED as an
   // active routing target (WhatsApp+email only, Ch6.2b); Msg91SmsProvider
   // and this setting are kept for a possible future fallback, not read by
@@ -75,6 +79,11 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
 
   // W1: where public contact-form messages are forwarded (EMAIL). Not a secret.
   SUPPORT_INBOX_EMAIL: z.string().email().default('info@youmart.in'),
+
+  // W9: customer help tickets (signed-in) + per-customer notification settings.
+  ORDER_SERVICE_URL: z.string().url(),
+  AUTH_SERVICE_URL: z.string().url(),
+  SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
 const parsed = loadConfigWith(notificationServiceEnvSchema);
@@ -103,6 +112,7 @@ export interface NotificationServiceConfig {
   msg91WhatsappOrderShippedTemplate: string;
   msg91WhatsappOrderDeliveredTemplate: string;
   msg91WhatsappRefundTemplate: string;
+  msg91WhatsappWalletRefundTemplate: string | undefined;
   msg91SenderId: string;
   msg91OtpTemplateId: string | undefined;
   zohoClientId: string;
@@ -112,6 +122,11 @@ export interface NotificationServiceConfig {
   zohoAccountRegion: string;
   zohoAccountId: string;
   supportInboxEmail: string;
+  orderServiceUrl: string;
+  authServiceUrl: string;
+  serviceHttpTimeoutMs: number;
+  serviceJwtSecret: string;
+  serviceTokenTtlSeconds: number;
 }
 
 export const config: Readonly<NotificationServiceConfig> = Object.freeze({
@@ -134,6 +149,7 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   msg91WhatsappOrderShippedTemplate: parsed.MSG91_WHATSAPP_ORDER_SHIPPED_TEMPLATE,
   msg91WhatsappOrderDeliveredTemplate: parsed.MSG91_WHATSAPP_ORDER_DELIVERED_TEMPLATE,
   msg91WhatsappRefundTemplate: parsed.MSG91_WHATSAPP_REFUND_TEMPLATE,
+  msg91WhatsappWalletRefundTemplate: parsed.MSG91_WHATSAPP_WALLET_REFUND_TEMPLATE || undefined,
   msg91SenderId: parsed.MSG91_SENDER_ID,
   msg91OtpTemplateId: parsed.MSG91_OTP_TEMPLATE_ID,
   zohoClientId: parsed.ZOHO_CLIENT_ID,
@@ -143,4 +159,9 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   zohoAccountRegion: parsed.ZOHO_ACCOUNT_REGION,
   zohoAccountId: parsed.ZOHO_ACCOUNT_ID,
   supportInboxEmail: parsed.SUPPORT_INBOX_EMAIL,
+  orderServiceUrl: parsed.ORDER_SERVICE_URL,
+  authServiceUrl: parsed.AUTH_SERVICE_URL,
+  serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
+  serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
+  serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
 });

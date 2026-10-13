@@ -5,7 +5,12 @@ import { enqueueNotification } from '@youmart/notifications-client';
 import type { RefundResult } from '@youmart/service-client';
 import { prisma } from '../db';
 import { inventoryClient, paymentClient } from '../serviceClients';
-import { getOrder, type OrderItemStatusValue, type OrderView } from './order.service';
+import {
+  getOrder,
+  releaseWalletHold,
+  type OrderItemStatusValue,
+  type OrderView,
+} from './order.service';
 import type { CancelOrderBody, ListCancelRequestsQuery } from './cancel.schema';
 
 export type CancelRequestStatusValue = 'REQUESTED' | 'APPROVED' | 'REJECTED';
@@ -80,6 +85,7 @@ export async function cancelOrderAsCustomer(
 
   if (order.status === 'CANCELLED') {
     await inventoryClient.releaseByOrder(orderId);
+    await releaseWalletHold(orderId);
     return { outcome: 'CANCELLED', order: await getOrder(userId, orderId), cancelRequest: null };
   }
 
@@ -102,6 +108,7 @@ export async function cancelOrderAsCustomer(
       });
     });
     await inventoryClient.releaseByOrder(orderId);
+    await releaseWalletHold(orderId);
     return { outcome: 'CANCELLED', order: await getOrder(userId, orderId), cancelRequest: null };
   }
 
@@ -169,11 +176,11 @@ export interface ApproveCancelResult {
 
 /**
  * Admin approval of a paid order's cancel request - same ordering as returns-service's
- * processRefund: the refund (the IRREVERSIBLE external step) runs FIRST, then the retryable
- * internal steps. Each item is restocked and marked CANCELLED one at a time, so a retry after a
- * partial failure skips items already handled (never double-restocks), and payment-service's
- * createRefund returns the existing refund on a repeat call (never double-refunds).
- * Invoices are not reversed here - a credit note is a separate, not-yet-built capability.
+ * processRefund: the refund runs FIRST (W9: credited to the customer's YouMart Wallet), then the
+ * retryable internal steps. Each item is restocked and marked CANCELLED one at a time, so a retry
+ * after a partial failure skips items already handled (never double-restocks), and the refund's
+ * idempotency key (this request's id) makes a repeat call return the first refund (never pays
+ * twice). Invoices are not reversed here - a credit note is a separate, not-yet-built capability.
  */
 export async function approveCancelRequest(
   id: string,
@@ -203,6 +210,7 @@ export async function approveCancelRequest(
     order.id,
     amount,
     `Order cancelled on customer request (${request.id})`,
+    `cancel:${request.id}`,
   );
 
   for (const item of order.items) {
@@ -218,7 +226,7 @@ export async function approveCancelRequest(
         orderId: order.id,
         fromStatus: 'CONFIRMED',
         toStatus: 'CANCELLED',
-        note: 'Cancelled on customer request - refund issued',
+        note: 'Cancelled on customer request - refunded to YouMart Wallet',
       },
     });
     return tx.orderCancelRequest.update({
@@ -227,8 +235,8 @@ export async function approveCancelRequest(
     });
   });
 
-  // Best-effort, never blocks the cancellation; only when money actually moved.
-  if (!refund.blocked && order.shipPhone) {
+  // Best-effort, never blocks the cancellation.
+  if (order.shipPhone) {
     await enqueueNotification({
       channel: 'WHATSAPP',
       to: order.shipPhone,

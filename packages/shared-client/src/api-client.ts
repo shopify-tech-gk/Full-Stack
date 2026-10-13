@@ -5,8 +5,18 @@ import type {
   ApiCategory,
   ApiErrorBody,
   ApiErrorCode,
+  AccountDeletionCheck,
   AuthUser,
   CancelOrderResult,
+  CreateWalletTopupResult,
+  HelpTicket,
+  HelpTopic,
+  NotificationSettings,
+  OrderPaymentSummary,
+  PayOrderResult,
+  WalletSummary,
+  WalletTopup,
+  WalletTransactionPage,
   CartView,
   CategoryFilters,
   GuestTrackingView,
@@ -181,8 +191,7 @@ export function createApiClient(options: ApiClientOptions) {
       /** v1.6: display name only (phone/email are OTP-verified login identifiers). */
       updateProfile: (body: { name: string }) => json<AuthUser>('PATCH', '/auth/me', { body }),
       /** W8: the customer's saved home category order (empty array when never personalised). */
-      getPreferences: () =>
-        json<{ categoryOrder: string[] }>('GET', '/auth/me/preferences'),
+      getPreferences: () => json<{ categoryOrder: string[] }>('GET', '/auth/me/preferences'),
       setCategoryOrder: (categoryOrder: string[]) =>
         json<{ categoryOrder: string[] }>('PUT', '/auth/me/preferences', {
           body: { categoryOrder },
@@ -192,6 +201,18 @@ export function createApiClient(options: ApiClientOptions) {
       setAvatar: (image: string) =>
         json<{ avatar: string | null }>('PUT', '/auth/me/avatar', { body: { image } }),
       removeAvatar: () => json<{ avatar: string | null }>('DELETE', '/auth/me/avatar'),
+      /** W9: which channels order updates / offers go to. */
+      getNotificationSettings: () =>
+        json<NotificationSettings>('GET', '/auth/me/notification-settings'),
+      setNotificationSettings: (body: NotificationSettings) =>
+        json<NotificationSettings>('PUT', '/auth/me/notification-settings', { body }),
+      /** W9: what stands in the way of deleting the account (open orders, wallet balance). */
+      deletionCheck: () => json<AccountDeletionCheck>('GET', '/auth/me/deletion-check'),
+      /** W9: deletes the account; `forfeitWallet` must be true when the wallet has money. */
+      deleteAccount: (forfeitWallet: boolean) =>
+        json<{ deleted: true; walletForfeited: string }>('DELETE', '/auth/me', {
+          body: { confirm: 'DELETE', forfeitWallet },
+        }),
     },
     catalog: {
       /** Generic listing: attribute filters are passed as extra query keys. */
@@ -280,10 +301,30 @@ export function createApiClient(options: ApiClientOptions) {
     support: {
       sendMessage: (body: SupportMessageBody) =>
         json<SupportMessageReceipt>('POST', '/support/messages', { body }),
+      /** W9: a signed-in customer's help request, optionally about one of their orders. */
+      createTicket: (body: { orderId?: Uuid; topic: HelpTopic; message: string }) =>
+        json<HelpTicket>('POST', '/support/tickets', { body }),
+      listTickets: (query?: PaginationQuery) =>
+        json<Paginated<HelpTicket>>('GET', '/support/tickets', { query }),
     },
     payments: {
       createRazorpayOrder: (orderId: Uuid) =>
         json<RazorpayOrder>('POST', '/payments/razorpay-order', { body: { orderId } }),
+      /** W9: pay an order - wallet first when `useWallet`, Razorpay for any rest. */
+      pay: (orderId: Uuid, useWallet: boolean) =>
+        json<PayOrderResult>('POST', '/payments/pay', { body: { orderId, useWallet } }),
+      /** W9: how an order was paid (wallet / online) and what was refunded. */
+      orderSummary: (orderId: Uuid) =>
+        json<OrderPaymentSummary>('GET', `/payments/orders/${orderId}`),
+    },
+    wallet: {
+      get: () => json<WalletSummary>('GET', '/wallet'),
+      transactions: (query?: { cursor?: string; limit?: number }) =>
+        json<WalletTransactionPage>('GET', '/wallet/transactions', { query }),
+      /** "Add money": open Razorpay Checkout with the result, then poll `getTopup`. */
+      createTopup: (amount: string) =>
+        json<CreateWalletTopupResult>('POST', '/wallet/topups', { body: { amount } }),
+      getTopup: (topupId: Uuid) => json<WalletTopup>('GET', `/wallet/topups/${topupId}`),
     },
     invoices: {
       getForOrder: (orderId: Uuid) => json<InvoiceSummary>('GET', `/invoices/order/${orderId}`),
@@ -291,6 +332,12 @@ export function createApiClient(options: ApiClientOptions) {
         const response = await send('GET', `/invoices/order/${orderId}/download`);
         return response.blob();
       },
+      /** W9: a 5-minute signed link (path relative to the API base) to open the PDF in a browser. */
+      downloadLink: (orderId: Uuid) =>
+        json<{ path: string; expiresAt: string }>(
+          'POST',
+          `/invoices/order/${orderId}/download-link`,
+        ),
     },
     returns: {
       create: (orderItemId: Uuid, reason: string) =>

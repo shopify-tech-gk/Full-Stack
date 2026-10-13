@@ -8,6 +8,7 @@ import {
   deleteAddress,
   setDefaultAddress,
   getAddressForOrder,
+  eraseAddressesForUser,
 } from '../address/address.service';
 import { requireAuth, requireServiceAuth } from '../authMiddleware';
 import { requireUserId } from '../authToken';
@@ -30,6 +31,12 @@ addressRouter.get('/internal/for-order', requireServiceAuth, async (req, res) =>
   const addressId = typeof req.query.addressId === 'string' ? req.query.addressId : '';
   const snapshot = await getAddressForOrder(userId, addressId);
   res.status(200).json(snapshot);
+});
+
+// W9: SERVICE-ONLY - auth-service erases a deleted account's saved addresses.
+addressRouter.delete('/internal/users/:userId', requireServiceAuth, async (req, res) => {
+  const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
+  res.status(200).json(await eraseAddressesForUser(userId));
 });
 
 addressRouter.get('/', requireAuth, async (req, res) => {
