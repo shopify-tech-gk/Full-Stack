@@ -210,6 +210,38 @@ export interface SearchResponse {
   perPage: number;
 }
 
+/** v1.10 YouMart Lens: photo search. */
+export type LensMediaType = 'image/jpeg' | 'image/png' | 'image/webp';
+export interface LensProduct {
+  id: Uuid;
+  title: string;
+  slug: string;
+  price: Money;
+  mrp: Money;
+  skuId: Uuid | null;
+  imageUrl: string | null;
+  rating: number | null;
+  ratingCount: number;
+  category: { id: Uuid; name: string; slug: string };
+}
+export interface LensResult {
+  identified: boolean;
+  /** "Apple iPhone 13" - null when nothing recognisable was in the photo. */
+  label: string | null;
+  brand: string | null;
+  productType: string | null;
+  colour: string | null;
+  confidence: 'high' | 'medium' | 'low';
+  /** Text query for "See all results" in normal search. */
+  query: string | null;
+  /** Where it is sold in the storefront category tree (names as in the taxonomy). */
+  categories: { main: string; sub: string | null }[];
+  /** Catalogue categories the matched products are listed in - open with /category/<slug>. */
+  catalogCategories: { id: Uuid; name: string; slug: string; count: number }[];
+  matches: LensProduct[];
+  related: LensProduct[];
+}
+
 // --- Cart ---
 export interface CartLine {
   cartItemId: Uuid;

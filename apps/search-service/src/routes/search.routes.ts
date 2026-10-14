@@ -1,5 +1,7 @@
 import { Router } from 'express';
-import { optionalAuth, requireServiceAuth } from '../authMiddleware';
+import { AppError } from '@youmart/errors';
+import { optionalAuth, requireAuth, requireServiceAuth } from '../authMiddleware';
+import { LensRequestBody, lensSearch } from '../lens/lens.service';
 import { SearchProductsQuery, SuggestQuery } from '../search/search.schema';
 import { searchProducts, suggest } from '../search/search.service';
 import { BrowseRequestBody } from '../search/browse.schema';
@@ -27,4 +29,15 @@ searchRouter.get('/suggest', optionalAuth, async (req, res) => {
   const query = SuggestQuery.parse(req.query);
   const result = await suggest(query);
   res.status(200).json(result);
+});
+
+// YouMart Lens: photo -> what it is, where it's sold, matching + related products. Signed-in only
+// (each call costs money and is capped per user per day - see lens.service.ts).
+searchRouter.post('/lens', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new AppError('UNAUTHORIZED', 401, 'Invalid or missing authentication token');
+  }
+  const body = LensRequestBody.parse(req.body);
+  res.status(200).json(await lensSearch(userId, body));
 });

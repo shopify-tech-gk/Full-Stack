@@ -23,6 +23,9 @@ export function createApp(): Express {
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(cors());
+  // Lens photos (base64 JPEG) need more room than every other JSON body; parsed first, so the
+  // general 1 MB parser below skips them.
+  app.use('/search/lens', express.json({ limit: '8mb' }));
   app.use(express.json({ limit: '1mb' }));
   app.use(requestIdMiddleware);
   app.use(pinoHttp({ logger, genReqId: genRequestId }));

@@ -58,6 +58,10 @@ export default function RootLayout() {
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen name="welcome" options={{ gestureEnabled: false }} />
                     <Stack.Screen
+                      name="lens"
+                      options={{ headerShown: false, presentation: 'fullScreenModal' }}
+                    />
+                    <Stack.Screen
                       name="scan"
                       options={{ headerShown: false, presentation: 'fullScreenModal' }}
                     />

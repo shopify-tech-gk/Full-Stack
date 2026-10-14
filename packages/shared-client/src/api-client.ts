@@ -47,6 +47,8 @@ import type {
   Review,
   SearchQuery,
   SearchResponse,
+  LensMediaType,
+  LensResult,
   ShipmentTracking,
   SkuSummary,
   SubmitReviewBody,
@@ -285,6 +287,9 @@ export function createApiClient(options: ApiClientOptions) {
     },
     search: {
       products: (query: SearchQuery) => json<SearchResponse>('GET', '/search/products', { query }),
+      /** v1.10 YouMart Lens (signed in): base64 photo -> what it is + matching/related products. */
+      lens: (image: string, mediaType: LensMediaType = 'image/jpeg') =>
+        json<LensResult>('POST', '/search/lens', { body: { image, mediaType } }),
     },
     cart: {
       get: () => json<CartView>('GET', '/cart'),

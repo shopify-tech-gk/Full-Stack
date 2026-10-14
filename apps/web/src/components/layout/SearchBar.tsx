@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Mic } from 'lucide-react';
+import Link from 'next/link';
+import { Camera, Mic } from 'lucide-react';
 import { SEARCH_PLACEHOLDER } from '@youmart/shared-client';
 
 interface SpeechRecognitionLike {
@@ -75,8 +76,17 @@ export function SearchBar({ id, className = '', size = 'desktop' }: SearchBarPro
         name="q"
         autoComplete="off"
         placeholder={SEARCH_PLACEHOLDER}
-        className={`h-[36px] w-full rounded-full border-2 border-brand-accent bg-white py-[7px] pl-[15px] font-sans text-[16px] text-ink-input transition-shadow placeholder:text-ink-placeholder focus:shadow-search-focus focus:outline-none [&::-webkit-search-cancel-button]:hidden ${mobile ? 'pr-[15px]' : 'pr-[45px]'}`}
+        className={`h-[36px] w-full rounded-full border-2 border-brand-accent bg-white py-[7px] pl-[15px] font-sans text-[16px] text-ink-input transition-shadow placeholder:text-ink-placeholder focus:shadow-search-focus focus:outline-none [&::-webkit-search-cancel-button]:hidden ${mobile ? 'pr-[45px]' : 'pr-[75px]'}`}
       />
+      {/* YouMart Lens: search with a photo. */}
+      <Link
+        href="/lens"
+        aria-label="Search with a photo"
+        title="Search with a photo"
+        className={`absolute top-[4px] flex size-[28px] items-center justify-center rounded-full bg-white text-black hover:text-hover ${mobile ? 'right-[10px]' : 'right-[40px]'}`}
+      >
+        <Camera aria-hidden="true" className="size-[20px]" strokeWidth={2} />
+      </Link>
       {/* Live's mobile search has no voice button; keep it on desktop only (desktop stays unchanged). */}
       {!mobile && (
         <button

@@ -42,6 +42,10 @@ const searchServiceEnvSchema = z.object({
   // part of baseEnvSchema here since this service defines its own schema).
   SERVICE_JWT_SECRET: z.string().min(32),
   SERVICE_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+  // YouMart Lens (photo search). Empty key = Lens off (503), the rest of search is unaffected.
+  ANTHROPIC_API_KEY: z.string().default(''),
+  LENS_MODEL: z.string().min(1).default('claude-haiku-5-5'),
+  LENS_DAILY_LIMIT: z.coerce.number().int().positive().default(30),
 });
 
 const parsed = loadConfigWith(searchServiceEnvSchema);
@@ -67,6 +71,9 @@ export interface SearchServiceConfig {
   fullReindexScheduleCron: string;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
+  anthropicApiKey: string;
+  lensModel: string;
+  lensDailyLimit: number;
 }
 
 export const config: Readonly<SearchServiceConfig> = Object.freeze({
@@ -86,4 +93,7 @@ export const config: Readonly<SearchServiceConfig> = Object.freeze({
   fullReindexScheduleCron: parsed.FULL_REINDEX_SCHEDULE_CRON,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
+  anthropicApiKey: parsed.ANTHROPIC_API_KEY,
+  lensModel: parsed.LENS_MODEL,
+  lensDailyLimit: parsed.LENS_DAILY_LIMIT,
 });

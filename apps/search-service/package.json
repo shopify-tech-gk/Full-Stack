@@ -10,25 +10,26 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.133.0",
     "@youmart/auth-middleware": "workspace:*",
     "@youmart/config": "workspace:*",
     "@youmart/errors": "workspace:*",
-    "@youmart/request-context": "workspace:*",
     "@youmart/queue": "workspace:*",
+    "@youmart/request-context": "workspace:*",
     "@youmart/search-reindex-client": "workspace:*",
     "@youmart/service-client": "workspace:*",
     "@youmart/shared-types": "workspace:*",
-    "zod": "4.5.4",
-    "typesense": "3.0.6",
+    "cors": "2.8.6",
     "express": "5.2.1",
     "helmet": "8.3.0",
-    "cors": "2.8.6",
     "pino": "10.3.1",
-    "pino-http": "11.0.0"
+    "pino-http": "11.0.0",
+    "typesense": "3.0.6",
+    "zod": "4.5.4"
   },
   "devDependencies": {
-    "tsx": "4.23.13",
+    "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
-    "@types/cors": "2.8.19"
+    "tsx": "4.23.13"
   }
 }

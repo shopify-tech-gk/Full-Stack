@@ -172,11 +172,19 @@ export default function SearchScreen() {
           ) : null}
           <Pressable
             style={styles.scan}
+            onPress={() => router.push('/lens')}
+            hitSlop={8}
+            accessibilityLabel="Search with a photo"
+          >
+            <Ionicons name="camera-outline" size={20} color={colors.brand.DEFAULT} />
+          </Pressable>
+          <Pressable
+            style={styles.scan}
             onPress={() => router.push('/scan')}
             hitSlop={8}
             accessibilityLabel="Scan a QR code"
           >
-            <Ionicons name="scan" size={19} color={colors.brand.DEFAULT} />
+            <Ionicons name="qr-code-outline" size={17} color={colors.brand.DEFAULT} />
           </Pressable>
           <Pressable
             style={styles.mic}

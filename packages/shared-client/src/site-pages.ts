@@ -111,6 +111,9 @@ export const PRIVACY_POLICY: PolicyPage = {
           '**Service Providers**: Third-party partners who assist us in processing payments, shipping orders, or improving website functionality.',
           '**Legal Compliance**: If required by law, we may share your information with authorities or other parties in response to legal requests.',
         ),
+        p(
+          '**YouMart Lens (search with a photo):** when you search with a photo, the photo is sent to our AI provider (Anthropic) only to recognise the product in it. We do not store your photo or add it to your account; we keep only a one-way fingerprint of it for 24 hours so the same photo is not processed twice. Avoid photographing people or personal documents.',
+        ),
       ],
     },
     {

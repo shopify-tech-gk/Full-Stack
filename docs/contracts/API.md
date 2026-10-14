@@ -1,4 +1,4 @@
-# YouMart Public API Contract (v1.9)
+# YouMart Public API Contract (v1.10)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
@@ -422,6 +422,26 @@ VALIDATION_ERROR`. Product delete is soft (never hard-deleted).
   ```
 - **Notes**: typo-tolerant (Typesense fuzzy matching). Not a `Paginated<T>` shape (uses `results`/`found`/`page`/`perPage`, not `items`/`nextCursor`) — a deliberate, documented exception since it mirrors Typesense's own native response shape. v1.3: `mrp`/`rating` added; served by the same generic engine as the catalog listing; `category` now also matches sub-categories; the `brand` facet reads the generic `brand` attribute.
 - **Verified live** (2026-09-28): exact match (note `primaryImageUrl` can be `null`, corrected from an earlier informal description of it as always a string).
+
+### `POST /api/search/lens` — v1.10 (YouMart Lens)
+
+- **Auth**: customer Bearer token (signed-in only — every call costs money)
+- **Body**: `{ "image": "base64 (no data: prefix)", "mediaType"?: "image/jpeg" | "image/png" | "image/webp" }` — clients downscale to ~1024 px on the longest side first; body limit 8 MB
+- **200**:
+  ```json
+  {
+    "identified": true,
+    "label": "Apple iPhone 13 Pro", "brand": "Apple | null", "productType": "Smartphone | null", "colour": "string | null",
+    "confidence": "high" | "medium" | "low",
+    "query": "iPhone 13 Pro",
+    "categories": [{ "main": "Electronics", "sub": "string | null" }],
+    "catalogCategories": [{ "id": "Uuid", "name": "Mobiles", "slug": "mobiles", "count": 3 }],
+    "matches": [LensProduct], "related": [LensProduct]
+  }
+  ```
+  `LensProduct` = `{ id, title, slug, price, mrp, skuId, imageUrl, rating, ratingCount, category: { id, name, slug } }`. `identified: false` (nothing recognisable in the photo) comes back with `null` text fields and empty lists — still 200.
+- **Notes**: the photo is identified by Claude (`LENS_MODEL`, default `claude-haiku-5-5`), then `matches` = a title search for `query`, `related` = progressively wider searches (never repeating a match, max 12). `categories` are names from the storefront taxonomy (`packages/shared-client/data/category-taxonomy.csv`); `catalogCategories` are the real catalogue categories the products are listed in (`/category/<slug>`). The photo is never stored; its SHA-256 caches the identification for 24 h — the same photo again is answered from cache and is not counted.
+- **400** unreadable photo / bad body · **401** signed out · **429** `RATE_LIMITED` past `LENS_DAILY_LIMIT` (default 30) fresh photos per user per day · **503** Lens not configured (`ANTHROPIC_API_KEY` empty) or the model is unavailable.
 
 ### `GET /api/search/suggest`
 
@@ -1018,6 +1038,10 @@ claimed by the browser that created it (its `browserKey`, sent as the `x-qr-brow
 ---
 
 ## 17. Change log
+
+### v1.10 — 2026-10-14 (YouMart Lens, additive)
+
+- **Added**: `POST /api/search/lens` — search with a photo: what the product is, where it is sold, the same and related products — §5.
 
 ### v1.9 — 2026-10-14 (QR sign-in, additive)
 

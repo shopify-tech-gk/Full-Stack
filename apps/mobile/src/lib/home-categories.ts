@@ -436,3 +436,34 @@ export function searchCategories(term: string, limit = 10): CategoryMatch[] {
       exact: h.exact,
     }));
 }
+
+/**
+ * The taxonomy node for a (main, sub) pair given by NAME - YouMart Lens answers with category names
+ * exactly as the taxonomy writes them. Falls back to the main alone when the sub isn't under it.
+ */
+export function categoryMatchByNames(
+  mainName: string,
+  subName: string | null,
+): CategoryMatch | null {
+  const main = tree().find((m) => m.name.toLowerCase() === mainName.toLowerCase());
+  if (!main) return null;
+  const sub = subName
+    ? main.subcategories.find((s) => s.name.toLowerCase() === subName.toLowerCase())
+    : undefined;
+  if (!sub) {
+    return {
+      name: main.name,
+      path: [main.slug],
+      imageKey: `mobile/${main.slug}`,
+      trail: '',
+      exact: true,
+    };
+  }
+  return {
+    name: sub.name,
+    path: [main.slug, sub.slug],
+    imageKey: `${main.slug}/${sub.slug}`,
+    trail: main.name,
+    exact: true,
+  };
+}
