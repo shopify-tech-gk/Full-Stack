@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SEARCH_PLACEHOLDER } from '@youmart/shared-client';
 import { colors, font, radii, space } from '@/theme';
 import { DeliveryBar } from '@/components/DeliveryBar';
+import { VoiceSearchSheet } from '@/components/VoiceSearchSheet';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const LOGO = require('../../assets/images/logo.png');
@@ -16,6 +18,7 @@ const LOGO = require('../../assets/images/logo.png');
 export function AppHeader() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [voice, setVoice] = useState(false);
 
   return (
     <View style={[styles.wrap, { paddingTop: insets.top + 6 }]}>
@@ -37,12 +40,30 @@ export function AppHeader() {
         </View>
       </View>
       <DeliveryBar />
-      <Pressable style={styles.search} onPress={() => router.push('/search')}>
-        <Ionicons name="search" size={18} color={colors.text.placeholder} />
-        <Text style={styles.searchText} numberOfLines={1}>
-          {SEARCH_PLACEHOLDER}
-        </Text>
-      </Pressable>
+      <View style={styles.search}>
+        <Pressable style={styles.searchTap} onPress={() => router.push('/search')}>
+          <Ionicons name="search" size={18} color={colors.text.placeholder} />
+          <Text style={styles.searchText} numberOfLines={1}>
+            {SEARCH_PLACEHOLDER}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={styles.mic}
+          onPress={() => setVoice(true)}
+          hitSlop={8}
+          accessibilityLabel="Search by voice"
+        >
+          <Ionicons name="mic" size={18} color={colors.white} />
+        </Pressable>
+      </View>
+      <VoiceSearchSheet
+        visible={voice}
+        onClose={() => setVoice(false)}
+        onResult={(text) => {
+          setVoice(false);
+          router.push({ pathname: '/search', params: { q: text } });
+        }}
+      />
     </View>
   );
 }
@@ -72,8 +93,18 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.brand.accent,
     borderRadius: radii.pill,
-    paddingHorizontal: space.lg,
+    paddingLeft: space.lg,
+    paddingRight: 4,
     height: 42,
+  },
+  searchTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: '100%' },
+  mic: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.brand.DEFAULT,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchText: {
     fontFamily: font.body,

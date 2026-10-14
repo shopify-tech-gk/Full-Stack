@@ -41,6 +41,16 @@
         }
       ],
       [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "YouMart uses the microphone so you can search for products by voice.",
+          "speechRecognitionPermission": "YouMart converts your voice to text so you can search for products by voice.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",

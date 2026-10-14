@@ -56,6 +56,7 @@ export default function RootLayout() {
                     }}
                   >
                     <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="welcome" options={{ gestureEnabled: false }} />
                     <Stack.Screen name="search" options={{ headerShown: false }} />
                     <Stack.Screen
                       name="category/[slug]"

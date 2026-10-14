@@ -141,13 +141,11 @@ function CategoryPager() {
   const cats = useMemo(() => mainCategories(), []);
   const { ordered, move } = useCategoryOrder(cats);
 
+  // Always the category screen (sub-categories + brands). A category the catalog doesn't hold yet
+  // (e.g. Religion) still opens there - the screen searches its products by name.
   const open = (c: CatNode) => {
-    if (c.href.startsWith('/search')) {
-      router.push({ pathname: '/search', params: { q: c.name } });
-    } else {
-      const cslug = catalogSlugOf(c.href) || c.slug;
-      router.push(`/category/${cslug}?taxo=${c.slug}`);
-    }
+    const cslug = catalogSlugOf(c.href) || c.slug;
+    router.push(`/category/${cslug}?taxo=${c.slug}`);
   };
 
   return <DraggableCategoryGrid cats={ordered} onOpen={open} onMove={move} />;

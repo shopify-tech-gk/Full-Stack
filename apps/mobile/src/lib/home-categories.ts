@@ -347,3 +347,92 @@ export function relatedCategories(path: string[]): CatNode[] {
     .filter((c) => c.slug !== leafSlug)
     .map((c) => ({ slug: c.slug, name: c.name, href: c.href, hasChildren: false }));
 }
+
+export interface CategoryMatch {
+  name: string;
+  /** [main] | [main, sub] | [main, sub, leaf] - pass as `taxo` (joined by `~`) to the category screen. */
+  path: string[];
+  /** Bundled-image key for lookupCategoryImage(). */
+  imageKey: string;
+  /** Where it sits, e.g. "Religion" or "Clothing › Ethnic Wear" (empty for a main). */
+  trail: string;
+  /** The search term is the whole category name (case-insensitive). */
+  exact: boolean;
+}
+
+/**
+ * Categories whose name matches a search term - so searching "religion" or "ethnic wear" offers the
+ * category itself (sub-categories + brands), not just products. Exact names first, then names
+ * starting with the term, then a word starting with it, then anywhere; mains before subs before
+ * sub-to-subs at the same rank.
+ */
+export function searchCategories(term: string, limit = 10): CategoryMatch[] {
+  const q = term.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const rank = (name: string): number => {
+    const n = name.toLowerCase();
+    if (n === q) return 0;
+    if (n.startsWith(q)) return 1;
+    if (n.split(/[\s&,/-]+/).some((w) => w.startsWith(q))) return 2;
+    return n.includes(q) ? 3 : -1;
+  };
+  const hits: (CategoryMatch & { score: number })[] = [];
+  for (const main of tree()) {
+    const r = rank(main.name);
+    if (r >= 0) {
+      hits.push({
+        name: main.name,
+        path: [main.slug],
+        imageKey: `mobile/${main.slug}`,
+        trail: '',
+        exact: r === 0,
+        score: r * 10,
+      });
+    }
+    for (const sub of main.subcategories) {
+      const rs = rank(sub.name);
+      if (rs >= 0) {
+        hits.push({
+          name: sub.name,
+          path: [main.slug, sub.slug],
+          imageKey: `${main.slug}/${sub.slug}`,
+          trail: main.name,
+          exact: rs === 0,
+          score: rs * 10 + 1,
+        });
+      }
+      for (const leaf of sub.children) {
+        if (leaf.name === sub.name) continue;
+        const rl = rank(leaf.name);
+        if (rl >= 0) {
+          hits.push({
+            name: leaf.name,
+            path: [main.slug, sub.slug, leaf.slug],
+            imageKey: `${main.slug}/${sub.slug}/${leaf.slug}`,
+            trail: `${main.name} › ${sub.name}`,
+            exact: rl === 0,
+            score: rl * 10 + 2,
+          });
+        }
+      }
+    }
+  }
+  // The same name at several levels (e.g. a "Clothing" item under Men's Clothing): keep the highest.
+  const seen = new Set<string>();
+  return hits
+    .sort((a, b) => a.score - b.score || a.name.localeCompare(b.name))
+    .filter((h) => {
+      const key = h.name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, limit)
+    .map((h) => ({
+      name: h.name,
+      path: h.path,
+      imageKey: h.imageKey,
+      trail: h.trail,
+      exact: h.exact,
+    }));
+}

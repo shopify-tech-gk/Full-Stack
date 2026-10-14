@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { lookupCategoryImage } from '@/lib/category-images';
@@ -16,6 +16,7 @@ export function CategoryCard({
   hasChildren,
   imageKey,
   compact,
+  style,
 }: {
   name: string;
   onPress: () => void;
@@ -23,6 +24,8 @@ export function CategoryCard({
   imageKey?: string;
   /** Smaller, square tile that shows the whole image (no crop) — for dense grids (home 3×3). */
   compact?: boolean;
+  /** Extra card style - e.g. `{ flex: 0 }` outside a grid, where `flex: 1` would collapse it. */
+  style?: StyleProp<ViewStyle>;
 }) {
   const image = lookupCategoryImage(imageKey);
   return (
@@ -32,6 +35,7 @@ export function CategoryCard({
         styles.card,
         compact && styles.cardCompact,
         pressed && styles.pressed,
+        style,
       ]}
     >
       <View style={[styles.imageArea, compact && styles.imageAreaCompact]}>

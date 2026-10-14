@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { authUserLabel } from '@youmart/shared-client';
@@ -7,6 +7,7 @@ import { useCart } from '@/stores/cart';
 import { useSession } from '@/stores/session';
 import { useAvatar } from '@/stores/profile';
 import { Avatar } from '@/components/Avatar';
+import { useOnboarding } from '@/stores/onboarding';
 
 export default function TabsLayout() {
   const { itemCount } = useCart();
@@ -14,6 +15,11 @@ export default function TabsLayout() {
   const { uri } = useAvatar();
   const avatarName = session.status === 'authenticated' ? authUserLabel(session.user) : '';
   const hasAvatar = Boolean(uri) || avatarName.length > 0;
+  const onboarding = useOnboarding();
+
+  // First launch (or new Terms): welcome + accept Terms & Privacy before using the app.
+  if (onboarding === 'loading') return null;
+  if (onboarding === 'needed') return <Redirect href="/welcome" />;
 
   return (
     <Tabs

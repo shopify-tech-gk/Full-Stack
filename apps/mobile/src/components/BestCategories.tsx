@@ -25,12 +25,10 @@ export function BestCategories() {
   if (!slide) return null;
 
   // Open a taxonomy node's listing (carry the taxo path so the sub-category strip shows).
-  const open = (href: string, name: string, taxo: string) => {
-    if (href.startsWith('/search')) {
-      router.push({ pathname: '/search', params: { q: name } });
-    } else {
-      router.push(`/category/${catalogSlugOf(href)}?taxo=${taxo}`);
-    }
+  // Always the category screen; one the catalog doesn't hold yet searches its products by name.
+  const open = (href: string, _name: string, taxo: string) => {
+    const slug = catalogSlugOf(href) || taxo.split('~').pop() || taxo;
+    router.push(`/category/${slug}?taxo=${taxo}`);
   };
 
   const go = (next: number) => {
