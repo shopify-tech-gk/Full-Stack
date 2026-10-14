@@ -7,6 +7,10 @@ import type {
   ApiErrorCode,
   AccountDeletionCheck,
   AuthUser,
+  LoggedInDevice,
+  QrLoginPoll,
+  QrLoginRequest,
+  QrLoginStart,
   CancelOrderResult,
   CreateWalletTopupResult,
   HelpTicket,
@@ -89,6 +93,7 @@ type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 interface RequestOptions {
   query?: object;
   body?: unknown;
+  headers?: Record<string, string>;
 }
 
 function buildQuery(query: object | undefined): string {
@@ -120,7 +125,7 @@ export function createApiClient(options: ApiClientOptions) {
 
   async function send(method: Method, path: string, opts: RequestOptions = {}): Promise<Response> {
     const attempt = (token: string | null | undefined) => {
-      const headers: Record<string, string> = { Accept: 'application/json' };
+      const headers: Record<string, string> = { Accept: 'application/json', ...opts.headers };
       if (opts.body !== undefined) {
         headers['Content-Type'] = 'application/json';
       }
@@ -208,6 +213,30 @@ export function createApiClient(options: ApiClientOptions) {
         json<NotificationSettings>('PUT', '/auth/me/notification-settings', { body }),
       /** W9: what stands in the way of deleting the account (open orders, wallet balance). */
       deletionCheck: () => json<AccountDeletionCheck>('GET', '/auth/me/deletion-check'),
+      /** QR sign-in (website side): a fresh 2-minute QR for this browser. */
+      qrStart: () => json<QrLoginStart>('POST', '/auth/qr'),
+      qrPoll: (sessionId: Uuid, browserKey: string) =>
+        json<QrLoginPoll>('GET', `/auth/qr/${sessionId}`, {
+          headers: { 'x-qr-browser-key': browserKey },
+        }),
+      /** Once the phone confirmed: same response (+ refresh cookie) as OTP verify. */
+      qrClaim: (sessionId: Uuid, browserKey: string) =>
+        json<OtpVerifyResponse>('POST', `/auth/qr/${sessionId}/claim`, {
+          headers: { 'x-qr-browser-key': browserKey },
+        }),
+      /** QR sign-in (app side, signed in): the scanned QR text. */
+      qrScan: (qr: string) => json<QrLoginRequest>('POST', '/auth/qr/scan', { body: { qr } }),
+      qrApprove: (qr: string) =>
+        json<{ status: string }>('POST', '/auth/qr/approve', { body: { qr } }),
+      qrReject: (qr: string) =>
+        json<{ status: string }>('POST', '/auth/qr/reject', { body: { qr } }),
+      /** Logged-in devices (this one first, `current: true`). */
+      devices: () => json<{ items: LoggedInDevice[] }>('GET', '/auth/me/devices'),
+      signOutDevice: async (deviceId: Uuid) => {
+        await send('DELETE', `/auth/me/devices/${deviceId}`);
+      },
+      signOutOtherDevices: () =>
+        json<{ signedOut: number }>('POST', '/auth/me/devices/sign-out-others'),
       /** W9: deletes the account; `forfeitWallet` must be true when the wallet has money. */
       deleteAccount: (forfeitWallet: boolean) =>
         json<{ deleted: true; walletForfeited: string }>('DELETE', '/auth/me', {

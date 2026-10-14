@@ -51,6 +51,19 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "YouMart uses the camera to scan QR codes - to sign in on youmart.in and to open product codes.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "YouMart uses Face ID to confirm signing in on your computer."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",

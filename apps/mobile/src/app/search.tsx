@@ -171,6 +171,14 @@ export default function SearchScreen() {
             </Pressable>
           ) : null}
           <Pressable
+            style={styles.scan}
+            onPress={() => router.push('/scan')}
+            hitSlop={8}
+            accessibilityLabel="Scan a QR code"
+          >
+            <Ionicons name="scan" size={19} color={colors.brand.DEFAULT} />
+          </Pressable>
+          <Pressable
             style={styles.mic}
             onPress={() => {
               inputRef.current?.blur();
@@ -305,6 +313,7 @@ const styles = StyleSheet.create({
     color: colors.text.muted,
     textAlign: 'center',
   },
+  scan: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   mic: {
     width: 30,
     height: 30,

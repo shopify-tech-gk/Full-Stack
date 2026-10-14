@@ -202,6 +202,51 @@ model User {
   @@schema("auth")
 }
 
+enum QrLoginStatus {
+  /// Shown on the website, waiting to be scanned.
+  PENDING
+  /// Scanned by a signed-in app user; waiting for them to confirm.
+  SCANNED
+  /// Confirmed on the phone; the website may claim the session (once).
+  APPROVED
+  /// The website claimed it - a session was issued. Final.
+  USED
+  /// Cancelled on the phone. Final.
+  REJECTED
+
+  @@schema("auth")
+}
+
+/// QR sign-in ("scan with the YouMart app", like WhatsApp Web / Amazon). The website creates a row and
+/// shows `code` as a QR; a signed-in app user scans and confirms it; the website then claims a
+/// session. Only hashes are stored: `codeHash` (what the QR carries) and `browserKeyHash` (a secret
+/// only the creating browser holds - required to claim, so a photo of the QR is useless). Short-lived
+/// (`expiresAt`, 2 minutes) and single-use (USED).
+model QrLoginSession {
+  id             String        @id @default(uuid(7))
+  codeHash       String        @map("code_hash")
+  browserKeyHash String        @map("browser_key_hash")
+  status         QrLoginStatus @default(PENDING)
+  /// The app user who scanned / confirmed it.
+  userId         String?       @map("user_id")
+  /// The website's browser, shown on the phone's confirm sheet.
+  userAgent      String?       @map("user_agent")
+  ipAddress      String?       @map("ip_address")
+  expiresAt      DateTime      @map("expires_at")
+  scannedAt      DateTime?     @map("scanned_at")
+  approvedAt     DateTime?     @map("approved_at")
+  usedAt         DateTime?     @map("used_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  deletedAt      DateTime?     @map("deleted_at")
+
+  @@index([codeHash])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("qr_login_session")
+  @@schema("auth")
+}
+
 /// Issued OTP record. `codeHash` stores a hash, never the raw OTP code. Keyed by exactly one of
 /// `phone` (WhatsApp) or `email` (v1.2), enforced by a CHECK in migration SQL.
 model OtpChallenge {

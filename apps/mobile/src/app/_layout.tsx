@@ -57,6 +57,14 @@ export default function RootLayout() {
                   >
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen name="welcome" options={{ gestureEnabled: false }} />
+                    <Stack.Screen
+                      name="scan"
+                      options={{ headerShown: false, presentation: 'fullScreenModal' }}
+                    />
+                    <Stack.Screen
+                      name="account/devices"
+                      options={{ headerShown: true, title: 'Logged-in devices' }}
+                    />
                     <Stack.Screen name="search" options={{ headerShown: false }} />
                     <Stack.Screen
                       name="category/[slug]"

@@ -48,6 +48,14 @@ export function AppHeader() {
           </Text>
         </Pressable>
         <Pressable
+          style={styles.scan}
+          onPress={() => router.push('/scan')}
+          hitSlop={8}
+          accessibilityLabel="Scan a QR code"
+        >
+          <Ionicons name="scan" size={20} color={colors.brand.DEFAULT} />
+        </Pressable>
+        <Pressable
           style={styles.mic}
           onPress={() => setVoice(true)}
           hitSlop={8}
@@ -98,6 +106,7 @@ const styles = StyleSheet.create({
     height: 42,
   },
   searchTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: '100%' },
+  scan: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   mic: {
     width: 32,
     height: 32,

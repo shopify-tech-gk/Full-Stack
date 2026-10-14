@@ -1,4 +1,4 @@
-# YouMart Public API Contract (v1.8)
+# YouMart Public API Contract (v1.9)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
@@ -1000,9 +1000,28 @@ fast-fails `401` without one); every call acts on the caller's own wallet.
 - `OrderView.cancelRequest` (§8): `{ status: "REQUESTED"|"APPROVED"|"REJECTED", reason, createdAt } | null` - the latest cancellation request of a paid order.
 - `ReturnView` (customer list/get, §11) adds `orderId`, `orderNumber`, `title`, `quantity`, `refundTo: "WALLET"`.
 
+## 13d. QR sign-in & Logged-in devices
+
+QR sign-in works like WhatsApp Web / Amazon: the website shows a QR, the signed-in YouMart app scans
+and confirms it, the website is signed in. Each QR lives 2 minutes, works once, and can only be
+claimed by the browser that created it (its `browserKey`, sent as the `x-qr-browser-key` header).
+
+- `POST /api/auth/qr` - public. **201** `{ sessionId, qrValue, browserKey, expiresAt }` - render `qrValue` (a `https://youmart.in/qr-login?c=...` link); keep `browserKey` private.
+- `GET /api/auth/qr/:sessionId` (header `x-qr-browser-key`) - **200** `{ status: PENDING|SCANNED|APPROVED|USED|REJECTED|EXPIRED, expiresAt, scannedBy (masked phone/email) }`; poll every ~2 s. **404** without the right key.
+- `POST /api/auth/qr/:sessionId/claim` (header `x-qr-browser-key`) - once APPROVED: **200** same body + refresh cookie as `otp/verify`. **409** if not approved / already used.
+- `POST /api/auth/qr/scan` (customer token) `{ qr }` - **200** `{ requestId, device: "Chrome · Windows", requestedAt, expiresAt }` for the confirm sheet. **400** not a YouMart sign-in code; **409** expired / used / someone else's.
+- `POST /api/auth/qr/approve` and `/reject` (customer token) `{ qr }` - **200** `{ status }`.
+- `GET /api/auth/me/devices` - **200** `{ items: [{ deviceId, label, kind: APP|BROWSER|UNKNOWN, lastActiveAt, current }] }` (current device first, identified by the refresh cookie).
+- `DELETE /api/auth/me/devices/:deviceId` - **204** (that device must sign in again; its current access token lapses within 15 minutes).
+- `POST /api/auth/me/devices/sign-out-others` - **200** `{ signedOut }`; **400** if this device can't be identified (no refresh cookie).
+
 ---
 
 ## 17. Change log
+
+### v1.9 — 2026-10-14 (QR sign-in, additive)
+
+- **Added**: QR sign-in and Logged-in devices - §13d. Migration `20261014072725_qr_login` (one new `auth` table).
 
 ### v1.8 — 2026-10-13 (W9: YouMart Wallet, refund policy change)
 

@@ -78,6 +78,11 @@ export default function PrivacyAccountScreen() {
           <Text style={styles.rowText}>Terms & conditions</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.text.muted} />
         </Pressable>
+        <Pressable style={styles.row} onPress={() => router.push('/account/devices')}>
+          <Ionicons name="phone-portrait-outline" size={20} color={colors.brand.DEFAULT} />
+          <Text style={styles.rowText}>Logged-in devices</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.text.muted} />
+        </Pressable>
         <Pressable
           style={[styles.row, styles.rowLast]}
           onPress={() => router.push('/account/notifications')}

@@ -8,6 +8,7 @@ import { AccountShell } from './AccountShell';
 import { LogoutButton } from './LogoutButton';
 import { OrdersList } from './OrdersList';
 import { OtpLoginForm } from './OtpLoginForm';
+import { LoginMethods } from './LoginMethods';
 import { BODY_TEXT, TEXT_LINK } from './formStyles';
 
 const HEADING =
@@ -73,7 +74,7 @@ function LoginView({ returnTo }: { returnTo?: string }) {
           <h2 id="login-heading" className={HEADING}>
             Login
           </h2>
-          <OtpLoginForm mode="login" returnTo={returnTo} />
+          <LoginMethods returnTo={returnTo} />
         </section>
         <section aria-labelledby="register-heading" className="min-[922px]:w-[48%]">
           <h2 id="register-heading" className={HEADING}>

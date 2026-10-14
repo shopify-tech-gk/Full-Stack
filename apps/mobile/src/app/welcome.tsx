@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { Camera } from 'expo-camera';
 import { completeOnboarding } from '@/stores/onboarding';
 import { getVoicePermission, requestVoicePermission, type VoicePermission } from '@/lib/voice';
 import { colors, font, radii, space } from '@/theme';
@@ -43,7 +44,8 @@ export default function WelcomeScreen() {
   const [agreed, setAgreed] = useState(false);
   const [location, setLocation] = useState<Perm>('unknown');
   const [mic, setMic] = useState<Perm>('unknown');
-  const [asking, setAsking] = useState<'location' | 'mic' | null>(null);
+  const [camera, setCamera] = useState<Perm>('unknown');
+  const [asking, setAsking] = useState<'location' | 'mic' | 'camera' | null>(null);
   const [finishing, setFinishing] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -52,6 +54,10 @@ export default function WelcomeScreen() {
       !loc ? 'unavailable' : loc.granted ? 'granted' : loc.canAskAgain ? 'denied' : 'blocked',
     );
     setMic(await getVoicePermission());
+    const cam = await Camera.getCameraPermissionsAsync().catch(() => null);
+    setCamera(
+      !cam ? 'unavailable' : cam.granted ? 'granted' : cam.canAskAgain ? 'denied' : 'blocked',
+    );
   }, []);
 
   useEffect(() => {
@@ -72,6 +78,16 @@ export default function WelcomeScreen() {
     setAsking('mic');
     try {
       setMic(await requestVoicePermission());
+    } finally {
+      setAsking(null);
+    }
+  };
+
+  const askCamera = async () => {
+    setAsking('camera');
+    try {
+      const r = await Camera.requestCameraPermissionsAsync();
+      setCamera(r.granted ? 'granted' : r.canAskAgain ? 'denied' : 'blocked');
     } finally {
       setAsking(null);
     }
@@ -173,6 +189,14 @@ export default function WelcomeScreen() {
           busy={asking === 'mic'}
           onAllow={askMic}
         />
+        <PermissionCard
+          icon="scan"
+          title="Camera"
+          sub="Scan a QR code to sign in on youmart.in, or scan product codes."
+          state={camera}
+          busy={asking === 'camera'}
+          onAllow={askCamera}
+        />
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + space.lg }]}>
@@ -190,7 +214,9 @@ export default function WelcomeScreen() {
             </>
           )}
         </Pressable>
-        {location !== 'granted' || (mic !== 'granted' && mic !== 'unavailable') ? (
+        {location !== 'granted' ||
+        camera !== 'granted' ||
+        (mic !== 'granted' && mic !== 'unavailable') ? (
           <Pressable onPress={finish} disabled={finishing}>
             <Text style={styles.skip}>Not now</Text>
           </Pressable>

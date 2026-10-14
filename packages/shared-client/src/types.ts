@@ -560,3 +560,34 @@ export interface HelpTicket {
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
 }
+
+// --- QR sign-in + Logged-in devices ---
+export type QrLoginStatus = 'PENDING' | 'SCANNED' | 'APPROVED' | 'USED' | 'REJECTED' | 'EXPIRED';
+/** POST /api/auth/qr (website): render `qrValue`; keep `browserKey` to poll and claim. */
+export interface QrLoginStart {
+  sessionId: Uuid;
+  qrValue: string;
+  browserKey: string;
+  expiresAt: IsoDateTime;
+}
+export interface QrLoginPoll {
+  status: QrLoginStatus;
+  expiresAt: IsoDateTime;
+  /** Masked phone/email of whoever scanned it. */
+  scannedBy: string | null;
+}
+/** POST /api/auth/qr/scan (app): what the confirm sheet shows. */
+export interface QrLoginRequest {
+  requestId: Uuid;
+  /** e.g. "Chrome · Windows". */
+  device: string;
+  requestedAt: IsoDateTime;
+  expiresAt: IsoDateTime;
+}
+export interface LoggedInDevice {
+  deviceId: Uuid;
+  label: string;
+  kind: 'APP' | 'BROWSER' | 'UNKNOWN';
+  lastActiveAt: IsoDateTime;
+  current: boolean;
+}

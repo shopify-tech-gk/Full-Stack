@@ -66,6 +66,14 @@ export async function loginWithOtp(identifier: string, code: string): Promise<Au
   return user;
 }
 
+/** QR sign-in: the phone confirmed - claim this browser's session (sets the refresh cookie). */
+export async function loginWithQr(sessionId: string, browserKey: string): Promise<AuthUser> {
+  const { accessToken, user } = await api.auth.qrClaim(sessionId, browserKey);
+  epoch += 1;
+  signIn(accessToken, user);
+  return user;
+}
+
 export async function logout(): Promise<void> {
   epoch += 1;
   try {
