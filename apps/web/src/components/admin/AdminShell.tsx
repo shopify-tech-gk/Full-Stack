@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -25,9 +25,12 @@ import {
   can,
   readAdminSession,
   signOutAdmin,
+  type AdminOrderListItem,
   type AdminSession,
   type AdminStats,
+  type Page,
 } from '@/lib/admin';
+import { formatMoney } from '@youmart/shared-client';
 import { inputClass } from './ui';
 
 interface NavItem {
@@ -138,38 +141,93 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
-  const refreshCounts = useCallback(() => {
+  // Live updates: every few seconds a light check of what changed (new orders, statuses, queues,
+  // help requests). When anything moved, every open page refreshes in place (`ym-admin-live`, see
+  // useAdminData) and a brand-new order pops an alert with a chime.
+  const [alert, setAlert] = useState<AdminOrderListItem | null>(null);
+  const lastSignature = useRef<string | null>(null);
+  const lastOrderId = useRef<string | null>(null);
+  const polling = useRef(false);
+
+  const refreshCounts = useCallback(async () => {
     const s = readAdminSession();
-    if (!s) return;
-    if (can(s, 'orders.manage')) {
-      adminFetch<AdminStats>('/orders/admin/stats')
-        .then((st) =>
-          setCounts((c) => ({
-            ...c,
-            toPack: st.queues.toPack,
-            cancelRequests: st.queues.cancelRequests,
-          })),
-        )
-        .catch(() => undefined);
-    }
-    if (can(s, 'returns.manage')) {
-      adminFetch<{ items: unknown[] }>('/admin/returns?status=REQUESTED&limit=100')
-        .then((r) => setCounts((c) => ({ ...c, returns: r.items.length })))
-        .catch(() => undefined);
-    }
-    if (can(s, 'support.manage')) {
-      adminFetch<{ counts: { OPEN: number } }>('/support/admin/tickets?limit=1')
-        .then((r) => setCounts((c) => ({ ...c, tickets: r.counts.OPEN })))
-        .catch(() => undefined);
+    if (!s || polling.current) return;
+    polling.current = true;
+    try {
+      const [stats, latest, returns, tickets] = await Promise.all([
+        can(s, 'orders.manage')
+          ? adminFetch<AdminStats>('/orders/admin/stats').catch(() => null)
+          : null,
+        can(s, 'orders.manage')
+          ? adminFetch<Page<AdminOrderListItem>>('/orders/admin/orders?limit=5').catch(() => null)
+          : null,
+        can(s, 'returns.manage')
+          ? adminFetch<{ items: Array<{ id: string; status: string }> }>(
+              '/admin/returns?limit=20',
+            ).catch(() => null)
+          : null,
+        can(s, 'support.manage')
+          ? adminFetch<{
+              counts: Record<string, number>;
+              items: Array<{ ticketId: string; updatedAt: string }>;
+            }>('/support/admin/tickets?limit=5').catch(() => null)
+          : null,
+      ]);
+      setCounts({
+        toPack: stats?.queues.toPack ?? 0,
+        cancelRequests: stats?.queues.cancelRequests ?? 0,
+        returns: returns?.items.filter((r) => r.status === 'REQUESTED').length ?? 0,
+        tickets: tickets?.counts.OPEN ?? 0,
+      });
+
+      const signature = JSON.stringify([
+        stats?.today,
+        stats?.queues,
+        latest?.items.map((o) => [o.orderId, o.status, o.itemStatuses]),
+        returns?.items.map((r) => [r.id, r.status]),
+        tickets?.counts,
+        tickets?.items.map((t) => [t.ticketId, t.updatedAt]),
+      ]);
+      if (lastSignature.current !== null && signature !== lastSignature.current) {
+        window.dispatchEvent(new Event('ym-admin-live'));
+      }
+      lastSignature.current = signature;
+
+      const newest = latest?.items[0];
+      if (newest) {
+        if (lastOrderId.current && newest.orderId !== lastOrderId.current) {
+          setAlert(newest);
+          chime();
+        }
+        lastOrderId.current = newest.orderId;
+      }
+    } finally {
+      polling.current = false;
     }
   }, []);
 
   useEffect(() => {
     if (!session) return;
-    refreshCounts();
-    const t = setInterval(refreshCounts, 60_000);
-    return () => clearInterval(t);
+    void refreshCounts();
+    const t = setInterval(() => {
+      if (document.visibilityState === 'visible') void refreshCounts();
+    }, 5_000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refreshCounts();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [session, refreshCounts]);
+
+  // The alert stays a while, then goes away by itself.
+  useEffect(() => {
+    if (!alert) return;
+    const t = setTimeout(() => setAlert(null), 9_000);
+    return () => clearTimeout(t);
+  }, [alert]);
 
   if (session === undefined) {
     return (
@@ -253,7 +311,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     .toUpperCase();
 
   return (
-    <AdminContext.Provider value={{ session, refreshCounts }}>
+    <AdminContext.Provider value={{ session, refreshCounts: () => void refreshCounts() }}>
       <div className="fixed inset-0 z-[50] flex bg-[#f4f6fb] font-ui text-[#24324d]">
         <aside className="hidden w-[256px] shrink-0 flex-col bg-[linear-gradient(180deg,#0b1b3f_0%,#0a1633_100%)] lg:flex">
           {brand}
@@ -339,6 +397,55 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
+      {alert && (
+        <div
+          role="alert"
+          className="fixed right-[24px] top-[78px] z-[2300] w-[340px] max-w-[calc(100vw-32px)] overflow-hidden rounded-[16px] bg-white shadow-[0_18px_50px_rgba(11,27,63,0.28)] ring-1 ring-[#e4e9f2]"
+        >
+          <div className="flex items-center gap-[10px] bg-[linear-gradient(135deg,#0b1b3f,#0142aa)] px-[16px] py-[11px] text-white">
+            <span className="relative flex size-[10px]">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#ffc200] opacity-75" />
+              <span className="relative inline-flex size-[10px] rounded-full bg-[#ffc200]" />
+            </span>
+            <p className="flex-1 text-[14px] font-semibold">New order received</p>
+            <button
+              type="button"
+              aria-label="Dismiss"
+              onClick={() => setAlert(null)}
+              className="flex size-[26px] items-center justify-center rounded-full hover:bg-white/10"
+            >
+              <X aria-hidden="true" className="size-[15px]" />
+            </button>
+          </div>
+          <Link
+            href={`/admin/orders/${alert.orderNumber}`}
+            onClick={() => setAlert(null)}
+            className="block px-[16px] py-[13px] hover:bg-[#fafbfe]"
+          >
+            <p className="text-[15px] font-semibold text-[#0142aa]">{alert.orderNumber}</p>
+            <p className="mt-[2px] text-[13.5px] text-[#24324d]">
+              {alert.customerName ?? 'Customer'}
+              {alert.city ? ` · ${alert.city}` : ''} · {alert.itemCount} item
+              {alert.itemCount === 1 ? '' : 's'}
+            </p>
+            <p className="mt-[6px] flex items-center justify-between text-[13px]">
+              <span className="text-[18px] font-semibold text-[#0b1b3f]">
+                {formatMoney(alert.grandTotal)}
+              </span>
+              <span
+                className={`font-semibold ${alert.paymentMethod === 'COD' ? 'text-[#9a6200]' : 'text-[#137a3f]'}`}
+              >
+                {alert.paymentMethod === 'COD'
+                  ? 'Cash on Delivery'
+                  : alert.status === 'PENDING_PAYMENT'
+                    ? 'Awaiting payment'
+                    : 'Paid online'}
+              </span>
+            </p>
+            <p className="mt-[8px] text-[12.5px] font-semibold text-[#0142aa]">Open order →</p>
+          </Link>
+        </div>
+      )}
     </AdminContext.Provider>
   );
 }
@@ -440,4 +547,32 @@ function AdminLogin() {
       </div>
     </div>
   );
+}
+
+/** Soft two-note chime for a new order (Web Audio - no file to load). Browsers only allow sound
+ * after the admin has clicked somewhere on the page; before that it is silently skipped. */
+function chime(): void {
+  try {
+    const Ctx =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    [880, 1318.5].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i * 0.16;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.55);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.6);
+    });
+    setTimeout(() => void ctx.close(), 1500);
+  } catch {
+    // No audio available - the alert still shows.
+  }
 }

@@ -352,6 +352,21 @@ export function useAdminData<T>(fn: () => Promise<T>, deps: unknown[]) {
     void reload();
   }, [reload]);
 
+  // Live: when the shell sees something change (a new order, a status, a help request), refetch
+  // quietly in place - no spinner, and a failed background refresh keeps what's on screen.
+  useEffect(() => {
+    const onLive = () => {
+      const id = ++seq.current;
+      load()
+        .then((value) => {
+          if (id === seq.current) setData(value);
+        })
+        .catch(() => undefined);
+    };
+    window.addEventListener('ym-admin-live', onLive);
+    return () => window.removeEventListener('ym-admin-live', onLive);
+  }, [load]);
+
   return { data, setData, error, loading, reload };
 }
 
