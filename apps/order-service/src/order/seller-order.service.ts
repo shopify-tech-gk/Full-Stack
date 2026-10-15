@@ -2,6 +2,7 @@ import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { AppError } from '@youmart/errors';
 import { prisma } from '../db';
+import { notifyInbox } from '@youmart/notifications-client';
 
 function decimalToMoney(value: Prisma.Decimal): Money {
   return value.toFixed(2) as Money;
@@ -140,6 +141,15 @@ export async function updateSellerItemStatus(
     include: SELLER_ITEM_INCLUDE,
   });
 
+  // v1.15: "Packed" in the customer's inbox (best-effort).
+  if (nextStatus === 'PACKED') {
+    await notifyInbox(updated.order.userId, 'ORDER_PACKED', {
+      orderId: updated.orderId,
+      orderNumber: updated.order.orderNumber,
+      itemTitle: updated.titleSnapshot,
+    });
+  }
+
   return toSellerItemView(updated);
 }
 
@@ -182,6 +192,15 @@ export async function adminUpdateSellerItemStatus(
     data: { sellerStatus: nextStatus },
     include: SELLER_ITEM_INCLUDE,
   });
+
+  // v1.15: "Packed" in the customer's inbox (best-effort).
+  if (nextStatus === 'PACKED') {
+    await notifyInbox(updated.order.userId, 'ORDER_PACKED', {
+      orderId: updated.orderId,
+      orderNumber: updated.order.orderNumber,
+      itemTitle: updated.titleSnapshot,
+    });
+  }
 
   return toSellerItemView(updated);
 }

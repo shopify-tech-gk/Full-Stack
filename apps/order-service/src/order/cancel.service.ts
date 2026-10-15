@@ -1,7 +1,7 @@
 import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { AppError } from '@youmart/errors';
-import { enqueueNotification } from '@youmart/notifications-client';
+import { enqueueNotification, notifyInbox } from '@youmart/notifications-client';
 import type { RefundResult } from '@youmart/service-client';
 import { prisma } from '../db';
 import { inventoryClient, paymentClient } from '../serviceClients';
@@ -152,6 +152,11 @@ export async function cancelOrderAsCustomer(
       // eslint-disable-next-line no-console
       console.error('failed to void COD payment', err);
     });
+    await notifyInbox(userId, 'ORDER_CANCELLED', {
+      orderId,
+      orderNumber: order.orderNumber,
+      note: 'Nothing to pay - it was Cash on Delivery.',
+    });
     return { outcome: 'CANCELLED', order: await getOrder(userId, orderId), cancelRequest: null };
   }
 
@@ -298,6 +303,21 @@ export async function approveCancelRequest(
 
   await releaseCouponForOrder(order.id);
 
+  // v1.15: inbox - the cancellation, and (paid orders) the wallet refund.
+  await notifyInbox(order.userId, 'ORDER_CANCELLED', {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    refundAmount: cod ? null : amount,
+    note: note ?? null,
+  });
+  if (!cod) {
+    await notifyInbox(order.userId, 'REFUND_PROCESSED', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      amount,
+    });
+  }
+
   // Best-effort, never blocks the cancellation.
   if (order.shipPhone && !cod) {
     await enqueueNotification({
@@ -324,6 +344,12 @@ export async function rejectCancelRequest(
   const updated = await prisma.orderCancelRequest.update({
     where: { id: request.id },
     data: { status: 'REJECTED', resolutionNote: note ?? null, resolvedAt: new Date() },
+    include: { order: { select: { userId: true, orderNumber: true } } },
+  });
+  await notifyInbox(updated.order.userId, 'CANCEL_REQUEST_DECLINED', {
+    orderId: updated.orderId,
+    orderNumber: updated.order.orderNumber,
+    note: note ?? null,
   });
   return toView(updated);
 }

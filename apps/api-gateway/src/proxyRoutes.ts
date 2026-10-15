@@ -54,6 +54,8 @@ const ROUTES: Array<{ prefix: string; target: string }> = [
   { prefix: '/api/invoices', target: config.services.invoice },
   { prefix: '/api/settlements', target: config.services.settlement },
   { prefix: '/api/support', target: config.services.notification },
+  // v1.15: the customer's inbox (the bell).
+  { prefix: '/api/notifications', target: config.services.notification },
   { prefix: '/api/admin/sellers', target: config.services.seller },
   { prefix: '/api/admin/settlements', target: config.services.settlement },
   { prefix: '/api/admin/returns', target: config.services.returns },
@@ -97,6 +99,7 @@ const ALWAYS_AUTHENTICATED_PREFIXES = [
   '/api/addresses',
   '/api/wallet',
   '/api/inventory',
+  '/api/notifications',
   '/api/admin/sellers',
   '/api/admin/settlements',
   '/api/admin/returns',

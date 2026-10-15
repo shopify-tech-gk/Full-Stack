@@ -2,8 +2,9 @@ import { createQueue } from '@youmart/queue';
 import { z } from 'zod';
 
 /** PUSH is declared for forward-compat only - no provider adapter exists
- * yet in notification-service (a future chapter). */
-export const NotificationChannel = z.enum(['EMAIL', 'SMS', 'WHATSAPP', 'PUSH']);
+ * yet in notification-service (a future chapter). INBOX (v1.15) is the customer's in-app
+ * inbox: `to` is the user id and notification-service stores the message itself. */
+export const NotificationChannel = z.enum(['EMAIL', 'SMS', 'WHATSAPP', 'PUSH', 'INBOX']);
 export type NotificationChannel = z.infer<typeof NotificationChannel>;
 
 /** `data` is intentionally untyped here - only notification-service's own
@@ -42,4 +43,17 @@ export async function enqueueNotification(payload: NotificationJob): Promise<voi
       err,
     });
   }
+}
+
+/**
+ * v1.15: drop a message into the customer's in-app inbox (the bell). Same fire-and-forget rules
+ * as `enqueueNotification`; notification-service's inbox templates turn `templateKey` + `data`
+ * into the title and text. Pass `orderId` / `orderNumber` in `data` so tapping it opens the order.
+ */
+export async function notifyInbox(
+  userId: string,
+  templateKey: string,
+  data: Record<string, unknown>,
+): Promise<void> {
+  await enqueueNotification({ channel: 'INBOX', to: userId, userId, templateKey, data });
 }

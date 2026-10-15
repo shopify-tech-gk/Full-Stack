@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import {
+  Bell,
   Clock,
   Heart,
   House,
@@ -24,6 +25,7 @@ const ICONS: Record<AccountSection, typeof House> = {
   recent: Clock,
   reviews: Star,
   coupons: TicketPercent,
+  notifications: Bell,
   logout: LogOut,
 };
 

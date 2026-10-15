@@ -149,6 +149,10 @@ export default function RootLayout() {
                       options={{ headerShown: true, title: 'Coupons' }}
                     />
                     <Stack.Screen
+                      name="inbox"
+                      options={{ headerShown: true, title: 'Notifications' }}
+                    />
+                    <Stack.Screen
                       name="account/recently-viewed"
                       options={{ headerShown: true, title: 'Recently viewed' }}
                     />

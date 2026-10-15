@@ -3,11 +3,12 @@
 import { useCallback, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Download, Heart, Menu, PackageSearch, ShoppingCart } from 'lucide-react';
+import { Bell, Download, Heart, Menu, PackageSearch, ShoppingCart } from 'lucide-react';
 import { BUSINESS, ROUTES } from '@youmart/shared-client';
 import { useSession } from '@/lib/session';
 import { useCartCount } from '@/lib/cart';
 import { useWishlistCount } from '@/lib/wishlist';
+import { useUnreadCount } from '@/lib/inbox';
 import { CartCountBadge, cartLinkLabel } from '@/components/cart/CartCountBadge';
 import { Logo } from './Logo';
 import { SearchBar } from './SearchBar';
@@ -50,6 +51,12 @@ const DESKTOP_ACTIONS: DesktopAction[] = [
     href: ROUTES.customerCare,
     lines: ['Customer', 'Care'],
     icon: <FaWhatsapp className={TILE_ICON} />,
+  },
+  // v1.15: the inbox - order updates, refunds, support replies.
+  {
+    href: ROUTES.notifications,
+    lines: ['Notifi-', 'cations'],
+    icon: <Bell aria-hidden="true" className={TILE_ICON} strokeWidth={2.5} />,
   },
   {
     href: ROUTES.cart,
@@ -108,6 +115,7 @@ export function SiteHeader() {
   const session = useSession();
   const cartCount = useCartCount();
   const wishlistCount = useWishlistCount();
+  const unread = useUnreadCount();
   // Same tile as live's "My Account"; once signed in it greets the customer instead.
   const firstName = session.user?.name?.split(' ')[0];
   const accountLines: [string, string] =
@@ -146,6 +154,21 @@ export function SiteHeader() {
               icon={customerCareIcon}
               align="center"
             />
+            <Link
+              href={ROUTES.notifications}
+              aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+              className="relative mr-[8px] flex size-[34px] items-center justify-center text-brand"
+            >
+              <Bell aria-hidden="true" className="size-[24px]" strokeWidth={2.25} />
+              {unread > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-[3px] -top-[2px] flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-[#e11d48] px-[4px] font-ui text-[10px] font-bold leading-none text-white ring-2 ring-white"
+                >
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </Link>
           </nav>
         </div>
         <div className="h-[56px] px-[10px] pt-[10px]">
@@ -193,7 +216,11 @@ export function SiteHeader() {
                       ? cartLinkLabel(cartCount)
                       : href === ROUTES.wishlist
                         ? `My wishlist, ${wishlistCount} ${wishlistCount === 1 ? 'item' : 'items'}`
-                        : href === ROUTES.account && session.status === 'authenticated'
+                        : href === ROUTES.notifications
+                          ? unread > 0
+                            ? `Notifications, ${unread} unread`
+                            : 'Notifications'
+                          : href === ROUTES.account && session.status === 'authenticated'
                           ? 'My account (signed in)'
                           : undefined
                   }
@@ -204,6 +231,14 @@ export function SiteHeader() {
                     {href === ROUTES.cart && <CartCountBadge count={cartCount} tone="onBrand" />}
                     {href === ROUTES.wishlist && (
                       <CartCountBadge count={wishlistCount} tone="onBrand" />
+                    )}
+                    {href === ROUTES.notifications && unread > 0 && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -right-[7px] -top-[7px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#e11d48] px-[5px] font-ui text-[11px] font-bold leading-none text-white ring-2 ring-white"
+                      >
+                        {unread > 99 ? '99+' : unread}
+                      </span>
                     )}
                   </span>
                   <TwoLineLabel

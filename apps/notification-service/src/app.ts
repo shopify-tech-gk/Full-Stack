@@ -9,6 +9,7 @@ import { logger } from './logger';
 import { prisma } from './db';
 import { config } from './config';
 import { supportRouter } from './routes/support.routes';
+import { inboxRouter } from './routes/inbox.routes';
 
 /**
  * Builds the Express app without listening - mirrors the template every
@@ -50,6 +51,7 @@ export function createApp(): Express {
   });
 
   app.use('/support', supportRouter);
+  app.use('/notifications', inboxRouter);
 
   app.use((_req, _res, next) => {
     next(new AppError('NOT_FOUND', 404, 'Route not found'));

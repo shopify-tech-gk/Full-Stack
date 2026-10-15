@@ -2,7 +2,7 @@ import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { compare, subtract } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
-import { enqueueNotification } from '@youmart/notifications-client';
+import { enqueueNotification, notifyInbox } from '@youmart/notifications-client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { logger } from '../logger';
@@ -225,6 +225,27 @@ export async function getReturn(userId: string, id: string): Promise<CustomerRet
  * `refund_amount` is ever set - `processRefund` later uses this exact
  * value, never re-deriving it.
  */
+/** v1.15: a return update in the customer's inbox (best-effort - never fails the action). */
+async function notifyReturn(
+  userId: string,
+  templateKey: string,
+  itemOrId: string | { orderId: string; orderNumber: string; title: string },
+  note?: string,
+): Promise<void> {
+  try {
+    const item =
+      typeof itemOrId === 'string' ? await orderClient.getInternalOrderItem(itemOrId) : itemOrId;
+    await notifyInbox(userId, templateKey, {
+      orderId: item.orderId,
+      orderNumber: item.orderNumber,
+      itemTitle: item.title,
+      note: note ?? null,
+    });
+  } catch (err) {
+    logger.warn({ err, templateKey }, 'could not add the return update to the inbox');
+  }
+}
+
 export async function approveReturn(
   id: string,
   refundAmountOverride: Money | undefined,
@@ -251,6 +272,7 @@ export async function approveReturn(
     where: { id },
     data: { status: 'APPROVED', refundAmount },
   });
+  await notifyReturn(updated.userId, 'RETURN_APPROVED', item);
   return toReturnView(updated);
 }
 
@@ -270,6 +292,7 @@ export async function rejectReturn(id: string, reason?: string): Promise<ReturnV
     where: { id },
     data: { status: 'REJECTED' },
   });
+  await notifyReturn(updated.userId, 'RETURN_REJECTED', existing.orderItemId, reason);
   return toReturnView(updated);
 }
 
@@ -289,6 +312,7 @@ export async function markPickedUp(id: string): Promise<ReturnView> {
     where: { id },
     data: { status: 'PICKED_UP' },
   });
+  await notifyReturn(updated.userId, 'RETURN_PICKED_UP', existing.orderItemId);
   return toReturnView(updated);
 }
 
@@ -374,6 +398,10 @@ export async function processRefund(id: string): Promise<ProcessRefundResult> {
       amount: refundAmount,
       orderNumber: orderView.orderNumber,
     };
+    await notifyInbox(orderView.userId, 'REFUND_PROCESSED', {
+      ...notifyData,
+      orderId: item.orderId,
+    });
 
     if (orderView.shippingAddress?.phone) {
       await enqueueNotification({

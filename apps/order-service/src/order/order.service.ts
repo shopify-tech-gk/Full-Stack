@@ -3,7 +3,7 @@ import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
 import { add, multiplyByQuantity, subtract, sum } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
-import { enqueueNotification } from '@youmart/notifications-client';
+import { enqueueNotification, notifyInbox } from '@youmart/notifications-client';
 import { enqueueInvoiceGeneration } from '@youmart/invoice-client';
 import { prisma } from '../db';
 import {
@@ -638,6 +638,20 @@ export async function confirmOrder(
   try {
     const amount = decimalToMoney(order.grandTotal);
     const customerName = order.shipFullName ?? 'there';
+    // v1.15: the customer's inbox (the bell).
+    const lines = await prisma.orderItem.findMany({
+      where: { orderId, deletedAt: null },
+      orderBy: { createdAt: 'asc' },
+      select: { titleSnapshot: true },
+    });
+    await notifyInbox(order.userId, 'ORDER_PLACED', {
+      orderId,
+      orderNumber: order.orderNumber,
+      amount,
+      paymentMethod,
+      itemTitle: lines[0]?.titleSnapshot ?? null,
+      moreItems: Math.max(0, lines.length - 1),
+    });
     if (order.shipPhone) {
       await enqueueNotification({
         channel: 'WHATSAPP',

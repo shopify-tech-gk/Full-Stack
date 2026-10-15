@@ -625,6 +625,26 @@ export type HelpTopic =
   | 'DAMAGED_WRONG_ITEM'
   | 'ACCOUNT'
   | 'OTHER';
+/** v1.15: one message in the customer's inbox (the bell). */
+export type InboxKind = 'ORDER' | 'REFUND' | 'RETURN' | 'SUPPORT' | 'OFFER' | 'ACCOUNT';
+export interface InboxMessage {
+  id: Uuid;
+  kind: InboxKind;
+  title: string;
+  body: string;
+  orderId: Uuid | null;
+  orderNumber: string | null;
+  ticketId: Uuid | null;
+  imageUrl: string | null;
+  read: boolean;
+  createdAt: IsoDateTime;
+}
+export interface InboxPage {
+  items: InboxMessage[];
+  nextCursor: string | null;
+  unread: number;
+}
+
 export interface HelpTicket {
   ticketId: Uuid;
   /** Short reference to quote to support, e.g. "HLP-1A2B3C4D". */

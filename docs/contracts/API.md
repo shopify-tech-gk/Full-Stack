@@ -1,4 +1,4 @@
-# YouMart Public API Contract (v1.14)
+# YouMart Public API Contract (v1.15)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
@@ -1039,6 +1039,13 @@ claimed by the browser that created it (its `browserKey`, sent as the `x-qr-brow
 ---
 
 ## 17. Change log
+
+### v1.15 — 2026-10-15 (Notifications inbox, additive)
+
+- **Added**: `GET /api/notifications?kind=&cursor=&limit=` (customer) -> `{ items: InboxMessage[], nextCursor, unread }`; `InboxMessage` = `id, kind ORDER|REFUND|RETURN|SUPPORT|OFFER|ACCOUNT, title, body, orderId, orderNumber, ticketId, imageUrl, read, createdAt`. Newest first; messages are kept 90 days.
+- **Added**: `GET /api/notifications/unread-count` -> `{ unread }`; `POST /api/notifications/:id/read` -> 204; `POST /api/notifications/read-all` -> `{ updated }`; `DELETE /api/notifications/:id` -> 204 (404 for someone else's message).
+- **Events that write a message**: order confirmed, packed, shipped (courier + AWB), delivered, cancelled (COD self-cancel or approved request), cancel request declined, refund to wallet, return approved / picked up / not approved, support reply.
+- Internally: new queue channel `INBOX` (`notifyInbox(userId, templateKey, data)` in `@youmart/notifications-client`); notification-service renders and stores it.
 
 ### v1.14 — 2026-10-15 (Admin dashboard, additive)
 

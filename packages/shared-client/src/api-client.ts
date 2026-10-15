@@ -17,6 +17,8 @@ import type {
   CancelOrderResult,
   CreateWalletTopupResult,
   HelpTicket,
+  InboxKind,
+  InboxPage,
   HelpTopic,
   NotificationSettings,
   OrderPaymentSummary,
@@ -362,6 +364,19 @@ export function createApiClient(options: ApiClientOptions) {
       add: (skuId: Uuid) => json<WishlistView>('POST', '/wishlist/items', { body: { skuId } }),
       remove: (wishlistItemId: Uuid) =>
         json<WishlistView>('DELETE', `/wishlist/items/${wishlistItemId}`),
+    },
+    /** v1.15: the signed-in customer's inbox (the bell). */
+    notifications: {
+      list: (query?: { cursor?: string; limit?: number; kind?: InboxKind }) =>
+        json<InboxPage>('GET', '/notifications', { query }),
+      unreadCount: () => json<{ unread: number }>('GET', '/notifications/unread-count'),
+      markRead: async (id: Uuid): Promise<void> => {
+        await send('POST', `/notifications/${id}/read`);
+      },
+      markAllRead: () => json<{ updated: number }>('POST', '/notifications/read-all'),
+      remove: async (id: Uuid): Promise<void> => {
+        await send('DELETE', `/notifications/${id}`);
+      },
     },
     support: {
       sendMessage: (body: SupportMessageBody) =>

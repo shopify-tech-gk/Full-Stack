@@ -8,6 +8,7 @@ import { SEARCH_PLACEHOLDER } from '@youmart/shared-client';
 import { colors, font, radii, space } from '@/theme';
 import { DeliveryBar } from '@/components/DeliveryBar';
 import { VoiceSearchSheet } from '@/components/VoiceSearchSheet';
+import { useUnreadCount } from '@/stores/inbox';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const LOGO = require('../../assets/images/logo.png');
@@ -19,6 +20,7 @@ export function AppHeader() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [voice, setVoice] = useState(false);
+  const unread = useUnreadCount();
 
   return (
     <View style={[styles.wrap, { paddingTop: insets.top + 6 }]}>
@@ -45,6 +47,27 @@ export function AppHeader() {
           >
             <Ionicons name="headset-outline" size={22} color={colors.brand.DEFAULT} />
             <Text style={styles.tileLabel}>Customer{'\n'}Care</Text>
+          </Pressable>
+          {/* v1.15: the inbox - order updates, refunds, support replies. */}
+          <Pressable
+            style={styles.tile}
+            onPress={() => router.push('/inbox')}
+            hitSlop={6}
+            accessibilityLabel={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+          >
+            <View>
+              <Ionicons
+                name={unread > 0 ? 'notifications' : 'notifications-outline'}
+                size={22}
+                color={colors.brand.DEFAULT}
+              />
+              {unread > 0 ? (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.tileLabel}>Alerts</Text>
           </Pressable>
         </View>
       </View>
@@ -92,9 +115,24 @@ const styles = StyleSheet.create({
     paddingBottom: space.md,
   },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  logo: { width: 140, height: 53 },
+  logo: { width: 132, height: 50 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 'auto' },
-  tile: { alignItems: 'center', gap: 2, width: 50 },
+  tile: { alignItems: 'center', gap: 2, width: 46 },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -9,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: '#e11d48',
+    borderWidth: 1.5,
+    borderColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { fontFamily: font.uiBold, fontSize: 9.5, lineHeight: 12, color: colors.white },
   tileLabel: {
     fontFamily: font.uiSemibold,
     fontSize: 9.5,

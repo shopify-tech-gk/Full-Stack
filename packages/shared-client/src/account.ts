@@ -46,11 +46,13 @@ export type AccountSection =
   | 'recent'
   | 'reviews'
   | 'coupons'
+  | 'notifications'
   | 'logout';
 
 export const ACCOUNT_NAV: readonly { key: AccountSection; label: string; href: string }[] = [
   { key: 'dashboard', label: 'Dashboard', href: ROUTES.account },
   { key: 'orders', label: 'Orders', href: ROUTES.orders },
+  { key: 'notifications', label: 'Notifications', href: ROUTES.notifications },
   { key: 'track', label: 'Track Order', href: ROUTES.trackOrder },
   { key: 'addresses', label: 'Addresses', href: ROUTES.addresses },
   { key: 'account', label: 'Account details', href: ROUTES.accountDetails },

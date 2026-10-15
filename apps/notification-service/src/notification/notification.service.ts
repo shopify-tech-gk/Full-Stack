@@ -7,6 +7,7 @@ import { renderTemplate, TemplateUnavailableError } from '../templates/template.
 import { resolveProvider } from '../providers/registry';
 import { redactJobDataForLog } from './log-redaction.util';
 import { authClient } from '../serviceClients';
+import { addInboxMessage } from '../inbox/inbox.service';
 
 /** W9: which customer setting governs each template. Unlisted templates (login OTP, support
  * inbox) are always sent - they are security / internal messages, not preferences. */
@@ -93,6 +94,18 @@ export async function processNotificationJob(
       payload: toJsonInput({ to: payload.to, data: redactedData }),
     },
   });
+
+  // v1.15: the in-app inbox needs no provider - the message is stored here (always, even with
+  // NOTIFICATIONS_ENABLED=false: nothing leaves the system). A DB error re-throws -> queue retry.
+  if (payload.channel === 'INBOX') {
+    const userId = payload.userId ?? payload.to;
+    const stored = await addInboxMessage(userId, payload.templateKey, payload.data);
+    await prisma.notificationLog.update({
+      where: { id: logRow.id },
+      data: stored ? { status: 'SENT', sentAt: new Date() } : { status: 'SKIPPED' },
+    });
+    return;
+  }
 
   if (await optedOut(payload)) {
     await prisma.notificationLog.update({

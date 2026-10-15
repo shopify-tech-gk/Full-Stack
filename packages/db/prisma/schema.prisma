@@ -1247,6 +1247,8 @@ enum NotificationChannel {
   SMS
   PUSH
   WHATSAPP
+  /// v1.15: the customer's in-app inbox (bell) - no external provider.
+  INBOX
 
   @@schema("notifications")
 }
@@ -1265,6 +1267,43 @@ enum NotificationStatus {
 /// reference to auth.user.id - plain indexed column, no database foreign
 /// key - nullable because some notifications are system/seller-targeted
 /// rather than user-targeted.
+/// v1.15: what an inbox message is about (drives its icon and where tapping it goes).
+enum InboxKind {
+  ORDER
+  REFUND
+  RETURN
+  SUPPORT
+  OFFER
+  ACCOUNT
+
+  @@schema("notifications")
+}
+
+/// v1.15: one message in a customer's in-app inbox (the bell). Written by notification-service's
+/// worker for INBOX-channel jobs (order placed / shipped / delivered, refunds, cancellations,
+/// returns) and directly for support replies. `userId` is a soft reference to auth.user.id.
+model InboxMessage {
+  id          String    @id @default(uuid(7))
+  userId      String    @map("user_id")
+  kind        InboxKind
+  templateKey String    @map("template_key")
+  title       String
+  body        String
+  orderId     String?   @map("order_id")
+  orderNumber String?   @map("order_number")
+  ticketId    String?   @map("ticket_id")
+  imageUrl    String?   @map("image_url")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@map("inbox_message")
+  @@schema("notifications")
+}
+
 model NotificationLog {
   id        String              @id @default(uuid(7))
   userId    String?             @map("user_id")

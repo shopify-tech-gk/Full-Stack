@@ -16,6 +16,8 @@ export const ROUTES = {
   myReviews: '/account/reviews',
   /** v1.13 */
   coupons: '/account/coupons',
+  /** v1.15: the inbox (bell). */
+  notifications: '/account/notifications',
   trackOrder: '/track-order',
   cancelOrder: '/cancel-order',
   orderNotifications: '/order-notifications',

@@ -1,5 +1,5 @@
 import { AppError } from '@youmart/errors';
-import { enqueueNotification } from '@youmart/notifications-client';
+import { enqueueNotification, notifyInbox } from '@youmart/notifications-client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { orderClient, authClient } from '../serviceClients';
@@ -179,6 +179,11 @@ async function enqueueOrderDeliveredNotification(orderItemId: string): Promise<v
     const orderView = await orderClient.getInternalOrder(item.orderId);
     const customerName = orderView.shippingAddress?.fullName ?? 'there';
     const notifyData = { customerName, orderNumber: orderView.orderNumber };
+    await notifyInbox(orderView.userId, 'ORDER_DELIVERED', {
+      ...notifyData,
+      orderId: item.orderId,
+      itemTitle: item.title,
+    });
 
     if (orderView.shippingAddress?.phone) {
       await enqueueNotification({
@@ -295,6 +300,11 @@ export async function createShipment(
       awb: input.awbNumber ?? providerResult.providerRef ?? 'N/A',
       carrier: input.carrier ?? 'N/A',
     };
+    await notifyInbox(orderView.userId, 'ORDER_SHIPPED', {
+      ...notifyData,
+      orderId: item.orderId,
+      itemTitle: item.title,
+    });
     if (orderView.shippingAddress?.phone) {
       await enqueueNotification({
         channel: 'WHATSAPP',

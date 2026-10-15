@@ -3,6 +3,7 @@ import { enqueueNotification } from '@youmart/notifications-client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { authClient, orderClient } from '../serviceClients';
+import { addInboxMessage } from '../inbox/inbox.service';
 import type {
   AdminListTicketsQuery,
   AdminUpdateTicketBody,
@@ -231,5 +232,16 @@ export async function updateAdminTicket(
       ...(input.reply ? { adminReply: input.reply, repliedAt: new Date() } : {}),
     },
   });
-  return toView(row);
+  const view = toView(row);
+  if (input.reply) {
+    // v1.15: the reply also lands in the customer's inbox (best-effort).
+    await addInboxMessage(row.userId, 'SUPPORT_REPLY', {
+      reference: view.reference,
+      reply: input.reply,
+      ticketId: row.id,
+      orderId: row.orderId,
+      orderNumber: row.orderNumber,
+    }).catch(() => undefined);
+  }
+  return view;
 }
