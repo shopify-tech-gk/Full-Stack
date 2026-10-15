@@ -150,7 +150,12 @@ export function buildCategoryTaxonomy(
             return {
               ...sub,
               image: images[`${slug}/${subSlug}`] ?? null,
-              children: items.map((item) => {
+              // The sheet often lists a sub as one of its own items ("Garden Decor" under Garden
+              // Decor) - shown, it's a duplicate card of the sub itself, so it's left out. A sub
+              // whose only item was itself ends up with none and links straight to its listing.
+              children: items
+                .filter((item) => slugify(item) !== subSlug)
+                .map((item) => {
                 const itemSlug = slugify(item);
                 return {
                   slug: itemSlug,

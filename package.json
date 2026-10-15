@@ -20,6 +20,7 @@
     "dev:seed-demo": "node scripts/dev-seed-demo.mjs",
     "dev:remove-demo": "node scripts/dev-remove-demo.mjs",
     "build:category-taxonomy": "node scripts/build-category-taxonomy.mjs",
+    "build:category-images": "node scripts/build-category-images.mjs",
     "build:brand-domains": "node scripts/build-brand-domains.mjs"
   },
   "devDependencies": {

@@ -1730,46 +1730,311 @@ export const CATEGORY_TAXONOMY_SOURCE: CategoryTaxonomySource = [
 export const CATEGORY_IMAGE_PATHS: CategoryImagePaths = {
   'agri-and-gardening': '/categories/explore/agri-and-gardening.webp',
   'agri-and-gardening/fertilizers': '/categories/explore/agri-and-gardening/fertilizers.webp',
+  'agri-and-gardening/fertilizers/chemical-fertilizers':
+    '/categories/explore/agri-and-gardening/fertilizers/chemical-fertilizers.webp',
+  'agri-and-gardening/fertilizers/compost':
+    '/categories/explore/agri-and-gardening/fertilizers/compost.webp',
+  'agri-and-gardening/fertilizers/liquid-fertilizers':
+    '/categories/explore/agri-and-gardening/fertilizers/liquid-fertilizers.webp',
+  'agri-and-gardening/fertilizers/npk-fertilizers':
+    '/categories/explore/agri-and-gardening/fertilizers/npk-fertilizers.webp',
+  'agri-and-gardening/fertilizers/organic-fertilizers':
+    '/categories/explore/agri-and-gardening/fertilizers/organic-fertilizers.webp',
+  'agri-and-gardening/fertilizers/organic-manure':
+    '/categories/explore/agri-and-gardening/fertilizers/organic-manure.webp',
+  'agri-and-gardening/fertilizers/vermicompost':
+    '/categories/explore/agri-and-gardening/fertilizers/vermicompost.webp',
   'agri-and-gardening/garden-decor': '/categories/explore/agri-and-gardening/garden-decor.webp',
+  'agri-and-gardening/garden-decor/bird-baths':
+    '/categories/explore/agri-and-gardening/garden-decor/bird-baths.webp',
+  'agri-and-gardening/garden-decor/garden-fountains':
+    '/categories/explore/agri-and-gardening/garden-decor/garden-fountains.webp',
+  'agri-and-gardening/garden-decor/garden-lights':
+    '/categories/explore/agri-and-gardening/garden-decor/garden-lights.webp',
+  'agri-and-gardening/garden-decor/garden-ornaments':
+    '/categories/explore/agri-and-gardening/garden-decor/garden-ornaments.webp',
+  'agri-and-gardening/garden-decor/garden-statues':
+    '/categories/explore/agri-and-gardening/garden-decor/garden-statues.webp',
   'agri-and-gardening/garden-netting': '/categories/explore/agri-and-gardening/garden-netting.webp',
+  'agri-and-gardening/garden-netting/bird-netting':
+    '/categories/explore/agri-and-gardening/garden-netting/bird-netting.webp',
+  'agri-and-gardening/garden-netting/insect-netting':
+    '/categories/explore/agri-and-gardening/garden-netting/insect-netting.webp',
+  'agri-and-gardening/garden-netting/plant-support-netting':
+    '/categories/explore/agri-and-gardening/garden-netting/plant-support-netting.webp',
+  'agri-and-gardening/garden-netting/shade-netting':
+    '/categories/explore/agri-and-gardening/garden-netting/shade-netting.webp',
   'agri-and-gardening/garden-soil': '/categories/explore/agri-and-gardening/garden-soil.webp',
+  'agri-and-gardening/garden-soil/cocopeat':
+    '/categories/explore/agri-and-gardening/garden-soil/cocopeat.webp',
+  'agri-and-gardening/garden-soil/perlite':
+    '/categories/explore/agri-and-gardening/garden-soil/perlite.webp',
+  'agri-and-gardening/garden-soil/potting-mix':
+    '/categories/explore/agri-and-gardening/garden-soil/potting-mix.webp',
+  'agri-and-gardening/garden-soil/soil-fertilizers':
+    '/categories/explore/agri-and-gardening/garden-soil/soil-fertilizers.webp',
+  'agri-and-gardening/garden-soil/vermiculite':
+    '/categories/explore/agri-and-gardening/garden-soil/vermiculite.webp',
   'agri-and-gardening/gardening-tools':
     '/categories/explore/agri-and-gardening/gardening-tools.webp',
+  'agri-and-gardening/gardening-tools/cultivators':
+    '/categories/explore/agri-and-gardening/gardening-tools/cultivators.webp',
+  'agri-and-gardening/gardening-tools/garden-forks':
+    '/categories/explore/agri-and-gardening/gardening-tools/garden-forks.webp',
+  'agri-and-gardening/gardening-tools/garden-hand-tools':
+    '/categories/explore/agri-and-gardening/gardening-tools/garden-hand-tools.webp',
+  'agri-and-gardening/gardening-tools/garden-hoses':
+    '/categories/explore/agri-and-gardening/gardening-tools/garden-hoses.webp',
+  'agri-and-gardening/gardening-tools/gardening-gloves':
+    '/categories/explore/agri-and-gardening/gardening-tools/gardening-gloves.webp',
+  'agri-and-gardening/gardening-tools/pruners-secateurs':
+    '/categories/explore/agri-and-gardening/gardening-tools/pruners-secateurs.webp',
+  'agri-and-gardening/gardening-tools/pruning-tools':
+    '/categories/explore/agri-and-gardening/gardening-tools/pruning-tools.webp',
+  'agri-and-gardening/gardening-tools/rakes':
+    '/categories/explore/agri-and-gardening/gardening-tools/rakes.webp',
+  'agri-and-gardening/gardening-tools/shovels':
+    '/categories/explore/agri-and-gardening/gardening-tools/shovels.webp',
+  'agri-and-gardening/gardening-tools/sprayers':
+    '/categories/explore/agri-and-gardening/gardening-tools/sprayers.webp',
+  'agri-and-gardening/gardening-tools/trowels':
+    '/categories/explore/agri-and-gardening/gardening-tools/trowels.webp',
+  'agri-and-gardening/gardening-tools/watering-cans':
+    '/categories/explore/agri-and-gardening/gardening-tools/watering-cans.webp',
   'agri-and-gardening/greenhouse-accessories':
     '/categories/explore/agri-and-gardening/greenhouse-accessories.webp',
+  'agri-and-gardening/greenhouse-accessories/greenhouse-covers':
+    '/categories/explore/agri-and-gardening/greenhouse-accessories/greenhouse-covers.webp',
+  'agri-and-gardening/greenhouse-accessories/greenhouse-frames':
+    '/categories/explore/agri-and-gardening/greenhouse-accessories/greenhouse-frames.webp',
+  'agri-and-gardening/greenhouse-accessories/plant-trays':
+    '/categories/explore/agri-and-gardening/greenhouse-accessories/plant-trays.webp',
+  'agri-and-gardening/greenhouse-accessories/shade-nets':
+    '/categories/explore/agri-and-gardening/greenhouse-accessories/shade-nets.webp',
   'agri-and-gardening/irrigation-equipment':
     '/categories/explore/agri-and-gardening/irrigation-equipment.webp',
+  'agri-and-gardening/irrigation-equipment/drip-irrigation':
+    '/categories/explore/agri-and-gardening/irrigation-equipment/drip-irrigation.webp',
+  'agri-and-gardening/irrigation-equipment/drip-irrigation-kits':
+    '/categories/explore/agri-and-gardening/irrigation-equipment/drip-irrigation-kits.webp',
+  'agri-and-gardening/irrigation-equipment/hose-connectors':
+    '/categories/explore/agri-and-gardening/irrigation-equipment/hose-connectors.webp',
+  'agri-and-gardening/irrigation-equipment/irrigation-pipes':
+    '/categories/explore/agri-and-gardening/irrigation-equipment/irrigation-pipes.webp',
+  'agri-and-gardening/irrigation-equipment/micro-irrigation':
+    '/categories/explore/agri-and-gardening/irrigation-equipment/micro-irrigation.webp',
+  'agri-and-gardening/irrigation-equipment/sprinklers':
+    '/categories/explore/agri-and-gardening/irrigation-equipment/sprinklers.webp',
   'agri-and-gardening/lawn-care': '/categories/explore/agri-and-gardening/lawn-care.webp',
+  'agri-and-gardening/lawn-care/grass-seeds':
+    '/categories/explore/agri-and-gardening/lawn-care/grass-seeds.webp',
+  'agri-and-gardening/lawn-care/lawn-edgers':
+    '/categories/explore/agri-and-gardening/lawn-care/lawn-edgers.webp',
+  'agri-and-gardening/lawn-care/lawn-fertilizers':
+    '/categories/explore/agri-and-gardening/lawn-care/lawn-fertilizers.webp',
+  'agri-and-gardening/lawn-care/lawn-mowers':
+    '/categories/explore/agri-and-gardening/lawn-care/lawn-mowers.webp',
+  'agri-and-gardening/lawn-care/weed-control':
+    '/categories/explore/agri-and-gardening/lawn-care/weed-control.webp',
   'agri-and-gardening/pesticides': '/categories/explore/agri-and-gardening/pesticides.webp',
+  'agri-and-gardening/pesticides/fungicides':
+    '/categories/explore/agri-and-gardening/pesticides/fungicides.webp',
+  'agri-and-gardening/pesticides/herbicides':
+    '/categories/explore/agri-and-gardening/pesticides/herbicides.webp',
+  'agri-and-gardening/pesticides/insecticides':
+    '/categories/explore/agri-and-gardening/pesticides/insecticides.webp',
+  'agri-and-gardening/pesticides/organic-pesticides':
+    '/categories/explore/agri-and-gardening/pesticides/organic-pesticides.webp',
+  'agri-and-gardening/pesticides/weed-control':
+    '/categories/explore/agri-and-gardening/pesticides/weed-control.webp',
   'agri-and-gardening/plant-saplings': '/categories/explore/agri-and-gardening/plant-saplings.webp',
+  'agri-and-gardening/plant-saplings/flower-plants':
+    '/categories/explore/agri-and-gardening/plant-saplings/flower-plants.webp',
+  'agri-and-gardening/plant-saplings/fruit-plants':
+    '/categories/explore/agri-and-gardening/plant-saplings/fruit-plants.webp',
+  'agri-and-gardening/plant-saplings/indoor-plants':
+    '/categories/explore/agri-and-gardening/plant-saplings/indoor-plants.webp',
+  'agri-and-gardening/plant-saplings/vegetable-plants':
+    '/categories/explore/agri-and-gardening/plant-saplings/vegetable-plants.webp',
   'agri-and-gardening/plant-stands': '/categories/explore/agri-and-gardening/plant-stands.webp',
   'agri-and-gardening/plant-supports': '/categories/explore/agri-and-gardening/plant-supports.webp',
   'agri-and-gardening/pots-planters': '/categories/explore/agri-and-gardening/pots-planters.webp',
+  'agri-and-gardening/pots-planters/ceramic-pots':
+    '/categories/explore/agri-and-gardening/pots-planters/ceramic-pots.webp',
+  'agri-and-gardening/pots-planters/grow-bags':
+    '/categories/explore/agri-and-gardening/pots-planters/grow-bags.webp',
+  'agri-and-gardening/pots-planters/hanging-planters':
+    '/categories/explore/agri-and-gardening/pots-planters/hanging-planters.webp',
+  'agri-and-gardening/pots-planters/plastic-pots':
+    '/categories/explore/agri-and-gardening/pots-planters/plastic-pots.webp',
+  'agri-and-gardening/pots-planters/self-watering-planters':
+    '/categories/explore/agri-and-gardening/pots-planters/self-watering-planters.webp',
   'agri-and-gardening/seeds': '/categories/explore/agri-and-gardening/seeds.webp',
+  'agri-and-gardening/seeds/flower-seeds':
+    '/categories/explore/agri-and-gardening/seeds/flower-seeds.webp',
+  'agri-and-gardening/seeds/fruit-seeds':
+    '/categories/explore/agri-and-gardening/seeds/fruit-seeds.webp',
+  'agri-and-gardening/seeds/herb-seeds':
+    '/categories/explore/agri-and-gardening/seeds/herb-seeds.webp',
+  'agri-and-gardening/seeds/vegetable-seeds':
+    '/categories/explore/agri-and-gardening/seeds/vegetable-seeds.webp',
   'artificial-flowers-and-plants': '/categories/explore/artificial-flowers-and-plants.webp',
   'artificial-flowers-and-plants/artificial-flowers':
     '/categories/explore/artificial-flowers-and-plants/artificial-flowers.webp',
+  'artificial-flowers-and-plants/artificial-flowers/artificial-garlands':
+    '/categories/explore/artificial-flowers-and-plants/artificial-flowers/artificial-garlands.webp',
+  'artificial-flowers-and-plants/artificial-flowers/decorative-flowers':
+    '/categories/explore/artificial-flowers-and-plants/artificial-flowers/decorative-flowers.webp',
+  'artificial-flowers-and-plants/artificial-flowers/festival-flowers':
+    '/categories/explore/artificial-flowers-and-plants/artificial-flowers/festival-flowers.webp',
+  'artificial-flowers-and-plants/artificial-flowers/flower-arrangements':
+    '/categories/explore/artificial-flowers-and-plants/artificial-flowers/flower-arrangements.webp',
+  'artificial-flowers-and-plants/artificial-flowers/flower-sticks':
+    '/categories/explore/artificial-flowers-and-plants/artificial-flowers/flower-sticks.webp',
+  'artificial-flowers-and-plants/artificial-flowers/wedding-flowers':
+    '/categories/explore/artificial-flowers-and-plants/artificial-flowers/wedding-flowers.webp',
   'artificial-flowers-and-plants/artificial-grass':
     '/categories/explore/artificial-flowers-and-plants/artificial-grass.webp',
   'artificial-flowers-and-plants/artificial-plant-pots':
     '/categories/explore/artificial-flowers-and-plants/artificial-plant-pots.webp',
   'artificial-flowers-and-plants/artificial-plants':
     '/categories/explore/artificial-flowers-and-plants/artificial-plants.webp',
+  'artificial-flowers-and-plants/artificial-plants/artificial-bonsai':
+    '/categories/explore/artificial-flowers-and-plants/artificial-plants/artificial-bonsai.webp',
+  'artificial-flowers-and-plants/artificial-plants/artificial-cactus':
+    '/categories/explore/artificial-flowers-and-plants/artificial-plants/artificial-cactus.webp',
+  'artificial-flowers-and-plants/artificial-plants/artificial-leaves':
+    '/categories/explore/artificial-flowers-and-plants/artificial-plants/artificial-leaves.webp',
+  'artificial-flowers-and-plants/artificial-plants/artificial-succulents':
+    '/categories/explore/artificial-flowers-and-plants/artificial-plants/artificial-succulents.webp',
+  'artificial-flowers-and-plants/artificial-plants/artificial-vines':
+    '/categories/explore/artificial-flowers-and-plants/artificial-plants/artificial-vines.webp',
+  'artificial-flowers-and-plants/artificial-plants/hanging-plants':
+    '/categories/explore/artificial-flowers-and-plants/artificial-plants/hanging-plants.webp',
+  'artificial-flowers-and-plants/artificial-plants/wall-hanging-plants':
+    '/categories/explore/artificial-flowers-and-plants/artificial-plants/wall-hanging-plants.webp',
   'artificial-flowers-and-plants/flower-vases':
     '/categories/explore/artificial-flowers-and-plants/flower-vases.webp',
+  'artificial-flowers-and-plants/flower-vases/ceramic-vases':
+    '/categories/explore/artificial-flowers-and-plants/flower-vases/ceramic-vases.webp',
+  'artificial-flowers-and-plants/flower-vases/decorative-vases':
+    '/categories/explore/artificial-flowers-and-plants/flower-vases/decorative-vases.webp',
+  'artificial-flowers-and-plants/flower-vases/floor-vases':
+    '/categories/explore/artificial-flowers-and-plants/flower-vases/floor-vases.webp',
+  'artificial-flowers-and-plants/flower-vases/glass-vases':
+    '/categories/explore/artificial-flowers-and-plants/flower-vases/glass-vases.webp',
   'artificial-flowers-and-plants/plant-stands':
     '/categories/explore/artificial-flowers-and-plants/plant-stands.webp',
   'arts-and-crafts': '/categories/explore/arts-and-crafts.webp',
   'arts-and-crafts/art-easels': '/categories/explore/arts-and-crafts/art-easels.webp',
+  'arts-and-crafts/art-easels/display-easels':
+    '/categories/explore/arts-and-crafts/art-easels/display-easels.webp',
+  'arts-and-crafts/art-easels/floor-easels':
+    '/categories/explore/arts-and-crafts/art-easels/floor-easels.webp',
+  'arts-and-crafts/art-easels/portable-easels':
+    '/categories/explore/arts-and-crafts/art-easels/portable-easels.webp',
+  'arts-and-crafts/art-easels/table-easels':
+    '/categories/explore/arts-and-crafts/art-easels/table-easels.webp',
   'arts-and-crafts/art-supplies': '/categories/explore/arts-and-crafts/art-supplies.webp',
+  'arts-and-crafts/art-supplies/canvas':
+    '/categories/explore/arts-and-crafts/art-supplies/canvas.webp',
+  'arts-and-crafts/art-supplies/drawing-boards':
+    '/categories/explore/arts-and-crafts/art-supplies/drawing-boards.webp',
+  'arts-and-crafts/art-supplies/paint-brushes':
+    '/categories/explore/arts-and-crafts/art-supplies/paint-brushes.webp',
+  'arts-and-crafts/art-supplies/paint-sets':
+    '/categories/explore/arts-and-crafts/art-supplies/paint-sets.webp',
+  'arts-and-crafts/art-supplies/palettes':
+    '/categories/explore/arts-and-crafts/art-supplies/palettes.webp',
   'arts-and-crafts/beads': '/categories/explore/arts-and-crafts/beads.webp',
+  'arts-and-crafts/beads/acrylic-beads':
+    '/categories/explore/arts-and-crafts/beads/acrylic-beads.webp',
+  'arts-and-crafts/beads/glass-beads': '/categories/explore/arts-and-crafts/beads/glass-beads.webp',
+  'arts-and-crafts/beads/pearl-beads': '/categories/explore/arts-and-crafts/beads/pearl-beads.webp',
+  'arts-and-crafts/beads/seed-beads': '/categories/explore/arts-and-crafts/beads/seed-beads.webp',
+  'arts-and-crafts/beads/wooden-beads':
+    '/categories/explore/arts-and-crafts/beads/wooden-beads.webp',
   'arts-and-crafts/calligraphy-supplies':
     '/categories/explore/arts-and-crafts/calligraphy-supplies.webp',
+  'arts-and-crafts/calligraphy-supplies/calligraphy-pens':
+    '/categories/explore/arts-and-crafts/calligraphy-supplies/calligraphy-pens.webp',
+  'arts-and-crafts/calligraphy-supplies/calligraphy-sets':
+    '/categories/explore/arts-and-crafts/calligraphy-supplies/calligraphy-sets.webp',
+  'arts-and-crafts/calligraphy-supplies/ink':
+    '/categories/explore/arts-and-crafts/calligraphy-supplies/ink.webp',
+  'arts-and-crafts/calligraphy-supplies/nibs':
+    '/categories/explore/arts-and-crafts/calligraphy-supplies/nibs.webp',
   'arts-and-crafts/clay-moulding': '/categories/explore/arts-and-crafts/clay-moulding.webp',
+  'arts-and-crafts/clay-moulding/clay-tools':
+    '/categories/explore/arts-and-crafts/clay-moulding/clay-tools.webp',
+  'arts-and-crafts/clay-moulding/modelling-clay':
+    '/categories/explore/arts-and-crafts/clay-moulding/modelling-clay.webp',
+  'arts-and-crafts/clay-moulding/moulds':
+    '/categories/explore/arts-and-crafts/clay-moulding/moulds.webp',
+  'arts-and-crafts/clay-moulding/polymer-clay':
+    '/categories/explore/arts-and-crafts/clay-moulding/polymer-clay.webp',
   'arts-and-crafts/craft-kits': '/categories/explore/arts-and-crafts/craft-kits.webp',
+  'arts-and-crafts/craft-kits/diy-craft-kits':
+    '/categories/explore/arts-and-crafts/craft-kits/diy-craft-kits.webp',
+  'arts-and-crafts/craft-kits/diy-kits':
+    '/categories/explore/arts-and-crafts/craft-kits/diy-kits.webp',
+  'arts-and-crafts/craft-kits/embroidery-kits':
+    '/categories/explore/arts-and-crafts/craft-kits/embroidery-kits.webp',
+  'arts-and-crafts/craft-kits/jewellery-making-kits':
+    '/categories/explore/arts-and-crafts/craft-kits/jewellery-making-kits.webp',
+  'arts-and-crafts/craft-kits/kids-craft-kits':
+    '/categories/explore/arts-and-crafts/craft-kits/kids-craft-kits.webp',
   'arts-and-crafts/craft-paper': '/categories/explore/arts-and-crafts/craft-paper.webp',
+  'arts-and-crafts/craft-paper/cardstock':
+    '/categories/explore/arts-and-crafts/craft-paper/cardstock.webp',
+  'arts-and-crafts/craft-paper/handmade-paper':
+    '/categories/explore/arts-and-crafts/craft-paper/handmade-paper.webp',
+  'arts-and-crafts/craft-paper/origami-paper':
+    '/categories/explore/arts-and-crafts/craft-paper/origami-paper.webp',
+  'arts-and-crafts/craft-paper/scrapbook-paper':
+    '/categories/explore/arts-and-crafts/craft-paper/scrapbook-paper.webp',
   'arts-and-crafts/craft-tools': '/categories/explore/arts-and-crafts/craft-tools.webp',
+  'arts-and-crafts/craft-tools/cutting-tools':
+    '/categories/explore/arts-and-crafts/craft-tools/cutting-tools.webp',
+  'arts-and-crafts/craft-tools/glue-adhesives':
+    '/categories/explore/arts-and-crafts/craft-tools/glue-adhesives.webp',
+  'arts-and-crafts/craft-tools/glue-guns':
+    '/categories/explore/arts-and-crafts/craft-tools/glue-guns.webp',
+  'arts-and-crafts/craft-tools/punches':
+    '/categories/explore/arts-and-crafts/craft-tools/punches.webp',
+  'arts-and-crafts/craft-tools/scissors':
+    '/categories/explore/arts-and-crafts/craft-tools/scissors.webp',
+  'arts-and-crafts/craft-tools/stencils':
+    '/categories/explore/arts-and-crafts/craft-tools/stencils.webp',
   'arts-and-crafts/drawing-materials': '/categories/explore/arts-and-crafts/drawing-materials.webp',
+  'arts-and-crafts/drawing-materials/acrylic-colors':
+    '/categories/explore/arts-and-crafts/drawing-materials/acrylic-colors.webp',
+  'arts-and-crafts/drawing-materials/canvas':
+    '/categories/explore/arts-and-crafts/drawing-materials/canvas.webp',
+  'arts-and-crafts/drawing-materials/charcoal':
+    '/categories/explore/arts-and-crafts/drawing-materials/charcoal.webp',
+  'arts-and-crafts/drawing-materials/color-pencils':
+    '/categories/explore/arts-and-crafts/drawing-materials/color-pencils.webp',
+  'arts-and-crafts/drawing-materials/crayons':
+    '/categories/explore/arts-and-crafts/drawing-materials/crayons.webp',
+  'arts-and-crafts/drawing-materials/drawing-pencils':
+    '/categories/explore/arts-and-crafts/drawing-materials/drawing-pencils.webp',
+  'arts-and-crafts/drawing-materials/drawing-sheets':
+    '/categories/explore/arts-and-crafts/drawing-materials/drawing-sheets.webp',
+  'arts-and-crafts/drawing-materials/markers':
+    '/categories/explore/arts-and-crafts/drawing-materials/markers.webp',
+  'arts-and-crafts/drawing-materials/oil-colors':
+    '/categories/explore/arts-and-crafts/drawing-materials/oil-colors.webp',
+  'arts-and-crafts/drawing-materials/oil-pastels':
+    '/categories/explore/arts-and-crafts/drawing-materials/oil-pastels.webp',
+  'arts-and-crafts/drawing-materials/paint-brushes':
+    '/categories/explore/arts-and-crafts/drawing-materials/paint-brushes.webp',
+  'arts-and-crafts/drawing-materials/poster-colors':
+    '/categories/explore/arts-and-crafts/drawing-materials/poster-colors.webp',
+  'arts-and-crafts/drawing-materials/sketch-pens':
+    '/categories/explore/arts-and-crafts/drawing-materials/sketch-pens.webp',
+  'arts-and-crafts/drawing-materials/water-colors':
+    '/categories/explore/arts-and-crafts/drawing-materials/water-colors.webp',
   'arts-and-crafts/glitter': '/categories/explore/arts-and-crafts/glitter.webp',
   'arts-and-crafts/kids-art-craft': '/categories/explore/arts-and-crafts/kids-art-craft.webp',
   'arts-and-crafts/quilling': '/categories/explore/arts-and-crafts/quilling.webp',
@@ -1777,191 +2042,1359 @@ export const CATEGORY_IMAGE_PATHS: CategoryImagePaths = {
   'arts-and-crafts/sequins': '/categories/explore/arts-and-crafts/sequins.webp',
   'auto-accessories': '/categories/explore/auto-accessories.webp',
   'auto-accessories/bike-accessories': '/categories/explore/auto-accessories/bike-accessories.webp',
+  'auto-accessories/bike-accessories/bike-covers':
+    '/categories/explore/auto-accessories/bike-accessories/bike-covers.webp',
+  'auto-accessories/bike-accessories/bike-mirrors':
+    '/categories/explore/auto-accessories/bike-accessories/bike-mirrors.webp',
+  'auto-accessories/bike-accessories/bike-riding-gear':
+    '/categories/explore/auto-accessories/bike-accessories/bike-riding-gear.webp',
+  'auto-accessories/bike-accessories/helmet-accessories':
+    '/categories/explore/auto-accessories/bike-accessories/helmet-accessories.webp',
+  'auto-accessories/bike-accessories/mobile-holders':
+    '/categories/explore/auto-accessories/bike-accessories/mobile-holders.webp',
+  'auto-accessories/bike-accessories/saddle-bags':
+    '/categories/explore/auto-accessories/bike-accessories/saddle-bags.webp',
+  'auto-accessories/bike-accessories/usb-chargers':
+    '/categories/explore/auto-accessories/bike-accessories/usb-chargers.webp',
   'auto-accessories/car-accessories': '/categories/explore/auto-accessories/car-accessories.webp',
+  'auto-accessories/car-accessories/car-chargers':
+    '/categories/explore/auto-accessories/car-accessories/car-chargers.webp',
+  'auto-accessories/car-accessories/car-organizers':
+    '/categories/explore/auto-accessories/car-accessories/car-organizers.webp',
+  'auto-accessories/car-accessories/mobile-holders':
+    '/categories/explore/auto-accessories/car-accessories/mobile-holders.webp',
+  'auto-accessories/car-accessories/seat-covers':
+    '/categories/explore/auto-accessories/car-accessories/seat-covers.webp',
+  'auto-accessories/car-accessories/sun-shades':
+    '/categories/explore/auto-accessories/car-accessories/sun-shades.webp',
   'auto-accessories/car-care': '/categories/explore/auto-accessories/car-care.webp',
+  'auto-accessories/car-care/car-cleaning':
+    '/categories/explore/auto-accessories/car-care/car-cleaning.webp',
+  'auto-accessories/car-care/car-polish':
+    '/categories/explore/auto-accessories/car-care/car-polish.webp',
+  'auto-accessories/car-care/car-shampoo':
+    '/categories/explore/auto-accessories/car-care/car-shampoo.webp',
+  'auto-accessories/car-care/car-wax': '/categories/explore/auto-accessories/car-care/car-wax.webp',
+  'auto-accessories/car-care/microfiber-cloths':
+    '/categories/explore/auto-accessories/car-care/microfiber-cloths.webp',
+  'auto-accessories/car-care/tyre-polish':
+    '/categories/explore/auto-accessories/car-care/tyre-polish.webp',
   'auto-accessories/car-exterior-accessories':
     '/categories/explore/auto-accessories/car-exterior-accessories.webp',
+  'auto-accessories/car-exterior-accessories/car-covers':
+    '/categories/explore/auto-accessories/car-exterior-accessories/car-covers.webp',
+  'auto-accessories/car-exterior-accessories/dash-cameras':
+    '/categories/explore/auto-accessories/car-exterior-accessories/dash-cameras.webp',
+  'auto-accessories/car-exterior-accessories/door-guards':
+    '/categories/explore/auto-accessories/car-exterior-accessories/door-guards.webp',
+  'auto-accessories/car-exterior-accessories/horn':
+    '/categories/explore/auto-accessories/car-exterior-accessories/horn.webp',
+  'auto-accessories/car-exterior-accessories/led-lights':
+    '/categories/explore/auto-accessories/car-exterior-accessories/led-lights.webp',
+  'auto-accessories/car-exterior-accessories/mud-flaps':
+    '/categories/explore/auto-accessories/car-exterior-accessories/mud-flaps.webp',
+  'auto-accessories/car-exterior-accessories/number-plate-frames':
+    '/categories/explore/auto-accessories/car-exterior-accessories/number-plate-frames.webp',
+  'auto-accessories/car-exterior-accessories/parking-sensors':
+    '/categories/explore/auto-accessories/car-exterior-accessories/parking-sensors.webp',
+  'auto-accessories/car-exterior-accessories/reverse-cameras':
+    '/categories/explore/auto-accessories/car-exterior-accessories/reverse-cameras.webp',
+  'auto-accessories/car-exterior-accessories/wiper-blades':
+    '/categories/explore/auto-accessories/car-exterior-accessories/wiper-blades.webp',
   'auto-accessories/car-interior-accessories':
     '/categories/explore/auto-accessories/car-interior-accessories.webp',
+  'auto-accessories/car-interior-accessories/air-fresheners':
+    '/categories/explore/auto-accessories/car-interior-accessories/air-fresheners.webp',
+  'auto-accessories/car-interior-accessories/car-chargers':
+    '/categories/explore/auto-accessories/car-interior-accessories/car-chargers.webp',
+  'auto-accessories/car-interior-accessories/car-organizers':
+    '/categories/explore/auto-accessories/car-interior-accessories/car-organizers.webp',
+  'auto-accessories/car-interior-accessories/car-sun-shades':
+    '/categories/explore/auto-accessories/car-interior-accessories/car-sun-shades.webp',
+  'auto-accessories/car-interior-accessories/floor-mats':
+    '/categories/explore/auto-accessories/car-interior-accessories/floor-mats.webp',
+  'auto-accessories/car-interior-accessories/gear-knobs':
+    '/categories/explore/auto-accessories/car-interior-accessories/gear-knobs.webp',
+  'auto-accessories/car-interior-accessories/mobile-holders':
+    '/categories/explore/auto-accessories/car-interior-accessories/mobile-holders.webp',
+  'auto-accessories/car-interior-accessories/seat-covers':
+    '/categories/explore/auto-accessories/car-interior-accessories/seat-covers.webp',
+  'auto-accessories/car-interior-accessories/seat-cushions':
+    '/categories/explore/auto-accessories/car-interior-accessories/seat-cushions.webp',
+  'auto-accessories/car-interior-accessories/steering-covers':
+    '/categories/explore/auto-accessories/car-interior-accessories/steering-covers.webp',
   'auto-accessories/jump-starters': '/categories/explore/auto-accessories/jump-starters.webp',
+  'auto-accessories/jump-starters/battery-boosters':
+    '/categories/explore/auto-accessories/jump-starters/battery-boosters.webp',
+  'auto-accessories/jump-starters/jump-starter-cables':
+    '/categories/explore/auto-accessories/jump-starters/jump-starter-cables.webp',
+  'auto-accessories/jump-starters/portable-jump-starters':
+    '/categories/explore/auto-accessories/jump-starters/portable-jump-starters.webp',
   'auto-accessories/tool-kits': '/categories/explore/auto-accessories/tool-kits.webp',
+  'auto-accessories/tool-kits/bike-tool-kits':
+    '/categories/explore/auto-accessories/tool-kits/bike-tool-kits.webp',
+  'auto-accessories/tool-kits/car-tool-kits':
+    '/categories/explore/auto-accessories/tool-kits/car-tool-kits.webp',
+  'auto-accessories/tool-kits/emergency-tool-kits':
+    '/categories/explore/auto-accessories/tool-kits/emergency-tool-kits.webp',
+  'auto-accessories/tool-kits/tool-boxes':
+    '/categories/explore/auto-accessories/tool-kits/tool-boxes.webp',
   'auto-accessories/tyre-accessories': '/categories/explore/auto-accessories/tyre-accessories.webp',
+  'auto-accessories/tyre-accessories/inflators':
+    '/categories/explore/auto-accessories/tyre-accessories/inflators.webp',
+  'auto-accessories/tyre-accessories/pressure-gauges':
+    '/categories/explore/auto-accessories/tyre-accessories/pressure-gauges.webp',
+  'auto-accessories/tyre-accessories/puncture-repair':
+    '/categories/explore/auto-accessories/tyre-accessories/puncture-repair.webp',
+  'auto-accessories/tyre-accessories/tyre-repair-kits':
+    '/categories/explore/auto-accessories/tyre-accessories/tyre-repair-kits.webp',
+  'auto-accessories/tyre-accessories/tyre-valves':
+    '/categories/explore/auto-accessories/tyre-accessories/tyre-valves.webp',
+  'auto-accessories/tyre-accessories/tyres':
+    '/categories/explore/auto-accessories/tyre-accessories/tyres.webp',
   'baby-care': '/categories/explore/baby-care.webp',
   'baby-care/baby-bath-skin-care': '/categories/explore/baby-care/baby-bath-skin-care.webp',
+  'baby-care/baby-bath-skin-care/baby-lotion':
+    '/categories/explore/baby-care/baby-bath-skin-care/baby-lotion.webp',
+  'baby-care/baby-bath-skin-care/baby-lotion-creams':
+    '/categories/explore/baby-care/baby-bath-skin-care/baby-lotion-creams.webp',
+  'baby-care/baby-bath-skin-care/baby-massage-oils':
+    '/categories/explore/baby-care/baby-bath-skin-care/baby-massage-oils.webp',
+  'baby-care/baby-bath-skin-care/baby-oil':
+    '/categories/explore/baby-care/baby-bath-skin-care/baby-oil.webp',
+  'baby-care/baby-bath-skin-care/baby-powder':
+    '/categories/explore/baby-care/baby-bath-skin-care/baby-powder.webp',
+  'baby-care/baby-bath-skin-care/baby-shampoo':
+    '/categories/explore/baby-care/baby-bath-skin-care/baby-shampoo.webp',
+  'baby-care/baby-bath-skin-care/baby-soap':
+    '/categories/explore/baby-care/baby-bath-skin-care/baby-soap.webp',
+  'baby-care/baby-bath-skin-care/baby-soaps':
+    '/categories/explore/baby-care/baby-bath-skin-care/baby-soaps.webp',
   'baby-care/baby-bedding': '/categories/explore/baby-care/baby-bedding.webp',
+  'baby-care/baby-bedding/baby-bedding-sets':
+    '/categories/explore/baby-care/baby-bedding/baby-bedding-sets.webp',
+  'baby-care/baby-bedding/baby-blankets':
+    '/categories/explore/baby-care/baby-bedding/baby-blankets.webp',
+  'baby-care/baby-bedding/baby-mats': '/categories/explore/baby-care/baby-bedding/baby-mats.webp',
+  'baby-care/baby-bedding/baby-mosquito-nets':
+    '/categories/explore/baby-care/baby-bedding/baby-mosquito-nets.webp',
+  'baby-care/baby-bedding/baby-pillows':
+    '/categories/explore/baby-care/baby-bedding/baby-pillows.webp',
   'baby-care/baby-cots-cradles': '/categories/explore/baby-care/baby-cots-cradles.webp',
   'baby-care/baby-diapering-wipes': '/categories/explore/baby-care/baby-diapering-wipes.webp',
+  'baby-care/baby-diapering-wipes/baby-wipes':
+    '/categories/explore/baby-care/baby-diapering-wipes/baby-wipes.webp',
+  'baby-care/baby-diapering-wipes/cloth-diapers':
+    '/categories/explore/baby-care/baby-diapering-wipes/cloth-diapers.webp',
+  'baby-care/baby-diapering-wipes/diaper-changing-mats':
+    '/categories/explore/baby-care/baby-diapering-wipes/diaper-changing-mats.webp',
+  'baby-care/baby-diapering-wipes/diaper-pants':
+    '/categories/explore/baby-care/baby-diapering-wipes/diaper-pants.webp',
+  'baby-care/baby-diapering-wipes/diaper-rash-cream':
+    '/categories/explore/baby-care/baby-diapering-wipes/diaper-rash-cream.webp',
+  'baby-care/baby-diapering-wipes/disposable-diapers':
+    '/categories/explore/baby-care/baby-diapering-wipes/disposable-diapers.webp',
+  'baby-care/baby-diapering-wipes/nappy-pads':
+    '/categories/explore/baby-care/baby-diapering-wipes/nappy-pads.webp',
+  'baby-care/baby-diapering-wipes/potty-training':
+    '/categories/explore/baby-care/baby-diapering-wipes/potty-training.webp',
   'baby-care/baby-feeding-bottles': '/categories/explore/baby-care/baby-feeding-bottles.webp',
+  'baby-care/baby-feeding-bottles/bottle-accessories':
+    '/categories/explore/baby-care/baby-feeding-bottles/bottle-accessories.webp',
+  'baby-care/baby-feeding-bottles/bottle-cleaners':
+    '/categories/explore/baby-care/baby-feeding-bottles/bottle-cleaners.webp',
+  'baby-care/baby-feeding-bottles/bottle-sterilizers':
+    '/categories/explore/baby-care/baby-feeding-bottles/bottle-sterilizers.webp',
+  'baby-care/baby-feeding-bottles/bottle-warmers':
+    '/categories/explore/baby-care/baby-feeding-bottles/bottle-warmers.webp',
+  'baby-care/baby-feeding-bottles/breast-pumps':
+    '/categories/explore/baby-care/baby-feeding-bottles/breast-pumps.webp',
+  'baby-care/baby-feeding-bottles/feeding-bottles':
+    '/categories/explore/baby-care/baby-feeding-bottles/feeding-bottles.webp',
+  'baby-care/baby-feeding-bottles/sterilizers-warmers':
+    '/categories/explore/baby-care/baby-feeding-bottles/sterilizers-warmers.webp',
   'baby-care/baby-grooming': '/categories/explore/baby-care/baby-grooming.webp',
+  'baby-care/baby-grooming/baby-combs':
+    '/categories/explore/baby-care/baby-grooming/baby-combs.webp',
+  'baby-care/baby-grooming/baby-hair-brushes':
+    '/categories/explore/baby-care/baby-grooming/baby-hair-brushes.webp',
+  'baby-care/baby-grooming/baby-nail-clippers':
+    '/categories/explore/baby-care/baby-grooming/baby-nail-clippers.webp',
+  'baby-care/baby-grooming/baby-oral-care':
+    '/categories/explore/baby-care/baby-grooming/baby-oral-care.webp',
+  'baby-care/baby-grooming/grooming-kits':
+    '/categories/explore/baby-care/baby-grooming/grooming-kits.webp',
   'baby-care/baby-monitors': '/categories/explore/baby-care/baby-monitors.webp',
   'baby-care/baby-safety': '/categories/explore/baby-care/baby-safety.webp',
+  'baby-care/baby-safety/baby-safety-gates':
+    '/categories/explore/baby-care/baby-safety/baby-safety-gates.webp',
+  'baby-care/baby-safety/bed-rails': '/categories/explore/baby-care/baby-safety/bed-rails.webp',
+  'baby-care/baby-safety/corner-guards':
+    '/categories/explore/baby-care/baby-safety/corner-guards.webp',
+  'baby-care/baby-safety/safety-gates':
+    '/categories/explore/baby-care/baby-safety/safety-gates.webp',
+  'baby-care/baby-safety/socket-covers':
+    '/categories/explore/baby-care/baby-safety/socket-covers.webp',
   'baby-care/baby-strollers-prams': '/categories/explore/baby-care/baby-strollers-prams.webp',
+  'baby-care/baby-strollers-prams/baby-car-seats':
+    '/categories/explore/baby-care/baby-strollers-prams/baby-car-seats.webp',
+  'baby-care/baby-strollers-prams/baby-carriers':
+    '/categories/explore/baby-care/baby-strollers-prams/baby-carriers.webp',
+  'baby-care/baby-strollers-prams/baby-walkers':
+    '/categories/explore/baby-care/baby-strollers-prams/baby-walkers.webp',
+  'baby-care/baby-strollers-prams/prams':
+    '/categories/explore/baby-care/baby-strollers-prams/prams.webp',
+  'baby-care/baby-strollers-prams/strollers':
+    '/categories/explore/baby-care/baby-strollers-prams/strollers.webp',
+  'baby-care/baby-strollers-prams/travel-systems':
+    '/categories/explore/baby-care/baby-strollers-prams/travel-systems.webp',
   'baby-care/baby-toys': '/categories/explore/baby-care/baby-toys.webp',
+  'baby-care/baby-toys/activity-toys': '/categories/explore/baby-care/baby-toys/activity-toys.webp',
+  'baby-care/baby-toys/bath-toys': '/categories/explore/baby-care/baby-toys/bath-toys.webp',
+  'baby-care/baby-toys/musical-toys': '/categories/explore/baby-care/baby-toys/musical-toys.webp',
+  'baby-care/baby-toys/rattles': '/categories/explore/baby-care/baby-toys/rattles.webp',
+  'baby-care/baby-toys/teethers': '/categories/explore/baby-care/baby-toys/teethers.webp',
   'bath-fittings': '/categories/explore/bath-fittings.webp',
   'bath-fittings/bath-tubs': '/categories/explore/bath-fittings/bath-tubs.webp',
+  'bath-fittings/bath-tubs/corner-tubs':
+    '/categories/explore/bath-fittings/bath-tubs/corner-tubs.webp',
+  'bath-fittings/bath-tubs/freestanding-tubs':
+    '/categories/explore/bath-fittings/bath-tubs/freestanding-tubs.webp',
+  'bath-fittings/bath-tubs/whirlpool-tubs':
+    '/categories/explore/bath-fittings/bath-tubs/whirlpool-tubs.webp',
   'bath-fittings/bathroom-accessories':
     '/categories/explore/bath-fittings/bathroom-accessories.webp',
+  'bath-fittings/bathroom-accessories/bathroom-hooks':
+    '/categories/explore/bath-fittings/bathroom-accessories/bathroom-hooks.webp',
+  'bath-fittings/bathroom-accessories/bathroom-mirrors':
+    '/categories/explore/bath-fittings/bathroom-accessories/bathroom-mirrors.webp',
+  'bath-fittings/bathroom-accessories/bathroom-shelves':
+    '/categories/explore/bath-fittings/bathroom-accessories/bathroom-shelves.webp',
+  'bath-fittings/bathroom-accessories/bathroom-stools':
+    '/categories/explore/bath-fittings/bathroom-accessories/bathroom-stools.webp',
+  'bath-fittings/bathroom-accessories/hooks':
+    '/categories/explore/bath-fittings/bathroom-accessories/hooks.webp',
+  'bath-fittings/bathroom-accessories/soap-dishes':
+    '/categories/explore/bath-fittings/bathroom-accessories/soap-dishes.webp',
+  'bath-fittings/bathroom-accessories/toothbrush-holders':
+    '/categories/explore/bath-fittings/bathroom-accessories/toothbrush-holders.webp',
+  'bath-fittings/bathroom-accessories/towel-racks':
+    '/categories/explore/bath-fittings/bathroom-accessories/towel-racks.webp',
+  'bath-fittings/bathroom-accessories/towel-rings':
+    '/categories/explore/bath-fittings/bathroom-accessories/towel-rings.webp',
   'bath-fittings/bathroom-sinks': '/categories/explore/bath-fittings/bathroom-sinks.webp',
+  'bath-fittings/bathroom-sinks/corner-basins':
+    '/categories/explore/bath-fittings/bathroom-sinks/corner-basins.webp',
+  'bath-fittings/bathroom-sinks/countertop-basins':
+    '/categories/explore/bath-fittings/bathroom-sinks/countertop-basins.webp',
+  'bath-fittings/bathroom-sinks/pedestal-basins':
+    '/categories/explore/bath-fittings/bathroom-sinks/pedestal-basins.webp',
+  'bath-fittings/bathroom-sinks/wash-basins':
+    '/categories/explore/bath-fittings/bathroom-sinks/wash-basins.webp',
   'bath-fittings/showers': '/categories/explore/bath-fittings/showers.webp',
+  'bath-fittings/showers/hand-showers':
+    '/categories/explore/bath-fittings/showers/hand-showers.webp',
+  'bath-fittings/showers/overhead-showers':
+    '/categories/explore/bath-fittings/showers/overhead-showers.webp',
+  'bath-fittings/showers/shower-heads':
+    '/categories/explore/bath-fittings/showers/shower-heads.webp',
+  'bath-fittings/showers/shower-panels':
+    '/categories/explore/bath-fittings/showers/shower-panels.webp',
   'bath-fittings/taps-faucets': '/categories/explore/bath-fittings/taps-faucets.webp',
+  'bath-fittings/taps-faucets/basin-mixers':
+    '/categories/explore/bath-fittings/taps-faucets/basin-mixers.webp',
+  'bath-fittings/taps-faucets/health-faucets':
+    '/categories/explore/bath-fittings/taps-faucets/health-faucets.webp',
+  'bath-fittings/taps-faucets/kitchen-taps':
+    '/categories/explore/bath-fittings/taps-faucets/kitchen-taps.webp',
+  'bath-fittings/taps-faucets/pillar-taps':
+    '/categories/explore/bath-fittings/taps-faucets/pillar-taps.webp',
+  'bath-fittings/taps-faucets/shower-mixers':
+    '/categories/explore/bath-fittings/taps-faucets/shower-mixers.webp',
+  'bath-fittings/taps-faucets/wall-mixers':
+    '/categories/explore/bath-fittings/taps-faucets/wall-mixers.webp',
   'bath-fittings/toilet-accessories': '/categories/explore/bath-fittings/toilet-accessories.webp',
+  'bath-fittings/toilet-accessories/angle-valves':
+    '/categories/explore/bath-fittings/toilet-accessories/angle-valves.webp',
+  'bath-fittings/toilet-accessories/bottle-traps':
+    '/categories/explore/bath-fittings/toilet-accessories/bottle-traps.webp',
+  'bath-fittings/toilet-accessories/floor-drains':
+    '/categories/explore/bath-fittings/toilet-accessories/floor-drains.webp',
+  'bath-fittings/toilet-accessories/flush-tanks':
+    '/categories/explore/bath-fittings/toilet-accessories/flush-tanks.webp',
+  'bath-fittings/toilet-accessories/flush-valves':
+    '/categories/explore/bath-fittings/toilet-accessories/flush-valves.webp',
+  'bath-fittings/toilet-accessories/toilet-brushes':
+    '/categories/explore/bath-fittings/toilet-accessories/toilet-brushes.webp',
+  'bath-fittings/toilet-accessories/toilet-paper-holders':
+    '/categories/explore/bath-fittings/toilet-accessories/toilet-paper-holders.webp',
+  'bath-fittings/toilet-accessories/toilet-seats':
+    '/categories/explore/bath-fittings/toilet-accessories/toilet-seats.webp',
+  'bath-fittings/toilet-accessories/waste-couplings':
+    '/categories/explore/bath-fittings/toilet-accessories/waste-couplings.webp',
   'cleaning-products': '/categories/explore/cleaning-products.webp',
   'cleaning-products/air-fresheners': '/categories/explore/cleaning-products/air-fresheners.webp',
+  'cleaning-products/air-fresheners/car-fresheners':
+    '/categories/explore/cleaning-products/air-fresheners/car-fresheners.webp',
+  'cleaning-products/air-fresheners/electric-diffusers':
+    '/categories/explore/cleaning-products/air-fresheners/electric-diffusers.webp',
+  'cleaning-products/air-fresheners/gel-fresheners':
+    '/categories/explore/cleaning-products/air-fresheners/gel-fresheners.webp',
+  'cleaning-products/air-fresheners/room-sprays':
+    '/categories/explore/cleaning-products/air-fresheners/room-sprays.webp',
   'cleaning-products/dishwashing-liquids':
     '/categories/explore/cleaning-products/dishwashing-liquids.webp',
+  'cleaning-products/dishwashing-liquids/dishwasher-tablets':
+    '/categories/explore/cleaning-products/dishwashing-liquids/dishwasher-tablets.webp',
+  'cleaning-products/dishwashing-liquids/dishwashing-bars':
+    '/categories/explore/cleaning-products/dishwashing-liquids/dishwashing-bars.webp',
+  'cleaning-products/dishwashing-liquids/scrubbers':
+    '/categories/explore/cleaning-products/dishwashing-liquids/scrubbers.webp',
   'cleaning-products/floor-cleaners': '/categories/explore/cleaning-products/floor-cleaners.webp',
+  'cleaning-products/floor-cleaners/all-purpose-cleaners':
+    '/categories/explore/cleaning-products/floor-cleaners/all-purpose-cleaners.webp',
+  'cleaning-products/floor-cleaners/bathroom-cleaners':
+    '/categories/explore/cleaning-products/floor-cleaners/bathroom-cleaners.webp',
+  'cleaning-products/floor-cleaners/disinfectants':
+    '/categories/explore/cleaning-products/floor-cleaners/disinfectants.webp',
+  'cleaning-products/floor-cleaners/drain-cleaners':
+    '/categories/explore/cleaning-products/floor-cleaners/drain-cleaners.webp',
+  'cleaning-products/floor-cleaners/floor-disinfectants':
+    '/categories/explore/cleaning-products/floor-cleaners/floor-disinfectants.webp',
+  'cleaning-products/floor-cleaners/glass-cleaners':
+    '/categories/explore/cleaning-products/floor-cleaners/glass-cleaners.webp',
+  'cleaning-products/floor-cleaners/kitchen-cleaners':
+    '/categories/explore/cleaning-products/floor-cleaners/kitchen-cleaners.webp',
+  'cleaning-products/floor-cleaners/marble-cleaners':
+    '/categories/explore/cleaning-products/floor-cleaners/marble-cleaners.webp',
+  'cleaning-products/floor-cleaners/surface-cleaners':
+    '/categories/explore/cleaning-products/floor-cleaners/surface-cleaners.webp',
+  'cleaning-products/floor-cleaners/tile-cleaners':
+    '/categories/explore/cleaning-products/floor-cleaners/tile-cleaners.webp',
+  'cleaning-products/floor-cleaners/toilet-cleaners':
+    '/categories/explore/cleaning-products/floor-cleaners/toilet-cleaners.webp',
   'cleaning-products/garbage-bags': '/categories/explore/cleaning-products/garbage-bags.webp',
+  'cleaning-products/garbage-bags/biodegradable-bags':
+    '/categories/explore/cleaning-products/garbage-bags/biodegradable-bags.webp',
+  'cleaning-products/garbage-bags/drawstring-bags':
+    '/categories/explore/cleaning-products/garbage-bags/drawstring-bags.webp',
+  'cleaning-products/garbage-bags/large-garbage-bags':
+    '/categories/explore/cleaning-products/garbage-bags/large-garbage-bags.webp',
+  'cleaning-products/garbage-bags/small-garbage-bags':
+    '/categories/explore/cleaning-products/garbage-bags/small-garbage-bags.webp',
   'cleaning-products/home-cleaning-sets':
     '/categories/explore/cleaning-products/home-cleaning-sets.webp',
+  'cleaning-products/home-cleaning-sets/brooms':
+    '/categories/explore/cleaning-products/home-cleaning-sets/brooms.webp',
+  'cleaning-products/home-cleaning-sets/brushes':
+    '/categories/explore/cleaning-products/home-cleaning-sets/brushes.webp',
+  'cleaning-products/home-cleaning-sets/cleaning-brush-sets':
+    '/categories/explore/cleaning-products/home-cleaning-sets/cleaning-brush-sets.webp',
+  'cleaning-products/home-cleaning-sets/cleaning-cloths':
+    '/categories/explore/cleaning-products/home-cleaning-sets/cleaning-cloths.webp',
+  'cleaning-products/home-cleaning-sets/cleaning-gloves':
+    '/categories/explore/cleaning-products/home-cleaning-sets/cleaning-gloves.webp',
+  'cleaning-products/home-cleaning-sets/dusters':
+    '/categories/explore/cleaning-products/home-cleaning-sets/dusters.webp',
+  'cleaning-products/home-cleaning-sets/dustpans':
+    '/categories/explore/cleaning-products/home-cleaning-sets/dustpans.webp',
+  'cleaning-products/home-cleaning-sets/mop-refills':
+    '/categories/explore/cleaning-products/home-cleaning-sets/mop-refills.webp',
+  'cleaning-products/home-cleaning-sets/mops':
+    '/categories/explore/cleaning-products/home-cleaning-sets/mops.webp',
+  'cleaning-products/home-cleaning-sets/scrub-pads':
+    '/categories/explore/cleaning-products/home-cleaning-sets/scrub-pads.webp',
+  'cleaning-products/home-cleaning-sets/scrubbers':
+    '/categories/explore/cleaning-products/home-cleaning-sets/scrubbers.webp',
+  'cleaning-products/home-cleaning-sets/wipers':
+    '/categories/explore/cleaning-products/home-cleaning-sets/wipers.webp',
   'cleaning-products/laundry-detergents':
     '/categories/explore/cleaning-products/laundry-detergents.webp',
+  'cleaning-products/laundry-detergents/fabric-softeners':
+    '/categories/explore/cleaning-products/laundry-detergents/fabric-softeners.webp',
+  'cleaning-products/laundry-detergents/liquid-detergents':
+    '/categories/explore/cleaning-products/laundry-detergents/liquid-detergents.webp',
+  'cleaning-products/laundry-detergents/stain-removers':
+    '/categories/explore/cleaning-products/laundry-detergents/stain-removers.webp',
+  'cleaning-products/laundry-detergents/washing-powders':
+    '/categories/explore/cleaning-products/laundry-detergents/washing-powders.webp',
   clothing: '/categories/explore/clothing.webp',
   'clothing/accessories': '/categories/explore/clothing/accessories.webp',
+  'clothing/accessories/applique-patch':
+    '/categories/explore/clothing/accessories/applique-patch.webp',
+  'clothing/accessories/bandanas': '/categories/explore/clothing/accessories/bandanas.webp',
+  'clothing/accessories/caps': '/categories/explore/clothing/accessories/caps.webp',
+  'clothing/accessories/clothing-and-accessories':
+    '/categories/explore/clothing/accessories/clothing-and-accessories.webp',
+  'clothing/accessories/collar-stays': '/categories/explore/clothing/accessories/collar-stays.webp',
+  'clothing/accessories/garters': '/categories/explore/clothing/accessories/garters.webp',
+  'clothing/accessories/handkerchiefs':
+    '/categories/explore/clothing/accessories/handkerchiefs.webp',
+  'clothing/accessories/hats': '/categories/explore/clothing/accessories/hats.webp',
+  'clothing/accessories/mittens': '/categories/explore/clothing/accessories/mittens.webp',
+  'clothing/accessories/socks': '/categories/explore/clothing/accessories/socks.webp',
+  'clothing/accessories/stoles': '/categories/explore/clothing/accessories/stoles.webp',
+  'clothing/accessories/suspenders': '/categories/explore/clothing/accessories/suspenders.webp',
+  'clothing/accessories/ties-and-cufflinks':
+    '/categories/explore/clothing/accessories/ties-and-cufflinks.webp',
+  'clothing/accessories/turbans': '/categories/explore/clothing/accessories/turbans.webp',
+  'clothing/accessories/wristbands': '/categories/explore/clothing/accessories/wristbands.webp',
   'clothing/bottomwear': '/categories/explore/clothing/bottomwear.webp',
+  'clothing/bottomwear/cargos': '/categories/explore/clothing/bottomwear/cargos.webp',
+  'clothing/bottomwear/harem-pants': '/categories/explore/clothing/bottomwear/harem-pants.webp',
+  'clothing/bottomwear/jeans': '/categories/explore/clothing/bottomwear/jeans.webp',
+  'clothing/bottomwear/leggings-and-jeggings':
+    '/categories/explore/clothing/bottomwear/leggings-and-jeggings.webp',
+  'clothing/bottomwear/palazzos': '/categories/explore/clothing/bottomwear/palazzos.webp',
+  'clothing/bottomwear/shorts': '/categories/explore/clothing/bottomwear/shorts.webp',
+  'clothing/bottomwear/skirts': '/categories/explore/clothing/bottomwear/skirts.webp',
+  'clothing/bottomwear/three-fourths': '/categories/explore/clothing/bottomwear/three-fourths.webp',
+  'clothing/bottomwear/track-pants': '/categories/explore/clothing/bottomwear/track-pants.webp',
+  'clothing/bottomwear/trousers': '/categories/explore/clothing/bottomwear/trousers.webp',
   'clothing/dresses-western-wear': '/categories/explore/clothing/dresses-western-wear.webp',
+  'clothing/dresses-western-wear/co-ords':
+    '/categories/explore/clothing/dresses-western-wear/co-ords.webp',
+  'clothing/dresses-western-wear/dresses':
+    '/categories/explore/clothing/dresses-western-wear/dresses.webp',
+  'clothing/dresses-western-wear/dresses-and-gowns':
+    '/categories/explore/clothing/dresses-western-wear/dresses-and-gowns.webp',
+  'clothing/dresses-western-wear/gowns':
+    '/categories/explore/clothing/dresses-western-wear/gowns.webp',
+  'clothing/dresses-western-wear/jumpsuits-and-dungarees':
+    '/categories/explore/clothing/dresses-western-wear/jumpsuits-and-dungarees.webp',
+  'clothing/dresses-western-wear/men-s-dungarees':
+    '/categories/explore/clothing/dresses-western-wear/men-s-dungarees.webp',
+  'clothing/dresses-western-wear/twinning-sets':
+    '/categories/explore/clothing/dresses-western-wear/twinning-sets.webp',
+  'clothing/dresses-western-wear/women-s-clothing':
+    '/categories/explore/clothing/dresses-western-wear/women-s-clothing.webp',
+  'clothing/dresses-western-wear/women-s-jumpsuits-and-dungarees':
+    '/categories/explore/clothing/dresses-western-wear/women-s-jumpsuits-and-dungarees.webp',
   'clothing/ethnic-wear': '/categories/explore/clothing/ethnic-wear.webp',
+  'clothing/ethnic-wear/abayas-and-burqas':
+    '/categories/explore/clothing/ethnic-wear/abayas-and-burqas.webp',
+  'clothing/ethnic-wear/dhoti-pants': '/categories/explore/clothing/ethnic-wear/dhoti-pants.webp',
+  'clothing/ethnic-wear/dhotis': '/categories/explore/clothing/ethnic-wear/dhotis.webp',
+  'clothing/ethnic-wear/dupattas': '/categories/explore/clothing/ethnic-wear/dupattas.webp',
+  'clothing/ethnic-wear/ethnic-pyjamas':
+    '/categories/explore/clothing/ethnic-wear/ethnic-pyjamas.webp',
+  'clothing/ethnic-wear/ethnic-sets': '/categories/explore/clothing/ethnic-wear/ethnic-sets.webp',
+  'clothing/ethnic-wear/kurtas': '/categories/explore/clothing/ethnic-wear/kurtas.webp',
+  'clothing/ethnic-wear/kurtas-ethnic-sets-and-bottoms':
+    '/categories/explore/clothing/ethnic-wear/kurtas-ethnic-sets-and-bottoms.webp',
+  'clothing/ethnic-wear/lehenga-cholis':
+    '/categories/explore/clothing/ethnic-wear/lehenga-cholis.webp',
+  'clothing/ethnic-wear/salwars-and-patialas':
+    '/categories/explore/clothing/ethnic-wear/salwars-and-patialas.webp',
+  'clothing/ethnic-wear/shararas': '/categories/explore/clothing/ethnic-wear/shararas.webp',
+  'clothing/ethnic-wear/sherwanis': '/categories/explore/clothing/ethnic-wear/sherwanis.webp',
+  'clothing/ethnic-wear/women-s-lehenga-cholis':
+    '/categories/explore/clothing/ethnic-wear/women-s-lehenga-cholis.webp',
   'clothing/fabrics': '/categories/explore/clothing/fabrics.webp',
+  'clothing/fabrics/blouse-material': '/categories/explore/clothing/fabrics/blouse-material.webp',
+  'clothing/fabrics/dress-materials': '/categories/explore/clothing/fabrics/dress-materials.webp',
+  'clothing/fabrics/formal-suit-fabrics':
+    '/categories/explore/clothing/fabrics/formal-suit-fabrics.webp',
+  'clothing/fabrics/shirt-and-trouser-fabrics':
+    '/categories/explore/clothing/fabrics/shirt-and-trouser-fabrics.webp',
   'clothing/formal-wear': '/categories/explore/clothing/formal-wear.webp',
+  'clothing/formal-wear/blazers': '/categories/explore/clothing/formal-wear/blazers.webp',
+  'clothing/formal-wear/blazers-waistcoats-and-suits':
+    '/categories/explore/clothing/formal-wear/blazers-waistcoats-and-suits.webp',
+  'clothing/formal-wear/suits': '/categories/explore/clothing/formal-wear/suits.webp',
+  'clothing/formal-wear/waistcoats': '/categories/explore/clothing/formal-wear/waistcoats.webp',
   'clothing/kids-clothing': '/categories/explore/clothing/kids-clothing.webp',
+  'clothing/kids-clothing/kids-apparel-combos':
+    '/categories/explore/clothing/kids-clothing/kids-apparel-combos.webp',
+  'clothing/kids-clothing/kids-costume-wear':
+    '/categories/explore/clothing/kids-clothing/kids-costume-wear.webp',
+  'clothing/kids-clothing/kids-lehenga-cholis':
+    '/categories/explore/clothing/kids-clothing/kids-lehenga-cholis.webp',
+  'clothing/kids-clothing/kids-raincoats':
+    '/categories/explore/clothing/kids-clothing/kids-raincoats.webp',
+  'clothing/kids-clothing/kids-rompers-and-dungarees':
+    '/categories/explore/clothing/kids-clothing/kids-rompers-and-dungarees.webp',
+  'clothing/kids-clothing/kids-windcheaters':
+    '/categories/explore/clothing/kids-clothing/kids-windcheaters.webp',
   'clothing/kids-infant-footwear': '/categories/explore/clothing/kids-infant-footwear.webp',
+  'clothing/kids-infant-footwear/boys-footwear':
+    '/categories/explore/clothing/kids-infant-footwear/boys-footwear.webp',
+  'clothing/kids-infant-footwear/girls-footwear':
+    '/categories/explore/clothing/kids-infant-footwear/girls-footwear.webp',
+  'clothing/kids-infant-footwear/infants':
+    '/categories/explore/clothing/kids-infant-footwear/infants.webp',
+  'clothing/lingerie-sleep-swimwear': '/categories/explore/clothing/lingerie-sleep-swimwear.webp',
+  'clothing/lingerie-sleep-swimwear/babydolls':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/babydolls.webp',
+  'clothing/lingerie-sleep-swimwear/bras':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/bras.webp',
+  'clothing/lingerie-sleep-swimwear/briefs-and-trunks':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/briefs-and-trunks.webp',
+  'clothing/lingerie-sleep-swimwear/camisoles-and-slips':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/camisoles-and-slips.webp',
+  'clothing/lingerie-sleep-swimwear/lingerie-sets-and-accessories':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/lingerie-sets-and-accessories.webp',
+  'clothing/lingerie-sleep-swimwear/night-dresses-and-nighties':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/night-dresses-and-nighties.webp',
+  'clothing/lingerie-sleep-swimwear/night-suits':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/night-suits.webp',
+  'clothing/lingerie-sleep-swimwear/panties':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/panties.webp',
+  'clothing/lingerie-sleep-swimwear/pyjamas-and-lounge-pants':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/pyjamas-and-lounge-pants.webp',
+  'clothing/lingerie-sleep-swimwear/shapewears':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/shapewears.webp',
+  'clothing/lingerie-sleep-swimwear/swimsuits':
+    '/categories/explore/clothing/lingerie-sleep-swimwear/swimsuits.webp',
   'clothing/men-s-clothing': '/categories/explore/clothing/men-s-clothing.webp',
   'clothing/men-s-footwear': '/categories/explore/clothing/men-s-footwear.webp',
+  'clothing/men-s-footwear/boots': '/categories/explore/clothing/men-s-footwear/boots.webp',
+  'clothing/men-s-footwear/formal-shoes':
+    '/categories/explore/clothing/men-s-footwear/formal-shoes.webp',
+  'clothing/men-s-footwear/men-s-casual-shoes':
+    '/categories/explore/clothing/men-s-footwear/men-s-casual-shoes.webp',
+  'clothing/men-s-footwear/men-s-ethnic-shoes':
+    '/categories/explore/clothing/men-s-footwear/men-s-ethnic-shoes.webp',
+  'clothing/men-s-footwear/men-s-formal-shoes':
+    '/categories/explore/clothing/men-s-footwear/men-s-formal-shoes.webp',
+  'clothing/men-s-footwear/men-s-sandals-floaters':
+    '/categories/explore/clothing/men-s-footwear/men-s-sandals-floaters.webp',
+  'clothing/men-s-footwear/men-s-slippers-flip-flops':
+    '/categories/explore/clothing/men-s-footwear/men-s-slippers-flip-flops.webp',
+  'clothing/men-s-footwear/men-s-sports-shoes':
+    '/categories/explore/clothing/men-s-footwear/men-s-sports-shoes.webp',
   'clothing/men-s-footwear/sandals': '/categories/explore/clothing/men-s-footwear/sandals.webp',
+  'clothing/men-s-footwear/slippers': '/categories/explore/clothing/men-s-footwear/slippers.webp',
+  'clothing/men-s-footwear/sneakers': '/categories/explore/clothing/men-s-footwear/sneakers.webp',
   'clothing/sarees-and-saree-essentials':
     '/categories/explore/clothing/sarees-and-saree-essentials.webp',
+  'clothing/sarees-and-saree-essentials/blouses':
+    '/categories/explore/clothing/sarees-and-saree-essentials/blouses.webp',
+  'clothing/sarees-and-saree-essentials/petticoats':
+    '/categories/explore/clothing/sarees-and-saree-essentials/petticoats.webp',
+  'clothing/sarees-and-saree-essentials/saree-falls':
+    '/categories/explore/clothing/sarees-and-saree-essentials/saree-falls.webp',
+  'clothing/sarees-and-saree-essentials/sarees':
+    '/categories/explore/clothing/sarees-and-saree-essentials/sarees.webp',
   'clothing/shoe-care': '/categories/explore/clothing/shoe-care.webp',
+  'clothing/shoe-care/shoe-laces': '/categories/explore/clothing/shoe-care/shoe-laces.webp',
   'clothing/sports-gym-wear': '/categories/explore/clothing/sports-gym-wear.webp',
+  'clothing/sports-gym-wear/kids-tracksuits':
+    '/categories/explore/clothing/sports-gym-wear/kids-tracksuits.webp',
+  'clothing/sports-gym-wear/men-s-tracksuits':
+    '/categories/explore/clothing/sports-gym-wear/men-s-tracksuits.webp',
+  'clothing/sports-gym-wear/tracksuits':
+    '/categories/explore/clothing/sports-gym-wear/tracksuits.webp',
+  'clothing/sports-gym-wear/women-s-tracksuits':
+    '/categories/explore/clothing/sports-gym-wear/women-s-tracksuits.webp',
   'clothing/topwear': '/categories/explore/clothing/topwear.webp',
+  'clothing/topwear/shirts': '/categories/explore/clothing/topwear/shirts.webp',
+  'clothing/topwear/t-shirts': '/categories/explore/clothing/topwear/t-shirts.webp',
+  'clothing/topwear/tops': '/categories/explore/clothing/topwear/tops.webp',
   'clothing/winter-wear': '/categories/explore/clothing/winter-wear.webp',
+  'clothing/winter-wear/gloves': '/categories/explore/clothing/winter-wear/gloves.webp',
+  'clothing/winter-wear/jackets': '/categories/explore/clothing/winter-wear/jackets.webp',
+  'clothing/winter-wear/mufflers': '/categories/explore/clothing/winter-wear/mufflers.webp',
+  'clothing/winter-wear/ponchos': '/categories/explore/clothing/winter-wear/ponchos.webp',
+  'clothing/winter-wear/raincoats': '/categories/explore/clothing/winter-wear/raincoats.webp',
+  'clothing/winter-wear/scarves': '/categories/explore/clothing/winter-wear/scarves.webp',
+  'clothing/winter-wear/shawls': '/categories/explore/clothing/winter-wear/shawls.webp',
+  'clothing/winter-wear/sweaters-and-cardigans':
+    '/categories/explore/clothing/winter-wear/sweaters-and-cardigans.webp',
+  'clothing/winter-wear/sweatshirts': '/categories/explore/clothing/winter-wear/sweatshirts.webp',
+  'clothing/winter-wear/thermals': '/categories/explore/clothing/winter-wear/thermals.webp',
+  'clothing/winter-wear/windcheaters': '/categories/explore/clothing/winter-wear/windcheaters.webp',
   'clothing/women-s-footwear': '/categories/explore/clothing/women-s-footwear.webp',
+  'clothing/women-s-footwear/boots': '/categories/explore/clothing/women-s-footwear/boots.webp',
+  'clothing/women-s-footwear/flats': '/categories/explore/clothing/women-s-footwear/flats.webp',
+  'clothing/women-s-footwear/heels': '/categories/explore/clothing/women-s-footwear/heels.webp',
   'clothing/women-s-footwear/sandals': '/categories/explore/clothing/women-s-footwear/sandals.webp',
+  'clothing/women-s-footwear/sneakers':
+    '/categories/explore/clothing/women-s-footwear/sneakers.webp',
+  'clothing/women-s-footwear/women-s-ballerinas':
+    '/categories/explore/clothing/women-s-footwear/women-s-ballerinas.webp',
+  'clothing/women-s-footwear/women-s-casual-shoes':
+    '/categories/explore/clothing/women-s-footwear/women-s-casual-shoes.webp',
+  'clothing/women-s-footwear/women-s-ethnic-shoes':
+    '/categories/explore/clothing/women-s-footwear/women-s-ethnic-shoes.webp',
+  'clothing/women-s-footwear/women-s-flats':
+    '/categories/explore/clothing/women-s-footwear/women-s-flats.webp',
+  'clothing/women-s-footwear/women-s-formals':
+    '/categories/explore/clothing/women-s-footwear/women-s-formals.webp',
+  'clothing/women-s-footwear/women-s-heels':
+    '/categories/explore/clothing/women-s-footwear/women-s-heels.webp',
+  'clothing/women-s-footwear/women-s-slippers-flip-flops':
+    '/categories/explore/clothing/women-s-footwear/women-s-slippers-flip-flops.webp',
+  'clothing/women-s-footwear/women-s-sports-sandals':
+    '/categories/explore/clothing/women-s-footwear/women-s-sports-sandals.webp',
+  'clothing/women-s-footwear/women-s-sports-shoes':
+    '/categories/explore/clothing/women-s-footwear/women-s-sports-shoes.webp',
+  'clothing/women-s-footwear/women-s-wedges':
+    '/categories/explore/clothing/women-s-footwear/women-s-wedges.webp',
   cosmetics: '/categories/explore/cosmetics.webp',
   'cosmetics/body-care': '/categories/explore/cosmetics/body-care.webp',
+  'cosmetics/body-care/body-lotion': '/categories/explore/cosmetics/body-care/body-lotion.webp',
+  'cosmetics/body-care/body-scrubs': '/categories/explore/cosmetics/body-care/body-scrubs.webp',
+  'cosmetics/body-care/body-wash': '/categories/explore/cosmetics/body-care/body-wash.webp',
+  'cosmetics/body-care/foot-care': '/categories/explore/cosmetics/body-care/foot-care.webp',
+  'cosmetics/body-care/hand-cream': '/categories/explore/cosmetics/body-care/hand-cream.webp',
   'cosmetics/face-makeup': '/categories/explore/cosmetics/face-makeup.webp',
+  'cosmetics/face-makeup/makeup-remover':
+    '/categories/explore/cosmetics/face-makeup/makeup-remover.webp',
   'cosmetics/fragrances': '/categories/explore/cosmetics/fragrances.webp',
+  'cosmetics/fragrances/attars': '/categories/explore/cosmetics/fragrances/attars.webp',
+  'cosmetics/fragrances/body-mists': '/categories/explore/cosmetics/fragrances/body-mists.webp',
+  'cosmetics/fragrances/deodorants': '/categories/explore/cosmetics/fragrances/deodorants.webp',
+  'cosmetics/fragrances/perfumes': '/categories/explore/cosmetics/fragrances/perfumes.webp',
   'cosmetics/grooming': '/categories/explore/cosmetics/grooming.webp',
+  'cosmetics/grooming/beard-care': '/categories/explore/cosmetics/grooming/beard-care.webp',
+  'cosmetics/grooming/grooming-kits': '/categories/explore/cosmetics/grooming/grooming-kits.webp',
+  'cosmetics/grooming/shaving': '/categories/explore/cosmetics/grooming/shaving.webp',
+  'cosmetics/grooming/trimmers': '/categories/explore/cosmetics/grooming/trimmers.webp',
   'cosmetics/hair-care': '/categories/explore/cosmetics/hair-care.webp',
+  'cosmetics/hair-care/conditioner': '/categories/explore/cosmetics/hair-care/conditioner.webp',
+  'cosmetics/hair-care/hair-masks': '/categories/explore/cosmetics/hair-care/hair-masks.webp',
+  'cosmetics/hair-care/hair-oil': '/categories/explore/cosmetics/hair-care/hair-oil.webp',
+  'cosmetics/hair-care/hair-serum': '/categories/explore/cosmetics/hair-care/hair-serum.webp',
+  'cosmetics/hair-care/shampoo': '/categories/explore/cosmetics/hair-care/shampoo.webp',
   'cosmetics/makeup': '/categories/explore/cosmetics/makeup.webp',
+  'cosmetics/makeup/eyeliner': '/categories/explore/cosmetics/makeup/eyeliner.webp',
+  'cosmetics/makeup/eyeshadow': '/categories/explore/cosmetics/makeup/eyeshadow.webp',
+  'cosmetics/makeup/kajal': '/categories/explore/cosmetics/makeup/kajal.webp',
+  'cosmetics/makeup/lip-gloss': '/categories/explore/cosmetics/makeup/lip-gloss.webp',
+  'cosmetics/makeup/lip-liner': '/categories/explore/cosmetics/makeup/lip-liner.webp',
+  'cosmetics/makeup/lipstick': '/categories/explore/cosmetics/makeup/lipstick.webp',
+  'cosmetics/makeup/makeup-brushes': '/categories/explore/cosmetics/makeup/makeup-brushes.webp',
+  'cosmetics/makeup/makeup-sponges': '/categories/explore/cosmetics/makeup/makeup-sponges.webp',
+  'cosmetics/makeup/mascara': '/categories/explore/cosmetics/makeup/mascara.webp',
+  'cosmetics/makeup/nail-care': '/categories/explore/cosmetics/makeup/nail-care.webp',
+  'cosmetics/makeup/nail-polish': '/categories/explore/cosmetics/makeup/nail-polish.webp',
   'cosmetics/skin-care': '/categories/explore/cosmetics/skin-care.webp',
+  'cosmetics/skin-care/face-creams': '/categories/explore/cosmetics/skin-care/face-creams.webp',
+  'cosmetics/skin-care/face-masks': '/categories/explore/cosmetics/skin-care/face-masks.webp',
+  'cosmetics/skin-care/face-wash': '/categories/explore/cosmetics/skin-care/face-wash.webp',
+  'cosmetics/skin-care/moisturizers': '/categories/explore/cosmetics/skin-care/moisturizers.webp',
+  'cosmetics/skin-care/serums': '/categories/explore/cosmetics/skin-care/serums.webp',
+  'cosmetics/skin-care/sunscreen': '/categories/explore/cosmetics/skin-care/sunscreen.webp',
   'electrical-and-lights': '/categories/explore/electrical-and-lights.webp',
   'electrical-and-lights/ceiling-lights':
     '/categories/explore/electrical-and-lights/ceiling-lights.webp',
+  'electrical-and-lights/ceiling-lights/chandeliers':
+    '/categories/explore/electrical-and-lights/ceiling-lights/chandeliers.webp',
+  'electrical-and-lights/ceiling-lights/led-ceiling-lights':
+    '/categories/explore/electrical-and-lights/ceiling-lights/led-ceiling-lights.webp',
+  'electrical-and-lights/ceiling-lights/panel-lights':
+    '/categories/explore/electrical-and-lights/ceiling-lights/panel-lights.webp',
+  'electrical-and-lights/ceiling-lights/pendant-lights':
+    '/categories/explore/electrical-and-lights/ceiling-lights/pendant-lights.webp',
+  'electrical-and-lights/ceiling-lights/wall-lights':
+    '/categories/explore/electrical-and-lights/ceiling-lights/wall-lights.webp',
   'electrical-and-lights/decorative-lights':
     '/categories/explore/electrical-and-lights/decorative-lights.webp',
+  'electrical-and-lights/decorative-lights/fairy-lights':
+    '/categories/explore/electrical-and-lights/decorative-lights/fairy-lights.webp',
+  'electrical-and-lights/decorative-lights/floor-lamps':
+    '/categories/explore/electrical-and-lights/decorative-lights/floor-lamps.webp',
+  'electrical-and-lights/decorative-lights/night-lamps':
+    '/categories/explore/electrical-and-lights/decorative-lights/night-lamps.webp',
+  'electrical-and-lights/decorative-lights/smart-lights':
+    '/categories/explore/electrical-and-lights/decorative-lights/smart-lights.webp',
+  'electrical-and-lights/decorative-lights/string-lights':
+    '/categories/explore/electrical-and-lights/decorative-lights/string-lights.webp',
+  'electrical-and-lights/decorative-lights/table-lamps':
+    '/categories/explore/electrical-and-lights/decorative-lights/table-lamps.webp',
   'electrical-and-lights/electrical-wires':
     '/categories/explore/electrical-and-lights/electrical-wires.webp',
+  'electrical-and-lights/electrical-wires/cables':
+    '/categories/explore/electrical-and-lights/electrical-wires/cables.webp',
+  'electrical-and-lights/electrical-wires/coaxial-cables':
+    '/categories/explore/electrical-and-lights/electrical-wires/coaxial-cables.webp',
+  'electrical-and-lights/electrical-wires/distribution-boards':
+    '/categories/explore/electrical-and-lights/electrical-wires/distribution-boards.webp',
+  'electrical-and-lights/electrical-wires/flexible-wires':
+    '/categories/explore/electrical-and-lights/electrical-wires/flexible-wires.webp',
+  'electrical-and-lights/electrical-wires/house-wires':
+    '/categories/explore/electrical-and-lights/electrical-wires/house-wires.webp',
+  'electrical-and-lights/electrical-wires/mcb':
+    '/categories/explore/electrical-and-lights/electrical-wires/mcb.webp',
   'electrical-and-lights/emergency-lights':
     '/categories/explore/electrical-and-lights/emergency-lights.webp',
+  'electrical-and-lights/emergency-lights/flood-lights':
+    '/categories/explore/electrical-and-lights/emergency-lights/flood-lights.webp',
+  'electrical-and-lights/emergency-lights/lanterns':
+    '/categories/explore/electrical-and-lights/emergency-lights/lanterns.webp',
+  'electrical-and-lights/emergency-lights/outdoor-lights':
+    '/categories/explore/electrical-and-lights/emergency-lights/outdoor-lights.webp',
+  'electrical-and-lights/emergency-lights/rechargeable-emergency-lights':
+    '/categories/explore/electrical-and-lights/emergency-lights/rechargeable-emergency-lights.webp',
+  'electrical-and-lights/emergency-lights/street-lights':
+    '/categories/explore/electrical-and-lights/emergency-lights/street-lights.webp',
+  'electrical-and-lights/emergency-lights/torch-lights':
+    '/categories/explore/electrical-and-lights/emergency-lights/torch-lights.webp',
   'electrical-and-lights/extension-boards':
     '/categories/explore/electrical-and-lights/extension-boards.webp',
+  'electrical-and-lights/extension-boards/adapters':
+    '/categories/explore/electrical-and-lights/extension-boards/adapters.webp',
+  'electrical-and-lights/extension-boards/extension-cords':
+    '/categories/explore/electrical-and-lights/extension-boards/extension-cords.webp',
+  'electrical-and-lights/extension-boards/power-strips':
+    '/categories/explore/electrical-and-lights/extension-boards/power-strips.webp',
+  'electrical-and-lights/extension-boards/surge-protectors':
+    '/categories/explore/electrical-and-lights/extension-boards/surge-protectors.webp',
   'electrical-and-lights/fans': '/categories/explore/electrical-and-lights/fans.webp',
+  'electrical-and-lights/fans/ceiling-fans':
+    '/categories/explore/electrical-and-lights/fans/ceiling-fans.webp',
+  'electrical-and-lights/fans/exhaust-fans':
+    '/categories/explore/electrical-and-lights/fans/exhaust-fans.webp',
+  'electrical-and-lights/fans/table-fans':
+    '/categories/explore/electrical-and-lights/fans/table-fans.webp',
+  'electrical-and-lights/fans/wall-fans':
+    '/categories/explore/electrical-and-lights/fans/wall-fans.webp',
   'electrical-and-lights/led-bulbs': '/categories/explore/electrical-and-lights/led-bulbs.webp',
+  'electrical-and-lights/led-bulbs/led-panels':
+    '/categories/explore/electrical-and-lights/led-bulbs/led-panels.webp',
+  'electrical-and-lights/led-bulbs/led-tubelights':
+    '/categories/explore/electrical-and-lights/led-bulbs/led-tubelights.webp',
+  'electrical-and-lights/led-bulbs/smart-bulbs':
+    '/categories/explore/electrical-and-lights/led-bulbs/smart-bulbs.webp',
+  'electrical-and-lights/led-bulbs/tube-lights':
+    '/categories/explore/electrical-and-lights/led-bulbs/tube-lights.webp',
   'electrical-and-lights/switches': '/categories/explore/electrical-and-lights/switches.webp',
+  'electrical-and-lights/switches/dimmer-switches':
+    '/categories/explore/electrical-and-lights/switches/dimmer-switches.webp',
+  'electrical-and-lights/switches/modular-switches':
+    '/categories/explore/electrical-and-lights/switches/modular-switches.webp',
+  'electrical-and-lights/switches/smart-switches':
+    '/categories/explore/electrical-and-lights/switches/smart-switches.webp',
+  'electrical-and-lights/switches/sockets':
+    '/categories/explore/electrical-and-lights/switches/sockets.webp',
+  'electrical-and-lights/switches/switch-plates':
+    '/categories/explore/electrical-and-lights/switches/switch-plates.webp',
   electronics: '/categories/explore/electronics.webp',
   'electronics/cameras': '/categories/explore/electronics/cameras.webp',
+  'electronics/cameras/action-cameras':
+    '/categories/explore/electronics/cameras/action-cameras.webp',
+  'electronics/cameras/camera-accessories':
+    '/categories/explore/electronics/cameras/camera-accessories.webp',
+  'electronics/cameras/digital-cameras':
+    '/categories/explore/electronics/cameras/digital-cameras.webp',
+  'electronics/cameras/dslr-cameras': '/categories/explore/electronics/cameras/dslr-cameras.webp',
   'electronics/computer-accessories': '/categories/explore/electronics/computer-accessories.webp',
+  'electronics/computer-accessories/keyboards':
+    '/categories/explore/electronics/computer-accessories/keyboards.webp',
+  'electronics/computer-accessories/laptop-stands':
+    '/categories/explore/electronics/computer-accessories/laptop-stands.webp',
+  'electronics/computer-accessories/mouse':
+    '/categories/explore/electronics/computer-accessories/mouse.webp',
+  'electronics/computer-accessories/usb-hubs':
+    '/categories/explore/electronics/computer-accessories/usb-hubs.webp',
+  'electronics/computer-accessories/webcams':
+    '/categories/explore/electronics/computer-accessories/webcams.webp',
   'electronics/gaming-accessories': '/categories/explore/electronics/gaming-accessories.webp',
+  'electronics/gaming-accessories/controllers':
+    '/categories/explore/electronics/gaming-accessories/controllers.webp',
+  'electronics/gaming-accessories/gaming-headsets':
+    '/categories/explore/electronics/gaming-accessories/gaming-headsets.webp',
+  'electronics/gaming-accessories/gaming-keyboards':
+    '/categories/explore/electronics/gaming-accessories/gaming-keyboards.webp',
+  'electronics/gaming-accessories/gaming-mouse':
+    '/categories/explore/electronics/gaming-accessories/gaming-mouse.webp',
   'electronics/headphones': '/categories/explore/electronics/headphones.webp',
+  'electronics/headphones/earphones': '/categories/explore/electronics/headphones/earphones.webp',
+  'electronics/headphones/neckbands': '/categories/explore/electronics/headphones/neckbands.webp',
+  'electronics/headphones/over-ear-headphones':
+    '/categories/explore/electronics/headphones/over-ear-headphones.webp',
+  'electronics/headphones/true-wireless-earbuds':
+    '/categories/explore/electronics/headphones/true-wireless-earbuds.webp',
+  'electronics/headphones/tws-earbuds':
+    '/categories/explore/electronics/headphones/tws-earbuds.webp',
   'electronics/laptops': '/categories/explore/electronics/laptops.webp',
   'electronics/mobile-accessories': '/categories/explore/electronics/mobile-accessories.webp',
+  'electronics/mobile-accessories/cables':
+    '/categories/explore/electronics/mobile-accessories/cables.webp',
+  'electronics/mobile-accessories/car-mounts':
+    '/categories/explore/electronics/mobile-accessories/car-mounts.webp',
+  'electronics/mobile-accessories/chargers':
+    '/categories/explore/electronics/mobile-accessories/chargers.webp',
+  'electronics/mobile-accessories/mobile-cases':
+    '/categories/explore/electronics/mobile-accessories/mobile-cases.webp',
+  'electronics/mobile-accessories/screen-protectors':
+    '/categories/explore/electronics/mobile-accessories/screen-protectors.webp',
   'electronics/power-banks': '/categories/explore/electronics/power-banks.webp',
   'electronics/printers': '/categories/explore/electronics/printers.webp',
   'electronics/scanners': '/categories/explore/electronics/scanners.webp',
   'electronics/smart-devices': '/categories/explore/electronics/smart-devices.webp',
+  'electronics/smart-devices/smart-bulbs':
+    '/categories/explore/electronics/smart-devices/smart-bulbs.webp',
+  'electronics/smart-devices/smart-plugs':
+    '/categories/explore/electronics/smart-devices/smart-plugs.webp',
+  'electronics/smart-devices/smart-sensors':
+    '/categories/explore/electronics/smart-devices/smart-sensors.webp',
+  'electronics/smart-devices/smart-speakers':
+    '/categories/explore/electronics/smart-devices/smart-speakers.webp',
   'electronics/speakers': '/categories/explore/electronics/speakers.webp',
+  'electronics/speakers/bluetooth-speakers':
+    '/categories/explore/electronics/speakers/bluetooth-speakers.webp',
+  'electronics/speakers/home-theatre': '/categories/explore/electronics/speakers/home-theatre.webp',
+  'electronics/speakers/soundbars': '/categories/explore/electronics/speakers/soundbars.webp',
   'electronics/storage-devices': '/categories/explore/electronics/storage-devices.webp',
+  'electronics/storage-devices/hard-drives':
+    '/categories/explore/electronics/storage-devices/hard-drives.webp',
+  'electronics/storage-devices/memory-cards':
+    '/categories/explore/electronics/storage-devices/memory-cards.webp',
+  'electronics/storage-devices/pen-drives':
+    '/categories/explore/electronics/storage-devices/pen-drives.webp',
+  'electronics/storage-devices/ssds': '/categories/explore/electronics/storage-devices/ssds.webp',
   'electronics/tablets': '/categories/explore/electronics/tablets.webp',
   'electronics/televisions': '/categories/explore/electronics/televisions.webp',
+  'electronics/televisions/led-tvs': '/categories/explore/electronics/televisions/led-tvs.webp',
+  'electronics/televisions/oled-tvs': '/categories/explore/electronics/televisions/oled-tvs.webp',
+  'electronics/televisions/qled-tvs': '/categories/explore/electronics/televisions/qled-tvs.webp',
+  'electronics/televisions/smart-tvs': '/categories/explore/electronics/televisions/smart-tvs.webp',
   'fashion-jewellery': '/categories/explore/fashion-jewellery.webp',
   'fashion-jewellery/anklets': '/categories/explore/fashion-jewellery/anklets.webp',
   'fashion-jewellery/artificial-jewellery':
     '/categories/explore/fashion-jewellery/artificial-jewellery.webp',
+  'fashion-jewellery/artificial-jewellery/cz-jewellery':
+    '/categories/explore/fashion-jewellery/artificial-jewellery/cz-jewellery.webp',
+  'fashion-jewellery/artificial-jewellery/gold-plated-jewellery':
+    '/categories/explore/fashion-jewellery/artificial-jewellery/gold-plated-jewellery.webp',
+  'fashion-jewellery/artificial-jewellery/kundan-jewellery':
+    '/categories/explore/fashion-jewellery/artificial-jewellery/kundan-jewellery.webp',
+  'fashion-jewellery/artificial-jewellery/meenakari-jewellery':
+    '/categories/explore/fashion-jewellery/artificial-jewellery/meenakari-jewellery.webp',
+  'fashion-jewellery/artificial-jewellery/oxidised-jewellery':
+    '/categories/explore/fashion-jewellery/artificial-jewellery/oxidised-jewellery.webp',
+  'fashion-jewellery/artificial-jewellery/pearl-jewellery':
+    '/categories/explore/fashion-jewellery/artificial-jewellery/pearl-jewellery.webp',
+  'fashion-jewellery/artificial-jewellery/temple-jewellery':
+    '/categories/explore/fashion-jewellery/artificial-jewellery/temple-jewellery.webp',
   'fashion-jewellery/body-jewellery': '/categories/explore/fashion-jewellery/body-jewellery.webp',
+  'fashion-jewellery/body-jewellery/bangles':
+    '/categories/explore/fashion-jewellery/body-jewellery/bangles.webp',
+  'fashion-jewellery/body-jewellery/chain-bracelets':
+    '/categories/explore/fashion-jewellery/body-jewellery/chain-bracelets.webp',
+  'fashion-jewellery/body-jewellery/charm-bracelets':
+    '/categories/explore/fashion-jewellery/body-jewellery/charm-bracelets.webp',
   'fashion-jewellery/bridal-jewellery':
     '/categories/explore/fashion-jewellery/bridal-jewellery.webp',
   'fashion-jewellery/brooches': '/categories/explore/fashion-jewellery/brooches.webp',
   'fashion-jewellery/charms': '/categories/explore/fashion-jewellery/charms.webp',
   'fashion-jewellery/earrings': '/categories/explore/fashion-jewellery/earrings.webp',
+  'fashion-jewellery/earrings/drop-earrings':
+    '/categories/explore/fashion-jewellery/earrings/drop-earrings.webp',
+  'fashion-jewellery/earrings/hoop-earrings':
+    '/categories/explore/fashion-jewellery/earrings/hoop-earrings.webp',
+  'fashion-jewellery/earrings/jhumkas':
+    '/categories/explore/fashion-jewellery/earrings/jhumkas.webp',
+  'fashion-jewellery/earrings/stud-earrings':
+    '/categories/explore/fashion-jewellery/earrings/stud-earrings.webp',
   'fashion-jewellery/hair-accessories':
     '/categories/explore/fashion-jewellery/hair-accessories.webp',
+  'fashion-jewellery/hair-accessories/hair-bands':
+    '/categories/explore/fashion-jewellery/hair-accessories/hair-bands.webp',
+  'fashion-jewellery/hair-accessories/hair-clips':
+    '/categories/explore/fashion-jewellery/hair-accessories/hair-clips.webp',
+  'fashion-jewellery/hair-accessories/hair-pins':
+    '/categories/explore/fashion-jewellery/hair-accessories/hair-pins.webp',
+  'fashion-jewellery/hair-accessories/scrunchies':
+    '/categories/explore/fashion-jewellery/hair-accessories/scrunchies.webp',
   'fashion-jewellery/jewellery-boxes': '/categories/explore/fashion-jewellery/jewellery-boxes.webp',
+  'fashion-jewellery/jewellery-boxes/jewellery-organizers':
+    '/categories/explore/fashion-jewellery/jewellery-boxes/jewellery-organizers.webp',
+  'fashion-jewellery/jewellery-boxes/jewellery-stands':
+    '/categories/explore/fashion-jewellery/jewellery-boxes/jewellery-stands.webp',
+  'fashion-jewellery/jewellery-boxes/travel-jewellery-cases':
+    '/categories/explore/fashion-jewellery/jewellery-boxes/travel-jewellery-cases.webp',
   'fashion-jewellery/jewellery-sets': '/categories/explore/fashion-jewellery/jewellery-sets.webp',
   'fashion-jewellery/kamarband': '/categories/explore/fashion-jewellery/kamarband.webp',
   'fashion-jewellery/kids-jewellery': '/categories/explore/fashion-jewellery/kids-jewellery.webp',
   'fashion-jewellery/maang-tikka': '/categories/explore/fashion-jewellery/maang-tikka.webp',
   'fashion-jewellery/necklaces': '/categories/explore/fashion-jewellery/necklaces.webp',
+  'fashion-jewellery/necklaces/chains':
+    '/categories/explore/fashion-jewellery/necklaces/chains.webp',
+  'fashion-jewellery/necklaces/chokers':
+    '/categories/explore/fashion-jewellery/necklaces/chokers.webp',
+  'fashion-jewellery/necklaces/layered-necklaces':
+    '/categories/explore/fashion-jewellery/necklaces/layered-necklaces.webp',
+  'fashion-jewellery/necklaces/mangalsutra':
+    '/categories/explore/fashion-jewellery/necklaces/mangalsutra.webp',
+  'fashion-jewellery/necklaces/pendant-necklaces':
+    '/categories/explore/fashion-jewellery/necklaces/pendant-necklaces.webp',
+  'fashion-jewellery/necklaces/pendant-sets':
+    '/categories/explore/fashion-jewellery/necklaces/pendant-sets.webp',
   'fashion-jewellery/rings': '/categories/explore/fashion-jewellery/rings.webp',
+  'fashion-jewellery/rings/adjustable-rings':
+    '/categories/explore/fashion-jewellery/rings/adjustable-rings.webp',
+  'fashion-jewellery/rings/cocktail-rings':
+    '/categories/explore/fashion-jewellery/rings/cocktail-rings.webp',
+  'fashion-jewellery/rings/fashion-rings':
+    '/categories/explore/fashion-jewellery/rings/fashion-rings.webp',
+  'fashion-jewellery/rings/nose-rings':
+    '/categories/explore/fashion-jewellery/rings/nose-rings.webp',
   footwear: '/categories/explore/footwear.webp',
   'footwear/kids-footwear': '/categories/explore/footwear/kids-footwear.webp',
+  'footwear/kids-footwear/boys-footwear':
+    '/categories/explore/footwear/kids-footwear/boys-footwear.webp',
+  'footwear/kids-footwear/girls-footwear':
+    '/categories/explore/footwear/kids-footwear/girls-footwear.webp',
+  'footwear/kids-footwear/infant-footwear':
+    '/categories/explore/footwear/kids-footwear/infant-footwear.webp',
+  'footwear/kids-footwear/school-shoes':
+    '/categories/explore/footwear/kids-footwear/school-shoes.webp',
   'footwear/men-s-footwear': '/categories/explore/footwear/men-s-footwear.webp',
+  'footwear/men-s-footwear/canvas-shoes':
+    '/categories/explore/footwear/men-s-footwear/canvas-shoes.webp',
+  'footwear/men-s-footwear/casual-shoes':
+    '/categories/explore/footwear/men-s-footwear/casual-shoes.webp',
+  'footwear/men-s-footwear/loafers': '/categories/explore/footwear/men-s-footwear/loafers.webp',
+  'footwear/men-s-footwear/men-s-ethnic-shoes':
+    '/categories/explore/footwear/men-s-footwear/men-s-ethnic-shoes.webp',
+  'footwear/men-s-footwear/men-s-formal-shoes':
+    '/categories/explore/footwear/men-s-footwear/men-s-formal-shoes.webp',
+  'footwear/men-s-footwear/men-s-sandals':
+    '/categories/explore/footwear/men-s-footwear/men-s-sandals.webp',
+  'footwear/men-s-footwear/men-s-slippers-flip-flops':
+    '/categories/explore/footwear/men-s-footwear/men-s-slippers-flip-flops.webp',
+  'footwear/men-s-footwear/men-s-sneakers':
+    '/categories/explore/footwear/men-s-footwear/men-s-sneakers.webp',
+  'footwear/men-s-footwear/men-s-sports-shoes':
+    '/categories/explore/footwear/men-s-footwear/men-s-sports-shoes.webp',
+  'footwear/men-s-footwear/sneakers': '/categories/explore/footwear/men-s-footwear/sneakers.webp',
   'footwear/shoe-care': '/categories/explore/footwear/shoe-care.webp',
+  'footwear/shoe-care/insoles': '/categories/explore/footwear/shoe-care/insoles.webp',
+  'footwear/shoe-care/shoe-accessories':
+    '/categories/explore/footwear/shoe-care/shoe-accessories.webp',
+  'footwear/shoe-care/shoe-cleaning-kits':
+    '/categories/explore/footwear/shoe-care/shoe-cleaning-kits.webp',
+  'footwear/shoe-care/shoe-laces': '/categories/explore/footwear/shoe-care/shoe-laces.webp',
+  'footwear/shoe-care/shoe-polish': '/categories/explore/footwear/shoe-care/shoe-polish.webp',
+  'footwear/shoe-care/shoe-trees': '/categories/explore/footwear/shoe-care/shoe-trees.webp',
   'footwear/sports-footwear': '/categories/explore/footwear/sports-footwear.webp',
+  'footwear/sports-footwear/running-shoes':
+    '/categories/explore/footwear/sports-footwear/running-shoes.webp',
+  'footwear/sports-footwear/sports-shoes':
+    '/categories/explore/footwear/sports-footwear/sports-shoes.webp',
+  'footwear/sports-footwear/training-shoes':
+    '/categories/explore/footwear/sports-footwear/training-shoes.webp',
+  'footwear/sports-footwear/trekking-shoes':
+    '/categories/explore/footwear/sports-footwear/trekking-shoes.webp',
+  'footwear/sports-footwear/walking-shoes':
+    '/categories/explore/footwear/sports-footwear/walking-shoes.webp',
   'footwear/women-s-footwear': '/categories/explore/footwear/women-s-footwear.webp',
+  'footwear/women-s-footwear/ballerinas':
+    '/categories/explore/footwear/women-s-footwear/ballerinas.webp',
+  'footwear/women-s-footwear/casual-flats':
+    '/categories/explore/footwear/women-s-footwear/casual-flats.webp',
+  'footwear/women-s-footwear/loafers': '/categories/explore/footwear/women-s-footwear/loafers.webp',
+  'footwear/women-s-footwear/mules': '/categories/explore/footwear/women-s-footwear/mules.webp',
+  'footwear/women-s-footwear/women-s-ballerinas':
+    '/categories/explore/footwear/women-s-footwear/women-s-ballerinas.webp',
+  'footwear/women-s-footwear/women-s-ethnic-shoes':
+    '/categories/explore/footwear/women-s-footwear/women-s-ethnic-shoes.webp',
+  'footwear/women-s-footwear/women-s-formal-shoes':
+    '/categories/explore/footwear/women-s-footwear/women-s-formal-shoes.webp',
+  'footwear/women-s-footwear/women-s-heels':
+    '/categories/explore/footwear/women-s-footwear/women-s-heels.webp',
+  'footwear/women-s-footwear/women-s-sandals':
+    '/categories/explore/footwear/women-s-footwear/women-s-sandals.webp',
+  'footwear/women-s-footwear/women-s-slippers-flip-flops':
+    '/categories/explore/footwear/women-s-footwear/women-s-slippers-flip-flops.webp',
+  'footwear/women-s-footwear/women-s-sneakers':
+    '/categories/explore/footwear/women-s-footwear/women-s-sneakers.webp',
+  'footwear/women-s-footwear/women-s-sports-shoes':
+    '/categories/explore/footwear/women-s-footwear/women-s-sports-shoes.webp',
+  'footwear/women-s-footwear/women-s-wedges':
+    '/categories/explore/footwear/women-s-footwear/women-s-wedges.webp',
   furniture: '/categories/explore/furniture.webp',
   'furniture/beds': '/categories/explore/furniture/beds.webp',
+  'furniture/beds/bunk-beds': '/categories/explore/furniture/beds/bunk-beds.webp',
+  'furniture/beds/king-size-beds': '/categories/explore/furniture/beds/king-size-beds.webp',
+  'furniture/beds/mattresses': '/categories/explore/furniture/beds/mattresses.webp',
+  'furniture/beds/queen-size-beds': '/categories/explore/furniture/beds/queen-size-beds.webp',
+  'furniture/beds/single-beds': '/categories/explore/furniture/beds/single-beds.webp',
+  'furniture/beds/storage-beds': '/categories/explore/furniture/beds/storage-beds.webp',
   'furniture/chairs': '/categories/explore/furniture/chairs.webp',
+  'furniture/chairs/benches': '/categories/explore/furniture/chairs/benches.webp',
+  'furniture/chairs/dining-chairs': '/categories/explore/furniture/chairs/dining-chairs.webp',
+  'furniture/chairs/folding-chairs': '/categories/explore/furniture/chairs/folding-chairs.webp',
+  'furniture/chairs/gaming-chairs': '/categories/explore/furniture/chairs/gaming-chairs.webp',
+  'furniture/chairs/office-chairs': '/categories/explore/furniture/chairs/office-chairs.webp',
+  'furniture/chairs/stools': '/categories/explore/furniture/chairs/stools.webp',
   'furniture/outdoor-furniture': '/categories/explore/furniture/outdoor-furniture.webp',
+  'furniture/outdoor-furniture/garden-chairs':
+    '/categories/explore/furniture/outdoor-furniture/garden-chairs.webp',
+  'furniture/outdoor-furniture/garden-tables':
+    '/categories/explore/furniture/outdoor-furniture/garden-tables.webp',
+  'furniture/outdoor-furniture/outdoor-sofas':
+    '/categories/explore/furniture/outdoor-furniture/outdoor-sofas.webp',
+  'furniture/outdoor-furniture/swings':
+    '/categories/explore/furniture/outdoor-furniture/swings.webp',
   'furniture/plastic-furniture': '/categories/explore/furniture/plastic-furniture.webp',
   'furniture/sofas': '/categories/explore/furniture/sofas.webp',
+  'furniture/sofas/recliners': '/categories/explore/furniture/sofas/recliners.webp',
+  'furniture/sofas/sectional-sofas': '/categories/explore/furniture/sofas/sectional-sofas.webp',
+  'furniture/sofas/sofa-beds': '/categories/explore/furniture/sofas/sofa-beds.webp',
+  'furniture/sofas/sofa-sets': '/categories/explore/furniture/sofas/sofa-sets.webp',
   'furniture/tables': '/categories/explore/furniture/tables.webp',
+  'furniture/tables/coffee-tables': '/categories/explore/furniture/tables/coffee-tables.webp',
+  'furniture/tables/dining-tables': '/categories/explore/furniture/tables/dining-tables.webp',
+  'furniture/tables/office-tables': '/categories/explore/furniture/tables/office-tables.webp',
+  'furniture/tables/side-tables': '/categories/explore/furniture/tables/side-tables.webp',
   'furniture/wardrobes': '/categories/explore/furniture/wardrobes.webp',
+  'furniture/wardrobes/bookshelves': '/categories/explore/furniture/wardrobes/bookshelves.webp',
+  'furniture/wardrobes/cabinets': '/categories/explore/furniture/wardrobes/cabinets.webp',
+  'furniture/wardrobes/plastic-wardrobes':
+    '/categories/explore/furniture/wardrobes/plastic-wardrobes.webp',
+  'furniture/wardrobes/shoe-racks': '/categories/explore/furniture/wardrobes/shoe-racks.webp',
+  'furniture/wardrobes/storage-cabinets':
+    '/categories/explore/furniture/wardrobes/storage-cabinets.webp',
+  'furniture/wardrobes/storage-units': '/categories/explore/furniture/wardrobes/storage-units.webp',
+  'furniture/wardrobes/tv-units': '/categories/explore/furniture/wardrobes/tv-units.webp',
+  'furniture/wardrobes/wooden-wardrobes':
+    '/categories/explore/furniture/wardrobes/wooden-wardrobes.webp',
   'gifts-frames': '/categories/explore/gifts-frames.webp',
   'gifts-frames/decorative-showpieces':
     '/categories/explore/gifts-frames/decorative-showpieces.webp',
   'gifts-frames/gift-sets-greeting-cards':
     '/categories/explore/gifts-frames/gift-sets-greeting-cards.webp',
+  'gifts-frames/gift-sets-greeting-cards/corporate-gifts':
+    '/categories/explore/gifts-frames/gift-sets-greeting-cards/corporate-gifts.webp',
+  'gifts-frames/gift-sets-greeting-cards/couple-gift-sets':
+    '/categories/explore/gifts-frames/gift-sets-greeting-cards/couple-gift-sets.webp',
+  'gifts-frames/gift-sets-greeting-cards/gift-boxes':
+    '/categories/explore/gifts-frames/gift-sets-greeting-cards/gift-boxes.webp',
+  'gifts-frames/gift-sets-greeting-cards/greeting-cards':
+    '/categories/explore/gifts-frames/gift-sets-greeting-cards/greeting-cards.webp',
+  'gifts-frames/gift-sets-greeting-cards/personalised-gift-sets':
+    '/categories/explore/gifts-frames/gift-sets-greeting-cards/personalised-gift-sets.webp',
   'gifts-frames/personalized-gifts': '/categories/explore/gifts-frames/personalized-gifts.webp',
+  'gifts-frames/personalized-gifts/cushions':
+    '/categories/explore/gifts-frames/personalized-gifts/cushions.webp',
+  'gifts-frames/personalized-gifts/diaries':
+    '/categories/explore/gifts-frames/personalized-gifts/diaries.webp',
+  'gifts-frames/personalized-gifts/keychains':
+    '/categories/explore/gifts-frames/personalized-gifts/keychains.webp',
+  'gifts-frames/personalized-gifts/mugs':
+    '/categories/explore/gifts-frames/personalized-gifts/mugs.webp',
+  'gifts-frames/personalized-gifts/pens':
+    '/categories/explore/gifts-frames/personalized-gifts/pens.webp',
+  'gifts-frames/personalized-gifts/photo-gifts':
+    '/categories/explore/gifts-frames/personalized-gifts/photo-gifts.webp',
+  'gifts-frames/personalized-gifts/t-shirts':
+    '/categories/explore/gifts-frames/personalized-gifts/t-shirts.webp',
   'gifts-frames/photo-albums': '/categories/explore/gifts-frames/photo-albums.webp',
+  'gifts-frames/photo-albums/memory-books':
+    '/categories/explore/gifts-frames/photo-albums/memory-books.webp',
+  'gifts-frames/photo-albums/scrapbooks':
+    '/categories/explore/gifts-frames/photo-albums/scrapbooks.webp',
   'gifts-frames/photo-frames': '/categories/explore/gifts-frames/photo-frames.webp',
+  'gifts-frames/photo-frames/certificate-frames':
+    '/categories/explore/gifts-frames/photo-frames/certificate-frames.webp',
+  'gifts-frames/photo-frames/collage-frames':
+    '/categories/explore/gifts-frames/photo-frames/collage-frames.webp',
+  'gifts-frames/photo-frames/digital-frames':
+    '/categories/explore/gifts-frames/photo-frames/digital-frames.webp',
+  'gifts-frames/photo-frames/digital-photo-frames':
+    '/categories/explore/gifts-frames/photo-frames/digital-photo-frames.webp',
+  'gifts-frames/photo-frames/document-frames':
+    '/categories/explore/gifts-frames/photo-frames/document-frames.webp',
+  'gifts-frames/photo-frames/painting-frames':
+    '/categories/explore/gifts-frames/photo-frames/painting-frames.webp',
+  'gifts-frames/photo-frames/poster-frames':
+    '/categories/explore/gifts-frames/photo-frames/poster-frames.webp',
+  'gifts-frames/photo-frames/table-frames':
+    '/categories/explore/gifts-frames/photo-frames/table-frames.webp',
+  'gifts-frames/photo-frames/wall-frames':
+    '/categories/explore/gifts-frames/photo-frames/wall-frames.webp',
   'gifts-frames/trophies-awards': '/categories/explore/gifts-frames/trophies-awards.webp',
+  'gifts-frames/trophies-awards/certificates':
+    '/categories/explore/gifts-frames/trophies-awards/certificates.webp',
+  'gifts-frames/trophies-awards/medals':
+    '/categories/explore/gifts-frames/trophies-awards/medals.webp',
+  'gifts-frames/trophies-awards/plaques':
+    '/categories/explore/gifts-frames/trophies-awards/plaques.webp',
+  'gifts-frames/trophies-awards/trophies':
+    '/categories/explore/gifts-frames/trophies-awards/trophies.webp',
   'gifts-frames/wedding-occasion-gifts':
     '/categories/explore/gifts-frames/wedding-occasion-gifts.webp',
+  'gifts-frames/wedding-occasion-gifts/anniversary-gifts':
+    '/categories/explore/gifts-frames/wedding-occasion-gifts/anniversary-gifts.webp',
+  'gifts-frames/wedding-occasion-gifts/baby-gifts':
+    '/categories/explore/gifts-frames/wedding-occasion-gifts/baby-gifts.webp',
+  'gifts-frames/wedding-occasion-gifts/birthday-gifts':
+    '/categories/explore/gifts-frames/wedding-occasion-gifts/birthday-gifts.webp',
+  'gifts-frames/wedding-occasion-gifts/couple-gifts':
+    '/categories/explore/gifts-frames/wedding-occasion-gifts/couple-gifts.webp',
+  'gifts-frames/wedding-occasion-gifts/festive-gifts':
+    '/categories/explore/gifts-frames/wedding-occasion-gifts/festive-gifts.webp',
+  'gifts-frames/wedding-occasion-gifts/wedding-gift-sets':
+    '/categories/explore/gifts-frames/wedding-occasion-gifts/wedding-gift-sets.webp',
   hardwares: '/categories/explore/hardwares.webp',
   'hardwares/adhesives-tapes': '/categories/explore/hardwares/adhesives-tapes.webp',
+  'hardwares/adhesives-tapes/adhesive-tapes':
+    '/categories/explore/hardwares/adhesives-tapes/adhesive-tapes.webp',
+  'hardwares/adhesives-tapes/adhesives':
+    '/categories/explore/hardwares/adhesives-tapes/adhesives.webp',
+  'hardwares/adhesives-tapes/double-sided-tapes':
+    '/categories/explore/hardwares/adhesives-tapes/double-sided-tapes.webp',
+  'hardwares/adhesives-tapes/insulation-tapes':
+    '/categories/explore/hardwares/adhesives-tapes/insulation-tapes.webp',
+  'hardwares/adhesives-tapes/packaging-tapes':
+    '/categories/explore/hardwares/adhesives-tapes/packaging-tapes.webp',
+  'hardwares/adhesives-tapes/sealants':
+    '/categories/explore/hardwares/adhesives-tapes/sealants.webp',
   'hardwares/building-hardware': '/categories/explore/hardwares/building-hardware.webp',
+  'hardwares/building-hardware/anchors':
+    '/categories/explore/hardwares/building-hardware/anchors.webp',
+  'hardwares/building-hardware/brackets':
+    '/categories/explore/hardwares/building-hardware/brackets.webp',
+  'hardwares/building-hardware/fasteners':
+    '/categories/explore/hardwares/building-hardware/fasteners.webp',
+  'hardwares/building-hardware/nails': '/categories/explore/hardwares/building-hardware/nails.webp',
+  'hardwares/building-hardware/screws':
+    '/categories/explore/hardwares/building-hardware/screws.webp',
   'hardwares/clamps': '/categories/explore/hardwares/clamps.webp',
   'hardwares/door-cabinet-handles': '/categories/explore/hardwares/door-cabinet-handles.webp',
+  'hardwares/door-cabinet-handles/brackets':
+    '/categories/explore/hardwares/door-cabinet-handles/brackets.webp',
+  'hardwares/door-cabinet-handles/cabinet-handles':
+    '/categories/explore/hardwares/door-cabinet-handles/cabinet-handles.webp',
+  'hardwares/door-cabinet-handles/door-handles':
+    '/categories/explore/hardwares/door-cabinet-handles/door-handles.webp',
+  'hardwares/door-cabinet-handles/hinges':
+    '/categories/explore/hardwares/door-cabinet-handles/hinges.webp',
+  'hardwares/door-cabinet-handles/hooks':
+    '/categories/explore/hardwares/door-cabinet-handles/hooks.webp',
+  'hardwares/door-cabinet-handles/knobs':
+    '/categories/explore/hardwares/door-cabinet-handles/knobs.webp',
+  'hardwares/door-cabinet-handles/pull-handles':
+    '/categories/explore/hardwares/door-cabinet-handles/pull-handles.webp',
   'hardwares/door-locks': '/categories/explore/hardwares/door-locks.webp',
+  'hardwares/door-locks/cylinder-locks':
+    '/categories/explore/hardwares/door-locks/cylinder-locks.webp',
+  'hardwares/door-locks/door-stoppers':
+    '/categories/explore/hardwares/door-locks/door-stoppers.webp',
+  'hardwares/door-locks/latches': '/categories/explore/hardwares/door-locks/latches.webp',
+  'hardwares/door-locks/mortise-locks':
+    '/categories/explore/hardwares/door-locks/mortise-locks.webp',
+  'hardwares/door-locks/padlocks': '/categories/explore/hardwares/door-locks/padlocks.webp',
+  'hardwares/door-locks/tower-bolts': '/categories/explore/hardwares/door-locks/tower-bolts.webp',
   'hardwares/fasteners': '/categories/explore/hardwares/fasteners.webp',
+  'hardwares/fasteners/anchors': '/categories/explore/hardwares/fasteners/anchors.webp',
+  'hardwares/fasteners/bolts': '/categories/explore/hardwares/fasteners/bolts.webp',
+  'hardwares/fasteners/nails': '/categories/explore/hardwares/fasteners/nails.webp',
+  'hardwares/fasteners/nuts': '/categories/explore/hardwares/fasteners/nuts.webp',
+  'hardwares/fasteners/rivets': '/categories/explore/hardwares/fasteners/rivets.webp',
+  'hardwares/fasteners/screws': '/categories/explore/hardwares/fasteners/screws.webp',
   'hardwares/furniture-fittings': '/categories/explore/hardwares/furniture-fittings.webp',
+  'hardwares/furniture-fittings/castors':
+    '/categories/explore/hardwares/furniture-fittings/castors.webp',
+  'hardwares/furniture-fittings/castors-wheels':
+    '/categories/explore/hardwares/furniture-fittings/castors-wheels.webp',
+  'hardwares/furniture-fittings/drawer-slides':
+    '/categories/explore/hardwares/furniture-fittings/drawer-slides.webp',
+  'hardwares/furniture-fittings/handles':
+    '/categories/explore/hardwares/furniture-fittings/handles.webp',
+  'hardwares/furniture-fittings/hinges':
+    '/categories/explore/hardwares/furniture-fittings/hinges.webp',
   'hardwares/ropes-chains': '/categories/explore/hardwares/ropes-chains.webp',
+  'hardwares/ropes-chains/chains': '/categories/explore/hardwares/ropes-chains/chains.webp',
+  'hardwares/ropes-chains/cotton-ropes':
+    '/categories/explore/hardwares/ropes-chains/cotton-ropes.webp',
+  'hardwares/ropes-chains/nylon-ropes':
+    '/categories/explore/hardwares/ropes-chains/nylon-ropes.webp',
+  'hardwares/ropes-chains/wire-ropes': '/categories/explore/hardwares/ropes-chains/wire-ropes.webp',
   'hardwares/safety-hardware': '/categories/explore/hardwares/safety-hardware.webp',
+  'hardwares/safety-hardware/safety-gloves':
+    '/categories/explore/hardwares/safety-hardware/safety-gloves.webp',
+  'hardwares/safety-hardware/safety-goggles':
+    '/categories/explore/hardwares/safety-hardware/safety-goggles.webp',
+  'hardwares/safety-hardware/safety-helmets':
+    '/categories/explore/hardwares/safety-hardware/safety-helmets.webp',
   'home-appliances': '/categories/explore/home-appliances.webp',
   'home-appliances/air-conditioners': '/categories/explore/home-appliances/air-conditioners.webp',
+  'home-appliances/air-conditioners/ac-accessories':
+    '/categories/explore/home-appliances/air-conditioners/ac-accessories.webp',
+  'home-appliances/air-conditioners/air-coolers':
+    '/categories/explore/home-appliances/air-conditioners/air-coolers.webp',
+  'home-appliances/air-conditioners/fans':
+    '/categories/explore/home-appliances/air-conditioners/fans.webp',
+  'home-appliances/air-conditioners/portable-ac':
+    '/categories/explore/home-appliances/air-conditioners/portable-ac.webp',
+  'home-appliances/air-conditioners/split-ac':
+    '/categories/explore/home-appliances/air-conditioners/split-ac.webp',
+  'home-appliances/air-conditioners/window-ac':
+    '/categories/explore/home-appliances/air-conditioners/window-ac.webp',
   'home-appliances/air-purifiers': '/categories/explore/home-appliances/air-purifiers.webp',
+  'home-appliances/air-purifiers/dehumidifiers':
+    '/categories/explore/home-appliances/air-purifiers/dehumidifiers.webp',
+  'home-appliances/air-purifiers/humidifiers':
+    '/categories/explore/home-appliances/air-purifiers/humidifiers.webp',
   'home-appliances/chimneys': '/categories/explore/home-appliances/chimneys.webp',
   'home-appliances/cooking-appliances':
     '/categories/explore/home-appliances/cooking-appliances.webp',
+  'home-appliances/cooking-appliances/convection-ovens':
+    '/categories/explore/home-appliances/cooking-appliances/convection-ovens.webp',
+  'home-appliances/cooking-appliances/electric-kettles':
+    '/categories/explore/home-appliances/cooking-appliances/electric-kettles.webp',
+  'home-appliances/cooking-appliances/induction-cooktops':
+    '/categories/explore/home-appliances/cooking-appliances/induction-cooktops.webp',
+  'home-appliances/cooking-appliances/microwave-ovens':
+    '/categories/explore/home-appliances/cooking-appliances/microwave-ovens.webp',
+  'home-appliances/cooking-appliances/otg-ovens':
+    '/categories/explore/home-appliances/cooking-appliances/otg-ovens.webp',
   'home-appliances/dishwashers': '/categories/explore/home-appliances/dishwashers.webp',
   'home-appliances/irons': '/categories/explore/home-appliances/irons.webp',
   'home-appliances/mixer-grinders': '/categories/explore/home-appliances/mixer-grinders.webp',
+  'home-appliances/mixer-grinders/food-processors':
+    '/categories/explore/home-appliances/mixer-grinders/food-processors.webp',
+  'home-appliances/mixer-grinders/hand-blenders':
+    '/categories/explore/home-appliances/mixer-grinders/hand-blenders.webp',
+  'home-appliances/mixer-grinders/juicers':
+    '/categories/explore/home-appliances/mixer-grinders/juicers.webp',
+  'home-appliances/mixer-grinders/wet-grinders':
+    '/categories/explore/home-appliances/mixer-grinders/wet-grinders.webp',
   'home-appliances/refrigerators': '/categories/explore/home-appliances/refrigerators.webp',
   'home-appliances/room-heaters': '/categories/explore/home-appliances/room-heaters.webp',
   'home-appliances/sewing-machines': '/categories/explore/home-appliances/sewing-machines.webp',
   'home-appliances/small-kitchen-appliances':
     '/categories/explore/home-appliances/small-kitchen-appliances.webp',
+  'home-appliances/small-kitchen-appliances/air-fryers':
+    '/categories/explore/home-appliances/small-kitchen-appliances/air-fryers.webp',
+  'home-appliances/small-kitchen-appliances/electric-cookers':
+    '/categories/explore/home-appliances/small-kitchen-appliances/electric-cookers.webp',
+  'home-appliances/small-kitchen-appliances/rice-cookers':
+    '/categories/explore/home-appliances/small-kitchen-appliances/rice-cookers.webp',
+  'home-appliances/small-kitchen-appliances/sandwich-makers':
+    '/categories/explore/home-appliances/small-kitchen-appliances/sandwich-makers.webp',
+  'home-appliances/small-kitchen-appliances/toasters':
+    '/categories/explore/home-appliances/small-kitchen-appliances/toasters.webp',
   'home-appliances/vacuum-cleaners': '/categories/explore/home-appliances/vacuum-cleaners.webp',
+  'home-appliances/vacuum-cleaners/canister':
+    '/categories/explore/home-appliances/vacuum-cleaners/canister.webp',
+  'home-appliances/vacuum-cleaners/robot-vacuum':
+    '/categories/explore/home-appliances/vacuum-cleaners/robot-vacuum.webp',
+  'home-appliances/vacuum-cleaners/upright':
+    '/categories/explore/home-appliances/vacuum-cleaners/upright.webp',
+  'home-appliances/vacuum-cleaners/wet-dry':
+    '/categories/explore/home-appliances/vacuum-cleaners/wet-dry.webp',
   'home-appliances/washing-machines': '/categories/explore/home-appliances/washing-machines.webp',
   'home-appliances/water-heaters': '/categories/explore/home-appliances/water-heaters.webp',
+  'home-appliances/water-heaters/geysers':
+    '/categories/explore/home-appliances/water-heaters/geysers.webp',
+  'home-appliances/water-heaters/instant-water-heaters':
+    '/categories/explore/home-appliances/water-heaters/instant-water-heaters.webp',
+  'home-appliances/water-heaters/storage-water-heaters':
+    '/categories/explore/home-appliances/water-heaters/storage-water-heaters.webp',
   'home-appliances/water-purifiers': '/categories/explore/home-appliances/water-purifiers.webp',
+  'home-appliances/water-purifiers/ro-purifiers':
+    '/categories/explore/home-appliances/water-purifiers/ro-purifiers.webp',
+  'home-appliances/water-purifiers/ro-uv-purifiers':
+    '/categories/explore/home-appliances/water-purifiers/ro-uv-purifiers.webp',
+  'home-appliances/water-purifiers/uf-purifiers':
+    '/categories/explore/home-appliances/water-purifiers/uf-purifiers.webp',
+  'home-appliances/water-purifiers/uv-purifiers':
+    '/categories/explore/home-appliances/water-purifiers/uv-purifiers.webp',
   'home-furnishing': '/categories/explore/home-furnishing.webp',
   'home-furnishing/aprons': '/categories/explore/home-furnishing/aprons.webp',
   'home-furnishing/bed-linen': '/categories/explore/home-furnishing/bed-linen.webp',
+  'home-furnishing/bed-linen/bed-covers':
+    '/categories/explore/home-furnishing/bed-linen/bed-covers.webp',
+  'home-furnishing/bed-linen/bedsheet-sets':
+    '/categories/explore/home-furnishing/bed-linen/bedsheet-sets.webp',
+  'home-furnishing/bed-linen/fitted-sheets':
+    '/categories/explore/home-furnishing/bed-linen/fitted-sheets.webp',
+  'home-furnishing/bed-linen/flat-sheets':
+    '/categories/explore/home-furnishing/bed-linen/flat-sheets.webp',
+  'home-furnishing/bed-linen/mattress-protectors':
+    '/categories/explore/home-furnishing/bed-linen/mattress-protectors.webp',
   'home-furnishing/blankets': '/categories/explore/home-furnishing/blankets.webp',
+  'home-furnishing/blankets/comforters':
+    '/categories/explore/home-furnishing/blankets/comforters.webp',
+  'home-furnishing/blankets/dohars': '/categories/explore/home-furnishing/blankets/dohars.webp',
+  'home-furnishing/blankets/fleece-blankets':
+    '/categories/explore/home-furnishing/blankets/fleece-blankets.webp',
+  'home-furnishing/blankets/quilts': '/categories/explore/home-furnishing/blankets/quilts.webp',
   'home-furnishing/curtains': '/categories/explore/home-furnishing/curtains.webp',
+  'home-furnishing/curtains/blackout-curtains':
+    '/categories/explore/home-furnishing/curtains/blackout-curtains.webp',
+  'home-furnishing/curtains/door-curtains':
+    '/categories/explore/home-furnishing/curtains/door-curtains.webp',
+  'home-furnishing/curtains/sheer-curtains':
+    '/categories/explore/home-furnishing/curtains/sheer-curtains.webp',
+  'home-furnishing/curtains/window-curtains':
+    '/categories/explore/home-furnishing/curtains/window-curtains.webp',
   'home-furnishing/cushions-pillows': '/categories/explore/home-furnishing/cushions-pillows.webp',
+  'home-furnishing/cushions-pillows/cushion-covers':
+    '/categories/explore/home-furnishing/cushions-pillows/cushion-covers.webp',
+  'home-furnishing/cushions-pillows/cushions':
+    '/categories/explore/home-furnishing/cushions-pillows/cushions.webp',
+  'home-furnishing/cushions-pillows/memory-foam-pillows':
+    '/categories/explore/home-furnishing/cushions-pillows/memory-foam-pillows.webp',
+  'home-furnishing/cushions-pillows/pillow-covers':
+    '/categories/explore/home-furnishing/cushions-pillows/pillow-covers.webp',
+  'home-furnishing/cushions-pillows/pillow-protectors':
+    '/categories/explore/home-furnishing/cushions-pillows/pillow-protectors.webp',
+  'home-furnishing/cushions-pillows/sleeping-pillows':
+    '/categories/explore/home-furnishing/cushions-pillows/sleeping-pillows.webp',
   'home-furnishing/home-furnishing-sets':
     '/categories/explore/home-furnishing/home-furnishing-sets.webp',
   'home-furnishing/laundry-bags-mosquito-nets':
     '/categories/explore/home-furnishing/laundry-bags-mosquito-nets.webp',
+  'home-furnishing/laundry-bags-mosquito-nets/laundry-bags':
+    '/categories/explore/home-furnishing/laundry-bags-mosquito-nets/laundry-bags.webp',
+  'home-furnishing/laundry-bags-mosquito-nets/mosquito-nets':
+    '/categories/explore/home-furnishing/laundry-bags-mosquito-nets/mosquito-nets.webp',
   'home-furnishing/rugs-mats': '/categories/explore/home-furnishing/rugs-mats.webp',
+  'home-furnishing/rugs-mats/area-rugs':
+    '/categories/explore/home-furnishing/rugs-mats/area-rugs.webp',
+  'home-furnishing/rugs-mats/bath-mats':
+    '/categories/explore/home-furnishing/rugs-mats/bath-mats.webp',
+  'home-furnishing/rugs-mats/carpets': '/categories/explore/home-furnishing/rugs-mats/carpets.webp',
+  'home-furnishing/rugs-mats/door-mats':
+    '/categories/explore/home-furnishing/rugs-mats/door-mats.webp',
+  'home-furnishing/rugs-mats/mats': '/categories/explore/home-furnishing/rugs-mats/mats.webp',
+  'home-furnishing/rugs-mats/runner-rugs':
+    '/categories/explore/home-furnishing/rugs-mats/runner-rugs.webp',
   'home-furnishing/sofa-chair-covers': '/categories/explore/home-furnishing/sofa-chair-covers.webp',
+  'home-furnishing/sofa-chair-covers/chair-covers':
+    '/categories/explore/home-furnishing/sofa-chair-covers/chair-covers.webp',
+  'home-furnishing/sofa-chair-covers/cushion-covers':
+    '/categories/explore/home-furnishing/sofa-chair-covers/cushion-covers.webp',
+  'home-furnishing/sofa-chair-covers/recliner-covers':
+    '/categories/explore/home-furnishing/sofa-chair-covers/recliner-covers.webp',
+  'home-furnishing/sofa-chair-covers/sofa-covers':
+    '/categories/explore/home-furnishing/sofa-chair-covers/sofa-covers.webp',
   'home-furnishing/table-linen': '/categories/explore/home-furnishing/table-linen.webp',
+  'home-furnishing/table-linen/table-cloths':
+    '/categories/explore/home-furnishing/table-linen/table-cloths.webp',
+  'home-furnishing/table-linen/table-runners':
+    '/categories/explore/home-furnishing/table-linen/table-runners.webp',
   'home-furnishing/towels': '/categories/explore/home-furnishing/towels.webp',
+  'home-furnishing/towels/bath-sheets':
+    '/categories/explore/home-furnishing/towels/bath-sheets.webp',
+  'home-furnishing/towels/bath-towels':
+    '/categories/explore/home-furnishing/towels/bath-towels.webp',
+  'home-furnishing/towels/face-towels':
+    '/categories/explore/home-furnishing/towels/face-towels.webp',
+  'home-furnishing/towels/hand-towels':
+    '/categories/explore/home-furnishing/towels/hand-towels.webp',
+  'home-furnishing/towels/kitchen-towels':
+    '/categories/explore/home-furnishing/towels/kitchen-towels.webp',
   kitchenware: '/categories/explore/kitchenware.webp',
   'kitchenware/cookware': '/categories/explore/kitchenware/cookware.webp',
+  'kitchenware/cookware/casseroles': '/categories/explore/kitchenware/cookware/casseroles.webp',
+  'kitchenware/cookware/frying-pans': '/categories/explore/kitchenware/cookware/frying-pans.webp',
+  'kitchenware/cookware/kadhai': '/categories/explore/kitchenware/cookware/kadhai.webp',
+  'kitchenware/cookware/pots': '/categories/explore/kitchenware/cookware/pots.webp',
+  'kitchenware/cookware/sauce-pans': '/categories/explore/kitchenware/cookware/sauce-pans.webp',
+  'kitchenware/cookware/tawas': '/categories/explore/kitchenware/cookware/tawas.webp',
   'kitchenware/crockery': '/categories/explore/kitchenware/crockery.webp',
   'kitchenware/crockery/casseroles': '/categories/explore/kitchenware/crockery/casseroles.webp',
+  'kitchenware/crockery/coffee-mugs': '/categories/explore/kitchenware/crockery/coffee-mugs.webp',
+  'kitchenware/crockery/condiment-sets':
+    '/categories/explore/kitchenware/crockery/condiment-sets.webp',
   'kitchenware/crockery/crockery-organizers':
     '/categories/explore/kitchenware/crockery/crockery-organizers.webp',
   'kitchenware/crockery/dinner-plates':
@@ -1989,28 +3422,168 @@ export const CATEGORY_IMAGE_PATHS: CategoryImagePaths = {
   'kitchenware/crockery/spoon-sets': '/categories/explore/kitchenware/crockery/spoon-sets.webp',
   'kitchenware/crockery/stoneware': '/categories/explore/kitchenware/crockery/stoneware.webp',
   'kitchenware/crockery/storage-jars': '/categories/explore/kitchenware/crockery/storage-jars.webp',
+  'kitchenware/crockery/tea-cups': '/categories/explore/kitchenware/crockery/tea-cups.webp',
   'kitchenware/crockery/tumblers': '/categories/explore/kitchenware/crockery/tumblers.webp',
   'kitchenware/dish-racks': '/categories/explore/kitchenware/dish-racks.webp',
+  'kitchenware/dish-racks/cutlery-holders':
+    '/categories/explore/kitchenware/dish-racks/cutlery-holders.webp',
+  'kitchenware/dish-racks/dish-drainers':
+    '/categories/explore/kitchenware/dish-racks/dish-drainers.webp',
+  'kitchenware/dish-racks/plate-racks':
+    '/categories/explore/kitchenware/dish-racks/plate-racks.webp',
   'kitchenware/disposable-items': '/categories/explore/kitchenware/disposable-items.webp',
+  'kitchenware/disposable-items/aluminium-foil':
+    '/categories/explore/kitchenware/disposable-items/aluminium-foil.webp',
+  'kitchenware/disposable-items/biodegradable-disposables':
+    '/categories/explore/kitchenware/disposable-items/biodegradable-disposables.webp',
+  'kitchenware/disposable-items/cling-film':
+    '/categories/explore/kitchenware/disposable-items/cling-film.webp',
+  'kitchenware/disposable-items/disposable-aprons':
+    '/categories/explore/kitchenware/disposable-items/disposable-aprons.webp',
+  'kitchenware/disposable-items/disposable-forks':
+    '/categories/explore/kitchenware/disposable-items/disposable-forks.webp',
+  'kitchenware/disposable-items/disposable-glasses':
+    '/categories/explore/kitchenware/disposable-items/disposable-glasses.webp',
+  'kitchenware/disposable-items/disposable-knives':
+    '/categories/explore/kitchenware/disposable-items/disposable-knives.webp',
+  'kitchenware/disposable-items/foil-containers':
+    '/categories/explore/kitchenware/disposable-items/foil-containers.webp',
+  'kitchenware/disposable-items/food-wrapping-sheets':
+    '/categories/explore/kitchenware/disposable-items/food-wrapping-sheets.webp',
   'kitchenware/disposable-items/garbage-bags':
     '/categories/explore/kitchenware/disposable-items/garbage-bags.webp',
+  'kitchenware/disposable-items/hair-caps':
+    '/categories/explore/kitchenware/disposable-items/hair-caps.webp',
+  'kitchenware/disposable-items/paper-bowls':
+    '/categories/explore/kitchenware/disposable-items/paper-bowls.webp',
+  'kitchenware/disposable-items/paper-cups':
+    '/categories/explore/kitchenware/disposable-items/paper-cups.webp',
+  'kitchenware/disposable-items/paper-napkins':
+    '/categories/explore/kitchenware/disposable-items/paper-napkins.webp',
+  'kitchenware/disposable-items/paper-plates':
+    '/categories/explore/kitchenware/disposable-items/paper-plates.webp',
+  'kitchenware/disposable-items/party-disposable-sets':
+    '/categories/explore/kitchenware/disposable-items/party-disposable-sets.webp',
+  'kitchenware/disposable-items/plastic-cups':
+    '/categories/explore/kitchenware/disposable-items/plastic-cups.webp',
+  'kitchenware/disposable-items/plastic-plates':
+    '/categories/explore/kitchenware/disposable-items/plastic-plates.webp',
+  'kitchenware/disposable-items/shoe-covers':
+    '/categories/explore/kitchenware/disposable-items/shoe-covers.webp',
+  'kitchenware/disposable-items/straws':
+    '/categories/explore/kitchenware/disposable-items/straws.webp',
   'kitchenware/disposable-items/table-covers':
     '/categories/explore/kitchenware/disposable-items/table-covers.webp',
+  'kitchenware/disposable-items/takeaway-containers':
+    '/categories/explore/kitchenware/disposable-items/takeaway-containers.webp',
   'kitchenware/disposable-items/tissue-paper':
     '/categories/explore/kitchenware/disposable-items/tissue-paper.webp',
+  'kitchenware/disposable-items/wooden-cutlery':
+    '/categories/explore/kitchenware/disposable-items/wooden-cutlery.webp',
   'kitchenware/kitchen-organizers': '/categories/explore/kitchenware/kitchen-organizers.webp',
   'kitchenware/kitchen-tools': '/categories/explore/kitchenware/kitchen-tools.webp',
+  'kitchenware/kitchen-tools/colanders':
+    '/categories/explore/kitchenware/kitchen-tools/colanders.webp',
+  'kitchenware/kitchen-tools/cutting-boards':
+    '/categories/explore/kitchenware/kitchen-tools/cutting-boards.webp',
+  'kitchenware/kitchen-tools/graters': '/categories/explore/kitchenware/kitchen-tools/graters.webp',
+  'kitchenware/kitchen-tools/ladles': '/categories/explore/kitchenware/kitchen-tools/ladles.webp',
+  'kitchenware/kitchen-tools/measuring-cups':
+    '/categories/explore/kitchenware/kitchen-tools/measuring-cups.webp',
+  'kitchenware/kitchen-tools/measuring-spoons':
+    '/categories/explore/kitchenware/kitchen-tools/measuring-spoons.webp',
+  'kitchenware/kitchen-tools/spatulas':
+    '/categories/explore/kitchenware/kitchen-tools/spatulas.webp',
+  'kitchenware/kitchen-tools/strainers':
+    '/categories/explore/kitchenware/kitchen-tools/strainers.webp',
+  'kitchenware/kitchen-tools/tongs': '/categories/explore/kitchenware/kitchen-tools/tongs.webp',
+  'kitchenware/kitchen-tools/whisks': '/categories/explore/kitchenware/kitchen-tools/whisks.webp',
   'kitchenware/knives': '/categories/explore/kitchenware/knives.webp',
+  'kitchenware/knives/chef-knives': '/categories/explore/kitchenware/knives/chef-knives.webp',
+  'kitchenware/knives/choppers': '/categories/explore/kitchenware/knives/choppers.webp',
+  'kitchenware/knives/kitchen-knife-sets':
+    '/categories/explore/kitchenware/knives/kitchen-knife-sets.webp',
+  'kitchenware/knives/knife-sets': '/categories/explore/kitchenware/knives/knife-sets.webp',
+  'kitchenware/knives/peelers': '/categories/explore/kitchenware/knives/peelers.webp',
+  'kitchenware/knives/slicers': '/categories/explore/kitchenware/knives/slicers.webp',
+  'kitchenware/knives/vegetable-knives':
+    '/categories/explore/kitchenware/knives/vegetable-knives.webp',
   'kitchenware/plastic-household': '/categories/explore/kitchenware/plastic-household.webp',
+  'kitchenware/plastic-household/clothes-hangers':
+    '/categories/explore/kitchenware/plastic-household/clothes-hangers.webp',
+  'kitchenware/plastic-household/drawer-organizers':
+    '/categories/explore/kitchenware/plastic-household/drawer-organizers.webp',
+  'kitchenware/plastic-household/dustbins':
+    '/categories/explore/kitchenware/plastic-household/dustbins.webp',
+  'kitchenware/plastic-household/food-containers':
+    '/categories/explore/kitchenware/plastic-household/food-containers.webp',
+  'kitchenware/plastic-household/household-utility-sets':
+    '/categories/explore/kitchenware/plastic-household/household-utility-sets.webp',
+  'kitchenware/plastic-household/kitchen-organizers':
+    '/categories/explore/kitchenware/plastic-household/kitchen-organizers.webp',
+  'kitchenware/plastic-household/lunch-boxes':
+    '/categories/explore/kitchenware/plastic-household/lunch-boxes.webp',
+  'kitchenware/plastic-household/mugs':
+    '/categories/explore/kitchenware/plastic-household/mugs.webp',
+  'kitchenware/plastic-household/plastic-bins':
+    '/categories/explore/kitchenware/plastic-household/plastic-bins.webp',
   'kitchenware/plastic-household/plastic-chairs':
     '/categories/explore/kitchenware/plastic-household/plastic-chairs.webp',
+  'kitchenware/plastic-household/plastic-crates':
+    '/categories/explore/kitchenware/plastic-household/plastic-crates.webp',
+  'kitchenware/plastic-household/plastic-drums':
+    '/categories/explore/kitchenware/plastic-household/plastic-drums.webp',
+  'kitchenware/plastic-household/plastic-jars':
+    '/categories/explore/kitchenware/plastic-household/plastic-jars.webp',
   'kitchenware/plastic-household/plastic-mats':
     '/categories/explore/kitchenware/plastic-household/plastic-mats.webp',
+  'kitchenware/plastic-household/plastic-racks':
+    '/categories/explore/kitchenware/plastic-household/plastic-racks.webp',
+  'kitchenware/plastic-household/plastic-shelves':
+    '/categories/explore/kitchenware/plastic-household/plastic-shelves.webp',
+  'kitchenware/plastic-household/plastic-storage-boxes':
+    '/categories/explore/kitchenware/plastic-household/plastic-storage-boxes.webp',
   'kitchenware/plastic-household/plastic-tables':
     '/categories/explore/kitchenware/plastic-household/plastic-tables.webp',
+  'kitchenware/plastic-household/plastic-trays':
+    '/categories/explore/kitchenware/plastic-household/plastic-trays.webp',
+  'kitchenware/plastic-household/plastic-tubs':
+    '/categories/explore/kitchenware/plastic-household/plastic-tubs.webp',
+  'kitchenware/plastic-household/spice-containers':
+    '/categories/explore/kitchenware/plastic-household/spice-containers.webp',
+  'kitchenware/plastic-household/storage-baskets':
+    '/categories/explore/kitchenware/plastic-household/storage-baskets.webp',
+  'kitchenware/plastic-household/water-bottles':
+    '/categories/explore/kitchenware/plastic-household/water-bottles.webp',
+  'kitchenware/plastic-household/water-buckets':
+    '/categories/explore/kitchenware/plastic-household/water-buckets.webp',
   'kitchenware/pressure-cookers': '/categories/explore/kitchenware/pressure-cookers.webp',
+  'kitchenware/pressure-cookers/cooker-accessories':
+    '/categories/explore/kitchenware/pressure-cookers/cooker-accessories.webp',
+  'kitchenware/pressure-cookers/cooker-handles':
+    '/categories/explore/kitchenware/pressure-cookers/cooker-handles.webp',
+  'kitchenware/pressure-cookers/safety-valves':
+    '/categories/explore/kitchenware/pressure-cookers/safety-valves.webp',
+  'kitchenware/pressure-cookers/spare-gaskets':
+    '/categories/explore/kitchenware/pressure-cookers/spare-gaskets.webp',
   'kitchenware/stainless-steel': '/categories/explore/kitchenware/stainless-steel.webp',
+  'kitchenware/stainless-steel/stainless-steel-containers':
+    '/categories/explore/kitchenware/stainless-steel/stainless-steel-containers.webp',
+  'kitchenware/stainless-steel/stainless-steel-utensils':
+    '/categories/explore/kitchenware/stainless-steel/stainless-steel-utensils.webp',
   'kitchenware/storage-containers': '/categories/explore/kitchenware/storage-containers.webp',
+  'kitchenware/storage-containers/airtight-containers':
+    '/categories/explore/kitchenware/storage-containers/airtight-containers.webp',
+  'kitchenware/storage-containers/food-storage-jars':
+    '/categories/explore/kitchenware/storage-containers/food-storage-jars.webp',
+  'kitchenware/storage-containers/lunch-boxes':
+    '/categories/explore/kitchenware/storage-containers/lunch-boxes.webp',
+  'kitchenware/storage-containers/plastic-bins':
+    '/categories/explore/kitchenware/storage-containers/plastic-bins.webp',
+  'kitchenware/storage-containers/spice-containers':
+    '/categories/explore/kitchenware/storage-containers/spice-containers.webp',
+  'kitchenware/storage-containers/water-bottles':
+    '/categories/explore/kitchenware/storage-containers/water-bottles.webp',
   'mobile/agri-and-gardening': '/categories/explore/mobile/agri-and-gardening.webp',
   'mobile/artificial-flowers-and-plants':
     '/categories/explore/mobile/artificial-flowers-and-plants.webp',
@@ -2043,154 +3616,795 @@ export const CATEGORY_IMAGE_PATHS: CategoryImagePaths = {
   'musical-instruments': '/categories/explore/musical-instruments.webp',
   'musical-instruments/drums-percussion':
     '/categories/explore/musical-instruments/drums-percussion.webp',
+  'musical-instruments/drums-percussion/cajon':
+    '/categories/explore/musical-instruments/drums-percussion/cajon.webp',
+  'musical-instruments/drums-percussion/cymbals':
+    '/categories/explore/musical-instruments/drums-percussion/cymbals.webp',
+  'musical-instruments/drums-percussion/drum-sets':
+    '/categories/explore/musical-instruments/drums-percussion/drum-sets.webp',
+  'musical-instruments/drums-percussion/electronic-drums':
+    '/categories/explore/musical-instruments/drums-percussion/electronic-drums.webp',
+  'musical-instruments/drums-percussion/percussion-instruments':
+    '/categories/explore/musical-instruments/drums-percussion/percussion-instruments.webp',
+  'musical-instruments/drums-percussion/snare-drums':
+    '/categories/explore/musical-instruments/drums-percussion/snare-drums.webp',
+  'musical-instruments/drums-percussion/tabla':
+    '/categories/explore/musical-instruments/drums-percussion/tabla.webp',
   'musical-instruments/guitars': '/categories/explore/musical-instruments/guitars.webp',
+  'musical-instruments/guitars/acoustic-guitars':
+    '/categories/explore/musical-instruments/guitars/acoustic-guitars.webp',
+  'musical-instruments/guitars/bass-guitars':
+    '/categories/explore/musical-instruments/guitars/bass-guitars.webp',
+  'musical-instruments/guitars/classical-guitars':
+    '/categories/explore/musical-instruments/guitars/classical-guitars.webp',
+  'musical-instruments/guitars/electric-guitars':
+    '/categories/explore/musical-instruments/guitars/electric-guitars.webp',
+  'musical-instruments/guitars/guitar-strings':
+    '/categories/explore/musical-instruments/guitars/guitar-strings.webp',
+  'musical-instruments/guitars/picks': '/categories/explore/musical-instruments/guitars/picks.webp',
+  'musical-instruments/guitars/ukuleles':
+    '/categories/explore/musical-instruments/guitars/ukuleles.webp',
   'musical-instruments/keyboards': '/categories/explore/musical-instruments/keyboards.webp',
+  'musical-instruments/keyboards/digital-pianos':
+    '/categories/explore/musical-instruments/keyboards/digital-pianos.webp',
+  'musical-instruments/keyboards/harmoniums':
+    '/categories/explore/musical-instruments/keyboards/harmoniums.webp',
+  'musical-instruments/keyboards/keyboard-stands':
+    '/categories/explore/musical-instruments/keyboards/keyboard-stands.webp',
+  'musical-instruments/keyboards/midi-keyboards':
+    '/categories/explore/musical-instruments/keyboards/midi-keyboards.webp',
+  'musical-instruments/keyboards/pianos':
+    '/categories/explore/musical-instruments/keyboards/pianos.webp',
   'musical-instruments/music-accessories-audio':
     '/categories/explore/musical-instruments/music-accessories-audio.webp',
+  'musical-instruments/music-accessories-audio/amplifiers':
+    '/categories/explore/musical-instruments/music-accessories-audio/amplifiers.webp',
+  'musical-instruments/music-accessories-audio/cables':
+    '/categories/explore/musical-instruments/music-accessories-audio/cables.webp',
+  'musical-instruments/music-accessories-audio/dj-equipment':
+    '/categories/explore/musical-instruments/music-accessories-audio/dj-equipment.webp',
+  'musical-instruments/music-accessories-audio/instrument-cases':
+    '/categories/explore/musical-instruments/music-accessories-audio/instrument-cases.webp',
+  'musical-instruments/music-accessories-audio/instrument-stands':
+    '/categories/explore/musical-instruments/music-accessories-audio/instrument-stands.webp',
+  'musical-instruments/music-accessories-audio/karaoke-machines':
+    '/categories/explore/musical-instruments/music-accessories-audio/karaoke-machines.webp',
+  'musical-instruments/music-accessories-audio/metronomes':
+    '/categories/explore/musical-instruments/music-accessories-audio/metronomes.webp',
+  'musical-instruments/music-accessories-audio/microphones':
+    '/categories/explore/musical-instruments/music-accessories-audio/microphones.webp',
+  'musical-instruments/music-accessories-audio/stands':
+    '/categories/explore/musical-instruments/music-accessories-audio/stands.webp',
+  'musical-instruments/music-accessories-audio/tuners':
+    '/categories/explore/musical-instruments/music-accessories-audio/tuners.webp',
   'musical-instruments/musical-toys': '/categories/explore/musical-instruments/musical-toys.webp',
   'musical-instruments/string-instruments':
     '/categories/explore/musical-instruments/string-instruments.webp',
+  'musical-instruments/string-instruments/cellos':
+    '/categories/explore/musical-instruments/string-instruments/cellos.webp',
+  'musical-instruments/string-instruments/violas':
+    '/categories/explore/musical-instruments/string-instruments/violas.webp',
+  'musical-instruments/string-instruments/violin-accessories':
+    '/categories/explore/musical-instruments/string-instruments/violin-accessories.webp',
+  'musical-instruments/string-instruments/violins':
+    '/categories/explore/musical-instruments/string-instruments/violins.webp',
   'musical-instruments/wind-instruments':
     '/categories/explore/musical-instruments/wind-instruments.webp',
+  'musical-instruments/wind-instruments/mouth-organs':
+    '/categories/explore/musical-instruments/wind-instruments/mouth-organs.webp',
+  'musical-instruments/wind-instruments/saxophones':
+    '/categories/explore/musical-instruments/wind-instruments/saxophones.webp',
   'party-decorations': '/categories/explore/party-decorations.webp',
   'party-decorations/backdrop-decorations':
     '/categories/explore/party-decorations/backdrop-decorations.webp',
+  'party-decorations/backdrop-decorations/confetti':
+    '/categories/explore/party-decorations/backdrop-decorations/confetti.webp',
+  'party-decorations/backdrop-decorations/party-lights':
+    '/categories/explore/party-decorations/backdrop-decorations/party-lights.webp',
+  'party-decorations/backdrop-decorations/ribbons':
+    '/categories/explore/party-decorations/backdrop-decorations/ribbons.webp',
+  'party-decorations/backdrop-decorations/streamers':
+    '/categories/explore/party-decorations/backdrop-decorations/streamers.webp',
   'party-decorations/balloons': '/categories/explore/party-decorations/balloons.webp',
+  'party-decorations/balloons/balloon-arches':
+    '/categories/explore/party-decorations/balloons/balloon-arches.webp',
+  'party-decorations/balloons/balloon-sets':
+    '/categories/explore/party-decorations/balloons/balloon-sets.webp',
+  'party-decorations/balloons/foil-balloons':
+    '/categories/explore/party-decorations/balloons/foil-balloons.webp',
+  'party-decorations/balloons/latex-balloons':
+    '/categories/explore/party-decorations/balloons/latex-balloons.webp',
   'party-decorations/birthday-decorations':
     '/categories/explore/party-decorations/birthday-decorations.webp',
+  'party-decorations/birthday-decorations/birthday-banners':
+    '/categories/explore/party-decorations/birthday-decorations/birthday-banners.webp',
+  'party-decorations/birthday-decorations/birthday-candles':
+    '/categories/explore/party-decorations/birthday-decorations/birthday-candles.webp',
+  'party-decorations/birthday-decorations/cake-toppers':
+    '/categories/explore/party-decorations/birthday-decorations/cake-toppers.webp',
+  'party-decorations/birthday-decorations/candles':
+    '/categories/explore/party-decorations/birthday-decorations/candles.webp',
+  'party-decorations/birthday-decorations/party-hats':
+    '/categories/explore/party-decorations/birthday-decorations/party-hats.webp',
   'party-decorations/festival-decorations':
     '/categories/explore/party-decorations/festival-decorations.webp',
+  'party-decorations/festival-decorations/christmas-decorations':
+    '/categories/explore/party-decorations/festival-decorations/christmas-decorations.webp',
+  'party-decorations/festival-decorations/diwali-decorations':
+    '/categories/explore/party-decorations/festival-decorations/diwali-decorations.webp',
+  'party-decorations/festival-decorations/gift-bags':
+    '/categories/explore/party-decorations/festival-decorations/gift-bags.webp',
+  'party-decorations/festival-decorations/holi-decorations':
+    '/categories/explore/party-decorations/festival-decorations/holi-decorations.webp',
+  'party-decorations/festival-decorations/new-year-decorations':
+    '/categories/explore/party-decorations/festival-decorations/new-year-decorations.webp',
   'party-decorations/party-decoration-kits':
     '/categories/explore/party-decorations/party-decoration-kits.webp',
+  'party-decorations/party-decoration-kits/costume-props':
+    '/categories/explore/party-decorations/party-decoration-kits/costume-props.webp',
+  'party-decorations/party-decoration-kits/masks':
+    '/categories/explore/party-decorations/party-decoration-kits/masks.webp',
+  'party-decorations/party-decoration-kits/party-hats':
+    '/categories/explore/party-decorations/party-decoration-kits/party-hats.webp',
+  'party-decorations/party-decoration-kits/party-masks':
+    '/categories/explore/party-decorations/party-decoration-kits/party-masks.webp',
+  'party-decorations/party-decoration-kits/photo-booth-props':
+    '/categories/explore/party-decorations/party-decoration-kits/photo-booth-props.webp',
   'party-decorations/party-tableware': '/categories/explore/party-decorations/party-tableware.webp',
+  'party-decorations/party-tableware/disposable-cups':
+    '/categories/explore/party-decorations/party-tableware/disposable-cups.webp',
+  'party-decorations/party-tableware/disposable-plates':
+    '/categories/explore/party-decorations/party-tableware/disposable-plates.webp',
+  'party-decorations/party-tableware/table-decorations':
+    '/categories/explore/party-decorations/party-tableware/table-decorations.webp',
   'party-decorations/return-gifts': '/categories/explore/party-decorations/return-gifts.webp',
   'party-decorations/wedding-decorations':
     '/categories/explore/party-decorations/wedding-decorations.webp',
+  'party-decorations/wedding-decorations/anniversary-decorations':
+    '/categories/explore/party-decorations/wedding-decorations/anniversary-decorations.webp',
+  'party-decorations/wedding-decorations/baby-shower-decorations':
+    '/categories/explore/party-decorations/wedding-decorations/baby-shower-decorations.webp',
+  'party-decorations/wedding-decorations/banners':
+    '/categories/explore/party-decorations/wedding-decorations/banners.webp',
+  'party-decorations/wedding-decorations/table-decorations':
+    '/categories/explore/party-decorations/wedding-decorations/table-decorations.webp',
   'pet-supplies': '/categories/explore/pet-supplies.webp',
   'pet-supplies/aquariums': '/categories/explore/pet-supplies/aquariums.webp',
+  'pet-supplies/aquariums/aquarium-accessories':
+    '/categories/explore/pet-supplies/aquariums/aquarium-accessories.webp',
+  'pet-supplies/aquariums/aquarium-lights':
+    '/categories/explore/pet-supplies/aquariums/aquarium-lights.webp',
+  'pet-supplies/aquariums/filters': '/categories/explore/pet-supplies/aquariums/filters.webp',
+  'pet-supplies/aquariums/fish-tanks': '/categories/explore/pet-supplies/aquariums/fish-tanks.webp',
+  'pet-supplies/aquariums/heaters': '/categories/explore/pet-supplies/aquariums/heaters.webp',
+  'pet-supplies/aquariums/pumps': '/categories/explore/pet-supplies/aquariums/pumps.webp',
   'pet-supplies/pet-beds-houses': '/categories/explore/pet-supplies/pet-beds-houses.webp',
+  'pet-supplies/pet-beds-houses/bird-cages':
+    '/categories/explore/pet-supplies/pet-beds-houses/bird-cages.webp',
+  'pet-supplies/pet-beds-houses/cat-beds':
+    '/categories/explore/pet-supplies/pet-beds-houses/cat-beds.webp',
+  'pet-supplies/pet-beds-houses/cat-houses':
+    '/categories/explore/pet-supplies/pet-beds-houses/cat-houses.webp',
+  'pet-supplies/pet-beds-houses/dog-beds':
+    '/categories/explore/pet-supplies/pet-beds-houses/dog-beds.webp',
+  'pet-supplies/pet-beds-houses/dog-kennels':
+    '/categories/explore/pet-supplies/pet-beds-houses/dog-kennels.webp',
+  'pet-supplies/pet-beds-houses/kennels':
+    '/categories/explore/pet-supplies/pet-beds-houses/kennels.webp',
   'pet-supplies/pet-bowls-feeders': '/categories/explore/pet-supplies/pet-bowls-feeders.webp',
+  'pet-supplies/pet-bowls-feeders/automatic-feeders':
+    '/categories/explore/pet-supplies/pet-bowls-feeders/automatic-feeders.webp',
+  'pet-supplies/pet-bowls-feeders/cat-bowls':
+    '/categories/explore/pet-supplies/pet-bowls-feeders/cat-bowls.webp',
+  'pet-supplies/pet-bowls-feeders/pet-feeding-accessories':
+    '/categories/explore/pet-supplies/pet-bowls-feeders/pet-feeding-accessories.webp',
+  'pet-supplies/pet-bowls-feeders/stainless-steel-bowls':
+    '/categories/explore/pet-supplies/pet-bowls-feeders/stainless-steel-bowls.webp',
   'pet-supplies/pet-clothing': '/categories/explore/pet-supplies/pet-clothing.webp',
   'pet-supplies/pet-collars-leashes': '/categories/explore/pet-supplies/pet-collars-leashes.webp',
+  'pet-supplies/pet-collars-leashes/cat-collars':
+    '/categories/explore/pet-supplies/pet-collars-leashes/cat-collars.webp',
+  'pet-supplies/pet-collars-leashes/dog-leashes':
+    '/categories/explore/pet-supplies/pet-collars-leashes/dog-leashes.webp',
+  'pet-supplies/pet-collars-leashes/harnesses':
+    '/categories/explore/pet-supplies/pet-collars-leashes/harnesses.webp',
+  'pet-supplies/pet-collars-leashes/id-tags':
+    '/categories/explore/pet-supplies/pet-collars-leashes/id-tags.webp',
   'pet-supplies/pet-food': '/categories/explore/pet-supplies/pet-food.webp',
+  'pet-supplies/pet-food/bird-food': '/categories/explore/pet-supplies/pet-food/bird-food.webp',
+  'pet-supplies/pet-food/cat-food': '/categories/explore/pet-supplies/pet-food/cat-food.webp',
+  'pet-supplies/pet-food/dry-dog-food':
+    '/categories/explore/pet-supplies/pet-food/dry-dog-food.webp',
+  'pet-supplies/pet-food/fish-food': '/categories/explore/pet-supplies/pet-food/fish-food.webp',
+  'pet-supplies/pet-food/pet-treats': '/categories/explore/pet-supplies/pet-food/pet-treats.webp',
+  'pet-supplies/pet-food/puppy-food': '/categories/explore/pet-supplies/pet-food/puppy-food.webp',
+  'pet-supplies/pet-food/treats': '/categories/explore/pet-supplies/pet-food/treats.webp',
+  'pet-supplies/pet-food/wet-dog-food':
+    '/categories/explore/pet-supplies/pet-food/wet-dog-food.webp',
   'pet-supplies/pet-grooming': '/categories/explore/pet-supplies/pet-grooming.webp',
+  'pet-supplies/pet-grooming/brushes': '/categories/explore/pet-supplies/pet-grooming/brushes.webp',
+  'pet-supplies/pet-grooming/grooming-kits':
+    '/categories/explore/pet-supplies/pet-grooming/grooming-kits.webp',
+  'pet-supplies/pet-grooming/nail-clippers':
+    '/categories/explore/pet-supplies/pet-grooming/nail-clippers.webp',
+  'pet-supplies/pet-grooming/pet-brushes':
+    '/categories/explore/pet-supplies/pet-grooming/pet-brushes.webp',
+  'pet-supplies/pet-grooming/pet-dental-care':
+    '/categories/explore/pet-supplies/pet-grooming/pet-dental-care.webp',
+  'pet-supplies/pet-grooming/pet-shampoo':
+    '/categories/explore/pet-supplies/pet-grooming/pet-shampoo.webp',
+  'pet-supplies/pet-grooming/shampoos':
+    '/categories/explore/pet-supplies/pet-grooming/shampoos.webp',
   'pet-supplies/pet-toys': '/categories/explore/pet-supplies/pet-toys.webp',
+  'pet-supplies/pet-toys/bird-toys': '/categories/explore/pet-supplies/pet-toys/bird-toys.webp',
+  'pet-supplies/pet-toys/cat-toys': '/categories/explore/pet-supplies/pet-toys/cat-toys.webp',
+  'pet-supplies/pet-toys/chew-toys': '/categories/explore/pet-supplies/pet-toys/chew-toys.webp',
+  'pet-supplies/pet-toys/interactive-toys':
+    '/categories/explore/pet-supplies/pet-toys/interactive-toys.webp',
   'pet-supplies/pet-training': '/categories/explore/pet-supplies/pet-training.webp',
   'pet-supplies/pet-waste-bags': '/categories/explore/pet-supplies/pet-waste-bags.webp',
   'religion/aarti-puja-accessories': '/categories/explore/religion/aarti-puja-accessories.webp',
+  'religion/aarti-puja-accessories/aarti-thalis':
+    '/categories/explore/religion/aarti-puja-accessories/aarti-thalis.webp',
   'religion/aarti-puja-accessories/agarbatti-stands':
     '/categories/explore/religion/aarti-puja-accessories/agarbatti-stands.webp',
+  'religion/aarti-puja-accessories/diyas-akhand-lamps':
+    '/categories/explore/religion/aarti-puja-accessories/diyas-akhand-lamps.webp',
   'religion/aarti-puja-accessories/incense-holders':
     '/categories/explore/religion/aarti-puja-accessories/incense-holders.webp',
+  'religion/aarti-puja-accessories/kalash-panchpatra':
+    '/categories/explore/religion/aarti-puja-accessories/kalash-panchpatra.webp',
+  'religion/aarti-puja-accessories/puja-bells':
+    '/categories/explore/religion/aarti-puja-accessories/puja-bells.webp',
+  'religion/aarti-puja-accessories/puja-chowki-aasan':
+    '/categories/explore/religion/aarti-puja-accessories/puja-chowki-aasan.webp',
+  'religion/aarti-puja-accessories/puja-thali-sets':
+    '/categories/explore/religion/aarti-puja-accessories/puja-thali-sets.webp',
   'religion/buddhist-jain-items': '/categories/explore/religion/buddhist-jain-items.webp',
   'religion/buddhist-jain-items/bibles':
     '/categories/explore/religion/buddhist-jain-items/bibles.webp',
+  'religion/buddhist-jain-items/buddha-statues':
+    '/categories/explore/religion/buddhist-jain-items/buddha-statues.webp',
   'religion/buddhist-jain-items/crosses-crucifixes':
     '/categories/explore/religion/buddhist-jain-items/crosses-crucifixes.webp',
+  'religion/buddhist-jain-items/jain-idols':
+    '/categories/explore/religion/buddhist-jain-items/jain-idols.webp',
   'religion/buddhist-jain-items/jesus-mary-statues':
     '/categories/explore/religion/buddhist-jain-items/jesus-mary-statues.webp',
+  'religion/buddhist-jain-items/prayer-wheels':
+    '/categories/explore/religion/buddhist-jain-items/prayer-wheels.webp',
   'religion/buddhist-jain-items/rosary-beads':
     '/categories/explore/religion/buddhist-jain-items/rosary-beads.webp',
+  'religion/buddhist-jain-items/singing-bowls':
+    '/categories/explore/religion/buddhist-jain-items/singing-bowls.webp',
+  'religion/buddhist-jain-items/tibetan-thangka':
+    '/categories/explore/religion/buddhist-jain-items/tibetan-thangka.webp',
   'religion/festival-decor': '/categories/explore/religion/festival-decor.webp',
+  'religion/festival-decor/diwali-diyas':
+    '/categories/explore/religion/festival-decor/diwali-diyas.webp',
+  'religion/festival-decor/festival-wall-decor':
+    '/categories/explore/religion/festival-decor/festival-wall-decor.webp',
+  'religion/festival-decor/rangoli': '/categories/explore/religion/festival-decor/rangoli.webp',
+  'religion/festival-decor/toran-door-hangings':
+    '/categories/explore/religion/festival-decor/toran-door-hangings.webp',
   'religion/islamic-items': '/categories/explore/religion/islamic-items.webp',
+  'religion/islamic-items/attars': '/categories/explore/religion/islamic-items/attars.webp',
+  'religion/islamic-items/prayer-caps':
+    '/categories/explore/religion/islamic-items/prayer-caps.webp',
+  'religion/islamic-items/prayer-mats':
+    '/categories/explore/religion/islamic-items/prayer-mats.webp',
+  'religion/islamic-items/quran': '/categories/explore/religion/islamic-items/quran.webp',
+  'religion/islamic-items/quran-stands-rehal':
+    '/categories/explore/religion/islamic-items/quran-stands-rehal.webp',
+  'religion/islamic-items/tasbih': '/categories/explore/religion/islamic-items/tasbih.webp',
   'religion/malas-rosaries': '/categories/explore/religion/malas-rosaries.webp',
+  'religion/malas-rosaries/crystal-malas':
+    '/categories/explore/religion/malas-rosaries/crystal-malas.webp',
+  'religion/malas-rosaries/japa-mala-bags-gomukhi':
+    '/categories/explore/religion/malas-rosaries/japa-mala-bags-gomukhi.webp',
+  'religion/malas-rosaries/rudraksha-malas':
+    '/categories/explore/religion/malas-rosaries/rudraksha-malas.webp',
+  'religion/malas-rosaries/sandalwood-malas':
+    '/categories/explore/religion/malas-rosaries/sandalwood-malas.webp',
+  'religion/malas-rosaries/tulsi-malas':
+    '/categories/explore/religion/malas-rosaries/tulsi-malas.webp',
   'religion/religious-books': '/categories/explore/religion/religious-books.webp',
+  'religion/religious-books/bhagavad-gita':
+    '/categories/explore/religion/religious-books/bhagavad-gita.webp',
+  'religion/religious-books/hanuman-chalisa-aarti-sangrah':
+    '/categories/explore/religion/religious-books/hanuman-chalisa-aarti-sangrah.webp',
+  'religion/religious-books/puranas-stotras':
+    '/categories/explore/religion/religious-books/puranas-stotras.webp',
+  'religion/religious-books/ramayana-mahabharata':
+    '/categories/explore/religion/religious-books/ramayana-mahabharata.webp',
   'religion/religious-jewellery': '/categories/explore/religion/religious-jewellery.webp',
+  'religion/religious-jewellery/kadas-religious':
+    '/categories/explore/religion/religious-jewellery/kadas-religious.webp',
+  'religion/religious-jewellery/om-pendants':
+    '/categories/explore/religion/religious-jewellery/om-pendants.webp',
+  'religion/religious-jewellery/religious-pendants':
+    '/categories/explore/religion/religious-jewellery/religious-pendants.webp',
+  'religion/religious-jewellery/rudraksha-bracelets':
+    '/categories/explore/religion/religious-jewellery/rudraksha-bracelets.webp',
   'religion/religious-posters-frames': '/categories/explore/religion/religious-posters-frames.webp',
+  'religion/religious-posters-frames/god-photo-frames':
+    '/categories/explore/religion/religious-posters-frames/god-photo-frames.webp',
   'sports-fitness': '/categories/explore/sports-fitness.webp',
   'sports-fitness/badminton': '/categories/explore/sports-fitness/badminton.webp',
+  'sports-fitness/badminton/badminton-rackets':
+    '/categories/explore/sports-fitness/badminton/badminton-rackets.webp',
+  'sports-fitness/badminton/badminton-shuttlecocks':
+    '/categories/explore/sports-fitness/badminton/badminton-shuttlecocks.webp',
+  'sports-fitness/badminton/grips': '/categories/explore/sports-fitness/badminton/grips.webp',
+  'sports-fitness/badminton/nets': '/categories/explore/sports-fitness/badminton/nets.webp',
+  'sports-fitness/badminton/shuttlecocks':
+    '/categories/explore/sports-fitness/badminton/shuttlecocks.webp',
   'sports-fitness/basketball': '/categories/explore/sports-fitness/basketball.webp',
   'sports-fitness/boxing': '/categories/explore/sports-fitness/boxing.webp',
   'sports-fitness/carrom': '/categories/explore/sports-fitness/carrom.webp',
   'sports-fitness/chess': '/categories/explore/sports-fitness/chess.webp',
   'sports-fitness/cricket': '/categories/explore/sports-fitness/cricket.webp',
+  'sports-fitness/cricket/batting-gloves':
+    '/categories/explore/sports-fitness/cricket/batting-gloves.webp',
+  'sports-fitness/cricket/cricket-accessories':
+    '/categories/explore/sports-fitness/cricket/cricket-accessories.webp',
+  'sports-fitness/cricket/cricket-balls':
+    '/categories/explore/sports-fitness/cricket/cricket-balls.webp',
+  'sports-fitness/cricket/cricket-bats':
+    '/categories/explore/sports-fitness/cricket/cricket-bats.webp',
+  'sports-fitness/cricket/helmets': '/categories/explore/sports-fitness/cricket/helmets.webp',
+  'sports-fitness/cricket/pads': '/categories/explore/sports-fitness/cricket/pads.webp',
   'sports-fitness/cycling': '/categories/explore/sports-fitness/cycling.webp',
   'sports-fitness/darts': '/categories/explore/sports-fitness/darts.webp',
   'sports-fitness/fishing': '/categories/explore/sports-fitness/fishing.webp',
   'sports-fitness/fitness-gym': '/categories/explore/sports-fitness/fitness-gym.webp',
+  'sports-fitness/fitness-gym/benches':
+    '/categories/explore/sports-fitness/fitness-gym/benches.webp',
+  'sports-fitness/fitness-gym/dumbbells':
+    '/categories/explore/sports-fitness/fitness-gym/dumbbells.webp',
+  'sports-fitness/fitness-gym/exercise-bikes':
+    '/categories/explore/sports-fitness/fitness-gym/exercise-bikes.webp',
+  'sports-fitness/fitness-gym/fitness-accessories':
+    '/categories/explore/sports-fitness/fitness-gym/fitness-accessories.webp',
+  'sports-fitness/fitness-gym/gym-gloves':
+    '/categories/explore/sports-fitness/fitness-gym/gym-gloves.webp',
+  'sports-fitness/fitness-gym/kettlebells':
+    '/categories/explore/sports-fitness/fitness-gym/kettlebells.webp',
+  'sports-fitness/fitness-gym/resistance-bands':
+    '/categories/explore/sports-fitness/fitness-gym/resistance-bands.webp',
+  'sports-fitness/fitness-gym/skipping-ropes':
+    '/categories/explore/sports-fitness/fitness-gym/skipping-ropes.webp',
+  'sports-fitness/fitness-gym/treadmills':
+    '/categories/explore/sports-fitness/fitness-gym/treadmills.webp',
   'sports-fitness/football': '/categories/explore/sports-fitness/football.webp',
-  'sports-fitness/golf': '/categories/explore/sports-fitness/golf.webp',
   'sports-fitness/hockey': '/categories/explore/sports-fitness/hockey.webp',
   'sports-fitness/skating': '/categories/explore/sports-fitness/skating.webp',
   'sports-fitness/sports-bags': '/categories/explore/sports-fitness/sports-bags.webp',
   'sports-fitness/sports-shoes': '/categories/explore/sports-fitness/sports-shoes.webp',
   'sports-fitness/swimming': '/categories/explore/sports-fitness/swimming.webp',
+  'sports-fitness/swimming/caps': '/categories/explore/sports-fitness/swimming/caps.webp',
+  'sports-fitness/swimming/kickboards':
+    '/categories/explore/sports-fitness/swimming/kickboards.webp',
+  'sports-fitness/swimming/swimming-goggles':
+    '/categories/explore/sports-fitness/swimming/swimming-goggles.webp',
   'sports-fitness/table-tennis': '/categories/explore/sports-fitness/table-tennis.webp',
   'sports-fitness/tennis': '/categories/explore/sports-fitness/tennis.webp',
   'sports-fitness/volleyball': '/categories/explore/sports-fitness/volleyball.webp',
   'sports-fitness/yoga': '/categories/explore/sports-fitness/yoga.webp',
+  'sports-fitness/yoga/bolsters': '/categories/explore/sports-fitness/yoga/bolsters.webp',
+  'sports-fitness/yoga/yoga-blocks': '/categories/explore/sports-fitness/yoga/yoga-blocks.webp',
+  'sports-fitness/yoga/yoga-mats': '/categories/explore/sports-fitness/yoga/yoga-mats.webp',
+  'sports-fitness/yoga/yoga-straps': '/categories/explore/sports-fitness/yoga/yoga-straps.webp',
   stationary: '/categories/explore/stationary.webp',
   'stationary/art-supplies': '/categories/explore/stationary/art-supplies.webp',
   'stationary/calculators': '/categories/explore/stationary/calculators.webp',
+  'stationary/calculators/printing-calculators':
+    '/categories/explore/stationary/calculators/printing-calculators.webp',
+  'stationary/calculators/scientific': '/categories/explore/stationary/calculators/scientific.webp',
   'stationary/files-folders': '/categories/explore/stationary/files-folders.webp',
+  'stationary/files-folders/document-folders':
+    '/categories/explore/stationary/files-folders/document-folders.webp',
+  'stationary/files-folders/expanding-files':
+    '/categories/explore/stationary/files-folders/expanding-files.webp',
+  'stationary/files-folders/file-folders':
+    '/categories/explore/stationary/files-folders/file-folders.webp',
+  'stationary/files-folders/folders': '/categories/explore/stationary/files-folders/folders.webp',
+  'stationary/files-folders/ring-binders':
+    '/categories/explore/stationary/files-folders/ring-binders.webp',
   'stationary/geometry-boxes': '/categories/explore/stationary/geometry-boxes.webp',
+  'stationary/geometry-boxes/compasses':
+    '/categories/explore/stationary/geometry-boxes/compasses.webp',
+  'stationary/geometry-boxes/geometry-sets':
+    '/categories/explore/stationary/geometry-boxes/geometry-sets.webp',
+  'stationary/geometry-boxes/protractors':
+    '/categories/explore/stationary/geometry-boxes/protractors.webp',
+  'stationary/geometry-boxes/rulers': '/categories/explore/stationary/geometry-boxes/rulers.webp',
+  'stationary/geometry-boxes/scales': '/categories/explore/stationary/geometry-boxes/scales.webp',
   'stationary/glue-adhesives': '/categories/explore/stationary/glue-adhesives.webp',
+  'stationary/glue-adhesives/glue-sticks':
+    '/categories/explore/stationary/glue-adhesives/glue-sticks.webp',
   'stationary/markers': '/categories/explore/stationary/markers.webp',
+  'stationary/markers/highlighters': '/categories/explore/stationary/markers/highlighters.webp',
+  'stationary/markers/permanent-markers':
+    '/categories/explore/stationary/markers/permanent-markers.webp',
+  'stationary/markers/sketch-pens': '/categories/explore/stationary/markers/sketch-pens.webp',
+  'stationary/markers/whiteboard-markers':
+    '/categories/explore/stationary/markers/whiteboard-markers.webp',
   'stationary/notebooks': '/categories/explore/stationary/notebooks.webp',
+  'stationary/notebooks/diaries': '/categories/explore/stationary/notebooks/diaries.webp',
+  'stationary/notebooks/registers': '/categories/explore/stationary/notebooks/registers.webp',
+  'stationary/notebooks/ruled-notebooks':
+    '/categories/explore/stationary/notebooks/ruled-notebooks.webp',
+  'stationary/notebooks/sketchbooks': '/categories/explore/stationary/notebooks/sketchbooks.webp',
+  'stationary/notebooks/spiral-notebooks':
+    '/categories/explore/stationary/notebooks/spiral-notebooks.webp',
+  'stationary/notebooks/writing-pads': '/categories/explore/stationary/notebooks/writing-pads.webp',
   'stationary/office-supplies': '/categories/explore/stationary/office-supplies.webp',
+  'stationary/office-supplies/labels': '/categories/explore/stationary/office-supplies/labels.webp',
+  'stationary/office-supplies/printer-paper':
+    '/categories/explore/stationary/office-supplies/printer-paper.webp',
+  'stationary/office-supplies/scissors':
+    '/categories/explore/stationary/office-supplies/scissors.webp',
   'stationary/pencils-erasers': '/categories/explore/stationary/pencils-erasers.webp',
+  'stationary/pencils-erasers/color-pencils':
+    '/categories/explore/stationary/pencils-erasers/color-pencils.webp',
+  'stationary/pencils-erasers/crayons':
+    '/categories/explore/stationary/pencils-erasers/crayons.webp',
+  'stationary/pencils-erasers/erasers':
+    '/categories/explore/stationary/pencils-erasers/erasers.webp',
+  'stationary/pencils-erasers/mechanical-pencils':
+    '/categories/explore/stationary/pencils-erasers/mechanical-pencils.webp',
   'stationary/pens': '/categories/explore/stationary/pens.webp',
   'stationary/school-supplies': '/categories/explore/stationary/school-supplies.webp',
+  'stationary/school-supplies/art-supplies':
+    '/categories/explore/stationary/school-supplies/art-supplies.webp',
+  'stationary/school-supplies/lunch-boxes':
+    '/categories/explore/stationary/school-supplies/lunch-boxes.webp',
   'tailoring-materials': '/categories/explore/tailoring-materials.webp',
   'tailoring-materials/buttons-fasteners':
     '/categories/explore/tailoring-materials/buttons-fasteners.webp',
+  'tailoring-materials/buttons-fasteners/hooks-eyes':
+    '/categories/explore/tailoring-materials/buttons-fasteners/hooks-eyes.webp',
+  'tailoring-materials/buttons-fasteners/velcro':
+    '/categories/explore/tailoring-materials/buttons-fasteners/velcro.webp',
+  'tailoring-materials/buttons-fasteners/zippers':
+    '/categories/explore/tailoring-materials/buttons-fasteners/zippers.webp',
   'tailoring-materials/elastic-trims': '/categories/explore/tailoring-materials/elastic-trims.webp',
+  'tailoring-materials/elastic-trims/bias-tapes':
+    '/categories/explore/tailoring-materials/elastic-trims/bias-tapes.webp',
+  'tailoring-materials/elastic-trims/elastic-bands':
+    '/categories/explore/tailoring-materials/elastic-trims/elastic-bands.webp',
+  'tailoring-materials/elastic-trims/laces':
+    '/categories/explore/tailoring-materials/elastic-trims/laces.webp',
+  'tailoring-materials/elastic-trims/ribbons':
+    '/categories/explore/tailoring-materials/elastic-trims/ribbons.webp',
+  'tailoring-materials/elastic-trims/waistband-elastic':
+    '/categories/explore/tailoring-materials/elastic-trims/waistband-elastic.webp',
   'tailoring-materials/embroidery': '/categories/explore/tailoring-materials/embroidery.webp',
+  'tailoring-materials/embroidery/embroidery-hoops':
+    '/categories/explore/tailoring-materials/embroidery/embroidery-hoops.webp',
+  'tailoring-materials/embroidery/embroidery-kits':
+    '/categories/explore/tailoring-materials/embroidery/embroidery-kits.webp',
+  'tailoring-materials/embroidery/frames':
+    '/categories/explore/tailoring-materials/embroidery/frames.webp',
+  'tailoring-materials/embroidery/patches':
+    '/categories/explore/tailoring-materials/embroidery/patches.webp',
   'tailoring-materials/interfacing': '/categories/explore/tailoring-materials/interfacing.webp',
+  'tailoring-materials/interfacing/fabric-glue':
+    '/categories/explore/tailoring-materials/interfacing/fabric-glue.webp',
+  'tailoring-materials/interfacing/fusible-interlining':
+    '/categories/explore/tailoring-materials/interfacing/fusible-interlining.webp',
+  'tailoring-materials/interfacing/non-woven-interfacing':
+    '/categories/explore/tailoring-materials/interfacing/non-woven-interfacing.webp',
   'tailoring-materials/measuring-marking':
     '/categories/explore/tailoring-materials/measuring-marking.webp',
+  'tailoring-materials/measuring-marking/marking-tools':
+    '/categories/explore/tailoring-materials/measuring-marking/marking-tools.webp',
+  'tailoring-materials/measuring-marking/tailor-chalk':
+    '/categories/explore/tailoring-materials/measuring-marking/tailor-chalk.webp',
   'tailoring-materials/needles': '/categories/explore/tailoring-materials/needles.webp',
+  'tailoring-materials/needles/embroidery-needles':
+    '/categories/explore/tailoring-materials/needles/embroidery-needles.webp',
+  'tailoring-materials/needles/hand-sewing-needles':
+    '/categories/explore/tailoring-materials/needles/hand-sewing-needles.webp',
+  'tailoring-materials/needles/machine-needles':
+    '/categories/explore/tailoring-materials/needles/machine-needles.webp',
   'tailoring-materials/scissors': '/categories/explore/tailoring-materials/scissors.webp',
+  'tailoring-materials/scissors/embroidery-scissors':
+    '/categories/explore/tailoring-materials/scissors/embroidery-scissors.webp',
+  'tailoring-materials/scissors/fabric-cutters':
+    '/categories/explore/tailoring-materials/scissors/fabric-cutters.webp',
+  'tailoring-materials/scissors/tailoring-scissors':
+    '/categories/explore/tailoring-materials/scissors/tailoring-scissors.webp',
   'tailoring-materials/sewing-kits': '/categories/explore/tailoring-materials/sewing-kits.webp',
   'tailoring-materials/sewing-machine-accessories':
     '/categories/explore/tailoring-materials/sewing-machine-accessories.webp',
+  'tailoring-materials/sewing-machine-accessories/bobbin-cases':
+    '/categories/explore/tailoring-materials/sewing-machine-accessories/bobbin-cases.webp',
+  'tailoring-materials/sewing-machine-accessories/bobbins':
+    '/categories/explore/tailoring-materials/sewing-machine-accessories/bobbins.webp',
+  'tailoring-materials/sewing-machine-accessories/presser-feet':
+    '/categories/explore/tailoring-materials/sewing-machine-accessories/presser-feet.webp',
   'tailoring-materials/sewing-threads':
     '/categories/explore/tailoring-materials/sewing-threads.webp',
+  'tailoring-materials/sewing-threads/cotton-threads':
+    '/categories/explore/tailoring-materials/sewing-threads/cotton-threads.webp',
+  'tailoring-materials/sewing-threads/embroidery-threads':
+    '/categories/explore/tailoring-materials/sewing-threads/embroidery-threads.webp',
+  'tailoring-materials/sewing-threads/polyester-threads':
+    '/categories/explore/tailoring-materials/sewing-threads/polyester-threads.webp',
   tools: '/categories/explore/tools.webp',
   'tools/automotive-tools': '/categories/explore/tools/automotive-tools.webp',
+  'tools/automotive-tools/car-tool-kits':
+    '/categories/explore/tools/automotive-tools/car-tool-kits.webp',
+  'tools/automotive-tools/diagnostic-tools':
+    '/categories/explore/tools/automotive-tools/diagnostic-tools.webp',
+  'tools/automotive-tools/jack-stands':
+    '/categories/explore/tools/automotive-tools/jack-stands.webp',
+  'tools/automotive-tools/torque-wrenches':
+    '/categories/explore/tools/automotive-tools/torque-wrenches.webp',
   'tools/construction-tools': '/categories/explore/tools/construction-tools.webp',
+  'tools/construction-tools/concrete-tools':
+    '/categories/explore/tools/construction-tools/concrete-tools.webp',
+  'tools/construction-tools/masonry-tools':
+    '/categories/explore/tools/construction-tools/masonry-tools.webp',
+  'tools/construction-tools/tiling-tools':
+    '/categories/explore/tools/construction-tools/tiling-tools.webp',
   'tools/gardening-tools': '/categories/explore/tools/gardening-tools.webp',
   'tools/hand-tools': '/categories/explore/tools/hand-tools.webp',
+  'tools/hand-tools/allen-keys': '/categories/explore/tools/hand-tools/allen-keys.webp',
+  'tools/hand-tools/cutters': '/categories/explore/tools/hand-tools/cutters.webp',
+  'tools/hand-tools/hammers': '/categories/explore/tools/hand-tools/hammers.webp',
+  'tools/hand-tools/pliers': '/categories/explore/tools/hand-tools/pliers.webp',
+  'tools/hand-tools/screwdriver-sets': '/categories/explore/tools/hand-tools/screwdriver-sets.webp',
+  'tools/hand-tools/screwdrivers': '/categories/explore/tools/hand-tools/screwdrivers.webp',
+  'tools/hand-tools/spanners': '/categories/explore/tools/hand-tools/spanners.webp',
+  'tools/hand-tools/wrenches': '/categories/explore/tools/hand-tools/wrenches.webp',
   'tools/measuring-tools': '/categories/explore/tools/measuring-tools.webp',
+  'tools/measuring-tools/calipers': '/categories/explore/tools/measuring-tools/calipers.webp',
+  'tools/measuring-tools/laser-levels':
+    '/categories/explore/tools/measuring-tools/laser-levels.webp',
+  'tools/measuring-tools/measuring-tapes':
+    '/categories/explore/tools/measuring-tools/measuring-tapes.webp',
+  'tools/measuring-tools/spirit-levels':
+    '/categories/explore/tools/measuring-tools/spirit-levels.webp',
   'tools/power-tools': '/categories/explore/tools/power-tools.webp',
+  'tools/power-tools/angle-grinders': '/categories/explore/tools/power-tools/angle-grinders.webp',
+  'tools/power-tools/cutting-machines':
+    '/categories/explore/tools/power-tools/cutting-machines.webp',
+  'tools/power-tools/drills': '/categories/explore/tools/power-tools/drills.webp',
+  'tools/power-tools/glue-guns': '/categories/explore/tools/power-tools/glue-guns.webp',
+  'tools/power-tools/heat-guns': '/categories/explore/tools/power-tools/heat-guns.webp',
+  'tools/power-tools/impact-drills': '/categories/explore/tools/power-tools/impact-drills.webp',
+  'tools/power-tools/sanders': '/categories/explore/tools/power-tools/sanders.webp',
+  'tools/power-tools/saws': '/categories/explore/tools/power-tools/saws.webp',
+  'tools/power-tools/soldering-tools': '/categories/explore/tools/power-tools/soldering-tools.webp',
+  'tools/power-tools/welding-machines':
+    '/categories/explore/tools/power-tools/welding-machines.webp',
   'tools/safety-equipment': '/categories/explore/tools/safety-equipment.webp',
+  'tools/safety-equipment/ear-protection':
+    '/categories/explore/tools/safety-equipment/ear-protection.webp',
+  'tools/safety-equipment/gloves': '/categories/explore/tools/safety-equipment/gloves.webp',
+  'tools/safety-equipment/helmets': '/categories/explore/tools/safety-equipment/helmets.webp',
+  'tools/safety-equipment/safety-glasses':
+    '/categories/explore/tools/safety-equipment/safety-glasses.webp',
   'tools/tool-boxes-organizers': '/categories/explore/tools/tool-boxes-organizers.webp',
+  'tools/tool-boxes-organizers/tool-boxes':
+    '/categories/explore/tools/tool-boxes-organizers/tool-boxes.webp',
+  'tools/tool-boxes-organizers/tool-organizers':
+    '/categories/explore/tools/tool-boxes-organizers/tool-organizers.webp',
   'toys-games': '/categories/explore/toys-games.webp',
   'toys-games/baby-bath-toys': '/categories/explore/toys-games/baby-bath-toys.webp',
+  'toys-games/baby-bath-toys/baby-toys':
+    '/categories/explore/toys-games/baby-bath-toys/baby-toys.webp',
+  'toys-games/baby-bath-toys/bath-toys':
+    '/categories/explore/toys-games/baby-bath-toys/bath-toys.webp',
   'toys-games/board-games-puzzles': '/categories/explore/toys-games/board-games-puzzles.webp',
+  'toys-games/board-games-puzzles/card-games':
+    '/categories/explore/toys-games/board-games-puzzles/card-games.webp',
+  'toys-games/board-games-puzzles/educational-games':
+    '/categories/explore/toys-games/board-games-puzzles/educational-games.webp',
+  'toys-games/board-games-puzzles/family-games':
+    '/categories/explore/toys-games/board-games-puzzles/family-games.webp',
+  'toys-games/board-games-puzzles/games-accessories':
+    '/categories/explore/toys-games/board-games-puzzles/games-accessories.webp',
+  'toys-games/board-games-puzzles/party-games':
+    '/categories/explore/toys-games/board-games-puzzles/party-games.webp',
+  'toys-games/board-games-puzzles/puzzles':
+    '/categories/explore/toys-games/board-games-puzzles/puzzles.webp',
+  'toys-games/board-games-puzzles/strategy-games':
+    '/categories/explore/toys-games/board-games-puzzles/strategy-games.webp',
   'toys-games/dolls-action-figures': '/categories/explore/toys-games/dolls-action-figures.webp',
+  'toys-games/dolls-action-figures/doll-houses':
+    '/categories/explore/toys-games/dolls-action-figures/doll-houses.webp',
+  'toys-games/dolls-action-figures/fashion-dolls':
+    '/categories/explore/toys-games/dolls-action-figures/fashion-dolls.webp',
   'toys-games/educational-building-toys':
     '/categories/explore/toys-games/educational-building-toys.webp',
+  'toys-games/educational-building-toys/art-craft-toys':
+    '/categories/explore/toys-games/educational-building-toys/art-craft-toys.webp',
+  'toys-games/educational-building-toys/building-blocks':
+    '/categories/explore/toys-games/educational-building-toys/building-blocks.webp',
+  'toys-games/educational-building-toys/construction-sets':
+    '/categories/explore/toys-games/educational-building-toys/construction-sets.webp',
+  'toys-games/educational-building-toys/learning-kits':
+    '/categories/explore/toys-games/educational-building-toys/learning-kits.webp',
+  'toys-games/educational-building-toys/learning-toys':
+    '/categories/explore/toys-games/educational-building-toys/learning-toys.webp',
+  'toys-games/educational-building-toys/montessori-toys':
+    '/categories/explore/toys-games/educational-building-toys/montessori-toys.webp',
+  'toys-games/educational-building-toys/stem-toys':
+    '/categories/explore/toys-games/educational-building-toys/stem-toys.webp',
   'toys-games/musical-toys': '/categories/explore/toys-games/musical-toys.webp',
   'toys-games/outdoor-ride-on-toys': '/categories/explore/toys-games/outdoor-ride-on-toys.webp',
+  'toys-games/outdoor-ride-on-toys/playhouses':
+    '/categories/explore/toys-games/outdoor-ride-on-toys/playhouses.webp',
+  'toys-games/outdoor-ride-on-toys/ride-ons':
+    '/categories/explore/toys-games/outdoor-ride-on-toys/ride-ons.webp',
+  'toys-games/outdoor-ride-on-toys/scooters':
+    '/categories/explore/toys-games/outdoor-ride-on-toys/scooters.webp',
+  'toys-games/outdoor-ride-on-toys/sports-toys':
+    '/categories/explore/toys-games/outdoor-ride-on-toys/sports-toys.webp',
+  'toys-games/outdoor-ride-on-toys/tricycles':
+    '/categories/explore/toys-games/outdoor-ride-on-toys/tricycles.webp',
   'toys-games/role-play-toys': '/categories/explore/toys-games/role-play-toys.webp',
+  'toys-games/role-play-toys/doctor-sets':
+    '/categories/explore/toys-games/role-play-toys/doctor-sets.webp',
+  'toys-games/role-play-toys/kitchen-sets':
+    '/categories/explore/toys-games/role-play-toys/kitchen-sets.webp',
+  'toys-games/role-play-toys/magic-kits':
+    '/categories/explore/toys-games/role-play-toys/magic-kits.webp',
+  'toys-games/role-play-toys/pretend-play':
+    '/categories/explore/toys-games/role-play-toys/pretend-play.webp',
+  'toys-games/role-play-toys/slime-putty':
+    '/categories/explore/toys-games/role-play-toys/slime-putty.webp',
   'toys-games/soft-toys': '/categories/explore/toys-games/soft-toys.webp',
   'toys-games/toy-cars-vehicles': '/categories/explore/toys-games/toy-cars-vehicles.webp',
+  'toys-games/toy-cars-vehicles/construction-vehicles':
+    '/categories/explore/toys-games/toy-cars-vehicles/construction-vehicles.webp',
+  'toys-games/toy-cars-vehicles/die-cast-cars':
+    '/categories/explore/toys-games/toy-cars-vehicles/die-cast-cars.webp',
+  'toys-games/toy-cars-vehicles/remote-control-toys':
+    '/categories/explore/toys-games/toy-cars-vehicles/remote-control-toys.webp',
+  'toys-games/toy-cars-vehicles/toy-bikes':
+    '/categories/explore/toys-games/toy-cars-vehicles/toy-bikes.webp',
+  'toys-games/toy-cars-vehicles/toy-trains':
+    '/categories/explore/toys-games/toy-cars-vehicles/toy-trains.webp',
+  'toys-games/toy-cars-vehicles/toy-trucks':
+    '/categories/explore/toys-games/toy-cars-vehicles/toy-trucks.webp',
   'travel-accessories': '/categories/explore/travel-accessories.webp',
   'travel-accessories/luggage-accessories':
     '/categories/explore/travel-accessories/luggage-accessories.webp',
+  'travel-accessories/luggage-accessories/luggage-straps':
+    '/categories/explore/travel-accessories/luggage-accessories/luggage-straps.webp',
+  'travel-accessories/luggage-accessories/luggage-tags':
+    '/categories/explore/travel-accessories/luggage-accessories/luggage-tags.webp',
+  'travel-accessories/luggage-accessories/passport-holders':
+    '/categories/explore/travel-accessories/luggage-accessories/passport-holders.webp',
+  'travel-accessories/luggage-accessories/rfid-passport-covers':
+    '/categories/explore/travel-accessories/luggage-accessories/rfid-passport-covers.webp',
+  'travel-accessories/luggage-accessories/travel-locks':
+    '/categories/explore/travel-accessories/luggage-accessories/travel-locks.webp',
+  'travel-accessories/luggage-accessories/travel-wallets':
+    '/categories/explore/travel-accessories/luggage-accessories/travel-wallets.webp',
   'travel-accessories/rain-covers': '/categories/explore/travel-accessories/rain-covers.webp',
   'travel-accessories/suitcases': '/categories/explore/travel-accessories/suitcases.webp',
+  'travel-accessories/suitcases/cabin-luggage':
+    '/categories/explore/travel-accessories/suitcases/cabin-luggage.webp',
+  'travel-accessories/suitcases/check-in-luggage':
+    '/categories/explore/travel-accessories/suitcases/check-in-luggage.webp',
+  'travel-accessories/suitcases/hard-shell':
+    '/categories/explore/travel-accessories/suitcases/hard-shell.webp',
+  'travel-accessories/suitcases/luggage-sets':
+    '/categories/explore/travel-accessories/suitcases/luggage-sets.webp',
+  'travel-accessories/suitcases/soft-luggage':
+    '/categories/explore/travel-accessories/suitcases/soft-luggage.webp',
+  'travel-accessories/suitcases/trolley-bags':
+    '/categories/explore/travel-accessories/suitcases/trolley-bags.webp',
   'travel-accessories/travel-accessories':
     '/categories/explore/travel-accessories/travel-accessories.webp',
   'travel-accessories/travel-accessories/power-banks':
     '/categories/explore/travel-accessories/travel-accessories/power-banks.webp',
-  'travel-accessories/travel-accessories/travel-accessories':
-    '/categories/explore/travel-accessories/travel-accessories/travel-accessories.webp',
   'travel-accessories/travel-accessories/travel-chargers':
     '/categories/explore/travel-accessories/travel-accessories/travel-chargers.webp',
   'travel-accessories/travel-accessories/universal-adapters':
     '/categories/explore/travel-accessories/travel-accessories/universal-adapters.webp',
   'travel-accessories/travel-bags': '/categories/explore/travel-accessories/travel-bags.webp',
+  'travel-accessories/travel-bags/backpacks':
+    '/categories/explore/travel-accessories/travel-bags/backpacks.webp',
+  'travel-accessories/travel-bags/duffel-bags':
+    '/categories/explore/travel-accessories/travel-bags/duffel-bags.webp',
+  'travel-accessories/travel-bags/garment-bags':
+    '/categories/explore/travel-accessories/travel-bags/garment-bags.webp',
+  'travel-accessories/travel-bags/laptop-bags':
+    '/categories/explore/travel-accessories/travel-bags/laptop-bags.webp',
+  'travel-accessories/travel-bags/sling-bags':
+    '/categories/explore/travel-accessories/travel-bags/sling-bags.webp',
+  'travel-accessories/travel-bags/travel-backpacks':
+    '/categories/explore/travel-accessories/travel-bags/travel-backpacks.webp',
+  'travel-accessories/travel-bags/waist-bags':
+    '/categories/explore/travel-accessories/travel-bags/waist-bags.webp',
   'travel-accessories/travel-bottles': '/categories/explore/travel-accessories/travel-bottles.webp',
+  'travel-accessories/travel-bottles/toiletry-bottles':
+    '/categories/explore/travel-accessories/travel-bottles/toiletry-bottles.webp',
+  'travel-accessories/travel-bottles/travel-containers':
+    '/categories/explore/travel-accessories/travel-bottles/travel-containers.webp',
+  'travel-accessories/travel-bottles/water-bottles':
+    '/categories/explore/travel-accessories/travel-bottles/water-bottles.webp',
   'travel-accessories/travel-comfort': '/categories/explore/travel-accessories/travel-comfort.webp',
+  'travel-accessories/travel-comfort/eye-masks':
+    '/categories/explore/travel-accessories/travel-comfort/eye-masks.webp',
+  'travel-accessories/travel-comfort/travel-blankets':
+    '/categories/explore/travel-accessories/travel-comfort/travel-blankets.webp',
   'travel-accessories/travel-organizers':
     '/categories/explore/travel-accessories/travel-organizers.webp',
+  'travel-accessories/travel-organizers/packing-cubes':
+    '/categories/explore/travel-accessories/travel-organizers/packing-cubes.webp',
+  'travel-accessories/travel-organizers/passport-organizers':
+    '/categories/explore/travel-accessories/travel-organizers/passport-organizers.webp',
+  'travel-accessories/travel-organizers/shoe-bags':
+    '/categories/explore/travel-accessories/travel-organizers/shoe-bags.webp',
+  'travel-accessories/travel-organizers/toiletry-bags':
+    '/categories/explore/travel-accessories/travel-organizers/toiletry-bags.webp',
   'wall-clock-watches': '/categories/explore/wall-clock-watches.webp',
   'wall-clock-watches/alarm-clocks': '/categories/explore/wall-clock-watches/alarm-clocks.webp',
+  'wall-clock-watches/alarm-clocks/digital-alarm-clocks':
+    '/categories/explore/wall-clock-watches/alarm-clocks/digital-alarm-clocks.webp',
+  'wall-clock-watches/alarm-clocks/projection-clocks':
+    '/categories/explore/wall-clock-watches/alarm-clocks/projection-clocks.webp',
+  'wall-clock-watches/alarm-clocks/stopwatches':
+    '/categories/explore/wall-clock-watches/alarm-clocks/stopwatches.webp',
+  'wall-clock-watches/alarm-clocks/table-clocks':
+    '/categories/explore/wall-clock-watches/alarm-clocks/table-clocks.webp',
+  'wall-clock-watches/alarm-clocks/travel-alarm-clocks':
+    '/categories/explore/wall-clock-watches/alarm-clocks/travel-alarm-clocks.webp',
   'wall-clock-watches/smart-watches': '/categories/explore/wall-clock-watches/smart-watches.webp',
+  'wall-clock-watches/smart-watches/fitness-bands':
+    '/categories/explore/wall-clock-watches/smart-watches/fitness-bands.webp',
+  'wall-clock-watches/smart-watches/gps-watches':
+    '/categories/explore/wall-clock-watches/smart-watches/gps-watches.webp',
+  'wall-clock-watches/smart-watches/smart-bands':
+    '/categories/explore/wall-clock-watches/smart-watches/smart-bands.webp',
   'wall-clock-watches/wall-clocks': '/categories/explore/wall-clock-watches/wall-clocks.webp',
+  'wall-clock-watches/wall-clocks/analog-wall-clocks':
+    '/categories/explore/wall-clock-watches/wall-clocks/analog-wall-clocks.webp',
+  'wall-clock-watches/wall-clocks/designer-wall-clocks':
+    '/categories/explore/wall-clock-watches/wall-clocks/designer-wall-clocks.webp',
+  'wall-clock-watches/wall-clocks/digital-wall-clocks':
+    '/categories/explore/wall-clock-watches/wall-clocks/digital-wall-clocks.webp',
+  'wall-clock-watches/wall-clocks/kids-wall-clocks':
+    '/categories/explore/wall-clock-watches/wall-clocks/kids-wall-clocks.webp',
+  'wall-clock-watches/wall-clocks/metal-wall-clocks':
+    '/categories/explore/wall-clock-watches/wall-clocks/metal-wall-clocks.webp',
+  'wall-clock-watches/wall-clocks/wooden-wall-clocks':
+    '/categories/explore/wall-clock-watches/wall-clocks/wooden-wall-clocks.webp',
   'wall-clock-watches/watch-accessories':
     '/categories/explore/wall-clock-watches/watch-accessories.webp',
+  'wall-clock-watches/watch-accessories/watch-boxes':
+    '/categories/explore/wall-clock-watches/watch-accessories/watch-boxes.webp',
+  'wall-clock-watches/watch-accessories/watch-straps':
+    '/categories/explore/wall-clock-watches/watch-accessories/watch-straps.webp',
+  'wall-clock-watches/watch-accessories/watch-winders':
+    '/categories/explore/wall-clock-watches/watch-accessories/watch-winders.webp',
   'wall-clock-watches/watches': '/categories/explore/wall-clock-watches/watches.webp',
+  'wall-clock-watches/watches/analog-watches':
+    '/categories/explore/wall-clock-watches/watches/analog-watches.webp',
+  'wall-clock-watches/watches/automatic-watches':
+    '/categories/explore/wall-clock-watches/watches/automatic-watches.webp',
+  'wall-clock-watches/watches/chronograph-watches':
+    '/categories/explore/wall-clock-watches/watches/chronograph-watches.webp',
+  'wall-clock-watches/watches/digital-watches':
+    '/categories/explore/wall-clock-watches/watches/digital-watches.webp',
+  'wall-clock-watches/watches/kids-watches':
+    '/categories/explore/wall-clock-watches/watches/kids-watches.webp',
+  'wall-clock-watches/watches/luxury-watches':
+    '/categories/explore/wall-clock-watches/watches/luxury-watches.webp',
+  'wall-clock-watches/watches/mechanical-watches':
+    '/categories/explore/wall-clock-watches/watches/mechanical-watches.webp',
+  'wall-clock-watches/watches/quartz-watches':
+    '/categories/explore/wall-clock-watches/watches/quartz-watches.webp',
+  'wall-clock-watches/watches/sports-watches':
+    '/categories/explore/wall-clock-watches/watches/sports-watches.webp',
+  'wall-clock-watches/watches/women-s-watches':
+    '/categories/explore/wall-clock-watches/watches/women-s-watches.webp',
 };
