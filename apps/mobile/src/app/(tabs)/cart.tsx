@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CART_SHIPPING_TOTAL, cartTotals, formatMoney } from '@youmart/shared-client';
+import { api } from '@/lib/api';
 import { useCart } from '@/stores/cart';
 import { useSession } from '@/stores/session';
 import { ProductImage } from '@/components/ui';
@@ -15,6 +17,25 @@ export default function CartScreen() {
   const session = useSession();
   const { cart, setQuantity, removeItem } = useCart();
   const totals = cartTotals(cart, CART_SHIPPING_TOTAL);
+
+  // Cart lines carry no image - look the products up (one request, cached per product id).
+  const [images, setImages] = useState<Record<string, string>>({});
+  const idsKey = [...new Set(cart.items.map((l) => l.productId))].sort().join(',');
+  useEffect(() => {
+    const missing = idsKey.split(',').filter((id) => id && !(id in images));
+    if (missing.length === 0) return;
+    api.catalog
+      .productCards(missing)
+      .then(({ items }) =>
+        setImages((prev) => {
+          const next = { ...prev };
+          for (const id of missing) next[id] = '';
+          for (const item of items) next[item.id] = item.imageUrl ?? '';
+          return next;
+        }),
+      )
+      .catch(() => undefined);
+  }, [idsKey]);
 
   if (cart.items.length === 0) {
     return (
@@ -35,6 +56,16 @@ export default function CartScreen() {
     else router.push('/auth/login');
   };
 
+  // Flipkart-style: buy just this one line; everything else stays in the cart.
+  const buyNow = (cartItemId: string) => {
+    if (session.status === 'authenticated') router.push(`/checkout?buy=${cartItemId}`);
+    else router.push('/auth/login');
+  };
+
+  const openProduct = (slug: string) => {
+    if (slug) router.push(`/product/${slug}`);
+  };
+
   return (
     <SwipeTabs index={2}>
       <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -42,38 +73,55 @@ export default function CartScreen() {
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {cart.items.map((line) => (
             <View key={line.cartItemId} style={styles.line}>
-              <ProductImage src={undefined} style={styles.thumb} icon={22} />
-              <View style={styles.lineBody}>
-                <Text numberOfLines={2} style={styles.lineTitle}>
-                  {line.title}
-                </Text>
-                <Text style={styles.linePrice}>{formatMoney(line.priceSnapshot)}</Text>
-                <View style={styles.qtyRow}>
-                  <View style={styles.stepper}>
-                    <Pressable
-                      style={styles.stepBtn}
-                      onPress={() =>
-                        line.quantity <= 1
-                          ? removeItem(line.cartItemId)
-                          : setQuantity(line.cartItemId, line.quantity - 1)
-                      }
-                    >
-                      <Ionicons name="remove" size={16} color={colors.brand.DEFAULT} />
-                    </Pressable>
-                    <Text style={styles.qty}>{line.quantity}</Text>
-                    <Pressable
-                      style={styles.stepBtn}
-                      onPress={() => setQuantity(line.cartItemId, line.quantity + 1)}
-                    >
-                      <Ionicons name="add" size={16} color={colors.brand.DEFAULT} />
+              <View style={styles.lineTop}>
+                <Pressable onPress={() => openProduct(line.productSlug)}>
+                  <ProductImage
+                    src={images[line.productId] || undefined}
+                    style={styles.thumb}
+                    icon={22}
+                  />
+                </Pressable>
+                <View style={styles.lineBody}>
+                  <Pressable onPress={() => openProduct(line.productSlug)}>
+                    <Text numberOfLines={2} style={styles.lineTitle}>
+                      {line.title}
+                    </Text>
+                  </Pressable>
+                  <Text style={styles.linePrice}>{formatMoney(line.priceSnapshot)}</Text>
+                  <View style={styles.qtyRow}>
+                    <View style={styles.stepper}>
+                      <Pressable
+                        style={styles.stepBtn}
+                        onPress={() =>
+                          line.quantity <= 1
+                            ? removeItem(line.cartItemId)
+                            : setQuantity(line.cartItemId, line.quantity - 1)
+                        }
+                      >
+                        <Ionicons name="remove" size={16} color={colors.brand.DEFAULT} />
+                      </Pressable>
+                      <Text style={styles.qty}>{line.quantity}</Text>
+                      <Pressable
+                        style={styles.stepBtn}
+                        onPress={() => setQuantity(line.cartItemId, line.quantity + 1)}
+                      >
+                        <Ionicons name="add" size={16} color={colors.brand.DEFAULT} />
+                      </Pressable>
+                    </View>
+                    <Pressable onPress={() => removeItem(line.cartItemId)} hitSlop={8}>
+                      <Ionicons name="trash-outline" size={18} color={colors.cart.danger} />
                     </Pressable>
                   </View>
-                  <Pressable onPress={() => removeItem(line.cartItemId)} hitSlop={8}>
-                    <Ionicons name="trash-outline" size={18} color={colors.cart.danger} />
-                  </Pressable>
                 </View>
+                <Text style={styles.lineTotal}>{formatMoney(line.lineTotal)}</Text>
               </View>
-              <Text style={styles.lineTotal}>{formatMoney(line.lineTotal)}</Text>
+              <Pressable
+                style={({ pressed }) => [styles.buyNow, pressed && { opacity: 0.85 }]}
+                onPress={() => buyNow(line.cartItemId)}
+              >
+                <Ionicons name="flash" size={15} color={colors.brand.DEFAULT} />
+                <Text style={styles.buyNowText}>Buy this now</Text>
+              </Pressable>
             </View>
           ))}
         </ScrollView>
@@ -127,7 +175,6 @@ const styles = StyleSheet.create({
   },
   list: { paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.md },
   line: {
-    flexDirection: 'row',
     gap: space.md,
     backgroundColor: colors.white,
     borderRadius: radii.tile,
@@ -135,7 +182,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cart.border,
   },
-  thumb: { width: 64, height: 64, borderRadius: 8 },
+  lineTop: { flexDirection: 'row', gap: space.md },
+  thumb: { width: 72, height: 72, borderRadius: 8 },
+  buyNow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: colors.brand.DEFAULT,
+    borderRadius: radii.button,
+    paddingVertical: 9,
+  },
+  buyNowText: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.brand.DEFAULT },
   lineBody: { flex: 1, gap: 4 },
   lineTitle: { fontFamily: font.uiMedium, fontSize: 13.5, color: colors.text.strong },
   linePrice: { fontFamily: font.body, fontSize: 12.5, color: colors.text.body },

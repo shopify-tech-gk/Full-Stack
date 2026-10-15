@@ -23,6 +23,7 @@ import { emptyListingQuery, getProduct, listMoreProducts } from '@/lib/catalog';
 import { recordView } from '@/stores/recently-viewed';
 import { useCart } from '@/stores/cart';
 import { useWishlist } from '@/stores/wishlist';
+import { useSession } from '@/stores/session';
 import { Price, ProductImage, Stars } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductReviews } from '@/components/ProductReviews';
@@ -58,6 +59,7 @@ export default function ProductScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const cart = useCart();
+  const session = useSession();
   const wishlist = useWishlist();
   const [product, setProduct] = useState<ProductDetailData | null | 'error'>(null);
   const [gallery, setGallery] = useState(0);
@@ -379,8 +381,14 @@ export default function ProductScreen() {
         <Pressable
           style={[styles.buyBtn, !canBuy && styles.disabled]}
           disabled={!canBuy}
-          onPress={() => {
-            cart.addItem(cartProduct());
+          onPress={async () => {
+            // Signed in: straight to checkout with just this product (Flipkart-style).
+            if (session.status === 'authenticated') {
+              const id = await cart.buyNow(cartProduct());
+              if (id) router.push(`/checkout?buy=${id}`);
+              return;
+            }
+            await cart.addItem(cartProduct());
             router.push('/cart');
           }}
         >

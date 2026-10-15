@@ -43,6 +43,9 @@ export interface CartClient {
    * ACTIVE cart CONVERTED after a successful checkout. A benign no-op if
    * there's no active cart. */
   convertCart(userId: string): Promise<ConvertCartResult>;
+  /** Backed by `POST /cart/internal/remove-items` - after a PARTIAL checkout ("Buy this now"),
+   * removes just the bought lines from `userId`'s active cart. */
+  removeItems(userId: string, cartItemIds: string[]): Promise<CartView>;
 }
 
 /** `baseUrl` (e.g. `CART_SERVICE_URL`) is injected by the caller - this
@@ -70,6 +73,17 @@ export function createCartClient({
         path: '/cart/internal/convert',
         method: 'POST',
         body: { userId },
+        authToken: mintCallerServiceToken(serviceAuth),
+        timeoutMs,
+      });
+    },
+
+    removeItems(userId, cartItemIds) {
+      return request<CartView>({
+        baseUrl,
+        path: '/cart/internal/remove-items',
+        method: 'POST',
+        body: { userId, cartItemIds },
         authToken: mintCallerServiceToken(serviceAuth),
         timeoutMs,
       });

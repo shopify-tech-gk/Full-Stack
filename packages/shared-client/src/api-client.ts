@@ -312,8 +312,11 @@ export function createApiClient(options: ApiClientOptions) {
       setDefault: (id: Uuid) => json<Address>('POST', `/addresses/${id}/default`),
     },
     orders: {
-      checkout: (addressId: Uuid) =>
-        json<OrderView>('POST', '/orders/checkout', { body: { addressId } }),
+      /** `cartItemIds` (v1.11, "Buy this now"): order only these cart lines; omit for the whole cart. */
+      checkout: (addressId: Uuid, cartItemIds?: readonly Uuid[]) =>
+        json<OrderView>('POST', '/orders/checkout', {
+          body: cartItemIds?.length ? { addressId, cartItemIds } : { addressId },
+        }),
       list: (query?: PaginationQuery) =>
         json<Paginated<OrderListItem>>('GET', '/orders', { query }),
       get: (orderId: Uuid) => json<OrderView>('GET', `/orders/${orderId}`),

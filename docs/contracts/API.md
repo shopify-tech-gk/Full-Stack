@@ -1,4 +1,4 @@
-# YouMart Public API Contract (v1.10)
+# YouMart Public API Contract (v1.11)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
@@ -594,6 +594,7 @@ with no token. Every order is scoped to the caller. **Single exception
 ### `POST /api/orders/checkout`
 
 - **Body**: `{ addressId: Uuid }` — **this is the ONLY thing the client contributes**; items/prices are never read from the request (server re-derives everything from the caller's own server-side cart + live catalog prices).
+- **v1.11 "Buy this now"**: optional `cartItemIds: Uuid[]` (1–100) orders only those lines of the caller's own cart — quantities and prices still come from the server-side cart and catalog. Only the ordered lines leave the cart (the whole-cart checkout still converts the cart). **400** `Invalid cart selection` (malformed ids) · **409** a selected line is not in the cart. A second tap within 30 s returns the same `PENDING_PAYMENT` order when it is for the same items, or when they already left the cart.
 - **201**: `OrderView` (exact shape, verified live 2026-09-28 — corrects an omission in the per-chapter `order-api.md`, which did not previously document the `shippingAddress` field even though the running system has always returned it):
   ```json
   {
@@ -1038,6 +1039,10 @@ claimed by the browser that created it (its `browserKey`, sent as the `x-qr-brow
 ---
 
 ## 17. Change log
+
+### v1.11 — 2026-10-14 ("Buy this now", additive)
+
+- **Added**: optional `cartItemIds` on `POST /api/orders/checkout` — order one (or some) cart lines; the rest stay in the cart — §8.
 
 ### v1.10 — 2026-10-14 (YouMart Lens, additive)
 

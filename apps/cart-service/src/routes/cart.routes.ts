@@ -1,5 +1,10 @@
 import { Router } from 'express';
-import { AddItemBody, UpdateItemBody, ConvertCartBody } from '../cart/cart.schema';
+import {
+  AddItemBody,
+  UpdateItemBody,
+  ConvertCartBody,
+  RemoveCartItemsBody,
+} from '../cart/cart.schema';
 import {
   getCart,
   addItem,
@@ -7,6 +12,7 @@ import {
   removeItem,
   clearCart,
   convertActiveCart,
+  removeCartItems,
 } from '../cart/cart.service';
 import { requireAuth, requireServiceAuth } from '../authMiddleware';
 import { requireUserId } from '../authToken';
@@ -44,6 +50,12 @@ cartRouter.post('/internal/convert', requireServiceAuth, async (req, res) => {
   const body = ConvertCartBody.parse(req.body);
   const result = await convertActiveCart(body.userId);
   res.status(200).json(result);
+});
+
+// SERVICE-ONLY - order-service, after a partial checkout ("Buy this now"): removes just those lines.
+cartRouter.post('/internal/remove-items', requireServiceAuth, async (req, res) => {
+  const body = RemoveCartItemsBody.parse(req.body);
+  res.status(200).json(await removeCartItems(body.userId, body.cartItemIds));
 });
 
 cartRouter.post('/items', requireAuth, async (req, res) => {

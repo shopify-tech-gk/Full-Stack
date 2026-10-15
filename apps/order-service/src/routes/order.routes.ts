@@ -79,9 +79,14 @@ orderRouter.post('/checkout', requireAuth, checkoutRateLimiter, async (req, res)
   const userId = requireUserId(req);
   const parsed = CheckoutBody.safeParse(req.body);
   if (!parsed.success) {
-    throw new AppError('VALIDATION_ERROR', 400, 'a shipping address is required');
+    const badSelection = parsed.error.issues.every((issue) => issue.path[0] === 'cartItemIds');
+    throw new AppError(
+      'VALIDATION_ERROR',
+      400,
+      badSelection ? 'Invalid cart selection' : 'a shipping address is required',
+    );
   }
-  const order = await checkout(userId, parsed.data.addressId);
+  const order = await checkout(userId, parsed.data.addressId, parsed.data.cartItemIds);
   res.status(201).json(order);
 });
 

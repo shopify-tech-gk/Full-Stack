@@ -16,8 +16,10 @@ import {
   addressLines,
   cartTotals,
   defaultCheckoutAddress,
+  recalcCart,
   formatMoney,
   walletSplit,
+  ApiError,
   type Address,
   type WalletSummary,
 } from '@youmart/shared-client';
@@ -31,8 +33,16 @@ import { colors, font, radii, space } from '@/theme';
 export default function CheckoutScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { cart } = useCart();
-  const { addressId: pickedId } = useLocalSearchParams<{ addressId?: string }>();
+  const { cart: fullCart, refresh } = useCart();
+  const { addressId: pickedId, buy } = useLocalSearchParams<{ addressId?: string; buy?: string }>();
+  // "Buy this now" from the cart: only these lines (comma-separated cart item ids) are ordered.
+  const buyIds = typeof buy === 'string' && buy ? buy.split(',') : null;
+  const cart = buyIds
+    ? recalcCart(
+        fullCart.cartId,
+        fullCart.items.filter((line) => buyIds.includes(line.cartItemId)),
+      )
+    : fullCart;
 
   const [addresses, setAddresses] = useState<Address[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -76,13 +86,21 @@ export default function CheckoutScreen() {
     setPlacing(true);
     setError(null);
     try {
-      const order = await api.orders.checkout(selectedId);
+      const order = await api.orders.checkout(
+        selectedId,
+        buyIds ? cart.items.map((line) => line.cartItemId) : undefined,
+      );
+      void refresh(); // the ordered lines have left the cart
       router.replace({
         pathname: '/payment',
         params: { orderId: order.orderId, useWallet: hasWallet && useWallet ? '1' : '0' },
       });
-    } catch {
-      setError('We could not place your order. Please try again.');
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 409
+          ? err.message
+          : 'We could not place your order. Please try again.',
+      );
     } finally {
       setPlacing(false);
     }
@@ -131,6 +149,15 @@ export default function CheckoutScreen() {
         )}
 
         <Text style={styles.sectionTitle}>Order summary</Text>
+        {buyIds && fullCart.items.length > cart.items.length ? (
+          <View style={styles.buyNote}>
+            <Ionicons name="flash" size={16} color={colors.brand.DEFAULT} />
+            <Text style={styles.buyNoteText}>
+              Buying {cart.items.length === 1 ? 'this item' : `${cart.items.length} items`} only -
+              the rest stay in your cart.
+            </Text>
+          </View>
+        ) : null}
         <View style={styles.summaryCard}>
           {cart.items.map((line) => (
             <View key={line.cartItemId} style={styles.sumLine}>
@@ -265,6 +292,16 @@ const styles = StyleSheet.create({
   sumLabel: { fontFamily: font.body, fontSize: 14, color: colors.text.body },
   sumValue: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.text.strong },
   free: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.feature.guarantee },
+  buyNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.brandPopup.bg,
+    borderRadius: 12,
+    paddingHorizontal: space.md,
+    paddingVertical: 10,
+  },
+  buyNoteText: { flex: 1, fontFamily: font.uiMedium, fontSize: 13, color: colors.brand.DEFAULT },
   divider: { height: 1, backgroundColor: colors.cart.line, marginVertical: 2 },
   totalRow: {
     borderTopWidth: 1,

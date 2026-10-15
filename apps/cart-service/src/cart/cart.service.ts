@@ -217,6 +217,22 @@ export interface ConvertCartResult {
 }
 
 /**
+ * Internal op for a PARTIAL checkout ("Buy this now" on one cart line): only the bought lines leave
+ * the cart; the rest stay for later. Lines that are already gone are ignored (idempotent).
+ */
+export async function removeCartItems(userId: string, cartItemIds: string[]): Promise<CartView> {
+  const cart = await findActiveCart(userId);
+  if (!cart) {
+    return EMPTY_CART;
+  }
+  await prisma.cartItem.updateMany({
+    where: { cartId: cart.id, id: { in: cartItemIds }, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  return buildCartView(cart);
+}
+
+/**
  * Internal, service-to-service op called by order-service right after a
  * successful checkout. If the caller has no ACTIVE cart (already
  * converted, or never had one), that's a benign no-op - the order already

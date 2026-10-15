@@ -39,6 +39,14 @@ interface CartContextValue {
   addItem: (product: CartProduct, quantity?: number) => Promise<void>;
   setQuantity: (cartItemId: string, quantity: number) => Promise<void>;
   removeItem: (cartItemId: string) => Promise<void>;
+  /**
+   * "Buy now" (signed in): makes sure the SKU is a cart line - adding 1 if it isn't - and returns
+   * that line's id for `/checkout?buy=<id>`, which orders just that line. null when signed out or
+   * the add failed (the notice says why).
+   */
+  buyNow: (product: CartProduct) => Promise<string | null>;
+  /** Re-reads the account cart - after checkout, which removes the ordered lines server-side. */
+  refresh: () => Promise<void>;
   clearNotice: () => void;
 }
 
@@ -138,6 +146,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem: async (id) => {
         if (isAccount()) await accountCall(() => api.cart.removeItem(id));
         else persistGuest(removeLine(cart, id));
+      },
+      buyNow: async (product) => {
+        if (!isAccount()) return null;
+        const existing = cart.items.find((line) => line.skuId === product.skuId);
+        if (existing) return existing.cartItemId;
+        const gen = generation.current;
+        try {
+          const view = await api.cart.addItem(product.skuId, 1);
+          if (gen === generation.current) setCart(view);
+          return view.items.find((line) => line.skuId === product.skuId)?.cartItemId ?? null;
+        } catch (err) {
+          setNotice(cartErrorMessage(err, 1));
+          return null;
+        }
+      },
+      refresh: async () => {
+        if (isAccount()) await accountCall(() => api.cart.get());
       },
     }),
     [mode, cart, notice],

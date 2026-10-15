@@ -240,22 +240,14 @@ async function cancelOrder(orderId: string, note: string): Promise<void> {
  * persisted onto the order verbatim (see `ShippingAddressView`'s doc
  * comment for why a snapshot, not just a foreign key).
  */
-export async function checkout(userId: string, addressId: string): Promise<OrderView> {
+export async function checkout(
+  userId: string,
+  addressId: string,
+  /** "Buy this now": order only these lines of the cart (default: all of it). */
+  cartItemIds?: string[],
+): Promise<OrderView> {
   if (!addressId) {
     throw new AppError('VALIDATION_ERROR', 400, 'a shipping address is required');
-  }
-
-  const recentOrder = await prisma.order.findFirst({
-    where: {
-      userId,
-      status: 'PENDING_PAYMENT',
-      deletedAt: null,
-      createdAt: { gte: new Date(Date.now() - DOUBLE_CHECKOUT_WINDOW_MS) },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-  if (recentOrder) {
-    return loadOrderView(recentOrder.id, userId);
   }
 
   // Ownership resolved server-side by address-service - throws a 404
@@ -264,14 +256,49 @@ export async function checkout(userId: string, addressId: string): Promise<Order
   // CALLER (order-service); `userId` identifies the SUBJECT (Ch6.5).
   const address = await addressClient.getAddressForOrder(userId, addressId);
 
+  // Double-tap guard: a PENDING_PAYMENT order from moments ago is the same checkout when it is for
+  // exactly these items, or when those items already left the cart (the first tap converted them) -
+  // return it instead of failing or creating (and reserving stock for) a duplicate. A different
+  // selection ("Buy this now" on another line) is a different order.
+  const recentOrder = await prisma.order.findFirst({
+    where: {
+      userId,
+      status: 'PENDING_PAYMENT',
+      deletedAt: null,
+      createdAt: { gte: new Date(Date.now() - DOUBLE_CHECKOUT_WINDOW_MS) },
+    },
+    orderBy: { createdAt: 'desc' },
+    include: { items: { select: { skuId: true, quantity: true } } },
+  });
+
   const cart = await cartClient.getMyCart(userId);
+  const wanted = cartItemIds ? new Set(cartItemIds) : null;
+  const selected = wanted ? cart.items.filter((item) => wanted.has(item.cartItemId)) : cart.items;
+  const missing = selected.length === 0 || (wanted !== null && selected.length !== wanted.size);
+
+  const signature = (items: { skuId: string; quantity: number }[]) =>
+    items
+      .map((item) => `${item.skuId}x${item.quantity}`)
+      .sort()
+      .join(',');
+  if (recentOrder && (missing || signature(recentOrder.items) === signature(selected))) {
+    return loadOrderView(recentOrder.id, userId);
+  }
 
   if (cart.items.length === 0) {
     throw new AppError('VALIDATION_ERROR', 400, 'Cart is empty');
   }
+  if (missing) {
+    throw new AppError(
+      'CONFLICT',
+      409,
+      'Some of these items are no longer in your cart. Please refresh your cart.',
+    );
+  }
+  const wholeCart = selected.length === cart.items.length;
 
   const lines: RepricedLine[] = [];
-  for (const cartItem of cart.items) {
+  for (const cartItem of selected) {
     const sku = await catalogClient.getSku(cartItem.skuId);
 
     if (!sku.active) {
@@ -408,7 +435,15 @@ export async function checkout(userId: string, addressId: string): Promise<Order
   // a checkout failure - so a cart-service outage here must not undo an
   // otherwise-successful order.
   try {
-    await cartClient.convertCart(userId);
+    if (wholeCart) {
+      await cartClient.convertCart(userId);
+    } else {
+      // "Buy this now": only the bought lines leave the cart; the rest stay for later.
+      await cartClient.removeItems(
+        userId,
+        selected.map((item) => item.cartItemId),
+      );
+    }
   } catch (convertErr: unknown) {
     // eslint-disable-next-line no-console
     console.error('failed to mark cart CONVERTED after successful checkout', convertErr);

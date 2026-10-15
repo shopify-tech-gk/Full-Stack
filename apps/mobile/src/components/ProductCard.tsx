@@ -11,8 +11,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { ProductCardData } from '@youmart/shared-client';
 import { colors, font, radii, space } from '@/theme';
-import { useCart } from '@/stores/cart';
 import { useWishlist } from '@/stores/wishlist';
+import { CartStepper } from './CartStepper';
 import { Price, ProductImage, Stars } from './ui';
 
 interface Props {
@@ -27,7 +27,6 @@ interface Props {
 
 function ProductCardBase({ product, width, accent, compact }: Props) {
   const router = useRouter();
-  const cart = useCart();
   const wishlist = useWishlist();
   const slug = product.slug ?? '';
   const saved = product.skuId ? wishlist.has(product.skuId) : false;
@@ -36,18 +35,6 @@ function ProductCardBase({ product, width, accent, compact }: Props) {
 
   const open = () => {
     if (slug) router.push(`/product/${slug}`);
-  };
-
-  const add = () => {
-    if (!product.skuId || !slug) return;
-    cart.addItem({
-      skuId: product.skuId,
-      productId: product.id,
-      productSlug: slug,
-      title: product.title,
-      price: product.sellingPrice,
-      image: product.image,
-    });
   };
 
   const heart = () => {
@@ -113,19 +100,22 @@ function ProductCardBase({ product, width, accent, compact }: Props) {
         </Text>
         <Stars rating={product.rating} size={compact ? 10 : 13} />
         <Price mrp={product.mrp} price={product.sellingPrice} size={compact ? 'xs' : 'sm'} />
-        {product.skuId ? (
-          <Pressable
-            onPress={add}
-            style={({ pressed }) => [
-              styles.add,
-              compact && styles.addCompact,
-              pressed && styles.addPressed,
-            ]}
-          >
-            <Ionicons name="cart-outline" size={compact ? 13 : 15} color={colors.white} />
-            <Text style={[styles.addText, compact && styles.addTextCompact]}>Add</Text>
-          </Pressable>
-        ) : null}
+        <CartStepper
+          product={
+            product.skuId && slug
+              ? {
+                  skuId: product.skuId,
+                  productId: product.id,
+                  productSlug: slug,
+                  title: product.title,
+                  price: product.sellingPrice,
+                  image: product.image,
+                }
+              : null
+          }
+          compact={compact}
+          style={compact ? styles.addCompact : styles.add}
+        />
       </View>
     </Pressable>
   );
@@ -167,21 +157,9 @@ const styles = StyleSheet.create({
   heartPressed: { opacity: 0.7 },
   body: { padding: space.md, gap: 6 },
   title: { fontFamily: font.body, fontSize: 13.5, lineHeight: 18, color: colors.text.strong },
-  add: {
-    marginTop: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.button,
-    paddingVertical: 8,
-  },
-  addPressed: { backgroundColor: colors.brand.accent },
-  addText: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.white },
+  add: { marginTop: 4 },
   heartCompact: { width: 26, height: 26, borderRadius: 13, top: 6, right: 6 },
   bodyCompact: { padding: 8, gap: 3 },
   titleCompact: { fontSize: 11.5, lineHeight: 15 },
-  addCompact: { paddingVertical: 6, marginTop: 2, gap: 4 },
-  addTextCompact: { fontSize: 12 },
+  addCompact: { marginTop: 2 },
 });

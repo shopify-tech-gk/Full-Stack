@@ -21,3 +21,10 @@ export const ConvertCartBody = z.object({
   userId: z.string().uuid(),
 });
 export type ConvertCartBody = z.infer<typeof ConvertCartBody>;
+
+// Service-only: order-service, after checking out SOME of the cart's lines ("Buy this now").
+export const RemoveCartItemsBody = z.object({
+  userId: z.string().uuid(),
+  cartItemIds: z.array(z.string().uuid()).min(1).max(100),
+});
+export type RemoveCartItemsBody = z.infer<typeof RemoveCartItemsBody>;
