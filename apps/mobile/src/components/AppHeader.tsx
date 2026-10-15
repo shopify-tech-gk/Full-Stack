@@ -25,6 +25,15 @@ export function AppHeader() {
       <View style={styles.row}>
         <Image source={LOGO} style={styles.logo} contentFit="contain" />
         <View style={styles.actions}>
+          <Pressable
+            style={styles.tile}
+            onPress={() => router.push('/scan')}
+            hitSlop={6}
+            accessibilityLabel="Scan QR to sign in on a computer"
+          >
+            <Ionicons name="qr-code-outline" size={21} color={colors.brand.DEFAULT} />
+            <Text style={styles.tileLabel}>QR{'\n'}Login</Text>
+          </Pressable>
           <Pressable style={styles.tile} onPress={() => router.push('/track-order')} hitSlop={6}>
             <Ionicons name="cube-outline" size={22} color={colors.brand.DEFAULT} />
             <Text style={styles.tileLabel}>Track{'\n'}Order</Text>
@@ -56,14 +65,6 @@ export function AppHeader() {
           <Ionicons name="camera-outline" size={21} color={colors.brand.DEFAULT} />
         </Pressable>
         <Pressable
-          style={styles.scan}
-          onPress={() => router.push('/scan')}
-          hitSlop={8}
-          accessibilityLabel="Scan a QR code"
-        >
-          <Ionicons name="qr-code-outline" size={18} color={colors.brand.DEFAULT} />
-        </Pressable>
-        <Pressable
           style={styles.mic}
           onPress={() => setVoice(true)}
           hitSlop={8}
@@ -92,8 +93,8 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   logo: { width: 140, height: 53 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginLeft: 'auto' },
-  tile: { alignItems: 'center', gap: 2, width: 52 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 'auto' },
+  tile: { alignItems: 'center', gap: 2, width: 50 },
   tileLabel: {
     fontFamily: font.uiSemibold,
     fontSize: 9.5,

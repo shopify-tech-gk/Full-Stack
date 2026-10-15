@@ -103,9 +103,13 @@ const ALWAYS_AUTHENTICATED_PREFIXES = [
   '/api/admin/invoices',
 ];
 
-/** W1: the one public endpoint under an otherwise always-authenticated prefix (guest
- * order-track, POST only) - order-service enforces its own orderNumber+phone check. */
-const PUBLIC_EXCEPTIONS = [{ method: 'POST', path: '/api/orders/track' }];
+/** Public endpoints under an otherwise always-authenticated prefix: W1 guest order-track (POST;
+ * order-service enforces its own orderNumber+phone check) and v1.13 the public coupon list (GET;
+ * optionalAuth - a signed-in caller also sees which ones they've already used). */
+const PUBLIC_EXCEPTIONS = [
+  { method: 'POST', path: '/api/orders/track' },
+  { method: 'GET', path: '/api/orders/coupons' },
+];
 
 function fastFailMissingAuth(req: Request, res: Response, next: NextFunction): void {
   const isPublic = PUBLIC_EXCEPTIONS.some((e) => e.method === req.method && e.path === req.path);

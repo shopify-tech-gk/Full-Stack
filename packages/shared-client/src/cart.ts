@@ -71,7 +71,7 @@ export function shippingLabel(shipping: Money): string | null {
 
 // --- Checkout ---
 
-/** Razorpay is the only gateway the payment-service supports (no cash on delivery). */
+/** Online (Razorpay) or Cash on Delivery (v1.12). */
 export const PAYMENT_METHODS = [
   {
     id: 'razorpay',
@@ -79,7 +79,20 @@ export const PAYMENT_METHODS = [
     description:
       'Pay securely with Razorpay. You will complete the payment in the Razorpay window after placing the order.',
   },
+  {
+    id: 'cod',
+    label: 'Cash on Delivery',
+    description: 'Pay in cash (or UPI to the delivery partner) when your order arrives.',
+  },
 ] as const;
+
+/** Cash on Delivery is offered for orders up to this total (payment-service COD_MAX_AMOUNT). */
+export const COD_MAX_AMOUNT = '50000.00' as Money;
+
+/** Whether Cash on Delivery can be offered for an order total. */
+export function codAvailable(total: Money): boolean {
+  return toPaise(total) <= toPaise(COD_MAX_AMOUNT);
+}
 
 export type PaymentMethodId = (typeof PAYMENT_METHODS)[number]['id'];
 
@@ -117,7 +130,12 @@ export function orderOverview(
     { label: 'Order number', value: order.orderNumber },
     {
       label: 'Status',
-      value: order.status === 'CONFIRMED' ? 'Paid \u00b7 Confirmed' : orderStatusLabel(order),
+      value:
+        order.status === 'CONFIRMED'
+          ? order.paymentMethod === 'COD'
+            ? 'Confirmed \u00b7 Pay on delivery'
+            : 'Paid \u00b7 Confirmed'
+          : orderStatusLabel(order),
     },
     {
       label: 'Date',
@@ -128,7 +146,18 @@ export function orderOverview(
         timeZone: 'Asia/Kolkata',
       }).format(new Date(placedAt)),
     },
+    ...(order.discountTotal && toPaise(order.discountTotal) > 0
+      ? [
+          {
+            label: 'Coupon',
+            value: `${order.couponCode ?? 'Discount'} \u00b7 \u2212${formatMoney(order.discountTotal)}`,
+          },
+        ]
+      : []),
     { label: 'Total', value: formatMoney(order.grandTotal) },
-    { label: 'Payment method', value: 'Razorpay' },
+    {
+      label: 'Payment method',
+      value: order.paymentMethod === 'COD' ? 'Cash on Delivery' : 'Online (Razorpay)',
+    },
   ];
 }

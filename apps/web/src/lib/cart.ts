@@ -23,6 +23,7 @@ import {
 } from '@youmart/shared-client';
 import { api } from './api';
 import { showCartToast } from './cart-toast';
+import { playAddToCartSound, preloadAddToCartSound } from './feedback';
 import { rememberProductImage } from './product-images';
 import { getSession, onSessionChange, useSession } from './session';
 
@@ -333,8 +334,10 @@ export function useCartCount(): number {
 /** Adds to the cart (guest or account) and confirms it; resolves true when the add went in. */
 export function useAddToCart(): (product: CartProduct, quantity: number) => Promise<boolean> {
   useSession();
+  preloadAddToCartSound();
   return async (product, quantity) => {
     const result = await add(product, quantity);
+    if (result.ok) playAddToCartSound();
     showCartToast(
       result.ok
         ? {
@@ -348,4 +351,27 @@ export function useAddToCart(): (product: CartProduct, quantity: number) => Prom
     );
     return result.ok;
   };
+}
+
+/**
+ * "Buy now" (signed in): makes sure the SKU is a cart line - adding 1 if it isn't - and returns that
+ * line's id for `/checkout?buy=<id>`, which orders just that line. null for a guest (sign in first:
+ * guest lines get new ids when they merge into the account) or when the add failed (a toast says
+ * why).
+ */
+export async function buyNowLine(product: CartProduct): Promise<string | null> {
+  await whenReady();
+  if (snapshot.mode !== 'account') return null;
+  const existing = snapshot.cart?.items.find((line) => line.skuId === product.skuId);
+  if (existing) return existing.cartItemId;
+  const result = await add(product, 1);
+  if (!result.ok) {
+    showCartToast({ tone: 'error', message: result.message });
+    return null;
+  }
+  const line = snapshot.cart?.items.find((l) => l.skuId === product.skuId);
+  if (line) return line.cartItemId;
+  // Another cart call was still in flight, so the snapshot isn't updated yet - ask the server.
+  const fresh = await api.cart.get().catch(() => null);
+  return fresh?.items.find((l) => l.skuId === product.skuId)?.cartItemId ?? null;
 }

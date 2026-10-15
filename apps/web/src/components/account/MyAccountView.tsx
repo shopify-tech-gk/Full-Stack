@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { Clock, Heart, ShoppingBasket, Star, TicketPercent } from 'lucide-react';
 import { ROUTES, authUserLabel } from '@youmart/shared-client';
 import { reloadUser, useSession } from '@/lib/session';
 import { AccountShell } from './AccountShell';
@@ -55,6 +56,32 @@ function Dashboard({ label }: { label: string }) {
         </Link>
         .
       </p>
+      {/* v1.12: quick tiles (Flipkart-style) for the most used account pages. */}
+      <ul className="mb-[28px] grid grid-cols-2 gap-[12px] md:grid-cols-3 xl:grid-cols-5">
+        {[
+          { href: ROUTES.orders, label: 'Orders', sub: 'Track & manage', Icon: ShoppingBasket },
+          { href: ROUTES.wishlist, label: 'Wishlist', sub: 'Saved items', Icon: Heart },
+          { href: ROUTES.coupons, label: 'Coupons', sub: 'Offers for you', Icon: TicketPercent },
+          {
+            href: ROUTES.recentlyViewed,
+            label: 'Recently viewed',
+            sub: 'Your history',
+            Icon: Clock,
+          },
+          { href: ROUTES.myReviews, label: 'My reviews', sub: 'Rate & edit', Icon: Star },
+        ].map(({ href, label, sub, Icon }) => (
+          <li key={href}>
+            <Link
+              href={href}
+              className="flex h-full flex-col gap-[6px] rounded-[12px] border border-catalog-rule bg-white p-[14px] font-ui transition-shadow hover:shadow-product-card focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+              <Icon aria-hidden="true" className="size-[22px] text-brand" />
+              <span className="text-[15px] font-semibold text-heading">{label}</span>
+              <span className="text-[12.5px] text-ink-muted">{sub}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
       <h2 className="mb-[12px] font-ui text-[20px] font-semibold leading-[26px] text-heading">
         Recent orders
       </h2>

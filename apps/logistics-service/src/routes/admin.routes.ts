@@ -10,6 +10,7 @@ import {
   addTrackingEvent,
   markDelivered,
   getTracking,
+  getShipmentByOrderItem,
 } from '../logistics/logistics.service';
 import { requireAdmin } from '../authMiddleware';
 
@@ -67,3 +68,14 @@ adminLogisticsRouter.get('/shipments/:id', requireAdmin('fulfillment.manage'), a
   const detail = await getTracking(id);
   res.status(200).json(detail);
 });
+
+// v1.14 admin dashboard: an order item's shipment (404 = not shipped yet).
+adminLogisticsRouter.get(
+  '/order-item/:orderItemId',
+  requireAdmin('fulfillment.manage'),
+  async (req, res) => {
+    const orderItemId = typeof req.params.orderItemId === 'string' ? req.params.orderItemId : '';
+    const shipment = await getShipmentByOrderItem(orderItemId);
+    res.status(200).json(await getTracking(shipment.id));
+  },
+);

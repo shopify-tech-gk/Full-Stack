@@ -156,14 +156,14 @@ export function buildCategoryTaxonomy(
               children: items
                 .filter((item) => slugify(item) !== subSlug)
                 .map((item) => {
-                const itemSlug = slugify(item);
-                return {
-                  slug: itemSlug,
-                  name: item,
-                  ...link(item, sub),
-                  image: images[`${slug}/${subSlug}/${itemSlug}`] ?? null,
-                };
-              }),
+                  const itemSlug = slugify(item);
+                  return {
+                    slug: itemSlug,
+                    name: item,
+                    ...link(item, sub),
+                    image: images[`${slug}/${subSlug}/${itemSlug}`] ?? null,
+                  };
+                }),
             };
           })
           .sort(byName),

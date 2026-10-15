@@ -108,3 +108,120 @@ body:has(> .skiptranslate) {
     outline-offset: 2px;
   }
 }
+
+/* ---------- Opening animation (components/layout/IntroSplash.tsx) - same look as the app ---------- */
+.ym-intro-seen #ym-intro { display: none; }
+.ym-intro-playing body { overflow: hidden; }
+.ym-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  cursor: pointer;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f4f9ff 0%, #dcecff 55%, #c7e0ff 100%);
+  transition: opacity 450ms ease-out, transform 450ms ease-out;
+}
+.ym-intro--leaving { opacity: 0; transform: scale(1.06); pointer-events: none; }
+.ym-intro__halo {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 46%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 42%);
+}
+.ym-intro__drop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--size);
+  height: var(--size);
+  margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2);
+  border-radius: calc(var(--size) * 0.28);
+  border: 1.5px solid #fff;
+  background-color: #fff;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 2px 6px rgba(11, 61, 145, 0.18);
+  opacity: 0;
+  animation: ym-fall var(--dur) linear var(--delay) infinite;
+}
+/* Falls mostly straight, then is pulled sideways into the logo (x eases in), shrinking and fading. */
+@keyframes ym-fall {
+  0% { opacity: 0; transform: translate(var(--x0), -6vh) rotate(var(--r0)) scale(1); }
+  6% { opacity: 1; }
+  25% { transform: translate(calc(var(--x0) + (50vw - var(--x0)) * 0.016), 7.6vh) rotate(var(--r0)) scale(1); }
+  50% { transform: translate(calc(var(--x0) + (50vw - var(--x0)) * 0.125), 17.8vh) scale(1); }
+  72% { opacity: 1; transform: translate(calc(var(--x0) + (50vw - var(--x0)) * 0.373), 28.9vh) scale(1); }
+  82% { opacity: 0.9; transform: translate(calc(var(--x0) + (50vw - var(--x0)) * 0.551), 34.7vh) scale(0.7); }
+  100% { opacity: 0; transform: translate(50vw, 46vh) rotate(var(--r1)) scale(0.15); }
+}
+.ym-intro__center {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.ym-intro__glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(80vw, 420px);
+  height: min(80vw, 420px);
+  border-radius: 50%;
+  transform: translate(-50%, -62%);
+  background: radial-gradient(circle, rgba(32, 138, 239, 0.42) 0%, rgba(32, 138, 239, 0) 65%);
+  animation: ym-glow 1.8s ease-in-out infinite;
+}
+.ym-intro__plate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(62vw, 300px);
+  aspect-ratio: 1 / 0.62;
+  border-radius: 28px;
+  background: #fff;
+  border: 1px solid rgba(32, 138, 239, 0.18);
+  box-shadow: 0 14px 32px rgba(11, 61, 145, 0.25);
+  animation: ym-logo-in 650ms cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    ym-pulse 740ms ease-in-out 600ms infinite;
+}
+.ym-intro__logo { width: 82%; height: auto; }
+.ym-intro__tagline {
+  position: relative;
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-outfit), sans-serif;
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: 0.6px;
+  color: #0142aa;
+  opacity: 0;
+  animation: ym-tagline 600ms ease-out 2.6s both;
+}
+.ym-intro__bar { width: 44px; height: 3px; border-radius: 2px; background: #208aef; }
+.ym-intro__skip {
+  position: absolute;
+  bottom: 28px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 12px;
+  color: rgba(1, 66, 170, 0.55);
+}
+@keyframes ym-logo-in { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+@keyframes ym-pulse { 0%, 100% { scale: 1; } 43% { scale: 1.06; } }
+@keyframes ym-glow { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.8; } }
+@keyframes ym-tagline { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ym-intro__rain { display: none; }
+  .ym-intro__plate, .ym-intro__glow { animation: none; }
+  .ym-intro__tagline { animation-delay: 0s; }
+}

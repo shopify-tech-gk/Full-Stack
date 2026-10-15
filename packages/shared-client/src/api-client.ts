@@ -7,6 +7,9 @@ import type {
   ApiErrorCode,
   AccountDeletionCheck,
   AuthUser,
+  AvailableCoupon,
+  CouponQuote,
+  Money,
   LoggedInDevice,
   QrLoginPoll,
   QrLoginRequest,
@@ -25,6 +28,7 @@ import type {
   CategoryFilters,
   GuestTrackingView,
   MyReview,
+  MyReviewListItem,
   NotifyPreference,
   OrderListItem,
   OrderView,
@@ -197,6 +201,13 @@ export function createApiClient(options: ApiClientOptions) {
       me: () => json<AuthUser>('GET', '/auth/me'),
       /** v1.6: display name only (phone/email are OTP-verified login identifiers). */
       updateProfile: (body: { name: string }) => json<AuthUser>('PATCH', '/auth/me', { body }),
+      /** v1.12: change/add the mobile number or email - a code goes to the NEW value first. */
+      requestContactChange: (identifier: string) =>
+        json<{ status: 'otp_sent'; expiresInSeconds: number }>('POST', '/auth/me/contact/request', {
+          body: { identifier },
+        }),
+      verifyContactChange: (identifier: string, code: string) =>
+        json<AuthUser>('POST', '/auth/me/contact/verify', { body: { identifier, code } }),
       /** W8: the customer's saved home category order (empty array when never personalised). */
       getPreferences: () => json<{ categoryOrder: string[] }>('GET', '/auth/me/preferences'),
       setCategoryOrder: (categoryOrder: string[]) =>
@@ -263,6 +274,8 @@ export function createApiClient(options: ApiClientOptions) {
         json<ReviewPage>('GET', `/catalog/products/${encodeURIComponent(slug)}/reviews`, {
           query,
         }),
+      /** v1.12: My Reviews - every review the caller has written. */
+      myReviews: () => json<{ items: MyReviewListItem[] }>('GET', '/catalog/reviews/mine'),
       myReview: (slug: string) =>
         json<MyReview>('GET', `/catalog/products/${encodeURIComponent(slug)}/reviews/mine`),
       submitReview: (slug: string, body: SubmitReviewBody) =>
@@ -313,9 +326,24 @@ export function createApiClient(options: ApiClientOptions) {
     },
     orders: {
       /** `cartItemIds` (v1.11, "Buy this now"): order only these cart lines; omit for the whole cart. */
-      checkout: (addressId: Uuid, cartItemIds?: readonly Uuid[]) =>
+      /** v1.13: `couponCode` is validated and reserved by the server (never a client discount). */
+      checkout: (addressId: Uuid, cartItemIds?: readonly Uuid[], couponCode?: string) =>
         json<OrderView>('POST', '/orders/checkout', {
-          body: cartItemIds?.length ? { addressId, cartItemIds } : { addressId },
+          body: {
+            addressId,
+            ...(cartItemIds?.length ? { cartItemIds } : {}),
+            ...(couponCode ? { couponCode } : {}),
+          },
+        }),
+      /** v1.13: public offers; with `subtotal`, each says whether it fits and what it saves. */
+      coupons: (subtotal?: Money) =>
+        json<{ items: AvailableCoupon[] }>('GET', '/orders/coupons', {
+          query: subtotal ? { subtotal } : {},
+        }),
+      /** v1.13: validates a code against the caller's cart (or just `cartItemIds`). */
+      quoteCoupon: (code: string, cartItemIds?: readonly Uuid[]) =>
+        json<CouponQuote>('POST', '/orders/coupons/quote', {
+          body: { code, ...(cartItemIds?.length ? { cartItemIds } : {}) },
         }),
       list: (query?: PaginationQuery) =>
         json<Paginated<OrderListItem>>('GET', '/orders', { query }),
@@ -348,8 +376,9 @@ export function createApiClient(options: ApiClientOptions) {
       createRazorpayOrder: (orderId: Uuid) =>
         json<RazorpayOrder>('POST', '/payments/razorpay-order', { body: { orderId } }),
       /** W9: pay an order - wallet first when `useWallet`, Razorpay for any rest. */
-      pay: (orderId: Uuid, useWallet: boolean) =>
-        json<PayOrderResult>('POST', '/payments/pay', { body: { orderId, useWallet } }),
+      /** v1.12: method COD = Cash on Delivery (confirms the order; nothing is paid now). */
+      pay: (orderId: Uuid, useWallet: boolean, method: 'ONLINE' | 'COD' = 'ONLINE') =>
+        json<PayOrderResult>('POST', '/payments/pay', { body: { orderId, useWallet, method } }),
       /** W9: confirm a Razorpay Checkout payment (order or top-up) right after it succeeds. */
       verify: (body: {
         razorpayOrderId: string;

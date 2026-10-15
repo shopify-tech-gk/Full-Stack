@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Check, ChevronDown, Loader2, Lock } from 'lucide-react';
+import { Check, ChevronDown, Loader2, Lock, Zap } from 'lucide-react';
 import {
   ApiError,
   CART_SHIPPING_TOTAL,
@@ -13,14 +13,18 @@ import {
   authUserLabel,
   cartTotals,
   checkoutBlocker,
+  codAvailable,
   colors,
   defaultCheckoutAddress,
   formatMoney,
   paymentErrorMessage,
+  recalcCart,
   placeOrderErrorMessage,
   pollOrderStatus,
   razorpayCheckoutOptions,
   type CartTotals,
+  type CouponQuote,
+  type Money,
   type OrderView,
   type PaymentMethodId,
 } from '@youmart/shared-client';
@@ -36,6 +40,8 @@ import { openRazorpayCheckout } from '@/lib/razorpay';
 import { forgetPendingOrder, pendingOrderId, rememberPendingOrder } from '@/lib/pending-order';
 import { useSession } from '@/lib/session';
 import { AddressPicker } from './AddressPicker';
+import { CouponBox } from './CouponBox';
+import { PLACING_STEP_MS, PlacingOrderModal, atLeast } from './PlacingOrderModal';
 import { OrderPanel, OrderReviewTable, type ReviewRow } from './OrderReview';
 import { OrderReceived } from './OrderReceived';
 import { PaymentMethods } from './PaymentMethods';
@@ -110,10 +116,24 @@ export function CheckoutView() {
   const session = useSession();
   const loggedIn = session.status === 'authenticated';
   const userId = session.user?.id ?? null;
-  const { cart, reload: reloadCart } = useCart();
+  const { cart: fullCart, reload: reloadCart, setQuantity, remove } = useCart();
+  // "Buy this now" (cart, wishlist, product page): only these cart lines are ordered; the rest
+  // stay in the cart. Without ?buy= the whole cart is checked out, as before.
+  const buyParam = useSearchParams().get('buy');
+  const buyIds = buyParam ? buyParam.split(',').filter(Boolean) : null;
+  const cart =
+    fullCart && buyIds
+      ? recalcCart(
+          fullCart.cartId,
+          fullCart.items.filter((line) => buyIds.includes(line.cartItemId)),
+        )
+      : fullCart;
+  const partial = Boolean(buyIds && fullCart && cart && fullCart.items.length > cart.items.length);
   const { addresses, reload: reloadAddresses } = useAddresses();
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [payment, setPayment] = useState<PaymentMethodId>('razorpay');
+  const [coupon, setCoupon] = useState<CouponQuote | null>(null);
+  const [couponNote, setCouponNote] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>({ step: 'review' });
   const [message, setMessage] = useState<Message | null>(null);
   // Until we know whether this customer has an unpaid order from before a reload.
@@ -126,6 +146,43 @@ export function CheckoutView() {
       : (defaultCheckoutAddress(addresses ?? [])?.id ?? null);
 
   useEffect(() => () => polling.current?.abort(), []);
+
+  // Quantities can change on this page: an applied coupon is checked again against the new lines
+  // (after a short pause, so the cart update reaches the server first). If it no longer applies it
+  // comes off with the reason.
+  const lineKey = (cart?.items ?? []).map((l) => `${l.cartItemId}:${l.quantity}`).join();
+  const quotedFor = useRef(lineKey);
+  useEffect(() => {
+    if (!coupon) {
+      quotedFor.current = lineKey;
+      return;
+    }
+    if (quotedFor.current === lineKey || !cart || cart.items.length === 0) return;
+    const code = coupon.coupon.code;
+    const ids = buyIds ? cart.items.map((l) => l.cartItemId) : undefined;
+    const t = setTimeout(() => {
+      quotedFor.current = lineKey;
+      api.orders
+        .quoteCoupon(code, ids)
+        .then((quote) => setCoupon(quote))
+        .catch((failure: unknown) => {
+          setCoupon(null);
+          setCouponNote(
+            failure instanceof ApiError
+              ? `${code} was removed: ${failure.message}`
+              : `${code} was removed - please apply it again.`,
+          );
+        });
+    }, 700);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lineKey, coupon]);
+
+  const changeQuantity = (cartItemId: string, quantity: number) => {
+    setCouponNote(null);
+    if (quantity <= 0) remove(cartItemId);
+    else setQuantity(cartItemId, quantity);
+  };
 
   const finish = (order: OrderView) => {
     forgetPendingOrder();
@@ -220,9 +277,21 @@ export function CheckoutView() {
     }
     setMessage(null);
     setPhase({ step: 'placing' });
+    const useCod =
+      payment === 'cod' &&
+      codAvailable((coupon?.total ?? cartTotals(cart, CART_SHIPPING_TOTAL).total) as Money);
     let order: OrderView;
     try {
-      order = await api.orders.checkout(addressId);
+      // The real request runs under the "Placing your order" steps (a minimum so it reads as real;
+      // Cash on Delivery's confirmation is the last step, below).
+      order = await atLeast(
+        api.orders.checkout(
+          addressId,
+          buyIds ? cart.items.map((line) => line.cartItemId) : undefined,
+          coupon?.coupon.code,
+        ),
+        (placingSteps.length - (useCod ? 1 : 0)) * PLACING_STEP_MS + 150,
+      );
     } catch (error) {
       setPhase({ step: 'review' });
       setMessage({ tone: 'error', text: placeOrderErrorMessage(error) });
@@ -232,6 +301,23 @@ export function CheckoutView() {
     rememberPendingOrder(userId, order.orderId);
     // The order consumed the server cart; the header count follows.
     reloadCart();
+    if (useCod) {
+      // Cash on Delivery: confirmed straight away - nothing to pay now.
+      try {
+        await atLeast(api.payments.pay(order.orderId, false, 'COD'), PLACING_STEP_MS);
+        finish(await api.orders.get(order.orderId));
+      } catch (error) {
+        setPhase({ step: 'pay', order });
+        setMessage({
+          tone: 'error',
+          text:
+            error instanceof ApiError
+              ? error.message
+              : 'Cash on Delivery could not be confirmed. Please try again or pay online.',
+        });
+      }
+      return;
+    }
     await pay(order);
   };
 
@@ -273,11 +359,19 @@ export function CheckoutView() {
   }, [session.status, userId]);
 
   const order = 'order' in phase ? phase.order : null;
+  const placingSteps = [
+    'Checking prices & stock',
+    ...(coupon ? [`Applying ${coupon.coupon.code}`] : []),
+    payment === 'cod' ? 'Confirming your Cash on Delivery order' : 'Preparing secure payment',
+  ];
   const cartEmpty = !cart || cart.items.length === 0;
 
   useEffect(() => {
-    if (resumeChecked && !order && cart && cart.items.length === 0) router.replace('/cart');
-  }, [resumeChecked, order, cart, router]);
+    // Only while reviewing: placing an order empties (part of) the cart on purpose.
+    if (resumeChecked && !order && phase.step === 'review' && cart && cart.items.length === 0) {
+      router.replace('/cart');
+    }
+  }, [resumeChecked, order, phase.step, cart, router]);
 
   if (phase.step === 'done') {
     return <OrderReceived order={phase.order} placedAt={phase.placedAt} />;
@@ -307,9 +401,20 @@ export function CheckoutView() {
         quantity: line.quantity,
         lineTotal: line.lineTotal,
       }));
+  const preview = cartTotals(cart!, CART_SHIPPING_TOTAL);
   const totals: CartTotals = order
     ? { subtotal: order.subtotal, shipping: order.shippingTotal, total: order.grandTotal }
-    : cartTotals(cart!, CART_SHIPPING_TOTAL);
+    : coupon
+      ? { ...preview, total: coupon.total }
+      : preview;
+  // v1.13: the coupon row - the placed order's own discount, or the one previewed here.
+  const discount = order
+    ? order.discountTotal && order.discountTotal !== '0.00'
+      ? { code: order.couponCode ?? null, amount: order.discountTotal }
+      : null
+    : coupon
+      ? { code: coupon.coupon.code, amount: coupon.discount }
+      : null;
 
   const busy = phase.step === 'placing' || phase.step === 'paying' || phase.step === 'confirming';
   const notice = message && <Notice tone={message.tone}>{message.text}</Notice>;
@@ -371,6 +476,8 @@ export function CheckoutView() {
             <Loader2 aria-hidden="true" className="size-[18px] animate-spin" />
             Placing order&hellip;
           </>
+        ) : payment === 'cod' && codAvailable(totals.total) ? (
+          'Place order - Cash on Delivery'
         ) : (
           'Place order'
         )}
@@ -380,6 +487,7 @@ export function CheckoutView() {
 
   return (
     <>
+      <PlacingOrderModal open={phase.step === 'placing'} steps={placingSteps} />
       {steps}
       <div className="px-[10px] pb-[32px] font-ui">
         <details className="group mb-[24px] mt-[10px] rounded-[10px] border border-catalog-rule bg-white min-[922px]:hidden">
@@ -397,7 +505,7 @@ export function CheckoutView() {
             </strong>
           </summary>
           <div className="border-t border-catalog-rule px-[14px] pb-[10px]">
-            <OrderReviewTable rows={rows} totals={totals} editable={!order} />
+            <OrderReviewTable rows={rows} totals={totals} editable={!order} discount={discount} />
           </div>
         </details>
 
@@ -468,8 +576,43 @@ export function CheckoutView() {
 
           <div className="min-[922px]:w-[40%]">
             <OrderPanel>
-              <OrderReviewTable rows={rows} totals={totals} editable={!order} />
-              <PaymentMethods selected={payment} onSelect={setPayment} disabled={busy} />
+              {partial && !order ? (
+                <p className="mb-[14px] flex items-center gap-[8px] rounded-[10px] bg-cart-headBg px-[12px] py-[10px] text-[14px] font-semibold text-brand">
+                  <Zap aria-hidden="true" className="size-[16px] shrink-0" />
+                  Buying{' '}
+                  {cart?.items.length === 1
+                    ? 'this item'
+                    : `these ${cart?.items.length} items`}{' '}
+                  only - the rest stay in your cart.
+                </p>
+              ) : null}
+              <OrderReviewTable
+                rows={rows}
+                totals={totals}
+                editable={!order && !busy}
+                discount={discount}
+                onQuantity={changeQuantity}
+              />
+              {couponNote && !order && (
+                <p role="status" className="mb-[8px] mt-[10px] text-[13px] font-semibold text-woo-error">
+                  {couponNote}
+                </p>
+              )}
+              {!order && cart && (
+                <CouponBox
+                  subtotal={totals.subtotal}
+                  cartItemIds={buyIds ? cart.items.map((line) => line.cartItemId) : undefined}
+                  applied={coupon}
+                  onChange={setCoupon}
+                  disabled={busy}
+                />
+              )}
+              <PaymentMethods
+                selected={payment === 'cod' && !codAvailable(totals.total) ? 'razorpay' : payment}
+                onSelect={setPayment}
+                disabled={busy}
+                codAllowed={codAvailable(totals.total)}
+              />
               <p className="mb-[25.6px] text-[14.6px] leading-[1.6] text-ink-body lg:text-[16px]">
                 Your personal data will be used to process your order, support your experience
                 throughout this website, and for other purposes described in our{' '}

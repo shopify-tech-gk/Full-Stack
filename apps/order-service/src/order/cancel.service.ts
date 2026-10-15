@@ -5,6 +5,7 @@ import { enqueueNotification } from '@youmart/notifications-client';
 import type { RefundResult } from '@youmart/service-client';
 import { prisma } from '../db';
 import { inventoryClient, paymentClient } from '../serviceClients';
+import { releaseCouponForOrder } from '../coupon/coupon.service';
 import {
   getOrder,
   releaseWalletHold,
@@ -86,6 +87,7 @@ export async function cancelOrderAsCustomer(
   if (order.status === 'CANCELLED') {
     await inventoryClient.releaseByOrder(orderId);
     await releaseWalletHold(orderId);
+    await releaseCouponForOrder(orderId);
     return { outcome: 'CANCELLED', order: await getOrder(userId, orderId), cancelRequest: null };
   }
 
@@ -109,6 +111,7 @@ export async function cancelOrderAsCustomer(
     });
     await inventoryClient.releaseByOrder(orderId);
     await releaseWalletHold(orderId);
+    await releaseCouponForOrder(orderId);
     return { outcome: 'CANCELLED', order: await getOrder(userId, orderId), cancelRequest: null };
   }
 
@@ -118,6 +121,38 @@ export async function cancelOrderAsCustomer(
       409,
       'This order has already shipped and can no longer be cancelled - please request a return instead',
     );
+  }
+
+  // Cash on Delivery, not shipped yet: no money has moved, so it is cancelled right away (no
+  // admin approval, no refund) - stock goes back and the cash-to-collect is voided.
+  if (order.paymentMethod === 'COD') {
+    const note = `Cancelled by customer (Cash on Delivery): ${input.reason}`;
+    await prisma.$transaction(async (tx) => {
+      const claimed = await tx.order.updateMany({
+        where: { id: orderId, status: 'CONFIRMED', deletedAt: null },
+        data: { status: 'CANCELLED' },
+      });
+      if (claimed.count === 0) {
+        throw new AppError('CONFLICT', 409, 'This order can no longer be cancelled');
+      }
+      await tx.orderStatusHistory.create({
+        data: { orderId, fromStatus: 'CONFIRMED', toStatus: 'CANCELLED', note },
+      });
+    });
+    for (const item of order.items) {
+      if (!CANCELLABLE_ITEM.includes(item.sellerStatus)) continue;
+      await inventoryClient.restock(item.skuId, item.quantity, `cod cancel ${orderId}`);
+      await prisma.orderItem.update({
+        where: { id: item.id },
+        data: { sellerStatus: 'CANCELLED' },
+      });
+    }
+    await releaseCouponForOrder(orderId);
+    await paymentClient.voidCod(orderId).catch((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error('failed to void COD payment', err);
+    });
+    return { outcome: 'CANCELLED', order: await getOrder(userId, orderId), cancelRequest: null };
   }
 
   const open = await prisma.orderCancelRequest.findFirst({
@@ -137,7 +172,15 @@ export async function cancelOrderAsCustomer(
 }
 
 export interface PaginatedCancelRequests {
-  items: CancelRequestView[];
+  /** v1.14: with the order's number / total / payment method for the admin dashboard. */
+  items: Array<
+    CancelRequestView & {
+      orderNumber: string;
+      grandTotal: Money;
+      paymentMethod: 'ONLINE' | 'COD';
+      customerName: string | null;
+    }
+  >;
   nextCursor: string | null;
 }
 
@@ -149,11 +192,22 @@ export async function listCancelRequests(
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: query.limit + 1,
     ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+    include: {
+      order: {
+        select: { orderNumber: true, grandTotal: true, paymentMethod: true, shipFullName: true },
+      },
+    },
   });
   const hasMore = rows.length > query.limit;
   const page = hasMore ? rows.slice(0, query.limit) : rows;
   return {
-    items: page.map(toView),
+    items: page.map((row) => ({
+      ...toView(row),
+      orderNumber: row.order.orderNumber,
+      grandTotal: decimalToMoney(row.order.grandTotal),
+      paymentMethod: row.order.paymentMethod,
+      customerName: row.order.shipFullName,
+    })),
     nextCursor: hasMore ? (page[page.length - 1]?.id ?? null) : null,
   };
 }
@@ -171,7 +225,8 @@ async function findOpenRequest(id: string): Promise<CancelRequestRow> {
 
 export interface ApproveCancelResult {
   cancelRequest: CancelRequestView;
-  refund: RefundResult;
+  /** null for a Cash on Delivery order: nothing was paid, so nothing is refunded. */
+  refund: RefundResult | null;
 }
 
 /**
@@ -206,12 +261,16 @@ export async function approveCancelRequest(
   }
 
   const amount = decimalToMoney(order.grandTotal);
-  const refund = await paymentClient.createRefund(
-    order.id,
-    amount,
-    `Order cancelled on customer request (${request.id})`,
-    `cancel:${request.id}`,
-  );
+  const cod = order.paymentMethod === 'COD';
+  const refund = cod
+    ? null
+    : await paymentClient.createRefund(
+        order.id,
+        amount,
+        `Order cancelled on customer request (${request.id})`,
+        `cancel:${request.id}`,
+      );
+  if (cod) await paymentClient.voidCod(order.id);
 
   for (const item of order.items) {
     if (!CANCELLABLE_ITEM.includes(item.sellerStatus)) continue;
@@ -226,7 +285,9 @@ export async function approveCancelRequest(
         orderId: order.id,
         fromStatus: 'CONFIRMED',
         toStatus: 'CANCELLED',
-        note: 'Cancelled on customer request - refunded to YouMart Wallet',
+        note: cod
+          ? 'Cancelled on customer request (Cash on Delivery - nothing to refund)'
+          : 'Cancelled on customer request - refunded to YouMart Wallet',
       },
     });
     return tx.orderCancelRequest.update({
@@ -235,8 +296,10 @@ export async function approveCancelRequest(
     });
   });
 
+  await releaseCouponForOrder(order.id);
+
   // Best-effort, never blocks the cancellation.
-  if (order.shipPhone) {
+  if (order.shipPhone && !cod) {
     await enqueueNotification({
       channel: 'WHATSAPP',
       to: order.shipPhone,

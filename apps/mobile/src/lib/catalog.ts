@@ -23,7 +23,7 @@ import {
   type StoreSubcategory,
 } from '@youmart/shared-client';
 import { api } from '@/lib/api';
-import { loadGuestViews } from '@/stores/recently-viewed';
+import { clearGuestViews, loadGuestViews } from '@/stores/recently-viewed';
 import { getSession } from '@/stores/session';
 
 const isNotFound = (err: unknown) => err instanceof ApiError && err.status === 404;
@@ -45,6 +45,23 @@ const recentlyViewedFeed: PersonalRailFeed = async (key) => {
     return null;
   }
 };
+
+/** Account > Recently viewed: the full history (signed in: the account's; guest: this device's). */
+export async function getRecentlyViewed(): Promise<ProductCardData[]> {
+  if (getSession().status === 'authenticated') {
+    const { items } = await api.catalog.recentlyViewed();
+    return items.map(toCardData);
+  }
+  const views = await loadGuestViews();
+  if (views.length === 0) return [];
+  const { items } = await api.catalog.productCards(views.map((v) => v.productId));
+  return items.map(toCardData);
+}
+
+export async function clearRecentlyViewed(): Promise<void> {
+  if (getSession().status === 'authenticated') await api.catalog.clearRecentlyViewed();
+  else await clearGuestViews();
+}
 
 export interface HomeData {
   categories: ApiCategory[];

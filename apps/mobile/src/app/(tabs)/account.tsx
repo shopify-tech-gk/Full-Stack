@@ -47,6 +47,15 @@ const ACTIVITY: Item[] = [
   { icon: 'navigate', label: 'Track an order', tint: 'blue', to: '/track-order' },
   { icon: 'location', label: 'Saved addresses', tint: 'teal', to: '/addresses', auth: true },
   { icon: 'cart', label: 'My cart', tint: 'amber', to: '/cart' },
+  {
+    icon: 'return-down-back',
+    label: 'Returns & refunds',
+    tint: 'green',
+    to: '/returns',
+    auth: true,
+  },
+  { icon: 'time', label: 'Recently viewed', tint: 'violet', to: '/account/recently-viewed' },
+  { icon: 'star', label: 'My reviews', tint: 'amber', to: '/account/reviews', auth: true },
 ];
 
 const SETTINGS: Item[] = [
@@ -88,14 +97,8 @@ const QUICK: (Item & { sub: string })[] = [
     auth: true,
   },
   { icon: 'heart', label: 'Wishlist', sub: 'Saved items', tint: 'rose', to: '/wishlist' },
-  {
-    icon: 'return-down-back',
-    label: 'Returns',
-    sub: 'Refund status',
-    tint: 'green',
-    to: '/returns',
-    auth: true,
-  },
+  // v1.13: Orders · Wishlist · Coupons · Help (Returns moved to the list below).
+  { icon: 'pricetags', label: 'Coupons', sub: 'Offers for you', tint: 'green', to: '/coupons' },
   { icon: 'help-buoy', label: 'Help', sub: '24×7 support', tint: 'violet', to: '/help' },
 ];
 

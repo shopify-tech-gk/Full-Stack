@@ -1,7 +1,14 @@
 import { v7 as uuidv7 } from 'uuid';
 import { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
-import { add, sum, compare, gstBackCalculate, splitTaxEqually } from '@youmart/shared-utils';
+import {
+  add,
+  sum,
+  compare,
+  gstBackCalculate,
+  splitTaxEqually,
+  subtract,
+} from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
 import { prisma } from '../db';
 import { config } from '../config';
@@ -160,7 +167,9 @@ export async function generateInvoice(orderId: string): Promise<InvoiceView> {
     // GST-INCLUSIVE back-calc: taxableValue + tax === lineTotal EXACTLY
     // (gstBackCalculate derives tax via subtraction, never a second
     // division - see shared-utils/money.ts).
-    const { taxableValue, tax } = gstBackCalculate(item.lineTotal, ratePercent);
+    // v1.13: a coupon lowers the price actually paid - GST is charged on that paid value.
+    const paid = item.discount ? subtract(item.lineTotal, item.discount) : item.lineTotal;
+    const { taxableValue, tax } = gstBackCalculate(paid, ratePercent);
 
     let cgstAmount: Money = ZERO;
     let sgstAmount: Money = ZERO;
@@ -188,7 +197,7 @@ export async function generateInvoice(orderId: string): Promise<InvoiceView> {
       cgstAmount,
       sgstAmount,
       igstAmount,
-      lineTotal: item.lineTotal,
+      lineTotal: paid,
     });
   }
 

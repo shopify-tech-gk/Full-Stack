@@ -9,3 +9,9 @@ import { config } from './config';
  * their schemas directly.
  */
 export const { prisma, close } = createPrismaClient(config.orderDatabaseUrl, { maxConnections: 8 });
+
+/** v1.13 coupons: the `promotions_svc` role - promotions schema only (coupons + redemptions). */
+export const { prisma: promotionsDb, close: closePromotionsDb } = createPrismaClient(
+  config.promotionsDatabaseUrl,
+  { maxConnections: 4 },
+);

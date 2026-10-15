@@ -2,6 +2,8 @@ import type { RequestHandler } from 'express';
 import {
   createAuthMiddleware,
   createServiceAuthMiddleware,
+  createAdminAuthMiddleware,
+  type AdminAuthMiddleware,
   type AuthMiddleware,
   type ServiceAuthMiddleware,
 } from '@youmart/auth-middleware';
@@ -15,6 +17,15 @@ const authMiddleware: AuthMiddleware = createAuthMiddleware({
 
 export const requireAuth: RequestHandler = authMiddleware.requireAuth;
 export const optionalAuth: RequestHandler = authMiddleware.optionalAuth;
+
+// v1.14 admin dashboard (customer list) - same RS256 key; an admin token carries `typ:"admin"`.
+const adminAuthMiddleware: AdminAuthMiddleware = createAdminAuthMiddleware({
+  publicKey: config.jwtPublicKey,
+  issuer: config.jwtIssuer,
+  audience: config.jwtAudience,
+});
+
+export const requireAdmin = adminAuthMiddleware.requireAdmin;
 
 // Ch6.5 - service-to-service auth (SEPARATE secret/alg from the user RS256
 // keypair above; see @youmart/auth-middleware's serviceAuth.ts doc comment).

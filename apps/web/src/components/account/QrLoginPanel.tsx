@@ -63,7 +63,8 @@ export function QrLoginPanel({ returnTo }: { returnTo?: string }) {
     };
   }, [qr, status, returnTo, router]);
 
-  const dead = status === 'EXPIRED' || status === 'REJECTED' || status === 'ERROR' || status === 'USED';
+  const dead =
+    status === 'EXPIRED' || status === 'REJECTED' || status === 'ERROR' || status === 'USED';
 
   return (
     <div className="rounded-[18px] border border-cart-line bg-white p-[20px] shadow-rail-card">
@@ -119,8 +120,8 @@ export function QrLoginPanel({ returnTo }: { returnTo?: string }) {
             <ol className="mt-[8px] list-decimal space-y-[6px] pl-[18px] text-[14px] leading-[1.5] text-ink-body">
               <li>Open the YouMart app on your phone.</li>
               <li>
-                Tap the <strong className="text-brand">scan</strong> icon next to the mic in the search
-                bar.
+                Tap the <strong className="text-brand">scan</strong> icon next to the mic in the
+                search bar.
               </li>
               <li>Point your phone at this code and confirm.</li>
             </ol>

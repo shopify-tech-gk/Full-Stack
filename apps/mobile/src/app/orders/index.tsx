@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { formatMoney, orderStatusLabel, type OrderListItem } from '@youmart/shared-client';
+import { formatMoney, orderListStatusLabel, type OrderListItem } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { colors, font, radii, space } from '@/theme';
 
@@ -54,10 +54,13 @@ export default function OrdersScreen() {
         <Pressable style={styles.card} onPress={() => router.push(`/orders/${item.orderId}`)}>
           <View style={styles.cardTop}>
             <Text style={styles.orderNo}>#{item.orderNumber}</Text>
-            <View style={[styles.statusPill, item.status === 'CANCELLED' && styles.cancelled]}>
-              <Text style={styles.statusText}>
-                {orderStatusLabel({ status: item.status, items: [] })}
-              </Text>
+            <View
+              style={[
+                styles.statusPill,
+                orderListStatusLabel(item) === 'Cancelled' && styles.cancelled,
+              ]}
+            >
+              <Text style={styles.statusText}>{orderListStatusLabel(item)}</Text>
             </View>
           </View>
           <View style={styles.cardBottom}>

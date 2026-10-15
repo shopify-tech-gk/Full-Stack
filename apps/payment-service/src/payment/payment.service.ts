@@ -61,7 +61,7 @@ export interface RazorpayOrderResult {
 async function ensureRazorpayOrder(orderId: string, amount: Money): Promise<RazorpayOrderResult> {
   const amountPaise = moneyToPaise(amount);
   const existing = await prisma.payment.findFirst({
-    where: { orderId, status: 'CREATED', deletedAt: null },
+    where: { orderId, method: 'ONLINE', status: 'CREATED', deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -122,8 +122,10 @@ export async function createRazorpayOrder(
 }
 
 export interface PayOrderResult {
-  /** PAID = done (the wallet covered everything); PAYMENT_REQUIRED = open Razorpay for the rest. */
-  status: 'PAID' | 'PAYMENT_REQUIRED';
+  /** PAID = done (the wallet covered everything); PAYMENT_REQUIRED = open Razorpay for the rest;
+   * COD = confirmed as Cash on Delivery - `codAmount` is collected at the door. */
+  status: 'PAID' | 'PAYMENT_REQUIRED' | 'COD';
+  codAmount?: Money;
   orderId: string;
   walletAmount: Money;
   onlineAmount: Money;
@@ -143,8 +145,10 @@ export async function payOrder(
   userId: string,
   orderId: string,
   useWallet: boolean,
+  method: 'ONLINE' | 'COD' = 'ONLINE',
 ): Promise<PayOrderResult> {
   const order = await loadOwnOrder(userId, orderId);
+  if (method === 'COD') return payOrderCod(order);
 
   if (order.status === 'CONFIRMED') {
     const hold = await findLiveHold(orderId);
@@ -190,7 +194,7 @@ export async function payOrder(
     }
     // Any Razorpay order made earlier for this order is no longer needed.
     await prisma.payment.updateMany({
-      where: { orderId, status: 'CREATED', deletedAt: null },
+      where: { orderId, method: 'ONLINE', status: 'CREATED', deletedAt: null },
       data: { status: 'FAILED' },
     });
     return { status: 'PAID', orderId, walletAmount, onlineAmount: ZERO, razorpay: null };
@@ -203,6 +207,97 @@ export async function payOrder(
     onlineAmount,
     razorpay: await ensureRazorpayOrder(orderId, onlineAmount),
   };
+}
+
+/**
+ * Cash on Delivery: confirms a PENDING_PAYMENT order with nothing paid now. A cash-to-collect
+ * payment row (method COD, status CREATED) records the amount; it becomes CAPTURED when everything
+ * is delivered (markCodCollected) or FAILED if the order is cancelled first (voidCod). Not combined
+ * with wallet money: any wallet hold is released and any open Razorpay attempt dropped. Safe to call
+ * again - a COD order already confirmed answers COD.
+ */
+async function payOrderCod(order: InternalOrderView): Promise<PayOrderResult> {
+  const orderId = order.orderId;
+  const existing = await prisma.payment.findFirst({
+    where: { orderId, method: 'COD', status: { in: ['CREATED', 'CAPTURED'] }, deletedAt: null },
+  });
+  const result: PayOrderResult = {
+    status: 'COD',
+    orderId,
+    walletAmount: ZERO,
+    onlineAmount: ZERO,
+    codAmount: order.grandTotal,
+    razorpay: null,
+  };
+  if (order.status === 'CONFIRMED' && existing) return result;
+  if (order.status !== 'PENDING_PAYMENT') {
+    throw new AppError('CONFLICT', 409, `Cannot pay for an order in status ${order.status}`);
+  }
+  if (!config.codEnabled) {
+    throw new AppError('VALIDATION_ERROR', 400, 'Cash on Delivery is not available right now');
+  }
+  if (compare(order.grandTotal, config.codMaxAmount) > 0) {
+    const limit = Number(config.codMaxAmount).toLocaleString('en-IN');
+    throw new AppError(
+      'VALIDATION_ERROR',
+      400,
+      `Cash on Delivery is available for orders up to \u20b9${limit}. Please pay online for this order.`,
+    );
+  }
+
+  const hold = await findLiveHold(orderId);
+  if (hold?.status === 'HELD') await releaseHold(orderId);
+
+  if (!existing) {
+    try {
+      await prisma.$transaction([
+        prisma.payment.updateMany({
+          where: { orderId, method: 'ONLINE', status: 'CREATED', deletedAt: null },
+          data: { status: 'FAILED' },
+        }),
+        prisma.payment.create({
+          data: {
+            orderId,
+            amount: order.grandTotal,
+            currency: 'INR',
+            status: 'CREATED',
+            method: 'COD',
+          },
+        }),
+      ]);
+    } catch (err: unknown) {
+      // A concurrent COD call for this order won the race (one live COD row per order).
+      if (!isUniqueViolation(err)) throw err;
+    }
+  }
+
+  try {
+    await orderClient.confirmOrder(orderId, 'COD');
+  } catch (err: unknown) {
+    // Expired/cancelled meanwhile: nothing was paid, so just void the cash-to-collect row.
+    await voidCod(orderId);
+    throw err;
+  }
+  return result;
+}
+
+/** Service-only: everything in a COD order was delivered - the cash is collected. Idempotent. */
+export async function markCodCollected(orderId: string): Promise<{ collected: boolean }> {
+  const updated = await prisma.payment.updateMany({
+    where: { orderId, method: 'COD', status: 'CREATED', deletedAt: null },
+    data: { status: 'CAPTURED' },
+  });
+  if (updated.count > 0) logger.info({ orderId }, 'COD cash collected');
+  return { collected: updated.count > 0 };
+}
+
+/** Service-only: a COD order cancelled before delivery - nothing to collect any more. Idempotent. */
+export async function voidCod(orderId: string): Promise<{ voided: boolean }> {
+  const updated = await prisma.payment.updateMany({
+    where: { orderId, method: 'COD', status: 'CREATED', deletedAt: null },
+    data: { status: 'FAILED' },
+  });
+  return { voided: updated.count > 0 };
 }
 
 export type RefundStatusValue = 'PENDING' | 'PROCESSED' | 'FAILED';
@@ -358,6 +453,8 @@ export interface OrderPaymentSummary {
   walletAmount: Money;
   /** Paid online through Razorpay. */
   onlineAmount: Money;
+  /** Cash on Delivery: the cash amount, and whether it has been collected (null = not COD). */
+  cod: { amount: Money; collected: boolean } | null;
   refundedTotal: Money;
   refunds: {
     refundId: string;
@@ -375,9 +472,22 @@ export async function getOrderPaymentSummary(
   orderId: string,
 ): Promise<OrderPaymentSummary> {
   await loadOwnOrder(userId, orderId);
-  const [payments, hold, refunds] = await Promise.all([
+  const [payments, cod, hold, refunds] = await Promise.all([
     prisma.payment.findMany({
-      where: { orderId, status: { in: ['CAPTURED', 'REFUNDED'] }, deletedAt: null },
+      where: {
+        orderId,
+        method: 'ONLINE',
+        status: { in: ['CAPTURED', 'REFUNDED'] },
+        deletedAt: null,
+      },
+    }),
+    prisma.payment.findFirst({
+      where: {
+        orderId,
+        method: 'COD',
+        status: { in: ['CREATED', 'CAPTURED', 'REFUNDED'] },
+        deletedAt: null,
+      },
     }),
     findLiveHold(orderId),
     prisma.refund.findMany({
@@ -389,6 +499,7 @@ export async function getOrderPaymentSummary(
     orderId,
     walletAmount: hold?.amount ?? ZERO,
     onlineAmount: sum(payments.map((p) => decimalToMoney(p.amount))),
+    cod: cod ? { amount: decimalToMoney(cod.amount), collected: cod.status !== 'CREATED' } : null,
     refundedTotal: sum(refunds.map((r) => decimalToMoney(r.amount))),
     refunds: refunds.map((r) => ({
       refundId: r.id,

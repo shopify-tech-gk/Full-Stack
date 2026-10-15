@@ -977,3 +977,80 @@ async function assertParentCategoryExists(parentId: string): Promise<void> {
     throw new AppError('VALIDATION_ERROR', 400, 'parentId does not reference an existing category');
   }
 }
+
+// ---------------------------------------------------------------------------
+// v1.14 admin dashboard: the whole catalog (every status) with each product's SKUs, so the
+// Products & stock page can edit prices and pair them with inventory's stock levels.
+// ---------------------------------------------------------------------------
+
+export interface AdminProductListItem {
+  id: string;
+  title: string;
+  slug: string;
+  status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+  imageUrl: string | null;
+  category: CategoryRef;
+  rating: string | null;
+  ratingCount: number;
+  skus: Array<{ id: string; skuCode: string; mrp: Money; sellingPrice: Money; attributes: unknown }>;
+  updatedAt: string;
+}
+
+export async function listAdminProducts(query: {
+  q?: string;
+  status?: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+  skuIds?: string[];
+  cursor?: string;
+  limit: number;
+}): Promise<PaginatedList<AdminProductListItem> & { counts: Record<string, number> }> {
+  const q = query.q?.trim();
+  const where: Prisma.ProductWhereInput = {
+    deletedAt: null,
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.skuIds?.length ? { skus: { some: { id: { in: query.skuIds } } } } : {}),
+    ...(q
+      ? {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { skus: { some: { skuCode: { contains: q, mode: 'insensitive' }, deletedAt: null } } },
+          ],
+        }
+      : {}),
+  };
+  const [rows, grouped] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: query.limit + 1,
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      include: PRODUCT_LIST_INCLUDE,
+    }),
+    prisma.product.groupBy({ by: ['status'], where: { deletedAt: null }, _count: true }),
+  ]);
+  const hasMore = rows.length > query.limit;
+  const page = hasMore ? rows.slice(0, query.limit) : rows;
+  const counts: Record<string, number> = { DRAFT: 0, ACTIVE: 0, ARCHIVED: 0 };
+  for (const g of grouped) counts[g.status] = g._count;
+  return {
+    items: page.map((row) => ({
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      status: row.status,
+      imageUrl: row.images[0] ? buildImageUrl(row.images[0].url) : null,
+      category: { id: row.category.id, name: row.category.name, slug: row.category.slug },
+      rating: row.rating?.toFixed(1) ?? null,
+      ratingCount: row.ratingCount,
+      skus: row.skus.map((sku) => ({
+        id: sku.id,
+        skuCode: sku.skuCode,
+        mrp: decimalToMoney(sku.mrp),
+        sellingPrice: decimalToMoney(sku.sellingPrice),
+        attributes: sku.attributes,
+      })),
+      updatedAt: row.updatedAt.toISOString(),
+    })),
+    nextCursor: hasMore ? (page[page.length - 1]?.id ?? null) : null,
+    counts,
+  };
+}

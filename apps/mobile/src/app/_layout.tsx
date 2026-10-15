@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,14 +12,34 @@ import {
   Outfit_700Bold,
 } from '@expo-google-fonts/outfit';
 import { Arimo_400Regular, Arimo_700Bold } from '@expo-google-fonts/arimo';
-import { SessionProvider } from '@/stores/session';
+import { SessionProvider, useSession } from '@/stores/session';
 import { CartProvider } from '@/stores/cart';
 import { WishlistProvider } from '@/stores/wishlist';
 import { AvatarProvider } from '@/stores/profile';
 import { AddressProvider } from '@/stores/address';
+import { LaunchScreen } from '@/components/LaunchScreen';
 import { colors } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
+
+// Once per app process: a cold start plays the intro; returning from the background doesn't.
+let introPlayed = false;
+
+/** The opening animation, over the app while it starts underneath (session restore, cart). */
+function Intro() {
+  const session = useSession();
+  const [show, setShow] = useState(!introPlayed);
+  if (!show) return null;
+  return (
+    <LaunchScreen
+      ready={session.status !== 'loading'}
+      onDone={() => {
+        introPlayed = true;
+        setShow(false);
+      }}
+    />
+  );
+}
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -100,6 +120,10 @@ export default function RootLayout() {
                     />
                     <Stack.Screen name="addresses/map" options={{ headerShown: false }} />
                     <Stack.Screen
+                      name="my-cart"
+                      options={{ headerShown: true, title: 'My Cart' }}
+                    />
+                    <Stack.Screen
                       name="checkout"
                       options={{ headerShown: true, title: 'Checkout' }}
                     />
@@ -119,6 +143,22 @@ export default function RootLayout() {
                     <Stack.Screen
                       name="account/details"
                       options={{ headerShown: true, title: 'Account details' }}
+                    />
+                    <Stack.Screen
+                      name="coupons"
+                      options={{ headerShown: true, title: 'Coupons' }}
+                    />
+                    <Stack.Screen
+                      name="account/recently-viewed"
+                      options={{ headerShown: true, title: 'Recently viewed' }}
+                    />
+                    <Stack.Screen
+                      name="account/reviews"
+                      options={{ headerShown: true, title: 'My reviews' }}
+                    />
+                    <Stack.Screen
+                      name="review/[slug]"
+                      options={{ headerShown: true, title: 'Rate product' }}
                     />
                     <Stack.Screen
                       name="account/notifications"
@@ -154,6 +194,7 @@ export default function RootLayout() {
                       options={{ headerShown: true, title: 'Track Order' }}
                     />
                   </Stack>
+                  <Intro />
                 </WishlistProvider>
               </CartProvider>
             </AddressProvider>

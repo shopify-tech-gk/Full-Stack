@@ -168,3 +168,21 @@ export function useRecordProductView(productId: string, sessionStatus: string): 
     if (sessionStatus !== 'loading') recordProductView(productId);
   }, [productId, sessionStatus]);
 }
+
+/** v1.12 Account > Recently viewed: the full history (signed in: the account's; guest: local). */
+export async function loadRecentlyViewed(): Promise<ProductCardData[]> {
+  const session = getSession();
+  if (session.status === 'authenticated') {
+    const items = (await mergeGuest()) ?? (await api.catalog.recentlyViewed()).items;
+    return items.map(toCardData);
+  }
+  const guest = readGuest();
+  if (guest.length === 0) return [];
+  return (await api.catalog.productCards(guest.map((v) => v.productId))).items.map(toCardData);
+}
+
+/** Clears the history - the account's when signed in, this browser's otherwise. */
+export async function clearRecentlyViewed(): Promise<void> {
+  if (getSession().status === 'authenticated') await api.catalog.clearRecentlyViewed();
+  writeGuest([]);
+}

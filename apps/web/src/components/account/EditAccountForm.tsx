@@ -3,6 +3,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import { formatPhone, supportErrorMessage, type AuthUser } from '@youmart/shared-client';
 import { updateProfileName, useSession } from '@/lib/session';
+import { ContactChange } from './ContactChange';
 import { Notice } from './Notice';
 import {
   FIELD_ERROR,
@@ -12,6 +13,7 @@ import {
   FORM_LABEL,
   FORM_REQUIRED,
   FORM_ROW,
+  TEXT_LINK,
 } from './formStyles';
 
 export function EditAccountForm() {
@@ -21,13 +23,14 @@ export function EditAccountForm() {
 
 // WooCommerce "Account details" minus the password section (login is passwordless OTP). The name
 // saves through PATCH /api/auth/me; email and mobile are the OTP-verified login identities, so
-// changing them needs a fresh OTP (not offered yet).
+// changing (or adding) one needs a code sent to the new value (v1.12, ContactChange).
 function AccountDetailsForm({ user }: { user: AuthUser }) {
   const id = useId();
   const [name, setName] = useState(user.name ?? '');
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [pending, setPending] = useState(false);
+  const [changing, setChanging] = useState<'PHONE' | 'EMAIL' | null>(null);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -73,7 +76,7 @@ function AccountDetailsForm({ user }: { user: AuthUser }) {
           </span>
         )}
       </p>
-      <p className={FORM_ROW}>
+      <div className={FORM_ROW}>
         <label htmlFor={`${id}-email`} className={FORM_LABEL}>
           Email address
         </label>
@@ -88,10 +91,25 @@ function AccountDetailsForm({ user }: { user: AuthUser }) {
         <span id={`${id}-email-note`} className={FIELD_HINT}>
           {user.email
             ? 'Verified by OTP. You can log in with this email.'
-            : 'You signed up with your mobile number.'}
+            : 'Add an email to also log in with it.'}{' '}
+          {changing !== 'EMAIL' && (
+            <button type="button" onClick={() => setChanging('EMAIL')} className={TEXT_LINK}>
+              {user.email ? 'Change email' : 'Add email'}
+            </button>
+          )}
         </span>
-      </p>
-      <p className={FORM_ROW}>
+        {changing === 'EMAIL' && (
+          <ContactChange
+            kind="EMAIL"
+            onCancel={() => setChanging(null)}
+            onDone={() => {
+              setChanging(null);
+              setStatus({ tone: 'success', text: 'Your email has been updated.' });
+            }}
+          />
+        )}
+      </div>
+      <div className={FORM_ROW}>
         <label htmlFor={`${id}-phone`} className={FORM_LABEL}>
           Mobile number
         </label>
@@ -105,9 +123,24 @@ function AccountDetailsForm({ user }: { user: AuthUser }) {
         <span id={`${id}-phone-note`} className={FIELD_HINT}>
           {user.phone
             ? 'Verified by OTP. You can log in with this number.'
-            : 'You signed up with your email. Mobile login is a separate account for now.'}
+            : 'Add a mobile number to also log in with it.'}{' '}
+          {changing !== 'PHONE' && (
+            <button type="button" onClick={() => setChanging('PHONE')} className={TEXT_LINK}>
+              {user.phone ? 'Change number' : 'Add number'}
+            </button>
+          )}
         </span>
-      </p>
+        {changing === 'PHONE' && (
+          <ContactChange
+            kind="PHONE"
+            onCancel={() => setChanging(null)}
+            onDone={() => {
+              setChanging(null);
+              setStatus({ tone: 'success', text: 'Your mobile number has been updated.' });
+            }}
+          />
+        )}
+      </div>
       <p className="mx-[3px]">
         <button type="submit" disabled={pending} className={FORM_BUTTON}>
           {pending ? 'Saving\u2026' : 'Save changes'}

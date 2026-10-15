@@ -26,9 +26,12 @@ import {
   listProductsForIndex,
 } from '../catalog/catalog.service';
 import { getCategoryFilters, listProducts } from '../catalog/browse.service';
+import { listAdminProducts } from '../catalog/catalog.service';
+import { z } from 'zod';
 import {
   SubmitReviewBody,
   getMyReview,
+  listMyReviews,
   listReviews,
   submitReview,
 } from '../catalog/review.service';
@@ -86,6 +89,11 @@ catalogRouter.get('/products/:slug', optionalAuth, async (req, res) => {
 });
 
 // --- W6: product reviews (reviews schema via reviews_svc; purchase-verified submit) ---
+// v1.12: My Reviews - the caller's own reviews across products.
+catalogRouter.get('/reviews/mine', requireAuth, async (req, res) => {
+  res.status(200).json(await listMyReviews(requireUserId(req)));
+});
+
 catalogRouter.get('/products/:slug/reviews', optionalAuth, async (req, res) => {
   const slug = typeof req.params.slug === 'string' ? req.params.slug : '';
   res.status(200).json(await listReviews(slug, req.query));
@@ -165,6 +173,21 @@ catalogRouter.get('/skus/:skuId', optionalAuth, async (req, res) => {
   const skuId = typeof req.params.skuId === 'string' ? req.params.skuId : '';
   const sku = await getSkuById(skuId);
   res.status(200).json(sku);
+});
+
+// v1.14 admin dashboard: every product (any status) with its SKUs.
+const AdminProductsQuery = z.object({
+  q: z.string().trim().max(100).optional(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']).optional(),
+  skuIds: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.split(',').filter(Boolean).slice(0, 100) : undefined)),
+  cursor: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+});
+catalogRouter.get('/admin/products', requireAdmin('catalog.manage'), async (req, res) => {
+  res.status(200).json(await listAdminProducts(AdminProductsQuery.parse(req.query)));
 });
 
 // --- write endpoints (Ch4.2) ---

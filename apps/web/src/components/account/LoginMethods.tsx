@@ -24,11 +24,19 @@ export function LoginMethods({ returnTo }: { returnTo?: string }) {
   );
   return (
     <div>
-      <div role="tablist" aria-label="Login method" className="mb-[16px] mt-[12px] flex gap-[6px] rounded-full bg-brand-popup-bg p-[5px]">
+      <div
+        role="tablist"
+        aria-label="Login method"
+        className="mb-[16px] mt-[12px] flex gap-[6px] rounded-full bg-brand-popup-bg p-[5px]"
+      >
         {tab('otp', 'Mobile / Email')}
         {tab('qr', 'Scan QR code')}
       </div>
-      {method === 'otp' ? <OtpLoginForm mode="login" returnTo={returnTo} /> : <QrLoginPanel returnTo={returnTo} />}
+      {method === 'otp' ? (
+        <OtpLoginForm mode="login" returnTo={returnTo} />
+      ) : (
+        <QrLoginPanel returnTo={returnTo} />
+      )}
     </div>
   );
 }

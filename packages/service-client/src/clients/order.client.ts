@@ -26,6 +26,10 @@ export interface InternalOrderView {
   userId: string;
   status: OrderStatusValue;
   grandTotal: Money;
+  /** v1.13: coupon discount already taken off grandTotal. */
+  discountTotal?: Money;
+  /** COD = Cash on Delivery (paid in cash at delivery); ONLINE otherwise. */
+  paymentMethod: 'ONLINE' | 'COD';
   /** Lets fulfillment/logistics access the real ship-to address for a real
    * shipping label without a separate address-lookup endpoint (Ch6.1). */
   shippingAddress: InternalOrderShippingAddress | null;
@@ -44,6 +48,8 @@ export interface InternalOrderLineView {
   unitPrice: Money;
   quantity: number;
   lineTotal: Money;
+  /** v1.13: this line's share of the order's coupon discount (paid = lineTotal - discount). */
+  discount?: Money;
 }
 
 /** Backed by `GET /orders/internal/settleable` (Ch5.3). */
@@ -71,6 +77,8 @@ export interface InternalOrderItemView {
   skuId: string;
   quantity: number;
   lineTotal: Money;
+  /** v1.13: coupon share - a return refunds at most lineTotal - discount. */
+  discount?: Money;
   sellerStatus: OrderItemStatusValue;
   /** DELIVERED-time proxy (order_item has no `delivered_at` column) - same
    * approximation used by settlement-service's getSettleableItems. */
@@ -94,7 +102,7 @@ export interface OrderClient {
   getInternalOrder(orderId: string): Promise<InternalOrderView>;
   /** Backed by `POST /orders/internal/:orderId/confirm` (Ch4.6) -
    * PENDING_PAYMENT -> CONFIRMED and commits held stock. Idempotent. */
-  confirmOrder(orderId: string): Promise<void>;
+  confirmOrder(orderId: string, paymentMethod?: 'ONLINE' | 'COD'): Promise<void>;
   /** Backed by `POST /orders/internal/:orderId/cancel` (Ch4.6) -
    * PENDING_PAYMENT -> CANCELLED and releases held stock. Idempotent. */
   cancelOrder(orderId: string): Promise<void>;
@@ -153,11 +161,12 @@ export function createOrderClient({
       });
     },
 
-    confirmOrder(orderId) {
+    confirmOrder(orderId, paymentMethod) {
       return request<void>({
         baseUrl,
         path: `/orders/internal/${orderId}/confirm`,
         method: 'POST',
+        ...(paymentMethod ? { body: { paymentMethod } } : {}),
         authToken: authToken(),
         timeoutMs,
       });

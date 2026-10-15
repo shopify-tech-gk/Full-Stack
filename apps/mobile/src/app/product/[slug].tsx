@@ -27,6 +27,7 @@ import { useSession } from '@/stores/session';
 import { Price, ProductImage, Stars } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductReviews } from '@/components/ProductReviews';
+import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { colors, font, radii, space } from '@/theme';
 
 const TABBAR_H = 46;
@@ -60,6 +61,15 @@ export default function ProductScreen() {
   const { width } = useWindowDimensions();
   const cart = useCart();
   const session = useSession();
+  const [adding, setAdding] = useState(false);
+  const [toast, setToast] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
   const wishlist = useWishlist();
   const [product, setProduct] = useState<ProductDetailData | null | 'error'>(null);
   const [gallery, setGallery] = useState(0);
@@ -182,6 +192,20 @@ export default function ProductScreen() {
   }
 
   const canBuy = Boolean(prod.skuId);
+  // Once it's in the cart the button says so (Flipkart-style "Go to Cart") instead of resetting.
+  const inCart = prod.skuId ? cart.cart.items.find((i) => i.skuId === prod.skuId) : undefined;
+  const addToCart = async () => {
+    if (adding) return;
+    setAdding(true);
+    try {
+      await cart.addItem(cartProduct());
+    } finally {
+      setAdding(false);
+    }
+    setToast(true);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(false), 2400);
+  };
   const saved = prod.skuId ? wishlist.has(prod.skuId) : false;
   const images = prod.images.length > 0 ? [...prod.images] : [''];
   const similar = more ? more.products.slice(0, 12) : [];
@@ -369,15 +393,49 @@ export default function ProductScreen() {
         </View>
       ) : null}
 
-      <View style={[styles.buyBar, { paddingBottom: insets.bottom + space.sm }]}>
-        <Pressable
-          style={[styles.addBtn, !canBuy && styles.disabled]}
-          disabled={!canBuy}
-          onPress={() => cart.addItem(cartProduct())}
+      {toast && inCart ? (
+        <Animated.View
+          entering={FadeInDown.springify().damping(14)}
+          exiting={FadeOutDown.duration(220)}
+          style={[styles.toast, { bottom: insets.bottom + 92 }]}
         >
-          <Ionicons name="cart-outline" size={18} color={colors.brand.DEFAULT} />
-          <Text style={styles.addText}>Add to Cart</Text>
-        </Pressable>
+          <View style={styles.toastIcon}>
+            <Ionicons name="checkmark" size={15} color={colors.white} />
+          </View>
+          <Text style={styles.toastText}>
+            Added to cart{inCart.quantity > 1 ? ` · ${inCart.quantity} in cart` : ''}
+          </Text>
+          <Pressable onPress={() => router.push('/my-cart')} hitSlop={10}>
+            <Text style={styles.toastLink}>VIEW</Text>
+          </Pressable>
+        </Animated.View>
+      ) : null}
+
+      <View style={[styles.buyBar, { paddingBottom: insets.bottom + space.sm }]}>
+        {inCart ? (
+          <Pressable
+            style={({ pressed }) => [styles.addBtn, styles.addedBtn, pressed && { opacity: 0.85 }]}
+            onPress={() => router.push('/my-cart')}
+          >
+            <Ionicons name="checkmark-circle" size={18} color={colors.heading} />
+            <Text style={styles.addedText}>Go to Cart</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={[styles.addBtn, !canBuy && styles.disabled]}
+            disabled={!canBuy || adding}
+            onPress={() => void addToCart()}
+          >
+            {adding ? (
+              <ActivityIndicator color={colors.brand.DEFAULT} />
+            ) : (
+              <>
+                <Ionicons name="cart-outline" size={18} color={colors.brand.DEFAULT} />
+                <Text style={styles.addText}>Add to Cart</Text>
+              </>
+            )}
+          </Pressable>
+        )}
         <Pressable
           style={[styles.buyBtn, !canBuy && styles.disabled]}
           disabled={!canBuy}
@@ -389,7 +447,7 @@ export default function ProductScreen() {
               return;
             }
             await cart.addItem(cartProduct());
-            router.push('/cart');
+            router.push('/my-cart');
           }}
         >
           <Text style={styles.buyText}>Buy Now</Text>
@@ -552,6 +610,36 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   addText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.brand.DEFAULT },
+  // Yellow (Flipkart-style) "Go to Cart"; dark text - white on yellow is hard to read.
+  addedBtn: { backgroundColor: '#ffc200', borderColor: '#ffc200' },
+  addedText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.heading },
+  toast: {
+    position: 'absolute',
+    left: space.lg,
+    right: space.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#1d2433',
+    borderRadius: 14,
+    paddingHorizontal: space.md,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  toastIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.feature.guarantee,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toastText: { flex: 1, fontFamily: font.uiMedium, fontSize: 14, color: colors.white },
+  toastLink: { fontFamily: font.uiBold, fontSize: 13.5, letterSpacing: 0.6, color: '#7cc4ff' },
   buyBtn: {
     flex: 1,
     alignItems: 'center',

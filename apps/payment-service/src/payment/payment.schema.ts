@@ -26,9 +26,14 @@ export type VerifyPaymentBody = z.infer<typeof VerifyPaymentBody>;
 export const PayOrderBody = z.object({
   orderId: z.string().uuid(),
   useWallet: z.boolean().default(false),
+  /** COD: Cash on Delivery - the order is confirmed now and paid in cash at delivery. */
+  method: z.enum(['ONLINE', 'COD']).default('ONLINE'),
 });
 export type PayOrderBody = z.infer<typeof PayOrderBody>;
 export type CreateRefundBody = z.infer<typeof CreateRefundBody>;
+
+/** Service-only COD bookkeeping (order-service): delivered = cash collected; cancelled = void. */
+export const CodOrderBody = z.object({ orderId: z.string().uuid() });
 
 // Only the fields this service actually reads from Razorpay's webhook
 // payload - Razorpay's real payload has many more fields, all ignored.

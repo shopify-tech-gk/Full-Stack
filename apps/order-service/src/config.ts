@@ -10,6 +10,8 @@ const orderServiceEnvSchema = baseEnvSchema.extend({
   // Connection string for the least-privilege `orders_svc` Postgres role
   // (Ch2 grants) - scoped to the orders schema only.
   ORDER_DATABASE_URL: z.string().url(),
+  // v1.13 coupons: the promotions schema, as the least-privilege promotions_svc role.
+  PROMOTIONS_DATABASE_URL: z.string().url(),
   // Shared across every service that verifies access tokens.
   JWT_PUBLIC_KEY: z.string().min(1),
   JWT_ISSUER: z.string().default('youmart-auth'),
@@ -55,6 +57,7 @@ export interface OrderServiceConfig {
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
   port: number;
   orderDatabaseUrl: string;
+  promotionsDatabaseUrl: string;
   jwtPublicKey: string;
   jwtIssuer: string;
   jwtAudience: string;
@@ -79,6 +82,7 @@ export const config: Readonly<OrderServiceConfig> = Object.freeze({
   logLevel: parsed.LOG_LEVEL,
   port: parsed.ORDER_PORT,
   orderDatabaseUrl: parsed.ORDER_DATABASE_URL,
+  promotionsDatabaseUrl: parsed.PROMOTIONS_DATABASE_URL,
   jwtPublicKey: decodeBase64Pem(parsed.JWT_PUBLIC_KEY),
   jwtIssuer: parsed.JWT_ISSUER,
   jwtAudience: parsed.JWT_AUDIENCE,

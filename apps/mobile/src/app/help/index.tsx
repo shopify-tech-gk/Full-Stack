@@ -92,6 +92,16 @@ export default function HelpCenterScreen() {
                 <Text style={styles.ticketMsg} numberOfLines={3}>
                   {t.message}
                 </Text>
+                {t.adminReply ? (
+                  <View style={styles.reply}>
+                    <Text style={styles.replyFrom}>
+                      <Ionicons name="chatbubble-ellipses" size={12} color={colors.brand.DEFAULT} />{' '}
+                      YouMart Support
+                      {t.repliedAt ? ` · ${new Date(t.repliedAt).toLocaleDateString('en-IN')}` : ''}
+                    </Text>
+                    <Text style={styles.replyText}>{t.adminReply}</Text>
+                  </View>
+                ) : null}
               </View>
             ))
           )}
@@ -171,6 +181,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ticketTopic: { flex: 1, fontFamily: font.uiSemibold, fontSize: 14, color: colors.text.strong },
+  reply: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#eef3ff',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.brand.DEFAULT,
+    gap: 3,
+  },
+  replyFrom: { fontFamily: font.uiSemibold, fontSize: 12, color: colors.brand.DEFAULT },
+  replyText: { fontFamily: font.body, fontSize: 13.5, lineHeight: 19, color: colors.text.strong },
   ticketMeta: { fontFamily: font.body, fontSize: 12, color: colors.text.muted },
   ticketMsg: { fontFamily: font.body, fontSize: 13, color: colors.text.body },
   pill: {

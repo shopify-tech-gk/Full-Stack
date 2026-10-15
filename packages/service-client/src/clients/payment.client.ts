@@ -45,6 +45,10 @@ export interface PaymentClient {
   ): Promise<RefundResult>;
   /** W9: gives an unpaid order's reserved wallet money back (cancel / expiry). Idempotent. */
   releaseWalletHold(orderId: string): Promise<void>;
+  /** Cash on Delivery: everything delivered - the cash is collected. Idempotent. */
+  markCodCollected(orderId: string): Promise<void>;
+  /** Cash on Delivery: cancelled before delivery - nothing to collect. Idempotent. */
+  voidCod(orderId: string): Promise<void>;
   /** W9: the customer's wallet balance (account deletion shows it first). */
   getWallet(userId: string): Promise<WalletSummary>;
   /** W9: account deletion - the customer agreed to give up the balance. */
@@ -74,6 +78,28 @@ export function createPaymentClient({
           ...(reason ? { reason } : {}),
           ...(idempotencyKey ? { idempotencyKey } : {}),
         },
+        authToken: authToken(),
+        timeoutMs,
+      });
+    },
+
+    async markCodCollected(orderId) {
+      await request<unknown>({
+        baseUrl,
+        path: '/payments/internal/cod-collected',
+        method: 'POST',
+        body: { orderId },
+        authToken: authToken(),
+        timeoutMs,
+      });
+    },
+
+    async voidCod(orderId) {
+      await request<unknown>({
+        baseUrl,
+        path: '/payments/internal/cod-void',
+        method: 'POST',
+        body: { orderId },
         authToken: authToken(),
         timeoutMs,
       });

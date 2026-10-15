@@ -97,6 +97,11 @@ export async function updateProfileName(name: string): Promise<AuthUser> {
   return user;
 }
 
+/** v1.12: after a verified phone/email change, the new profile replaces the signed-in user. */
+export function applyUserUpdate(user: AuthUser): void {
+  if (state.status === 'authenticated') setState({ status: 'authenticated', user });
+}
+
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

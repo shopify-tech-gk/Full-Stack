@@ -5,6 +5,8 @@ import { WelcomeBar } from '@/components/layout/WelcomeBar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { CartToast } from '@/components/cart/CartToast';
+import { INTRO_SKIP_SCRIPT, IntroSplash } from '@/components/layout/IntroSplash';
+import { StoreChrome } from '@/components/layout/StoreChrome';
 import './globals.css';
 
 // Self-hosted (SIL OFL, see src/fonts/*OFL.txt): Next 14's Google Fonts loader fails to parse Outfit's CSS.
@@ -39,20 +41,31 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={`${arimo.variable} ${outfit.variable}`}>
+    <html lang="en-IN" className={`${arimo.variable} ${outfit.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Before first paint: skip the intro for a visitor who already saw it this session. */}
+        <script dangerouslySetInnerHTML={{ __html: INTRO_SKIP_SCRIPT }} />
+      </head>
       <body className="pb-[calc(79px+env(safe-area-inset-bottom))] lg:pb-0">
+        <StoreChrome>
+          <IntroSplash />
+        </StoreChrome>
         <a
           href="#content"
           className="sr-only font-ui focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[1000] focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-brand"
         >
           Skip to content
         </a>
-        <SiteHeader />
-        <WelcomeBar />
+        <StoreChrome>
+          <SiteHeader />
+          <WelcomeBar />
+        </StoreChrome>
         <main id="content">{children}</main>
-        <SiteFooter />
-        <MobileBottomNav />
-        <CartToast />
+        <StoreChrome>
+          <SiteFooter />
+          <MobileBottomNav />
+          <CartToast />
+        </StoreChrome>
       </body>
     </html>
   );

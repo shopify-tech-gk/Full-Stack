@@ -1,8 +1,10 @@
 'use client';
 
 import Image from 'next/image';
+import { useState } from 'react';
 import Link from 'next/link';
-import { Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Loader2, Trash2, Zap } from 'lucide-react';
 import {
   ROUTES,
   formatMoney,
@@ -12,7 +14,8 @@ import {
 } from '@youmart/shared-client';
 import { Notice } from '@/components/account/Notice';
 import { TEXT_LINK } from '@/components/account/formStyles';
-import { useAddToCart } from '@/lib/cart';
+import { AddToCartButton } from '@/components/product/AddToCartButton';
+import { buyNowLine, useCart } from '@/lib/cart';
 import { skipImageOptimizer } from '@/lib/images';
 import { useProductImages } from '@/lib/product-images';
 import { useWishlist } from '@/lib/wishlist';
@@ -27,7 +30,9 @@ const STACK =
 /** Live YITH wishlist table backed by the guest list or /api/wishlist (lib/wishlist.ts). */
 export function WishlistTable() {
   const wishlist = useWishlist();
-  const addToCart = useAddToCart();
+  const { mode } = useCart();
+  const router = useRouter();
+  const [buying, setBuying] = useState<string | null>(null);
   const items = wishlist.view?.items ?? [];
   const imageFor = useProductImages(items.flatMap((item) => item.productSlug ?? []));
 
@@ -45,19 +50,27 @@ export function WishlistTable() {
     return <div aria-busy="true" aria-label="Loading your wishlist" className="min-h-[200px]" />;
   }
 
-  const moveToCart = async (item: WishlistItem) => {
+  // "Buy now": checkout with just this item (signed in); a guest signs in first and comes back.
+  const buyNow = async (item: WishlistItem) => {
     if (!item.productSlug || !item.title || !item.sellingPrice) return;
-    await addToCart(
-      {
+    if (mode !== 'account') {
+      router.push(loginHref(ROUTES.wishlist));
+      return;
+    }
+    setBuying(item.wishlistItemId);
+    try {
+      const id = await buyNowLine({
         skuId: item.skuId,
         productId: item.productId,
         productSlug: item.productSlug,
         title: item.title,
         price: item.sellingPrice,
         image: imageFor(item.productSlug),
-      },
-      1,
-    );
+      });
+      if (id) router.push(`/checkout?buy=${id}`);
+    } finally {
+      setBuying(null);
+    }
   };
 
   return (
@@ -135,14 +148,37 @@ export function WishlistTable() {
                   </td>
                   <td data-title="Action" className={`${TD} ${STACK}`}>
                     <span className="flex items-center gap-[10px]">
-                      <button
-                        type="button"
-                        onClick={() => void moveToCart(item)}
-                        disabled={!item.available || !item.sellingPrice}
-                        className="h-[34px] whitespace-nowrap rounded-[6px] bg-brand px-[15px] font-sans text-[14px] font-semibold leading-none text-white hover:opacity-85 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Add to cart
-                      </button>
+                      {item.available && item.productSlug && item.sellingPrice ? (
+                        <>
+                          <AddToCartButton
+                            product={{
+                              id: item.productId,
+                              href: productHref(item.productSlug),
+                              title,
+                              image: imageFor(item.productSlug),
+                              mrp: item.mrp ?? item.sellingPrice,
+                              sellingPrice: item.sellingPrice,
+                              rating: 0,
+                              skuId: item.skuId,
+                              slug: item.productSlug,
+                            }}
+                            className="flex h-[34px] w-[118px] items-center justify-center whitespace-nowrap rounded-[6px] bg-brand px-[15px] font-sans text-[14px] font-semibold leading-none text-white hover:opacity-85 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void buyNow(item)}
+                            disabled={buying !== null}
+                            className="flex h-[34px] items-center gap-[5px] whitespace-nowrap rounded-[6px] border-2 border-brand px-[12px] font-sans text-[14px] font-semibold leading-none text-brand hover:bg-brand hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
+                          >
+                            {buying === item.wishlistItemId ? (
+                              <Loader2 aria-hidden="true" className="size-[15px] animate-spin" />
+                            ) : (
+                              <Zap aria-hidden="true" className="size-[15px]" />
+                            )}
+                            Buy now
+                          </button>
+                        </>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => void wishlist.remove(item.wishlistItemId)}

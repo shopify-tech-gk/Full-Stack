@@ -21,6 +21,7 @@
     "dev:remove-demo": "node scripts/dev-remove-demo.mjs",
     "build:category-taxonomy": "node scripts/build-category-taxonomy.mjs",
     "build:category-images": "node scripts/build-category-images.mjs",
+    "seed:coupons": "node scripts/seed-demo-coupons.mjs",
     "build:brand-domains": "node scripts/build-brand-domains.mjs"
   },
   "devDependencies": {

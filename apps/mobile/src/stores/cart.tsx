@@ -20,6 +20,7 @@ import {
   type CartView,
 } from '@youmart/shared-client';
 import { api } from '@/lib/api';
+import { addedToCartFeedback, preloadFeedback } from '@/lib/feedback';
 import { getJSON, setJSON } from '@/lib/storage';
 import { getSession, useSession } from './session';
 
@@ -111,11 +112,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     void writeGuest(next);
   };
 
-  const accountCall = async (call: () => Promise<CartView>, added?: number) => {
+  /** true when the server accepted the change. */
+  const accountCall = async (call: () => Promise<CartView>, added?: number): Promise<boolean> => {
     const gen = generation.current;
     try {
       const view = await call();
       if (gen === generation.current) setCart(view);
+      return true;
     } catch (err) {
       setNotice(cartErrorMessage(err, added));
       try {
@@ -124,8 +127,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } catch {
         /* keep optimistic */
       }
+      return false;
     }
   };
+
+  useEffect(() => {
+    preloadFeedback();
+  }, []);
 
   const value = useMemo<CartContextValue>(
     () => ({
@@ -135,9 +143,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       notice,
       clearNotice: () => setNotice(null),
       addItem: async (product, quantity = 1) => {
-        if (isAccount())
-          await accountCall(() => api.cart.addItem(product.skuId, quantity), quantity);
-        else persistGuest(addGuestItem(cart, product, quantity));
+        // Every "Add" in the app comes through here: chime + haptic once it's really in the cart.
+        if (isAccount()) {
+          if (await accountCall(() => api.cart.addItem(product.skuId, quantity), quantity)) {
+            addedToCartFeedback();
+          }
+        } else {
+          persistGuest(addGuestItem(cart, product, quantity));
+          addedToCartFeedback();
+        }
       },
       setQuantity: async (id, quantity) => {
         if (isAccount()) await accountCall(() => api.cart.updateItem(id, quantity));

@@ -37,7 +37,16 @@ export function otpErrorMessage(error: unknown, step: 'request' | 'verify'): str
 
 // --- Account navigation (live WooCommerce My Account menu + YouMart extras) ---
 export type AccountSection =
-  'dashboard' | 'orders' | 'track' | 'addresses' | 'account' | 'wishlist' | 'logout';
+  | 'dashboard'
+  | 'orders'
+  | 'track'
+  | 'addresses'
+  | 'account'
+  | 'wishlist'
+  | 'recent'
+  | 'reviews'
+  | 'coupons'
+  | 'logout';
 
 export const ACCOUNT_NAV: readonly { key: AccountSection; label: string; href: string }[] = [
   { key: 'dashboard', label: 'Dashboard', href: ROUTES.account },
@@ -46,6 +55,9 @@ export const ACCOUNT_NAV: readonly { key: AccountSection; label: string; href: s
   { key: 'addresses', label: 'Addresses', href: ROUTES.addresses },
   { key: 'account', label: 'Account details', href: ROUTES.accountDetails },
   { key: 'wishlist', label: 'Wishlist', href: ROUTES.wishlist },
+  { key: 'recent', label: 'Recently viewed', href: ROUTES.recentlyViewed },
+  { key: 'reviews', label: 'My reviews', href: ROUTES.myReviews },
+  { key: 'coupons', label: 'Coupons', href: ROUTES.coupons },
   { key: 'logout', label: 'Log out', href: ROUTES.account },
 ];
 
@@ -330,6 +342,25 @@ export function orderStatusLabel(order: OrderProgressSource): string {
   return cancelled
     ? 'Cancelled'
     : (['Processing', 'Packed', 'Shipped', 'Delivered'][step] ?? 'Processing');
+}
+
+/**
+ * The status an order LIST shows - same words as the order page (Processing / Packed / Shipped /
+ * Delivered / Cancelled), from the per-line progress the list now carries. A list item without
+ * it (an older server) falls back on the order-level status - never "Cancelled" by mistake.
+ */
+export function orderListStatusLabel(order: {
+  status: OrderView['status'];
+  itemStatuses?: readonly SellerItemStatus[];
+}): string {
+  if (order.itemStatuses && order.itemStatuses.length > 0) {
+    return orderStatusLabel({
+      status: order.status,
+      items: order.itemStatuses.map((sellerStatus) => ({ sellerStatus })),
+    });
+  }
+  if (order.status === 'CANCELLED') return 'Cancelled';
+  return order.status === 'PENDING_PAYMENT' ? 'Pending payment' : 'Processing';
 }
 
 /** Mirrors order-service's cancel rule: unpaid, or paid and nothing has shipped yet. */

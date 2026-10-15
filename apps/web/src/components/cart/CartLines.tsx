@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Zap } from 'lucide-react';
 import { formatMoney, productHref, type CartLine } from '@youmart/shared-client';
 import { skipImageOptimizer } from '@/lib/images';
 import { QuantityStepper } from './QuantityStepper';
@@ -12,6 +12,21 @@ interface CartLinesProps {
   imageFor: (line: CartLine) => string;
   onQuantity: (line: CartLine, quantity: number) => void;
   onRemove: (line: CartLine) => void;
+  /** "Buy this now": check out just this line; the rest stay in the cart. */
+  onBuyNow: (line: CartLine) => void;
+}
+
+function BuyNowButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mt-[6px] inline-flex items-center gap-[4px] rounded-full border border-brand bg-white px-[10px] py-[2px] font-ui text-[12px] font-semibold leading-[20px] text-brand transition-colors hover:bg-brand hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+    >
+      <Zap aria-hidden="true" className="size-[12px]" />
+      Buy this now
+    </button>
+  );
 }
 
 const TH =
@@ -56,7 +71,7 @@ function RemoveButton({ line, onRemove }: { line: CartLine; onRemove: () => void
 
 // Live #ymc-cart-table: white card, 2px #90caf9 border, radius 10, light-blue rows. Below 681px
 // live keeps the 6-column table at 9-10px text; we switch to readable stacked rows instead.
-export function CartLines({ items, imageFor, onQuantity, onRemove }: CartLinesProps) {
+export function CartLines({ items, imageFor, onQuantity, onRemove, onBuyNow }: CartLinesProps) {
   return (
     <>
       <table className="mb-[24px] mt-[40px] hidden w-full table-fixed border-separate border-spacing-0 overflow-hidden rounded-[10px] border-2 border-cart-border bg-white font-system shadow-cart-table min-[681px]:table">
@@ -101,6 +116,7 @@ export function CartLines({ items, imageFor, onQuantity, onRemove }: CartLinesPr
                 <Link href={productHref(line.productSlug)} className={NAME}>
                   {line.title}
                 </Link>
+                <BuyNowButton onClick={() => onBuyNow(line)} />
               </th>
               <td className={`${TD} text-[13.5px] font-bold text-cart-ink`}>
                 {formatMoney(line.priceSnapshot)}
@@ -140,6 +156,7 @@ export function CartLines({ items, imageFor, onQuantity, onRemove }: CartLinesPr
               <p className="mt-[2px] text-[13px] font-bold text-cart-ink">
                 {formatMoney(line.priceSnapshot)}
               </p>
+              <BuyNowButton onClick={() => onBuyNow(line)} />
             </div>
             <RemoveButton line={line} onRemove={() => onRemove(line)} />
             <div className="col-span-2 col-start-2 flex items-center justify-between gap-[10px]">

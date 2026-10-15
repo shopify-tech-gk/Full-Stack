@@ -1,7 +1,7 @@
 import { createApp } from './app';
 import { config } from './config';
 import { logger } from './logger';
-import { close } from './db';
+import { close, closePromotionsDb } from './db';
 import { expireUnpaidOrders } from './order/order.service';
 
 const app = createApp();
@@ -52,7 +52,7 @@ function shutdown(signal: string): void {
       logger.info('http server closed');
     }
 
-    close()
+    Promise.all([close(), closePromotionsDb()])
       .then(() => {
         logger.info('db connection pool closed');
       })

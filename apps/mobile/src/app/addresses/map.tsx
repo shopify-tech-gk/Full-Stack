@@ -17,6 +17,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSession } from '@/stores/session';
 import { YOUMART_MAP_STYLE } from '@/lib/map-style';
+import { LeafletMap, type LeafletMapHandle } from '@/components/LeafletMap';
 import { colors, font, radii, space } from '@/theme';
 
 const INDIA: Region = {
@@ -40,10 +41,41 @@ type CardState =
 const uniq = (parts: (string | null | undefined)[]) =>
   parts.filter((p, i, a): p is string => Boolean(p) && a.indexOf(p) === i);
 
+const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T | null> =>
+  Promise.race([p, new Promise<null>((res) => setTimeout(() => res(null), ms))]);
+
+/** OpenStreetMap reverse geocoding - the backup when the phone's own geocoder has no answer. */
+async function lookupOsm(c: Coords): Promise<Place | null> {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${c.latitude}&lon=${c.longitude}`,
+    {
+      headers: { 'Accept-Language': 'en-IN', 'User-Agent': 'YouMart-App/1.0 (support@youmart.in)' },
+    },
+  );
+  if (!res.ok) return null;
+  const j = (await res.json()) as { address?: Record<string, string> };
+  const a = j.address;
+  if (!a) return null;
+  const line1 = uniq([a.house_number, a.building, a.road]).join(', ');
+  const area = a.suburb ?? a.neighbourhood ?? a.quarter;
+  const city = a.city ?? a.town ?? a.village ?? a.county ?? '';
+  const fields: Record<string, string> = {};
+  if (line1) fields.line1 = line1;
+  if (area) fields.landmark = area;
+  if (city) fields.city = city;
+  if (a.state) fields.state = a.state;
+  if (a.postcode) fields.pincode = a.postcode;
+  return {
+    title: line1 || area || city || 'Selected location',
+    subtitle: uniq([area, city, a.state, a.postcode]).join(', '),
+    fields,
+  };
+}
+
 /** Reverse-geocodes a point into a display title/subtitle + address-form fields. */
 async function lookup(c: Coords): Promise<Place | null> {
-  const [p] = await Location.reverseGeocodeAsync(c);
-  if (!p) return null;
+  const [p] = (await withTimeout(Location.reverseGeocodeAsync(c), 6000).catch(() => null)) ?? [];
+  if (!p) return lookupOsm(c);
   const line1 = uniq([p.name, p.street]).join(', ');
   const city = p.city ?? p.subregion ?? '';
   const fields: Record<string, string> = {};
@@ -76,11 +108,21 @@ export default function MapPickerScreen() {
       : null;
 
   const mapRef = useRef<MapView>(null);
+  // Android: Google Maps needs a paid API key (it renders an empty canvas without one), so the
+  // picker uses an OpenStreetMap WebView map there; iOS keeps Apple Maps.
+  const webMap = Platform.OS === 'android';
+  const leafletRef = useRef<LeafletMapHandle>(null);
+  const gpsRef = useRef<Coords | null>(null);
   const reqId = useRef(0);
   const center = useRef<Coords | null>(startAt);
   const mapReady = useRef(false);
   const pendingFly = useRef<{ c: Coords; duration: number } | null>(null);
-  const [gps, setGps] = useState<Coords | null>(null);
+  const [gps, setGpsState] = useState<Coords | null>(null);
+  const setGps = useCallback((c: Coords) => {
+    gpsRef.current = c;
+    setGpsState(c);
+    if (mapReady.current) leafletRef.current?.setGps(c);
+  }, []);
   // Where the map first opens. null = still finding the customer (branded loader, no map yet),
   // so the map never starts on a country-wide view when we can place them on their street.
   const [initial, setInitial] = useState<Region | null>(
@@ -113,11 +155,12 @@ export default function MapPickerScreen() {
 
   // Camera moves sent before the native map is ready are silently dropped, so queue them.
   const flyTo = useCallback((c: Coords, duration = 1200) => {
-    if (!mapReady.current || !mapRef.current) {
+    const target = webMap ? leafletRef.current : mapRef.current;
+    if (!mapReady.current || !target) {
       pendingFly.current = { c, duration };
       return;
     }
-    mapRef.current.animateToRegion(
+    target.animateToRegion(
       { ...c, latitudeDelta: STREET_DELTA, longitudeDelta: STREET_DELTA },
       duration,
     );
@@ -125,6 +168,7 @@ export default function MapPickerScreen() {
 
   const onMapReady = () => {
     mapReady.current = true;
+    if (webMap && gpsRef.current) leafletRef.current?.setGps(gpsRef.current);
     if (pendingFly.current) {
       const { c, duration } = pendingFly.current;
       pendingFly.current = null;
@@ -222,7 +266,15 @@ export default function MapPickerScreen() {
 
   return (
     <View style={styles.screen}>
-      {initial ? (
+      {initial && webMap ? (
+        <LeafletMap
+          ref={leafletRef}
+          initialRegion={initial}
+          onMapReady={onMapReady}
+          onRegionChangeStart={onMoveStart}
+          onRegionChangeComplete={onMoveEnd}
+        />
+      ) : initial ? (
         <MapView
           ref={mapRef}
           style={StyleSheet.absoluteFill}

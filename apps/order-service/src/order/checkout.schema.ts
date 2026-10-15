@@ -10,5 +10,7 @@ export const CheckoutBody = z.object({
   // "Buy this now": which of the caller's OWN cart lines to order (default: the whole cart). Only
   // ids - quantities and prices still come from the server-side cart and catalog.
   cartItemIds: z.array(z.string().uuid()).min(1).max(100).optional(),
+  // v1.13: a coupon code - validated and reserved server-side (the discount is never sent in).
+  couponCode: z.string().trim().min(1).max(40).optional(),
 });
 export type CheckoutBody = z.infer<typeof CheckoutBody>;

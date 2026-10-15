@@ -29,6 +29,11 @@ export const PERMISSION_KEYS = [
   'sellers.kyc',
   'settings.manage',
   'admins.manage',
+  // v1.13: create / edit coupons.
+  'promotions.manage',
+  // v1.14 admin dashboard: the customer list and the help-request inbox.
+  'customers.view',
+  'support.manage',
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -48,8 +53,8 @@ export type AdminRoleKey = (typeof ADMIN_ROLE_KEYS)[number];
  *    ONLY - settlements.manage (actually running a payout) is intentionally
  *    withheld per the spec's literal "settlements-view" wording for
  *    FINANCE; only SUPER_ADMIN can trigger a settlement run for now.
- *  - SUPPORT: no permissions yet - the enum value exists (Ch2 schema) but
- *    is dormant/unused, per the spec.
+ *  - SUPPORT (v1.14): the customer list and the help-request inbox only. Previously
+ *    dormant; still no catalog, order or money access.
  */
 export const ROLE_PERMISSIONS: Record<AdminRoleKey, readonly PermissionKey[]> = {
   SUPER_ADMIN: PERMISSION_KEYS,
@@ -60,9 +65,12 @@ export const ROLE_PERMISSIONS: Record<AdminRoleKey, readonly PermissionKey[]> = 
     'fulfillment.manage',
     'returns.manage',
     'search.manage',
+    'promotions.manage',
+    'customers.view',
+    'support.manage',
   ],
   FINANCE: ['invoices.view', 'invoices.manage', 'refunds.manage', 'settlements.view'],
-  SUPPORT: [],
+  SUPPORT: ['customers.view', 'support.manage'],
 };
 
 export function resolvePermissions(role: AdminRoleKey): readonly PermissionKey[] {

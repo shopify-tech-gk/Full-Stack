@@ -1,5 +1,10 @@
 import Link from 'next/link';
-import { formatMoney, orderHref, type OrderListItem } from '@youmart/shared-client';
+import {
+  formatMoney,
+  orderHref,
+  orderListStatusLabel,
+  type OrderListItem,
+} from '@youmart/shared-client';
 import { TEXT_LINK } from './formStyles';
 
 const dateFormat = new Intl.DateTimeFormat('en-US', {
@@ -63,7 +68,7 @@ export function OrdersTable({ orders }: { orders: readonly OrderListItem[] }) {
               <span
                 className={`inline-flex rounded-full border px-[10px] text-[13px] font-semibold leading-[22px] ${STATUS_PILL[order.status]}`}
               >
-                {STATUS_LABEL[order.status]}
+                {orderListStatusLabel(order)}
               </span>
             </td>
             <td data-title="Total" className={`${CELL} ${STACK}`}>

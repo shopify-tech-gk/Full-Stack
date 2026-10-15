@@ -24,6 +24,11 @@ async function writeGuestViews(views: readonly GuestView[]): Promise<void> {
   else await setJSON(KEY, views);
 }
 
+/** Clears this device's guest history (Account > Recently viewed > Clear). */
+export async function clearGuestViews(): Promise<void> {
+  await writeGuestViews([]);
+}
+
 let merging: Promise<void> | null = null;
 
 /** Folds a pending guest list into the account once (on login / first authed record). */

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   CART_SHIPPING_TOTAL,
   cartTotals,
@@ -56,6 +57,7 @@ export function CartView() {
   const { addresses } = useAddresses();
   const imageFor = useProductImages(cart?.items.map((line) => line.productSlug) ?? []);
   const [removed, setRemoved] = useState<{ line: CartLine; index: number } | null>(null);
+  const router = useRouter();
 
   const storeNotice = notice && (
     <div className="mt-[20px]">
@@ -127,6 +129,13 @@ export function CartView() {
           setQuantity(line.cartItemId, quantity);
         }}
         onRemove={onRemove}
+        onBuyNow={(line) =>
+          // Guest cart lines get new ids when they merge into the account at sign-in, so a guest
+          // signs in first and then picks the item again.
+          router.push(
+            mode === 'account' ? `/checkout?buy=${line.cartItemId}` : '/account?returnTo=/cart',
+          )
+        }
       />
       <CartTotals totals={cartTotals(cart, CART_SHIPPING_TOTAL)} destination={destination} />
     </>

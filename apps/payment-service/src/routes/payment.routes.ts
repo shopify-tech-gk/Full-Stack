@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AppError } from '@youmart/errors';
 import {
   CreateRazorpayOrderBody,
+  CodOrderBody,
   CreateRefundBody,
   PayOrderBody,
   VerifyPaymentBody,
@@ -11,7 +12,9 @@ import {
   createRefund,
   getOrderPaymentSummary,
   handleWebhook,
+  markCodCollected,
   payOrder,
+  voidCod,
   verifyClientPayment,
 } from '../payment/payment.service';
 import { requireAuth, requireServiceAuth } from '../authMiddleware';
@@ -29,7 +32,9 @@ paymentRouter.post('/razorpay-order', requireAuth, async (req, res) => {
 // W9: pay an order - wallet first (optional), Razorpay for any rest. See payOrder.
 paymentRouter.post('/pay', requireAuth, async (req, res) => {
   const body = PayOrderBody.parse(req.body);
-  res.status(200).json(await payOrder(requireUserId(req), body.orderId, body.useWallet));
+  res
+    .status(200)
+    .json(await payOrder(requireUserId(req), body.orderId, body.useWallet, body.method));
 });
 
 // W9: the app confirms a Razorpay Checkout payment right away (signature + Razorpay API check)
@@ -52,6 +57,16 @@ paymentRouter.post('/internal/refund', requireServiceAuth, async (req, res) => {
   const body = CreateRefundBody.parse(req.body);
   const result = await createRefund(body);
   res.status(201).json(result);
+});
+
+// SERVICE-ONLY - order-service: a COD order fully delivered (cash collected) / cancelled (void).
+paymentRouter.post('/internal/cod-collected', requireServiceAuth, async (req, res) => {
+  const body = CodOrderBody.parse(req.body);
+  res.status(200).json(await markCodCollected(body.orderId));
+});
+paymentRouter.post('/internal/cod-void', requireServiceAuth, async (req, res) => {
+  const body = CodOrderBody.parse(req.body);
+  res.status(200).json(await voidCod(body.orderId));
 });
 
 // NO requireAuth - Razorpay calls this directly. The HMAC signature (over

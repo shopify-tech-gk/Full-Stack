@@ -3,7 +3,12 @@ import { enqueueNotification } from '@youmart/notifications-client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { authClient, orderClient } from '../serviceClients';
-import type { CreateTicketBody, TicketTopic } from './ticket.schema';
+import type {
+  AdminListTicketsQuery,
+  AdminUpdateTicketBody,
+  CreateTicketBody,
+  TicketTopic,
+} from './ticket.schema';
 
 // W9: "Need help with this order?" - a signed-in customer's help request. Stored here (the record
 // support works from and the customer can follow under My Help Requests) and forwarded to the
@@ -29,6 +34,9 @@ export interface TicketView {
   orderNumber: string | null;
   message: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  /** v1.14: support's answer (null until they reply). */
+  adminReply: string | null;
+  repliedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +48,8 @@ type TicketRow = {
   orderNumber: string | null;
   message: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  adminReply: string | null;
+  repliedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -58,6 +68,8 @@ function toView(row: TicketRow): TicketView {
     orderNumber: row.orderNumber,
     message: row.message,
     status: row.status,
+    adminReply: row.adminReply,
+    repliedAt: row.repliedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -132,5 +144,92 @@ export async function getMyTicket(userId: string, ticketId: string): Promise<Tic
   if (!row) {
     throw new AppError('NOT_FOUND', 404, 'Help request not found');
   }
+  return toView(row);
+}
+
+// ---------------------------------------------------------------------------
+// v1.14 admin dashboard: the help-request inbox.
+// ---------------------------------------------------------------------------
+
+export interface AdminTicketView extends TicketView {
+  userId: string;
+  customer: { phone: string | null; email: string | null } | null;
+}
+
+export async function listAdminTickets(query: AdminListTicketsQuery): Promise<{
+  items: AdminTicketView[];
+  nextCursor: string | null;
+  counts: { OPEN: number; IN_PROGRESS: number; RESOLVED: number };
+}> {
+  const q = query.q?.trim();
+  const ref = q?.toUpperCase().replace(/^HLP-/, '');
+  const where = {
+    deletedAt: null,
+    ...(query.status ? { status: query.status } : {}),
+    ...(q
+      ? {
+          OR: [
+            { message: { contains: q, mode: 'insensitive' as const } },
+            { orderNumber: { contains: q, mode: 'insensitive' as const } },
+            ...(ref && /^[0-9A-F]{4,8}$/.test(ref)
+              ? [{ id: { endsWith: ref.toLowerCase() } }]
+              : []),
+          ],
+        }
+      : {}),
+  };
+  const [rows, grouped] = await Promise.all([
+    prisma.supportTicket.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: query.limit + 1,
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+    }),
+    prisma.supportTicket.groupBy({ by: ['status'], where: { deletedAt: null }, _count: true }),
+  ]);
+  const hasMore = rows.length > query.limit;
+  const page = hasMore ? rows.slice(0, query.limit) : rows;
+  const contacts = new Map(
+    await Promise.all(
+      [...new Set(page.map((r) => r.userId))].map(
+        async (userId) =>
+          [userId, await authClient.getUserContact(userId).catch(() => null)] as const,
+      ),
+    ),
+  );
+  const counts = { OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0 };
+  for (const g of grouped) counts[g.status] = g._count;
+  return {
+    items: page.map((row) => {
+      const contact = contacts.get(row.userId);
+      return {
+        ...toView(row),
+        userId: row.userId,
+        customer: contact ? { phone: contact.phone ?? null, email: contact.email ?? null } : null,
+      };
+    }),
+    nextCursor: hasMore ? (page[page.length - 1]?.id ?? null) : null,
+    counts,
+  };
+}
+
+export async function updateAdminTicket(
+  ticketId: string,
+  input: AdminUpdateTicketBody,
+): Promise<TicketView> {
+  const existing = await prisma.supportTicket.findFirst({
+    where: { id: ticketId, deletedAt: null },
+  });
+  if (!existing) {
+    throw new AppError('NOT_FOUND', 404, 'Help request not found');
+  }
+  const row = await prisma.supportTicket.update({
+    where: { id: ticketId },
+    data: {
+      // A reply on an untouched request moves it to In progress unless a status was chosen.
+      status: input.status ?? (input.reply && existing.status === 'OPEN' ? 'IN_PROGRESS' : undefined),
+      ...(input.reply ? { adminReply: input.reply, repliedAt: new Date() } : {}),
+    },
+  });
   return toView(row);
 }

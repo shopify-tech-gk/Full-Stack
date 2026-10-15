@@ -133,11 +133,11 @@ model MarketplaceSettings {
   id                       String          @id @default(uuid(7))
   marketplaceMode          MarketplaceMode @default(DISABLED) @map("marketplace_mode")
   commissionEnabled        Boolean         @default(true) @map("commission_enabled")
-  commissionDefaultPercent Decimal         @default(10.00) @db.Decimal(5, 2) @map("commission_default_percent")
+  commissionDefaultPercent Decimal         @default(10.00) @map("commission_default_percent") @db.Decimal(5, 2)
   tcsEnabled               Boolean         @default(true) @map("tcs_enabled")
-  tcsPercent               Decimal         @default(1.00) @db.Decimal(5, 2) @map("tcs_percent")
+  tcsPercent               Decimal         @default(1.00) @map("tcs_percent") @db.Decimal(5, 2)
   tdsEnabled               Boolean         @default(false) @map("tds_enabled")
-  tdsPercent               Decimal         @default(0.00) @db.Decimal(5, 2) @map("tds_percent")
+  tdsPercent               Decimal         @default(0.00) @map("tds_percent") @db.Decimal(5, 2)
   createdAt                DateTime        @default(now()) @map("created_at")
   updatedAt                DateTime        @updatedAt @map("updated_at")
   deletedAt                DateTime?       @map("deleted_at")
@@ -161,6 +161,8 @@ enum UserStatus {
 enum OtpPurpose {
   LOGIN
   PHONE_VERIFY
+  /// v1.12: confirming a NEW phone/email before it replaces the signed-in account's own.
+  CONTACT_CHANGE
 
   @@schema("auth")
 }
@@ -345,7 +347,7 @@ model Seller {
   legalName             String?      @map("legal_name")
   status                SellerStatus @default(PENDING)
   isDefaultSeller       Boolean      @default(false) @map("is_default_seller")
-  commissionRatePercent Decimal      @default(0.00) @db.Decimal(5, 2) @map("commission_rate_percent")
+  commissionRatePercent Decimal      @default(0.00) @map("commission_rate_percent") @db.Decimal(5, 2)
   ownerUserId           String?      @map("owner_user_id")
   createdAt             DateTime     @default(now()) @map("created_at")
   updatedAt             DateTime     @updatedAt @map("updated_at")
@@ -365,19 +367,19 @@ model Seller {
 /// (WHERE gstin IS NOT NULL AND deleted_at IS NULL), hand-added in migration
 /// SQL. `bankAccountNumberHash` stores a hash, never the raw account number.
 model SellerKyc {
-  id                    String     @id @default(uuid(7))
-  seller                Seller     @relation(fields: [sellerId], references: [id])
-  sellerId              String     @map("seller_id")
+  id                    String    @id @default(uuid(7))
+  seller                Seller    @relation(fields: [sellerId], references: [id])
+  sellerId              String    @map("seller_id")
   gstin                 String?
   pan                   String?
-  bankAccountNumberHash String?    @map("bank_account_number_hash")
-  bankIfsc              String?    @map("bank_ifsc")
-  kycStatus             KycStatus  @default(NOT_SUBMITTED) @map("kyc_status")
-  submittedAt           DateTime?  @map("submitted_at")
-  verifiedAt            DateTime?  @map("verified_at")
-  createdAt             DateTime   @default(now()) @map("created_at")
-  updatedAt             DateTime   @updatedAt @map("updated_at")
-  deletedAt             DateTime?  @map("deleted_at")
+  bankAccountNumberHash String?   @map("bank_account_number_hash")
+  bankIfsc              String?   @map("bank_ifsc")
+  kycStatus             KycStatus @default(NOT_SUBMITTED) @map("kyc_status")
+  submittedAt           DateTime? @map("submitted_at")
+  verifiedAt            DateTime? @map("verified_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  deletedAt             DateTime? @map("deleted_at")
 
   @@index([sellerId])
   @@index([gstin])
@@ -401,18 +403,18 @@ enum ProductStatus {
 /// (WHERE deleted_at IS NULL), hand-added in migration SQL - not a Prisma @unique.
 /// `parentId` is a same-schema self-relation (a real FK is fine here).
 model Category {
-  id        String     @id @default(uuid(7))
-  name      String
-  slug      String
-  parentId  String?    @map("parent_id")
-  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children  Category[] @relation("CategoryHierarchy")
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
-  deletedAt DateTime?  @map("deleted_at")
+  id               String     @id @default(uuid(7))
+  name             String
+  slug             String
+  parentId         String?    @map("parent_id")
+  parent           Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children         Category[] @relation("CategoryHierarchy")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  deletedAt        DateTime?  @map("deleted_at")
   /// W3: which product attributes this category filters on, as DATA (shape: docs/catalog/IMPORT-SPEC.md).
   /// Null = inherit the nearest ancestor's definition. Adding a filter never needs code.
-  filterDefinition Json? @map("filter_definition")
+  filterDefinition Json?      @map("filter_definition")
 
   products Product[]
 
@@ -446,7 +448,7 @@ model Product {
   /// when unset. A hybrid per-product-with-platform-default design so the
   /// invoice works for every product day one and gets precise as sellers
   /// fill in real HSN/rates.
-  gstRatePercent Decimal?      @db.Decimal(5, 2) @map("gst_rate_percent")
+  gstRatePercent Decimal?      @map("gst_rate_percent") @db.Decimal(5, 2)
   /// W3: denormalised average review rating (1.0-5.0) + count, for listing filters/sort. Written by
   /// the import / a future reviews job - the reviews schema is not readable from catalog.
   rating         Decimal?      @db.Decimal(2, 1)
@@ -477,7 +479,7 @@ model Sku {
   product      Product   @relation(fields: [productId], references: [id])
   skuCode      String    @map("sku_code")
   mrp          Decimal   @db.Decimal(12, 2)
-  sellingPrice Decimal   @db.Decimal(12, 2) @map("selling_price")
+  sellingPrice Decimal   @map("selling_price") @db.Decimal(12, 2)
   attributes   Json
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -623,7 +625,7 @@ model CartItem {
   cart          Cart      @relation(fields: [cartId], references: [id])
   skuId         String    @map("sku_id")
   quantity      Int
-  priceSnapshot Decimal   @db.Decimal(12, 2) @map("price_snapshot")
+  priceSnapshot Decimal   @map("price_snapshot") @db.Decimal(12, 2)
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
   deletedAt     DateTime? @map("deleted_at")
@@ -695,31 +697,37 @@ enum OrderItemStatus {
 /// populates every one of them for every new order; a shipping address is
 /// mandatory going forward.
 model Order {
-  id                String      @id @default(uuid(7))
-  userId            String      @map("user_id")
-  orderNumber       String      @map("order_number")
-  status            OrderStatus @default(PENDING_PAYMENT)
-  subtotal          Decimal     @db.Decimal(12, 2)
-  shippingTotal     Decimal     @default(0.00) @db.Decimal(12, 2) @map("shipping_total")
-  grandTotal        Decimal     @db.Decimal(12, 2) @map("grand_total")
-  shippingAddressId String?     @map("shipping_address_id")
-  shipFullName      String?     @map("ship_full_name")
-  shipPhone         String?     @map("ship_phone")
-  shipLine1         String?     @map("ship_line1")
-  shipLine2         String?     @map("ship_line2")
-  shipLandmark      String?     @map("ship_landmark")
-  shipCity          String?     @map("ship_city")
-  shipState         String?     @map("ship_state")
-  shipPincode       String?     @map("ship_pincode")
-  shipCountry       String?     @map("ship_country")
-  createdAt         DateTime    @default(now()) @map("created_at")
-  updatedAt         DateTime    @updatedAt @map("updated_at")
-  deletedAt         DateTime?   @map("deleted_at")
+  id                String             @id @default(uuid(7))
+  userId            String             @map("user_id")
+  orderNumber       String             @map("order_number")
+  status            OrderStatus        @default(PENDING_PAYMENT)
+  subtotal          Decimal            @db.Decimal(12, 2)
+  shippingTotal     Decimal            @default(0.00) @map("shipping_total") @db.Decimal(12, 2)
+  grandTotal        Decimal            @map("grand_total") @db.Decimal(12, 2)
+  shippingAddressId String?            @map("shipping_address_id")
+  shipFullName      String?            @map("ship_full_name")
+  shipPhone         String?            @map("ship_phone")
+  shipLine1         String?            @map("ship_line1")
+  shipLine2         String?            @map("ship_line2")
+  shipLandmark      String?            @map("ship_landmark")
+  shipCity          String?            @map("ship_city")
+  shipState         String?            @map("ship_state")
+  shipPincode       String?            @map("ship_pincode")
+  shipCountry       String?            @map("ship_country")
+  /// How the customer pays: ONLINE (Razorpay and/or wallet, paid before confirming) or COD (cash
+  /// collected at delivery; the order is confirmed without payment). Set when it is confirmed.
+  paymentMethod     OrderPaymentMethod @default(ONLINE) @map("payment_method")
+  /// v1.13: coupon discount (already taken off grandTotal); spread over the lines' `discount`.
+  discountTotal     Decimal            @default(0.00) @map("discount_total") @db.Decimal(12, 2)
+  couponCode        String?            @map("coupon_code")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  deletedAt         DateTime?          @map("deleted_at")
 
-  items         OrderItem[]
-  statusHistory OrderStatusHistory[]
+  items             OrderItem[]
+  statusHistory     OrderStatusHistory[]
   // W1 back-relations (no columns on this table).
-  cancelRequests OrderCancelRequest[]
+  cancelRequests    OrderCancelRequest[]
   notifyPreferences OrderNotifyPreference[]
 
   @@index([userId])
@@ -743,9 +751,11 @@ model OrderItem {
   productId     String          @map("product_id")
   sellerId      String          @map("seller_id")
   titleSnapshot String          @map("title_snapshot")
-  unitPrice     Decimal         @db.Decimal(12, 2) @map("unit_price")
+  unitPrice     Decimal         @map("unit_price") @db.Decimal(12, 2)
   quantity      Int
-  lineTotal     Decimal         @db.Decimal(12, 2) @map("line_total")
+  lineTotal     Decimal         @map("line_total") @db.Decimal(12, 2)
+  /// v1.13: this line's share of the order's coupon discount - paid = lineTotal - discount.
+  discount      Decimal         @default(0.00) @db.Decimal(12, 2)
   sellerStatus  OrderItemStatus @default(PENDING) @map("seller_status")
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
@@ -880,6 +890,23 @@ model Address {
 // Razorpay API calls live here.
 // ---------------------------------------------------------------------------
 
+/// COD: Cash on Delivery.
+enum OrderPaymentMethod {
+  ONLINE
+  COD
+
+  @@schema("orders")
+}
+
+/// ONLINE = Razorpay. COD = Cash on Delivery: the payment row is CREATED when the order is placed
+/// (cash to collect) and CAPTURED once everything is delivered (cash collected).
+enum PaymentMethod {
+  ONLINE
+  COD
+
+  @@schema("payments")
+}
+
 enum PaymentStatus {
   CREATED
   CAPTURED
@@ -909,6 +936,7 @@ model Payment {
   amount            Decimal       @db.Decimal(12, 2)
   currency          String        @default("INR")
   status            PaymentStatus @default(CREATED)
+  method            PaymentMethod @default(ONLINE)
   razorpayOrderId   String?       @map("razorpay_order_id")
   razorpayPaymentId String?       @map("razorpay_payment_id")
   createdAt         DateTime      @default(now()) @map("created_at")
@@ -1038,7 +1066,7 @@ model WalletTransaction {
   type           WalletTxnType
   direction      WalletDirection
   amount         Decimal         @db.Decimal(12, 2)
-  balanceAfter   Decimal         @db.Decimal(12, 2) @map("balance_after")
+  balanceAfter   Decimal         @map("balance_after") @db.Decimal(12, 2)
   orderId        String?         @map("order_id")
   orderNumber    String?         @map("order_number")
   description    String
@@ -1192,15 +1220,15 @@ enum ReturnStatus {
 /// are SOFT references to orders.order_item.id and auth.user.id - plain
 /// indexed columns, no database foreign keys.
 model ReturnRequest {
-  id            String       @id @default(uuid(7))
-  orderItemId   String       @map("order_item_id")
-  userId        String       @map("user_id")
-  reason        String
-  status        ReturnStatus @default(REQUESTED)
-  refundAmount  Decimal?     @db.Decimal(12, 2) @map("refund_amount")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
-  deletedAt     DateTime?    @map("deleted_at")
+  id           String       @id @default(uuid(7))
+  orderItemId  String       @map("order_item_id")
+  userId       String       @map("user_id")
+  reason       String
+  status       ReturnStatus @default(REQUESTED)
+  refundAmount Decimal?     @map("refund_amount") @db.Decimal(12, 2)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  deletedAt    DateTime?    @map("deleted_at")
 
   @@index([orderItemId])
   @@index([userId])
@@ -1314,6 +1342,9 @@ model SupportTicket {
   topic       SupportTicketTopic
   message     String
   status      SupportTicketStatus @default(OPEN)
+  /// v1.14: support's answer, shown to the customer under My Help Requests.
+  adminReply  String?             @map("admin_reply")
+  repliedAt   DateTime?           @map("replied_at")
   createdAt   DateTime            @default(now()) @map("created_at")
   updatedAt   DateTime            @updatedAt @map("updated_at")
   deletedAt   DateTime?           @map("deleted_at")
@@ -1344,11 +1375,18 @@ model Coupon {
   id            String       @id @default(uuid(7))
   code          String
   discountType  DiscountType @map("discount_type")
-  discountValue Decimal      @db.Decimal(12, 2) @map("discount_value")
-  maxDiscount   Decimal?     @db.Decimal(12, 2) @map("max_discount")
-  minOrderValue Decimal?     @db.Decimal(12, 2) @map("min_order_value")
+  discountValue Decimal      @map("discount_value") @db.Decimal(12, 2)
+  maxDiscount   Decimal?     @map("max_discount") @db.Decimal(12, 2)
+  minOrderValue Decimal?     @map("min_order_value") @db.Decimal(12, 2)
   usageLimit    Int?         @map("usage_limit")
   usedCount     Int          @default(0) @map("used_count")
+  /// v1.13: shown on the Coupons / My offers list and at checkout ("10% off up to ₹500").
+  title         String?      @db.VarChar(80)
+  description   String?      @db.VarChar(300)
+  /// v1.13: how many times one customer may use it (null = unlimited). Default once each.
+  perUserLimit  Int?         @default(1) @map("per_user_limit")
+  /// v1.13: listed for everyone (true) or a secret code that only works when typed (false).
+  isPublic      Boolean      @default(true) @map("is_public")
   startsAt      DateTime?    @map("starts_at")
   endsAt        DateTime?    @map("ends_at")
   isActive      Boolean      @default(true) @map("is_active")
@@ -1356,9 +1394,40 @@ model Coupon {
   updatedAt     DateTime     @updatedAt @map("updated_at")
   deletedAt     DateTime?    @map("deleted_at")
 
+  redemptions CouponRedemption[]
+
   @@index([code])
   @@index([isActive])
   @@map("coupon")
+  @@schema("promotions")
+}
+
+/// RESERVED when an order is placed with the coupon, USED once that order is confirmed (paid or
+/// Cash on Delivery), RELEASED if the order is cancelled / expires - a released use counts again.
+enum CouponRedemptionStatus {
+  RESERVED
+  USED
+  RELEASED
+
+  @@schema("promotions")
+}
+
+/// v1.13: one use of a coupon by a customer for an order. `userId` / `orderId` are SOFT
+/// references (auth.user / orders.order) - plain indexed columns, no foreign keys.
+model CouponRedemption {
+  id        String                 @id @default(uuid(7))
+  couponId  String                 @map("coupon_id")
+  coupon    Coupon                 @relation(fields: [couponId], references: [id])
+  userId    String                 @map("user_id")
+  orderId   String?                @map("order_id")
+  discount  Decimal                @db.Decimal(12, 2)
+  status    CouponRedemptionStatus @default(RESERVED)
+  createdAt DateTime               @default(now()) @map("created_at")
+  updatedAt DateTime               @updatedAt @map("updated_at")
+
+  @@index([couponId, userId])
+  @@index([orderId])
+  @@map("coupon_redemption")
   @@schema("promotions")
 }
 
@@ -1423,20 +1492,20 @@ enum SettlementStatus {
 /// a partial unique index (WHERE deleted_at IS NULL), hand-added in
 /// migration SQL - not a Prisma @unique.
 model Settlement {
-  id                String           @id @default(uuid(7))
-  sellerId          String           @map("seller_id")
-  periodStart       DateTime         @map("period_start")
-  periodEnd         DateTime         @map("period_end")
-  grossAmount       Decimal          @db.Decimal(12, 2) @map("gross_amount")
-  commissionAmount  Decimal          @db.Decimal(12, 2) @map("commission_amount")
-  tcsAmount         Decimal          @db.Decimal(12, 2) @default(0.00) @map("tcs_amount")
-  tdsAmount         Decimal          @db.Decimal(12, 2) @default(0.00) @map("tds_amount")
-  netPayable        Decimal          @db.Decimal(12, 2) @map("net_payable")
-  status            SettlementStatus @default(PENDING)
-  razorpayPayoutId  String?          @map("razorpay_payout_id")
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
-  deletedAt         DateTime?        @map("deleted_at")
+  id               String           @id @default(uuid(7))
+  sellerId         String           @map("seller_id")
+  periodStart      DateTime         @map("period_start")
+  periodEnd        DateTime         @map("period_end")
+  grossAmount      Decimal          @map("gross_amount") @db.Decimal(12, 2)
+  commissionAmount Decimal          @map("commission_amount") @db.Decimal(12, 2)
+  tcsAmount        Decimal          @default(0.00) @map("tcs_amount") @db.Decimal(12, 2)
+  tdsAmount        Decimal          @default(0.00) @map("tds_amount") @db.Decimal(12, 2)
+  netPayable       Decimal          @map("net_payable") @db.Decimal(12, 2)
+  status           SettlementStatus @default(PENDING)
+  razorpayPayoutId String?          @map("razorpay_payout_id")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  deletedAt        DateTime?        @map("deleted_at")
 
   lines SettlementLine[]
 
@@ -1490,35 +1559,35 @@ enum InvoiceTaxType {
 /// time (same principle as the order's ship_* address snapshot, Ch6.1) so a
 /// later config/address change never alters an already-issued invoice.
 model Invoice {
-  id                String         @id @default(uuid(7))
-  orderId           String         @map("order_id")
+  id              String         @id @default(uuid(7))
+  orderId         String         @map("order_id")
   /// SOFT reference to auth.user.id - the order's OWN buyer, denormalized
   /// onto the invoice so invoice-service can enforce "download YOUR OWN
   /// order's invoice only" (404 otherwise) purely within its own schema,
   /// with no per-request round trip to order-service.
-  userId            String         @map("user_id")
-  invoiceNumber     String         @map("invoice_number")
-  invoiceDate       DateTime       @map("invoice_date")
-  buyerName         String         @map("buyer_name")
-  buyerAddress      String         @map("buyer_address") @db.Text
-  buyerState        String         @map("buyer_state")
-  buyerGstin        String?        @map("buyer_gstin")
-  businessName      String         @map("business_name")
-  businessGstin     String         @map("business_gstin")
-  businessAddress   String         @map("business_address") @db.Text
-  businessState     String         @map("business_state")
-  subtotalTaxable   Decimal        @db.Decimal(12, 2) @map("subtotal_taxable")
-  totalCgst         Decimal        @db.Decimal(12, 2) @default(0.00) @map("total_cgst")
-  totalSgst         Decimal        @db.Decimal(12, 2) @default(0.00) @map("total_sgst")
-  totalIgst         Decimal        @db.Decimal(12, 2) @default(0.00) @map("total_igst")
-  totalTax          Decimal        @db.Decimal(12, 2) @map("total_tax")
-  grandTotal        Decimal        @db.Decimal(12, 2) @map("grand_total")
-  pdfPath           String         @map("pdf_path")
-  placeOfSupply     String         @map("place_of_supply")
-  taxType           InvoiceTaxType @map("tax_type")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt @map("updated_at")
-  deletedAt         DateTime?      @map("deleted_at")
+  userId          String         @map("user_id")
+  invoiceNumber   String         @map("invoice_number")
+  invoiceDate     DateTime       @map("invoice_date")
+  buyerName       String         @map("buyer_name")
+  buyerAddress    String         @map("buyer_address") @db.Text
+  buyerState      String         @map("buyer_state")
+  buyerGstin      String?        @map("buyer_gstin")
+  businessName    String         @map("business_name")
+  businessGstin   String         @map("business_gstin")
+  businessAddress String         @map("business_address") @db.Text
+  businessState   String         @map("business_state")
+  subtotalTaxable Decimal        @map("subtotal_taxable") @db.Decimal(12, 2)
+  totalCgst       Decimal        @default(0.00) @map("total_cgst") @db.Decimal(12, 2)
+  totalSgst       Decimal        @default(0.00) @map("total_sgst") @db.Decimal(12, 2)
+  totalIgst       Decimal        @default(0.00) @map("total_igst") @db.Decimal(12, 2)
+  totalTax        Decimal        @map("total_tax") @db.Decimal(12, 2)
+  grandTotal      Decimal        @map("grand_total") @db.Decimal(12, 2)
+  pdfPath         String         @map("pdf_path")
+  placeOfSupply   String         @map("place_of_supply")
+  taxType         InvoiceTaxType @map("tax_type")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
 
   lines InvoiceLine[]
 
@@ -1544,13 +1613,13 @@ model InvoiceLine {
   titleSnapshot  String    @map("title_snapshot")
   hsnCode        String    @map("hsn_code")
   quantity       Int
-  unitPrice      Decimal   @db.Decimal(12, 2) @map("unit_price")
-  taxableValue   Decimal   @db.Decimal(12, 2) @map("taxable_value")
-  gstRatePercent Decimal   @db.Decimal(5, 2) @map("gst_rate_percent")
-  cgstAmount     Decimal   @db.Decimal(12, 2) @default(0.00) @map("cgst_amount")
-  sgstAmount     Decimal   @db.Decimal(12, 2) @default(0.00) @map("sgst_amount")
-  igstAmount     Decimal   @db.Decimal(12, 2) @default(0.00) @map("igst_amount")
-  lineTotal      Decimal   @db.Decimal(12, 2) @map("line_total")
+  unitPrice      Decimal   @map("unit_price") @db.Decimal(12, 2)
+  taxableValue   Decimal   @map("taxable_value") @db.Decimal(12, 2)
+  gstRatePercent Decimal   @map("gst_rate_percent") @db.Decimal(5, 2)
+  cgstAmount     Decimal   @default(0.00) @map("cgst_amount") @db.Decimal(12, 2)
+  sgstAmount     Decimal   @default(0.00) @map("sgst_amount") @db.Decimal(12, 2)
+  igstAmount     Decimal   @default(0.00) @map("igst_amount") @db.Decimal(12, 2)
+  lineTotal      Decimal   @map("line_total") @db.Decimal(12, 2)
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
@@ -1579,5 +1648,3 @@ model InvoiceCounter {
   @@map("invoice_counter")
   @@schema("invoices")
 }
-
-

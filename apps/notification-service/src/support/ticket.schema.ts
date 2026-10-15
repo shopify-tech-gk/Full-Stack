@@ -23,3 +23,22 @@ export const ListTicketsQuery = z.object({
   cursor: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
+
+// v1.14 admin dashboard: the help-request inbox.
+export const TicketStatus = z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED']);
+
+export const AdminListTicketsQuery = z.object({
+  status: TicketStatus.optional(),
+  q: z.string().trim().max(100).optional(),
+  cursor: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+});
+export type AdminListTicketsQuery = z.infer<typeof AdminListTicketsQuery>;
+
+export const AdminUpdateTicketBody = z
+  .object({
+    status: TicketStatus.optional(),
+    reply: z.string().trim().min(2).max(2000).optional(),
+  })
+  .refine((b) => b.status || b.reply, { message: 'Nothing to update' });
+export type AdminUpdateTicketBody = z.infer<typeof AdminUpdateTicketBody>;

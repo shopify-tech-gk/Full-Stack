@@ -40,6 +40,29 @@ export async function getStock(skuId: string): Promise<StockSummary> {
   };
 }
 
+/** v1.14 admin dashboard: stock for a page of SKUs at once (missing row = 0). */
+export async function getStockLevels(skuIds: readonly string[]): Promise<StockSummary[]> {
+  const rows = await prisma.stockLevel.findMany({
+    where: { skuId: { in: [...skuIds] }, deletedAt: null },
+  });
+  const bySku = new Map(rows.map((row) => [row.skuId, row]));
+  return skuIds.map((skuId) => ({
+    skuId,
+    available: bySku.get(skuId)?.available ?? 0,
+    reserved: bySku.get(skuId)?.reserved ?? 0,
+  }));
+}
+
+/** v1.14 admin dashboard: SKUs at or below `threshold` available, lowest first. */
+export async function getLowStock(threshold: number, limit: number): Promise<StockSummary[]> {
+  const rows = await prisma.stockLevel.findMany({
+    where: { deletedAt: null, available: { lte: threshold } },
+    orderBy: [{ available: 'asc' }, { updatedAt: 'desc' }],
+    take: limit,
+  });
+  return rows.map((row) => ({ skuId: row.skuId, available: row.available, reserved: row.reserved }));
+}
+
 /** Admin op: sets the absolute `available` count. `reserved` is untouched. */
 export async function setStock(skuId: string, input: SetStockBody): Promise<StockSummary> {
   return withStockLock(skuId, async () => {

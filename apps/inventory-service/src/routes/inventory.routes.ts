@@ -9,7 +9,10 @@ import {
   releaseByOrder,
   commitByOrder,
   restock,
+  getStockLevels,
+  getLowStock,
 } from '../inventory/inventory.service';
+import { z } from 'zod';
 import { requireServiceAuth, requireAdmin } from '../authMiddleware';
 
 export const inventoryRouter: Router = Router();
@@ -22,6 +25,23 @@ inventoryRouter.get('/:skuId', requireServiceAuth, async (req, res) => {
   const skuId = typeof req.params.skuId === 'string' ? req.params.skuId : '';
   const stock = await getStock(skuId);
   res.status(200).json(stock);
+});
+
+// v1.14 admin dashboard: stock for a page of SKUs, and the low-stock report. Registered BEFORE
+// the 2-segment `/admin/:skuId` read below.
+const StockLevelsBody = z.object({ skuIds: z.array(z.string().uuid()).min(1).max(200) });
+inventoryRouter.post('/admin/stock-levels', requireAdmin('inventory.manage'), async (req, res) => {
+  const body = StockLevelsBody.parse(req.body);
+  res.status(200).json({ items: await getStockLevels(body.skuIds) });
+});
+
+const LowStockQuery = z.object({
+  threshold: z.coerce.number().int().min(0).max(1000).default(5),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+inventoryRouter.get('/admin/reports/low-stock', requireAdmin('inventory.manage'), async (req, res) => {
+  const query = LowStockQuery.parse(req.query);
+  res.status(200).json({ items: await getLowStock(query.threshold, query.limit) });
 });
 
 // Ch7.2 hardening: admin had no way to VIEW current stock at all before

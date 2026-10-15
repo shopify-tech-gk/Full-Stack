@@ -3,6 +3,7 @@ import { AppError } from '@youmart/errors';
 import { enqueueSearchReindex } from '@youmart/search-reindex-client';
 import { prisma, reviewsDb } from '../db';
 import { orderClient } from '../serviceClients';
+import { listingItemsByIds } from './catalog.service';
 
 // W6: storefront product reviews. Rows live in the `reviews` schema (reviews_svc role); the
 // product's denormalised rating/ratingCount (catalog schema) are folded forward incrementally,
@@ -129,7 +130,7 @@ export async function submitReview(
     throw new AppError(
       'FORBIDDEN',
       403,
-      'Only customers who have bought this product can review it',
+      'You can review this product once it has been delivered to you',
     );
   }
 
@@ -179,4 +180,32 @@ export async function submitReview(
   // Listing cards and sort-by-rating read the search index.
   await enqueueSearchReindex(productId);
   return { review: toView(row), created: !existing };
+}
+
+export interface MyReviewListItem extends ReviewView {
+  status: 'PENDING' | 'PUBLISHED' | 'REJECTED';
+  /** null when the product is no longer sold. */
+  product: { id: string; title: string; slug: string; imageUrl: string | null } | null;
+}
+
+/** GET /catalog/reviews/mine - every review the caller has written, newest first (My Reviews). */
+export async function listMyReviews(userId: string): Promise<{ items: MyReviewListItem[] }> {
+  const rows = await reviewsDb.review.findMany({
+    where: { userId, deletedAt: null },
+    orderBy: { updatedAt: 'desc' },
+    take: 200,
+  });
+  const cards = await listingItemsByIds(rows.map((row) => row.productId));
+  return {
+    items: rows.map((row) => {
+      const card = cards.get(row.productId);
+      return {
+        ...toView(row),
+        status: row.status,
+        product: card
+          ? { id: card.id, title: card.title, slug: card.slug, imageUrl: card.imageUrl }
+          : null,
+      };
+    }),
+  };
 }

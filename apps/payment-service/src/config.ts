@@ -32,6 +32,12 @@ const paymentServiceEnvSchema = baseEnvSchema.extend({
   WALLET_TOPUP_MIN: Money.default('10.00'),
   WALLET_TOPUP_MAX: Money.default('10000.00'),
   WALLET_MAX_BALANCE: Money.default('50000.00'),
+  // Cash on Delivery: on/off, and the largest order total it is offered for.
+  COD_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+  COD_MAX_AMOUNT: Money.default('50000.00'),
 });
 
 const parsed = loadConfigWith(paymentServiceEnvSchema);
@@ -60,6 +66,8 @@ export interface PaymentServiceConfig {
   walletTopupMin: Money;
   walletTopupMax: Money;
   walletMaxBalance: Money;
+  codEnabled: boolean;
+  codMaxAmount: Money;
 }
 
 export const config: Readonly<PaymentServiceConfig> = Object.freeze({
@@ -82,4 +90,6 @@ export const config: Readonly<PaymentServiceConfig> = Object.freeze({
   walletTopupMin: parsed.WALLET_TOPUP_MIN,
   walletTopupMax: parsed.WALLET_TOPUP_MAX,
   walletMaxBalance: parsed.WALLET_MAX_BALANCE,
+  codEnabled: parsed.COD_ENABLED,
+  codMaxAmount: parsed.COD_MAX_AMOUNT,
 });

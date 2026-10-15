@@ -8,6 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import type { CartProduct } from '@youmart/shared-client';
 import { useCart } from '@/stores/cart';
 import { colors, font, radii } from '@/theme';
@@ -68,6 +69,7 @@ export function CartStepper({
 
   const step = (delta: 1 | -1) => {
     const next = line.quantity + delta;
+    void Haptics.selectionAsync().catch(() => undefined);
     void run(() =>
       next < 1 ? cart.removeItem(line.cartItemId) : cart.setQuantity(line.cartItemId, next),
     );

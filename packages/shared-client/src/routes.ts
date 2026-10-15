@@ -11,6 +11,11 @@ export const ROUTES = {
   orders: '/account/orders',
   addresses: '/account/addresses',
   accountDetails: '/account/details',
+  /** v1.12 */
+  recentlyViewed: '/account/recently-viewed',
+  myReviews: '/account/reviews',
+  /** v1.13 */
+  coupons: '/account/coupons',
   trackOrder: '/track-order',
   cancelOrder: '/cancel-order',
   orderNotifications: '/order-notifications',

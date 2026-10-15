@@ -3,9 +3,20 @@ import rateLimit from 'express-rate-limit';
 import { buildApiError } from '@youmart/errors';
 import { ContactMessageBody } from '../support/support.schema';
 import { submitContactMessage } from '../support/support.service';
-import { CreateTicketBody, ListTicketsQuery } from '../support/ticket.schema';
-import { createTicket, getMyTicket, listMyTickets } from '../support/ticket.service';
-import { requireAuth } from '../authMiddleware';
+import {
+  AdminListTicketsQuery,
+  AdminUpdateTicketBody,
+  CreateTicketBody,
+  ListTicketsQuery,
+} from '../support/ticket.schema';
+import {
+  createTicket,
+  getMyTicket,
+  listAdminTickets,
+  listMyTickets,
+  updateAdminTicket,
+} from '../support/ticket.service';
+import { requireAdmin, requireAuth } from '../authMiddleware';
 
 export const supportRouter: Router = Router();
 
@@ -62,4 +73,14 @@ supportRouter.get('/tickets', requireAuth, async (req, res) => {
 supportRouter.get('/tickets/:id', requireAuth, async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   res.status(200).json(await getMyTicket(req.auth?.userId ?? '', id));
+});
+
+// v1.14 admin dashboard: every customer's help requests; reply / change status.
+supportRouter.get('/admin/tickets', requireAdmin('support.manage'), async (req, res) => {
+  res.status(200).json(await listAdminTickets(AdminListTicketsQuery.parse(req.query)));
+});
+
+supportRouter.patch('/admin/tickets/:id', requireAdmin('support.manage'), async (req, res) => {
+  const id = typeof req.params.id === 'string' ? req.params.id : '';
+  res.status(200).json(await updateAdminTicket(id, AdminUpdateTicketBody.parse(req.body)));
 });

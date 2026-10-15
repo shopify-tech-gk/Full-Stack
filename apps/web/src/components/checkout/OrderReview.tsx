@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Minus, Plus, Trash2 } from 'lucide-react';
 import { formatMoney, shippingLabel, type CartTotals, type Money } from '@youmart/shared-client';
 import { TEXT_LINK } from '@/components/account/formStyles';
 
@@ -14,6 +15,10 @@ interface OrderReviewTableProps {
   totals: CartTotals;
   /** The cart can still change before the order is placed; the placed order can't. */
   editable: boolean;
+  /** v1.13: the coupon taken off (shown between shipping and the total). */
+  discount?: { code: string | null; amount: Money } | null;
+  /** Change a line's quantity right here (0 removes it). Only while `editable`. */
+  onQuantity?: (key: string, quantity: number) => void;
 }
 
 const HEAD = 'border-b border-catalog-rule py-[11.2px] pr-[16px] font-bold';
@@ -21,9 +26,16 @@ const CELL = 'border-b border-catalog-rule py-[10px] pr-[10px] align-top';
 const FOOT_TH = 'border-b border-catalog-rule py-[14px] pr-[12px] text-left font-medium';
 const FOOT_TD = 'border-b border-catalog-rule py-[14px] pr-[10px] text-right';
 
-// Live review table (Product / Quantity / Subtotal, 1px blue rules). Read-only here: live's
-// 20px steppers + "Johnson Travo Brass Angle..." truncation move to the cart page.
-export function OrderReviewTable({ rows, totals, editable }: OrderReviewTableProps) {
+// Live review table (Product / Quantity / Subtotal, 1px blue rules). Before the order is placed
+// each line gets a − qty + stepper (at 1 the minus becomes a bin), like the big stores.
+export function OrderReviewTable({
+  rows,
+  totals,
+  editable,
+  discount,
+  onQuantity,
+}: OrderReviewTableProps) {
+  const steppers = editable && !!onQuantity;
   return (
     <>
       <table className="w-full border-separate border-spacing-0 font-sans text-[14.6px] leading-[25.6px] tabular-nums text-ink-body lg:text-[16px]">
@@ -32,7 +44,10 @@ export function OrderReviewTable({ rows, totals, editable }: OrderReviewTablePro
             <th scope="col" className={`${HEAD} text-left`}>
               Product
             </th>
-            <th scope="col" className={`${HEAD} w-[64px] text-center`}>
+            <th
+              scope="col"
+              className={`${HEAD} ${steppers ? 'w-[118px]' : 'w-[64px]'} text-center`}
+            >
               Qty
             </th>
             <th scope="col" className={`${HEAD} w-[34%] pr-[10px] text-right`}>
@@ -48,7 +63,39 @@ export function OrderReviewTable({ rows, totals, editable }: OrderReviewTablePro
                   {line.title}
                 </span>
               </th>
-              <td className={`${CELL} text-center`}>&times;&nbsp;{line.quantity}</td>
+              <td className={`${CELL} text-center`}>
+                {steppers ? (
+                  <span className="inline-flex items-center rounded-[8px] border border-catalog-rule bg-white">
+                    <button
+                      type="button"
+                      onClick={() => onQuantity(line.key, line.quantity - 1)}
+                      aria-label={line.quantity <= 1 ? `Remove ${line.title}` : 'Decrease quantity'}
+                      className={`flex size-[30px] items-center justify-center rounded-l-[8px] hover:bg-cart-headBg ${
+                        line.quantity <= 1 ? 'text-woo-error' : 'text-brand'
+                      }`}
+                    >
+                      {line.quantity <= 1 ? (
+                        <Trash2 aria-hidden="true" className="size-[14px]" />
+                      ) : (
+                        <Minus aria-hidden="true" className="size-[14px]" />
+                      )}
+                    </button>
+                    <span className="min-w-[28px] text-center font-ui text-[14px] font-semibold text-heading">
+                      {line.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onQuantity(line.key, line.quantity + 1)}
+                      aria-label="Increase quantity"
+                      className="flex size-[30px] items-center justify-center rounded-r-[8px] text-brand hover:bg-cart-headBg"
+                    >
+                      <Plus aria-hidden="true" className="size-[14px]" />
+                    </button>
+                  </span>
+                ) : (
+                  <>&times;&nbsp;{line.quantity}</>
+                )}
+              </td>
               <td className={`${CELL} text-right`}>{formatMoney(line.lineTotal)}</td>
             </tr>
           ))}
@@ -68,6 +115,16 @@ export function OrderReviewTable({ rows, totals, editable }: OrderReviewTablePro
               {shippingLabel(totals.shipping) ?? formatMoney(totals.shipping)}
             </td>
           </tr>
+          {discount && discount.amount !== '0.00' ? (
+            <tr>
+              <th scope="row" colSpan={2} className={FOOT_TH}>
+                Coupon{discount.code ? ` (${discount.code})` : ''}
+              </th>
+              <td className={`${FOOT_TD} font-semibold text-woo-success`}>
+                &minus;{formatMoney(discount.amount)}
+              </td>
+            </tr>
+          ) : null}
           <tr>
             <th scope="row" colSpan={2} className={FOOT_TH}>
               Total Amount

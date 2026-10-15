@@ -39,6 +39,12 @@ import {
 import { NotifyPreferenceBody } from '../order/notify-preference.schema';
 import { getNotifyPreference, setNotifyPreference } from '../order/notify-preference.service';
 import { requireAuth, requireServiceAuth, requireAdmin } from '../authMiddleware';
+import {
+  AdminOrdersQuery,
+  getAdminOrder,
+  getAdminStats,
+  listAdminOrders,
+} from '../order/admin-order.service';
 import { requireUserId } from '../authToken';
 
 export const orderRouter: Router = Router();
@@ -86,7 +92,12 @@ orderRouter.post('/checkout', requireAuth, checkoutRateLimiter, async (req, res)
       badSelection ? 'Invalid cart selection' : 'a shipping address is required',
     );
   }
-  const order = await checkout(userId, parsed.data.addressId, parsed.data.cartItemIds);
+  const order = await checkout(
+    userId,
+    parsed.data.addressId,
+    parsed.data.cartItemIds,
+    parsed.data.couponCode,
+  );
   res.status(201).json(order);
 });
 
@@ -186,7 +197,8 @@ orderRouter.post(
 
 orderRouter.post('/internal/:orderId/confirm', requireServiceAuth, async (req, res) => {
   const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
-  await confirmOrder(orderId);
+  const method = (req.body as { paymentMethod?: unknown } | undefined)?.paymentMethod;
+  await confirmOrder(orderId, method === 'COD' ? 'COD' : 'ONLINE');
   res.status(200).json({ confirmed: true });
 });
 
@@ -226,6 +238,20 @@ orderRouter.get(
     res.status(200).json(result);
   },
 );
+
+// v1.14 admin dashboard: store-wide orders + overview numbers (read-only).
+orderRouter.get('/admin/orders', requireAdmin('orders.manage'), async (req, res) => {
+  res.status(200).json(await listAdminOrders(AdminOrdersQuery.parse(req.query)));
+});
+
+orderRouter.get('/admin/orders/:id', requireAdmin('orders.manage'), async (req, res) => {
+  const id = typeof req.params.id === 'string' ? req.params.id : '';
+  res.status(200).json(await getAdminOrder(id));
+});
+
+orderRouter.get('/admin/stats', requireAdmin('orders.manage'), async (_req, res) => {
+  res.status(200).json(await getAdminStats());
+});
 
 // W1: admin review of customer cancel requests for PAID orders.
 orderRouter.get('/admin/cancel-requests', requireAdmin('orders.manage'), async (req, res) => {

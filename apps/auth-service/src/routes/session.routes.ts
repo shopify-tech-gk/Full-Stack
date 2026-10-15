@@ -20,6 +20,12 @@ import {
   setNotificationSettings,
 } from '../user/notification-settings.service';
 import { checkAccountDeletion, deleteAccount } from '../user/account-deletion.service';
+import {
+  ContactChangeRequestBody,
+  ContactChangeVerifyBody,
+  requestContactChange,
+  verifyContactChange,
+} from '../user/contact-change.service';
 
 export const sessionRouter: Router = Router();
 
@@ -73,6 +79,21 @@ sessionRouter.patch('/me', requireAuth, async (req, res) => {
 // W8: the customer's home "Shop by category" order (drag-and-drop), stored on the account.
 const CategoryOrderBody = z.object({
   categoryOrder: z.array(z.string().trim().min(1).max(80)).max(200),
+});
+
+// v1.12: change / add the account's mobile number or email - OTP to the NEW value first.
+sessionRouter.post('/me/contact/request', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  const body = ContactChangeRequestBody.parse(req.body);
+  res.status(200).json(await requestContactChange(userId, body.identifier));
+});
+
+sessionRouter.post('/me/contact/verify', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  const body = ContactChangeVerifyBody.parse(req.body);
+  res.status(200).json(await verifyContactChange(userId, body.identifier, body.code));
 });
 
 sessionRouter.get('/me/preferences', requireAuth, async (req, res) => {

@@ -1,6 +1,6 @@
 import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
-import { compare } from '@youmart/shared-utils';
+import { compare, subtract } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
 import { enqueueNotification } from '@youmart/notifications-client';
 import { prisma } from '../db';
@@ -235,13 +235,15 @@ export async function approveReturn(
   }
 
   const item = await orderClient.getInternalOrderItem(existing.orderItemId);
-  const refundAmount = refundAmountOverride ?? item.lineTotal;
+  // v1.13: with a coupon the line was paid lineTotal - discount; never refund more than that.
+  const paid = item.discount ? subtract(item.lineTotal, item.discount) : item.lineTotal;
+  const refundAmount = refundAmountOverride ?? paid;
 
-  if (compare(refundAmount, item.lineTotal) > 0) {
+  if (compare(refundAmount, paid) > 0) {
     throw new AppError(
       'VALIDATION_ERROR',
       400,
-      `refundAmount ${refundAmount} exceeds the order item's line total ${item.lineTotal}`,
+      `refundAmount ${refundAmount} exceeds what was paid for this item (${paid})`,
     );
   }
 
@@ -411,5 +413,6 @@ export async function listReturnsAdmin(query: ListReturnsQuery): Promise<Paginat
   const hasMore = rows.length > limit;
   const pageRows = hasMore ? rows.slice(0, limit) : rows;
   const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null;
-  return { items: pageRows.map(toReturnView), nextCursor };
+  // v1.14: with the item title / order number, so the admin dashboard can show what it is for.
+  return { items: await withItemDetails(pageRows.map(toReturnView)), nextCursor };
 }

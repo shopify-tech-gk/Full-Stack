@@ -76,6 +76,8 @@ export default function OrderDetailScreen() {
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [invoiceBusy, setInvoiceBusy] = useState(false);
+  // productId -> slug, so a delivered line can open "Rate this product" (order lines carry no slug).
+  const [slugs, setSlugs] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     try {
@@ -86,6 +88,13 @@ export default function OrderDetailScreen() {
         api.returns.list({ limit: 50 }).catch(() => null),
       ]);
       setPayment(p);
+      const delivered = o.items.filter((i) => i.sellerStatus === 'DELIVERED');
+      if (delivered.length > 0) {
+        api.catalog
+          .productCards([...new Set(delivered.map((i) => i.productId))])
+          .then(({ items }) => setSlugs(Object.fromEntries(items.map((c) => [c.id, c.slug]))))
+          .catch(() => undefined);
+      }
       const lineIds = new Set(o.items.map((i) => i.orderItemId));
       setReturns((r?.items ?? []).filter((ret) => lineIds.has(ret.orderItemId)));
     } catch {
@@ -273,6 +282,8 @@ export default function OrderDetailScreen() {
             const canReturn =
               item.sellerStatus === 'DELIVERED' && (!ret || ret.status === 'REJECTED');
             const canTrack = item.sellerStatus === 'SHIPPED' || item.sellerStatus === 'DELIVERED';
+            // Rate after delivery (Flipkart-style).
+            const rateSlug = item.sellerStatus === 'DELIVERED' ? slugs[item.productId] : undefined;
             return (
               <View
                 key={item.orderItemId}
@@ -295,8 +306,17 @@ export default function OrderDetailScreen() {
                     </Text>
                   </View>
                 ) : null}
-                {canTrack || canReturn ? (
+                {canTrack || canReturn || rateSlug ? (
                   <View style={styles.itemActions}>
+                    {rateSlug ? (
+                      <Pressable
+                        style={[styles.smallBtn, styles.rateBtn]}
+                        onPress={() => router.push(`/review/${rateSlug}`)}
+                      >
+                        <Ionicons name="star" size={14} color="#f5a400" />
+                        <Text style={styles.smallBtnText}>Rate product</Text>
+                      </Pressable>
+                    ) : null}
                     {canTrack ? (
                       <Pressable
                         style={styles.smallBtn}
@@ -360,13 +380,22 @@ export default function OrderDetailScreen() {
             );
           })}
           <View style={styles.divider} />
+          {order.discountTotal && order.discountTotal !== '0.00' ? (
+            <View style={styles.item}>
+              <Text style={styles.payLabel}>Coupon {order.couponCode ?? ''}</Text>
+              <Text style={[styles.payValue, { color: colors.feature.guarantee }]}>
+                − {formatMoney(order.discountTotal)}
+              </Text>
+            </View>
+          ) : null}
           <View style={styles.item}>
             <Text style={styles.totalLabel}>{pending ? 'Total' : 'Total paid'}</Text>
             <Text style={styles.totalValue}>{formatMoney(order.grandTotal)}</Text>
           </View>
         </View>
 
-        {payment && (payment.walletAmount !== '0.00' || payment.refunds.length > 0) ? (
+        {payment &&
+        (payment.walletAmount !== '0.00' || payment.refunds.length > 0 || payment.cod) ? (
           <>
             <Text style={styles.section}>Payment</Text>
             <View style={styles.card}>
@@ -376,6 +405,16 @@ export default function OrderDetailScreen() {
                     {pending ? 'Reserved from wallet' : 'Paid from wallet'}
                   </Text>
                   <Text style={styles.payValue}>{formatMoney(payment.walletAmount)}</Text>
+                </View>
+              ) : null}
+              {payment.cod ? (
+                <View style={styles.item}>
+                  <Text style={styles.payLabel}>
+                    {payment.cod.collected
+                      ? 'Paid on delivery (cash)'
+                      : 'Cash on Delivery - pay on arrival'}
+                  </Text>
+                  <Text style={styles.payValue}>{formatMoney(payment.cod.amount)}</Text>
                 </View>
               ) : null}
               {payment.onlineAmount !== '0.00' ? (
@@ -604,6 +643,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: colors.cart.line },
   totalLabel: { fontFamily: font.uiBold, fontSize: 14, color: colors.text.strong },
   totalValue: { fontFamily: font.uiBold, fontSize: 15, color: colors.brand.DEFAULT },
+  rateBtn: { borderColor: '#f5c451' },
   payLabel: { fontFamily: font.body, fontSize: 13.5, color: colors.text.body },
   payValue: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.text.strong },
   refundLabel: { fontFamily: font.uiMedium, fontSize: 13.5, color: colors.feature.guarantee },

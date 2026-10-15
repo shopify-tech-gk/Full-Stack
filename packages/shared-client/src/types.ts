@@ -305,6 +305,8 @@ export interface OrderItem {
   unitPrice: Money;
   quantity: number;
   lineTotal: Money;
+  /** v1.13: this line's share of the coupon discount (paid = lineTotal - discount). */
+  discount?: Money;
   sellerStatus: SellerItemStatus;
 }
 export interface ShippingAddressSnapshot {
@@ -327,6 +329,11 @@ export interface OrderView {
   subtotal: Money;
   shippingTotal: Money;
   grandTotal: Money;
+  /** v1.12: COD = Cash on Delivery (pay in cash at delivery). */
+  paymentMethod?: 'ONLINE' | 'COD';
+  /** v1.13: coupon discount already taken off grandTotal, and the code used. */
+  discountTotal?: Money;
+  couponCode?: string | null;
   shippingAddress: ShippingAddressSnapshot;
   /** v1.6 */
   createdAt: IsoDateTime;
@@ -345,6 +352,9 @@ export interface OrderListItem {
   status: OrderStatus;
   grandTotal: Money;
   createdAt: IsoDateTime;
+  /** v1.13: each line's progress (Processing / Packed / Shipped / Delivered on the list). */
+  itemStatuses?: SellerItemStatus[];
+  paymentMethod?: 'ONLINE' | 'COD';
 }
 
 /** POST /api/orders/track (public): deliberately no ids, prices or full address. */
@@ -445,6 +455,12 @@ export interface MyReview {
   canReview: boolean;
   review: Review | null;
 }
+/** v1.12: a review on the customer's My Reviews list. */
+export interface MyReviewListItem extends Review {
+  status: 'PENDING' | 'PUBLISHED' | 'REJECTED';
+  /** null when the product is no longer sold. */
+  product: { id: Uuid; title: string; slug: string; imageUrl: string | null } | null;
+}
 export interface SubmitReviewBody {
   rating: number;
   title?: string;
@@ -532,9 +548,11 @@ export interface CreateWalletTopupResult extends WalletTopup {
   amountPaise: number;
   currency: 'INR';
 }
-/** POST /api/payments/pay: PAID = the wallet covered everything; otherwise pay `razorpay`. */
+/** POST /api/payments/pay: PAID = the wallet covered everything; COD = confirmed as Cash on
+ * Delivery (`codAmount` collected at the door); otherwise pay `razorpay`. */
 export interface PayOrderResult {
-  status: 'PAID' | 'PAYMENT_REQUIRED';
+  status: 'PAID' | 'PAYMENT_REQUIRED' | 'COD';
+  codAmount?: Money;
   orderId: Uuid;
   walletAmount: Money;
   onlineAmount: Money;
@@ -545,6 +563,8 @@ export interface OrderPaymentSummary {
   orderId: Uuid;
   walletAmount: Money;
   onlineAmount: Money;
+  /** v1.12: Cash on Delivery - the cash amount and whether it was collected (null = not COD). */
+  cod?: { amount: Money; collected: boolean } | null;
   refundedTotal: Money;
   refunds: {
     refundId: Uuid;
@@ -554,6 +574,32 @@ export interface OrderPaymentSummary {
     reason: string | null;
     createdAt: IsoDateTime;
   }[];
+}
+
+// --- Coupons (v1.13) ---
+export interface CouponView {
+  code: string;
+  /** "10% off up to ₹500" */
+  title: string;
+  description: string | null;
+  discountType: 'PERCENT' | 'FLAT';
+  discountValue: Money;
+  maxDiscount: Money | null;
+  minOrderValue: Money | null;
+  endsAt: IsoDateTime | null;
+}
+/** GET /api/orders/coupons[?subtotal=] - a public offer and whether it fits this cart. */
+export interface AvailableCoupon extends CouponView {
+  applicable: boolean;
+  /** Why not, e.g. "Add ₹300 more to use this coupon (minimum order ₹999)". */
+  reason: string | null;
+  discount: Money;
+}
+/** POST /api/orders/coupons/quote */
+export interface CouponQuote {
+  coupon: CouponView;
+  discount: Money;
+  total: Money;
 }
 
 // --- Account settings (W9) ---
@@ -589,6 +635,9 @@ export interface HelpTicket {
   orderNumber: string | null;
   message: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  /** v1.14: YouMart Support's reply (null until they answer). */
+  adminReply: string | null;
+  repliedAt: IsoDateTime | null;
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
 }

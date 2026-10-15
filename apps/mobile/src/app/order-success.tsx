@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { orderOverview, type OrderView } from '@youmart/shared-client';
+import { formatMoney, orderOverview, type OrderView } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { colors, font, radii, space } from '@/theme';
 
@@ -28,6 +28,15 @@ export default function OrderSuccessScreen() {
         </View>
         <Text style={styles.title}>Order confirmed!</Text>
         <Text style={styles.subtitle}>Thank you for shopping with YouMart.</Text>
+        {order?.paymentMethod === 'COD' ? (
+          <View style={styles.codNote}>
+            <Ionicons name="cash-outline" size={18} color={colors.feature.guarantee} />
+            <Text style={styles.codText}>
+              Cash on Delivery - please keep {formatMoney(order.grandTotal)} ready (cash or UPI)
+              when it arrives.
+            </Text>
+          </View>
+        ) : null}
 
         {!order ? (
           <ActivityIndicator color={colors.brand.DEFAULT} style={{ marginTop: space.xl }} />
@@ -56,6 +65,17 @@ export default function OrderSuccessScreen() {
 }
 
 const styles = StyleSheet.create({
+  codNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#e9f8ef',
+    borderRadius: 12,
+    paddingHorizontal: space.md,
+    paddingVertical: 10,
+    marginTop: space.sm,
+  },
+  codText: { flex: 1, fontFamily: font.uiMedium, fontSize: 13.5, color: colors.text.strong },
   screen: { flex: 1, backgroundColor: colors.page },
   body: { alignItems: 'center', padding: space.xl, gap: space.sm },
   tick: {

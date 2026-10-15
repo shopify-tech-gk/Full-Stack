@@ -7,7 +7,8 @@ import { z } from 'zod';
 export const Phone = z.string().regex(/^\+[1-9]\d{7,14}$/, 'Invalid phone number');
 
 export const OtpPurpose = z.enum(['LOGIN', 'PHONE_VERIFY']);
-export type OtpPurpose = z.infer<typeof OtpPurpose>;
+/** CONTACT_CHANGE is internal-only (user/contact-change.service.ts), never accepted on /otp/*. */
+export type OtpPurpose = z.infer<typeof OtpPurpose> | 'CONTACT_CHANGE';
 
 export const OtpRequestBody = z.object({
   // v1.2: a mobile number OR an email; see otp.target.ts. `phone` is the v1 field.

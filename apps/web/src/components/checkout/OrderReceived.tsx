@@ -35,8 +35,17 @@ export function OrderReceived({ order, placedAt }: OrderReceivedProps) {
             Thank you. Your order has been received.
           </p>
           <p className="mt-[4px] text-[14.6px] text-ink-muted lg:text-[15px]">
-            Payment confirmed. We&rsquo;ve sent the order details to you and will let you know when
-            it ships.
+            {order.paymentMethod === 'COD' ? (
+              <>
+                Cash on Delivery: please keep <strong>{formatMoney(order.grandTotal)}</strong> ready
+                (cash or UPI) when it arrives. We&rsquo;ll let you know when it ships.
+              </>
+            ) : (
+              <>
+                Payment confirmed. We&rsquo;ve sent the order details to you and will let you know
+                when it ships.
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -97,6 +106,16 @@ export function OrderReceived({ order, placedAt }: OrderReceivedProps) {
               {shippingLabel(order.shippingTotal) ?? formatMoney(order.shippingTotal)}
             </td>
           </tr>
+          {order.discountTotal && order.discountTotal !== '0.00' ? (
+            <tr>
+              <th scope="row" className={`${CELL} text-left font-medium`}>
+                Coupon{order.couponCode ? ` (${order.couponCode})` : ''}
+              </th>
+              <td className={`${CELL} text-right font-semibold text-woo-success`}>
+                &minus;{formatMoney(order.discountTotal)}
+              </td>
+            </tr>
+          ) : null}
           <tr>
             <th scope="row" className="px-[12px] py-[10px] text-left font-medium">
               Total Amount

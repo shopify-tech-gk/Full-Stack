@@ -720,7 +720,13 @@ export const FAQ_PAGE: { title: string; subtitle: string; heading: string; items
     {
       question: 'Is Cash on Delivery (COD) available?',
       answer: [
-        'Yes. COD is available for eligible products and serviceable PIN codes. Availability will be shown during checkout.',
+        'Yes. Choose Cash on Delivery at checkout for orders up to ₹50,000 and pay in cash or UPI when your order arrives. A COD order that has not shipped yet can be cancelled instantly from My Orders. If you return a delivered COD order, the refund is credited to your YouMart Wallet.',
+      ],
+    },
+    {
+      question: 'How do coupons work?',
+      answer: [
+        'Pick a coupon at checkout under "Apply coupon" (or "Have a coupon?" on the website), or type a code you have. Each coupon shows its minimum order and saving; most can be used once per customer. If an order is cancelled or not paid, the coupon becomes usable again. If you return an item from a discounted order, the refund is the amount you actually paid for it.',
       ],
     },
     {

@@ -8,6 +8,7 @@ import { logger } from './logger';
 import { prisma } from './db';
 import { config } from './config';
 import { orderRouter } from './routes/order.routes';
+import { couponRouter } from './routes/coupon.routes';
 import { sellerOrderRouter } from './order/seller-order.routes';
 
 /**
@@ -49,6 +50,7 @@ export function createApp(): Express {
   // Mounted before orderRouter (distinct '/orders/seller' prefix, no
   // actual path overlap either way) - the seller-owned path (Ch5.2).
   app.use('/orders/seller', sellerOrderRouter);
+  app.use('/orders/coupons', couponRouter);
   app.use('/orders', orderRouter);
 
   app.use((_req, _res, next) => {

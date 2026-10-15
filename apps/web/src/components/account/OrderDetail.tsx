@@ -40,6 +40,8 @@ export function OrderDetail({ orderNumber }: { orderNumber: string }) {
   const session = useSession();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  // productId -> slug for delivered lines ("Rate product"); order lines carry no slug.
+  const [slugs, setSlugs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let active = true;
@@ -55,6 +57,15 @@ export function OrderDetail({ orderNumber }: { orderNumber: string }) {
           ),
         );
         if (active) setState({ kind: 'ready', order, shipments });
+        const delivered = order.items.filter((item) => item.sellerStatus === 'DELIVERED');
+        if (delivered.length > 0) {
+          api.catalog
+            .productCards([...new Set(delivered.map((item) => item.productId))])
+            .then(({ items }) => {
+              if (active) setSlugs(Object.fromEntries(items.map((card) => [card.id, card.slug])));
+            })
+            .catch(() => undefined);
+        }
       } catch (error) {
         if (!active) return;
         setState(
@@ -151,6 +162,17 @@ export function OrderDetail({ orderNumber }: { orderNumber: string }) {
                 <strong className="whitespace-nowrap font-sans">
                   &times;&nbsp;{item.quantity}
                 </strong>
+                {item.sellerStatus === 'DELIVERED' && slugs[item.productId] ? (
+                  <Link
+                    href={`/product/${slugs[item.productId]}#reviews`}
+                    className="ml-[10px] inline-flex items-center gap-[4px] whitespace-nowrap rounded-full border border-[#f5c451] px-[10px] py-[1px] font-ui text-[12.5px] font-semibold text-brand hover:bg-[#fff8e6]"
+                  >
+                    <span aria-hidden="true" className="text-[#f5a400]">
+                      &#9733;
+                    </span>
+                    Rate product
+                  </Link>
+                ) : null}
               </td>
               <td className={`${CELL} text-right font-sans`}>{formatMoney(item.lineTotal)}</td>
             </tr>
@@ -159,6 +181,14 @@ export function OrderDetail({ orderNumber }: { orderNumber: string }) {
         <tfoot>
           {[
             ['Subtotal:', formatMoney(order.subtotal)],
+            ...(order.discountTotal && order.discountTotal !== '0.00'
+              ? [
+                  [
+                    `Coupon${order.couponCode ? ` (${order.couponCode})` : ''}:`,
+                    `\u2212${formatMoney(order.discountTotal)}`,
+                  ],
+                ]
+              : []),
             ['Shipping:', shippingLabel(order.shippingTotal) ?? formatMoney(order.shippingTotal)],
             ['Total:', formatMoney(order.grandTotal)],
           ].map(([label, value], index, rows) => (

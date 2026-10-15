@@ -1,4 +1,4 @@
-# YouMart Public API Contract (v1.11)
+# YouMart Public API Contract (v1.14)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
@@ -1039,6 +1039,38 @@ claimed by the browser that created it (its `browserKey`, sent as the `x-qr-brow
 ---
 
 ## 17. Change log
+
+### v1.14 — 2026-10-15 (Admin dashboard, additive)
+
+All admin endpoints need an admin token (`POST /api/admin/login` -> `accessToken`) with the permission shown.
+
+- **Added**: `GET /api/orders/admin/orders?stage=ALL|TO_PACK|TO_SHIP|IN_TRANSIT|DELIVERED|UNPAID|CANCELLED&paymentMethod=ONLINE|COD&q=&cursor=&limit=` (`orders.manage`) -> `{ items: AdminOrderListItem[], nextCursor }`; `q` matches order number, customer name or phone.
+- **Added**: `GET /api/orders/admin/orders/:idOrOrderNumber` (`orders.manage`) -> `OrderView & { userId, customer: { phone, email } | null }`.
+- **Added**: `GET /api/orders/admin/stats` (`orders.manage`) -> `{ today, last30Days, daily[14], queues { toPack, toShip, inTransit, unpaid, cancelRequests, codToCollect }, paymentSplit, topProducts }` (IST days; confirmed orders only).
+- **Changed (additive)**: `GET /api/orders/admin/cancel-requests` items gain `orderNumber, grandTotal, paymentMethod, customerName`; `GET /api/admin/returns` items gain `orderId, orderNumber, title, quantity`.
+- **Added**: `GET /api/logistics/order-item/:orderItemId` (`fulfillment.manage`) -> the item's shipment with tracking events (404 = not shipped yet).
+- **Added**: `POST /api/inventory/admin/stock-levels { skuIds[] }` and `GET /api/inventory/admin/reports/low-stock?threshold=5&limit=20` (`inventory.manage`) -> `{ items: { skuId, available, reserved }[] }`.
+- **Added**: `GET /api/catalog/admin/products?status=&q=&skuIds=a,b&cursor=&limit=` (`catalog.manage`) -> every product (any status) with its SKUs, plus `counts` per status.
+- **Added**: `GET /api/auth/admin/customers?q=&cursor=&limit=` (`customers.view`) -> `{ items, nextCursor, total, joinedLast7Days }`.
+- **Added**: `GET /api/support/admin/tickets?status=&q=` and `PATCH /api/support/admin/tickets/:id { status?, reply? }` (`support.manage`). A reply on a new request moves it to IN_PROGRESS.
+- **Changed (additive)**: customer help tickets (`GET /api/support/tickets`) gain `adminReply, repliedAt`.
+- **Added permissions**: `customers.view`, `support.manage` (OPS and SUPPORT roles; SUPER_ADMIN has all).
+- Admin website: `/admin` (dashboard, orders with Pack / Ship / Picked up / In transit / Delivered, cancellations, returns & refunds, products & stock, coupons, customers, support).
+
+### v1.13 — 2026-10-15 (Coupons, additive)
+
+- **Added**: `GET /api/orders/coupons[?subtotal=]` (public; signed-in callers don't see coupons they've used up) -> `{ items: AvailableCoupon[] }` (`code, title, description, discountType PERCENT|FLAT, discountValue, maxDiscount, minOrderValue, endsAt, applicable, reason, discount`). Secret coupons (`isPublic: false`) are never listed but work when typed.
+- **Added**: `POST /api/orders/coupons/quote { code, cartItemIds? }` (customer) -> `{ coupon, discount, total }` against the caller's cart; 400 invalid / inactive / expired / below minimum ("Add ₹X more…") / fully redeemed, 409 already used.
+- **Added**: `couponCode` on `POST /api/orders/checkout` - re-validated against the server-priced subtotal and one use RESERVED atomically (limits checked under a row lock). `OrderView` gains `discountTotal`, `couponCode`; each item gains `discount` (its share). `grandTotal` is after the discount, so online, wallet and COD all charge the discounted total. The use becomes USED when the order is confirmed and is released if it's cancelled or expires.
+- **Changed**: invoices charge GST on each line's paid amount (`lineTotal - discount`); a return refunds at most that.
+- **Admin** (`promotions.manage`: SUPER_ADMIN, OPS): `GET|POST /api/orders/coupons/admin`, `PATCH /api/orders/coupons/admin/:code` (isActive, isPublic, endsAt, usageLimit, title, description). Coupons are YouMart-funded: seller settlements stay on full line prices.
+
+### v1.12 — 2026-10-15 (Cash on Delivery, reviews after delivery, account, additive)
+
+- **Added**: Cash on Delivery - `POST /api/payments/pay` takes `method: "ONLINE" | "COD"`. COD confirms the order straight away (status `COD`, `codAmount` to collect) for totals up to `COD_MAX_AMOUNT` (default ₹50,000; 400 above it); never combined with wallet money. `OrderView.paymentMethod` (`ONLINE` | `COD`); `GET /api/payments/orders/:id` gains `cod: { amount, collected } | null` - collected once every line is delivered. A COD order that hasn't shipped is cancelled immediately by `POST /api/orders/:id/cancel` (no admin request, no refund); a returned COD order is refunded to the wallet like any other.
+- **Changed**: a product can be reviewed once an order line for it is **DELIVERED** (was: any confirmed order) - 403 "You can review this product once it has been delivered to you".
+- **Added**: `GET /api/catalog/reviews/mine` - the caller's reviews with `status` and `product { id, title, slug, imageUrl } | null`.
+- **Added**: `POST /api/auth/me/contact/request { identifier }` and `POST /api/auth/me/contact/verify { identifier, code }` - change or add the account's mobile number / email; the code goes to the NEW value (same OTP limits as login). 400 same as current, 409 already used by another account; verify returns the updated `AuthUser`.
 
 ### v1.11 — 2026-10-14 ("Buy this now", additive)
 

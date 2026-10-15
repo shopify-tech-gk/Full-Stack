@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { ContactChangeSheet } from '@/components/ContactChangeSheet';
 import { authUserLabel, formatPhone } from '@youmart/shared-client';
 import { updateProfileName, useSession } from '@/stores/session';
 import { colors, font, radii, space } from '@/theme';
@@ -22,6 +24,8 @@ export default function AccountDetailsScreen() {
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [change, setChange] = useState<'PHONE' | 'EMAIL' | null>(null);
+  const [contactSaved, setContactSaved] = useState<string | null>(null);
 
   if (!user) {
     return (
@@ -58,9 +62,36 @@ export default function AccountDetailsScreen() {
         <View style={styles.readonly}>
           <Text style={styles.roLabel}>Signed in as</Text>
           <Text style={styles.roValue}>{authUserLabel(user)}</Text>
-          {user.phone ? <Text style={styles.roSub}>{formatPhone(user.phone)}</Text> : null}
-          {user.email ? <Text style={styles.roSub}>{user.email}</Text> : null}
         </View>
+
+        {/* v1.12: change / add the login phone or email - verified with a code to the new value. */}
+        <View style={styles.contactCard}>
+          {(['PHONE', 'EMAIL'] as const).map((kind, i) => {
+            const value =
+              kind === 'PHONE' ? (user.phone ? formatPhone(user.phone) : null) : user.email;
+            const verified = kind === 'PHONE' ? user.isPhoneVerified : user.isEmailVerified;
+            return (
+              <View key={kind} style={[styles.contactRow, i > 0 && styles.contactDivider]}>
+                <Ionicons
+                  name={kind === 'PHONE' ? 'call-outline' : 'mail-outline'}
+                  size={20}
+                  color={colors.brand.DEFAULT}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.roLabel}>{kind === 'PHONE' ? 'Mobile number' : 'Email'}</Text>
+                  <Text style={value ? styles.contactValue : styles.contactEmpty}>
+                    {value ?? 'Not added'}
+                    {value && verified ? '  ✓' : ''}
+                  </Text>
+                </View>
+                <Pressable onPress={() => setChange(kind)} hitSlop={8}>
+                  <Text style={styles.changeText}>{value ? 'Change' : 'Add'}</Text>
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+        {contactSaved ? <Text style={styles.okMsg}>{contactSaved}</Text> : null}
 
         <Text style={styles.label}>Display name</Text>
         <TextInput
@@ -86,6 +117,16 @@ export default function AccountDetailsScreen() {
           )}
         </Pressable>
       </View>
+      <ContactChangeSheet
+        kind={change ?? 'PHONE'}
+        visible={change !== null}
+        onClose={(updated) => {
+          if (updated) {
+            setContactSaved(change === 'PHONE' ? 'Mobile number updated ✓' : 'Email updated ✓');
+          }
+          setChange(null);
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -106,6 +147,17 @@ const styles = StyleSheet.create({
   roLabel: { fontFamily: font.body, fontSize: 12, color: colors.text.muted },
   roValue: { fontFamily: font.uiBold, fontSize: 17, color: colors.text.strong },
   roSub: { fontFamily: font.body, fontSize: 13, color: colors.text.body },
+  contactCard: {
+    backgroundColor: colors.white,
+    borderRadius: radii.tile,
+    borderWidth: 1,
+    borderColor: colors.card.border,
+  },
+  contactRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
+  contactDivider: { borderTopWidth: 1, borderTopColor: colors.card.border },
+  contactValue: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.text.strong },
+  contactEmpty: { fontFamily: font.body, fontSize: 14, color: colors.text.muted },
+  changeText: { fontFamily: font.uiBold, fontSize: 14, color: colors.brand.DEFAULT },
   label: {
     fontFamily: font.uiSemibold,
     fontSize: 13,

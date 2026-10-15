@@ -1,11 +1,20 @@
 import { randomBytes } from 'node:crypto';
 import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
-import { add, multiplyByQuantity, sum } from '@youmart/shared-utils';
+import { add, multiplyByQuantity, subtract, sum } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
 import { enqueueNotification } from '@youmart/notifications-client';
 import { enqueueInvoiceGeneration } from '@youmart/invoice-client';
 import { prisma } from '../db';
+import {
+  allocateDiscount,
+  attachOrder,
+  markCouponUsed,
+  releaseCouponForOrder,
+  releaseRedemption,
+  reserveCoupon,
+  type CouponReservation,
+} from '../coupon/coupon.service';
 import {
   cartClient,
   catalogClient,
@@ -15,7 +24,7 @@ import {
   paymentClient,
 } from '../serviceClients';
 
-function decimalToMoney(value: Prisma.Decimal): Money {
+export function decimalToMoney(value: Prisma.Decimal): Money {
   return value.toFixed(2) as Money;
 }
 
@@ -33,6 +42,8 @@ export interface OrderItemView {
   unitPrice: Money;
   quantity: number;
   lineTotal: Money;
+  /** v1.13: this line's share of the coupon discount - what was paid is lineTotal - discount. */
+  discount: Money;
   sellerStatus: OrderItemStatusValue;
 }
 
@@ -62,6 +73,11 @@ export interface OrderView {
   subtotal: Money;
   shippingTotal: Money;
   grandTotal: Money;
+  /** v1.13: coupon discount already taken off grandTotal (0.00 = none) and the code used. */
+  discountTotal: Money;
+  couponCode: string | null;
+  /** v1.12: COD = Cash on Delivery (pay in cash at delivery); ONLINE = paid before confirming. */
+  paymentMethod: 'ONLINE' | 'COD';
   shippingAddress: ShippingAddressView | null;
   /** W6 (v1.6) */
   createdAt: string;
@@ -81,9 +97,14 @@ export interface OrderListItem {
   status: OrderStatusValue;
   grandTotal: Money;
   createdAt: string;
+  /** v1.13: each line's progress, so a list can show Processing / Shipped / Delivered (the
+   * order-level status alone is CONFIRMED for all of those). */
+  itemStatuses: OrderItemStatusValue[];
+  /** v1.13 */
+  paymentMethod: 'ONLINE' | 'COD';
 }
 
-const ORDER_WITH_ITEMS_INCLUDE = {
+export const ORDER_WITH_ITEMS_INCLUDE = {
   items: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' as const } },
   statusHistory: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' as const } },
   cancelRequests: { where: { deletedAt: null }, orderBy: { createdAt: 'desc' as const }, take: 1 },
@@ -119,7 +140,7 @@ function toShippingAddressView(order: OrderWithItems): ShippingAddressView | nul
   };
 }
 
-function toOrderView(order: OrderWithItems): OrderView {
+export function toOrderView(order: OrderWithItems): OrderView {
   return {
     orderId: order.id,
     orderNumber: order.orderNumber,
@@ -133,11 +154,15 @@ function toOrderView(order: OrderWithItems): OrderView {
       unitPrice: decimalToMoney(item.unitPrice),
       quantity: item.quantity,
       lineTotal: decimalToMoney(item.lineTotal),
+      discount: decimalToMoney(item.discount),
       sellerStatus: item.sellerStatus,
     })),
     subtotal: decimalToMoney(order.subtotal),
     shippingTotal: decimalToMoney(order.shippingTotal),
     grandTotal: decimalToMoney(order.grandTotal),
+    discountTotal: decimalToMoney(order.discountTotal),
+    couponCode: order.couponCode,
+    paymentMethod: order.paymentMethod,
     shippingAddress: toShippingAddressView(order),
     createdAt: order.createdAt.toISOString(),
     timeline: order.statusHistory.map((h) => ({
@@ -219,6 +244,7 @@ async function cancelOrder(orderId: string, note: string): Promise<void> {
       data: { orderId, fromStatus: 'PENDING_PAYMENT', toStatus: 'CANCELLED', note },
     }),
   ]);
+  await releaseCouponForOrder(orderId);
 }
 
 /**
@@ -245,6 +271,8 @@ export async function checkout(
   addressId: string,
   /** "Buy this now": order only these lines of the cart (default: all of it). */
   cartItemIds?: string[],
+  /** v1.13: a coupon to apply - validated and reserved here, never trusted from the client. */
+  couponCode?: string,
 ): Promise<OrderView> {
   if (!addressId) {
     throw new AppError('VALIDATION_ERROR', 400, 'a shipping address is required');
@@ -327,7 +355,19 @@ export async function checkout(
   // seller_id correctly on each line.
   const subtotal = sum(lines.map((line) => line.lineTotal));
   const shippingTotal = '0.00' as Money; // shipping calculation is a later chapter
-  const grandTotal = add(subtotal, shippingTotal);
+
+  // v1.13: the coupon is re-validated against the server-priced subtotal and ONE use reserved
+  // atomically (limits enforced under a row lock); it is given back if this checkout fails.
+  let coupon: CouponReservation | null = null;
+  if (couponCode) {
+    coupon = await reserveCoupon(userId, couponCode, subtotal);
+  }
+  const discountTotal = coupon?.discount ?? ('0.00' as Money);
+  const lineDiscounts = allocateDiscount(
+    lines.map((line) => line.lineTotal),
+    discountTotal,
+  );
+  const grandTotal = add(subtract(subtotal, discountTotal), shippingTotal);
 
   const orderNumber = await generateUniqueOrderNumber();
 
@@ -336,55 +376,72 @@ export async function checkout(
   // via reservation.order_id - reserve() calls happen AFTER, outside this
   // transaction (they're HTTP calls to inventory-service, not something a
   // Prisma transaction can span).
-  const orderId = await prisma.$transaction(async (tx) => {
-    const order = await tx.order.create({
-      data: {
-        userId,
-        orderNumber,
-        status: 'PENDING_PAYMENT',
-        subtotal,
-        shippingTotal,
-        grandTotal,
-        shippingAddressId: address.addressId,
-        shipFullName: address.fullName,
-        shipPhone: address.phone,
-        shipLine1: address.line1,
-        shipLine2: address.line2,
-        shipLandmark: address.landmark,
-        shipCity: address.city,
-        shipState: address.state,
-        shipPincode: address.pincode,
-        shipCountry: address.country,
-      },
-    });
-
-    for (const line of lines) {
-      await tx.orderItem.create({
+  let orderId: string;
+  try {
+    orderId = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
         data: {
-          orderId: order.id,
-          skuId: line.skuId,
-          productId: line.productId,
-          sellerId: line.sellerId,
-          titleSnapshot: line.title,
-          unitPrice: line.unitPrice,
-          quantity: line.quantity,
-          lineTotal: line.lineTotal,
-          sellerStatus: 'PENDING',
+          userId,
+          orderNumber,
+          status: 'PENDING_PAYMENT',
+          subtotal,
+          shippingTotal,
+          grandTotal,
+          discountTotal,
+          couponCode: coupon?.code ?? null,
+          shippingAddressId: address.addressId,
+          shipFullName: address.fullName,
+          shipPhone: address.phone,
+          shipLine1: address.line1,
+          shipLine2: address.line2,
+          shipLandmark: address.landmark,
+          shipCity: address.city,
+          shipState: address.state,
+          shipPincode: address.pincode,
+          shipCountry: address.country,
         },
       });
-    }
 
-    await tx.orderStatusHistory.create({
-      data: {
-        orderId: order.id,
-        fromStatus: null,
-        toStatus: 'PENDING_PAYMENT',
-        note: 'Order created',
-      },
+      for (const [index, line] of lines.entries()) {
+        await tx.orderItem.create({
+          data: {
+            orderId: order.id,
+            skuId: line.skuId,
+            productId: line.productId,
+            sellerId: line.sellerId,
+            titleSnapshot: line.title,
+            unitPrice: line.unitPrice,
+            quantity: line.quantity,
+            lineTotal: line.lineTotal,
+            discount: lineDiscounts[index] ?? '0.00',
+            sellerStatus: 'PENDING',
+          },
+        });
+      }
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          fromStatus: null,
+          toStatus: 'PENDING_PAYMENT',
+          note: 'Order created',
+        },
+      });
+
+      return order.id;
     });
-
-    return order.id;
-  });
+  } catch (err: unknown) {
+    if (coupon) await releaseRedemption({ id: coupon.redemptionId }).catch(() => undefined);
+    throw err;
+  }
+  if (coupon) {
+    try {
+      await attachOrder(coupon.redemptionId, orderId);
+    } catch (err: unknown) {
+      // eslint-disable-next-line no-console
+      console.error('failed to link the coupon use to its order', { orderId, err });
+    }
+  }
 
   // ALL-OR-NOTHING stock reservation. Reservations link to this order via
   // reservation.order_id (no orders-schema column needed - the orders
@@ -462,6 +519,8 @@ export interface InternalOrderView {
   userId: string;
   status: OrderStatusValue;
   grandTotal: Money;
+  discountTotal: Money;
+  paymentMethod: 'ONLINE' | 'COD';
   /** The snapshot captured at checkout time (Ch6.1) - `null` only for
    * orders created before Ch6.1. Lets fulfillment/logistics access the
    * real ship-to address for a real shipping label without order-service
@@ -492,6 +551,8 @@ export async function getInternalOrder(orderId: string): Promise<InternalOrderVi
     userId: order.userId,
     status: order.status,
     grandTotal: decimalToMoney(order.grandTotal),
+    discountTotal: decimalToMoney(order.discountTotal),
+    paymentMethod: order.paymentMethod,
     shippingAddress: toShippingAddressView(order),
     items: order.items.map((item) => ({
       orderItemId: item.id,
@@ -502,6 +563,7 @@ export async function getInternalOrder(orderId: string): Promise<InternalOrderVi
       unitPrice: decimalToMoney(item.unitPrice),
       quantity: item.quantity,
       lineTotal: decimalToMoney(item.lineTotal),
+      discount: decimalToMoney(item.discount),
       sellerStatus: item.sellerStatus,
     })),
   };
@@ -515,7 +577,11 @@ export async function getInternalOrder(orderId: string): Promise<InternalOrderVi
  * inventory at all. Idempotent: already-CONFIRMED is a no-op (payment
  * webhooks retry).
  */
-export async function confirmOrder(orderId: string): Promise<void> {
+export async function confirmOrder(
+  orderId: string,
+  /** COD: confirmed now, paid in cash at delivery (payment-service's Cash on Delivery). */
+  paymentMethod: 'ONLINE' | 'COD' = 'ONLINE',
+): Promise<void> {
   const order = await prisma.order.findFirst({ where: { id: orderId, deletedAt: null } });
   if (!order) {
     throw new AppError('NOT_FOUND', 404, 'Order not found');
@@ -541,7 +607,7 @@ export async function confirmOrder(orderId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     const claimed = await tx.order.updateMany({
       where: { id: orderId, status: 'PENDING_PAYMENT', deletedAt: null },
-      data: { status: 'CONFIRMED' },
+      data: { status: 'CONFIRMED', paymentMethod },
     });
     if (claimed.count === 0) {
       throw new AppError('CONFLICT', 409, 'Order is no longer awaiting payment');
@@ -555,7 +621,7 @@ export async function confirmOrder(orderId: string): Promise<void> {
         orderId,
         fromStatus: 'PENDING_PAYMENT',
         toStatus: 'CONFIRMED',
-        note: 'Payment captured',
+        note: paymentMethod === 'COD' ? 'Cash on Delivery order placed' : 'Payment captured',
       },
     });
   });
@@ -595,6 +661,13 @@ export async function confirmOrder(orderId: string): Promise<void> {
     // eslint-disable-next-line no-console
     console.error('failed to enqueue order-placed notification(s)', notifyErr);
   }
+
+  // v1.13: the reserved coupon use is now spent (best-effort - a failure leaves it RESERVED,
+  // which still counts against the limits).
+  await markCouponUsed(orderId).catch((err: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error('failed to mark coupon used', { orderId, err });
+  });
 
   // GST tax invoice generation (Ch6.4) - QUEUED and NON-BLOCKING, same
   // spirit as the notification above: a PDF/invoice problem must never
@@ -684,6 +757,7 @@ export async function expireUnpaidOrders(ttlMinutes: number, batchSize = 50): Pr
       console.error('failed to release stock of an expired order', { orderId: id, err });
     }
     await releaseWalletHold(id);
+    await releaseCouponForOrder(id);
   }
   return expired;
 }
@@ -735,6 +809,7 @@ export async function getMyOrders(
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limit + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    include: { items: { where: { deletedAt: null }, select: { sellerStatus: true } } },
   });
 
   const hasMore = rows.length > limit;
@@ -748,6 +823,8 @@ export async function getMyOrders(
       status: order.status,
       grandTotal: decimalToMoney(order.grandTotal),
       createdAt: order.createdAt.toISOString(),
+      itemStatuses: order.items.map((item) => item.sellerStatus),
+      paymentMethod: order.paymentMethod,
     })),
     nextCursor,
   };
@@ -811,6 +888,8 @@ export interface InternalOrderItemView {
   skuId: string;
   quantity: number;
   lineTotal: Money;
+  /** v1.13: coupon share - a return refunds at most lineTotal - discount. */
+  discount?: Money;
   sellerStatus: OrderItemStatusValue;
   /** ISO timestamp of the row's last update - used as a DELIVERED-time
    * proxy by callers (e.g. returns-service's return-window check, Ch5.5)
@@ -835,7 +914,9 @@ export async function findPurchase(
     where: {
       productId,
       deletedAt: null,
-      sellerStatus: { notIn: ['CANCELLED'] },
+      // Rate after delivery (v1.12): a delivered line - for Cash on Delivery that is also when it
+      // was paid for.
+      sellerStatus: 'DELIVERED',
       order: { userId, status: 'CONFIRMED', deletedAt: null },
     },
     orderBy: { createdAt: 'desc' },
@@ -868,6 +949,7 @@ export async function getInternalOrderItem(orderItemId: string): Promise<Interna
     skuId: item.skuId,
     quantity: item.quantity,
     lineTotal: decimalToMoney(item.lineTotal),
+    discount: decimalToMoney(item.discount),
     sellerStatus: item.sellerStatus,
     updatedAt: item.updatedAt.toISOString(),
     title: item.titleSnapshot,
@@ -928,6 +1010,26 @@ export async function setSellerItemStatusInternal(
     data: { sellerStatus: nextStatus },
   });
 
+  // Cash on Delivery: once every live line is delivered, the courier has collected the cash.
+  if (nextStatus === 'DELIVERED' && item.order.paymentMethod === 'COD') {
+    const pending = await prisma.orderItem.count({
+      where: {
+        orderId: item.orderId,
+        deletedAt: null,
+        sellerStatus: { notIn: ['DELIVERED', 'RETURNED', 'CANCELLED'] },
+      },
+    });
+    if (pending === 0) {
+      try {
+        await paymentClient.markCodCollected(item.orderId);
+      } catch (err: unknown) {
+        // Best-effort and idempotent: a retry of the delivery update marks it later.
+        // eslint-disable-next-line no-console
+        console.error('failed to mark COD cash collected', err);
+      }
+    }
+  }
+
   return {
     orderItemId: updated.id,
     orderId: updated.orderId,
@@ -936,6 +1038,7 @@ export async function setSellerItemStatusInternal(
     skuId: updated.skuId,
     quantity: updated.quantity,
     lineTotal: decimalToMoney(updated.lineTotal),
+    discount: decimalToMoney(updated.discount),
     sellerStatus: updated.sellerStatus,
     updatedAt: updated.updatedAt.toISOString(),
     title: updated.titleSnapshot,

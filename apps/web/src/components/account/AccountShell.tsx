@@ -1,5 +1,16 @@
 import Link from 'next/link';
-import { Heart, House, LogOut, MapPin, ShoppingBasket, Truck, UserRound } from 'lucide-react';
+import {
+  Clock,
+  Heart,
+  House,
+  LogOut,
+  MapPin,
+  ShoppingBasket,
+  Star,
+  TicketPercent,
+  Truck,
+  UserRound,
+} from 'lucide-react';
 import { ACCOUNT_NAV, type AccountSection } from '@youmart/shared-client';
 import { LogoutButton } from './LogoutButton';
 
@@ -10,6 +21,9 @@ const ICONS: Record<AccountSection, typeof House> = {
   addresses: MapPin,
   account: UserRound,
   wishlist: Heart,
+  recent: Clock,
+  reviews: Star,
+  coupons: TicketPercent,
   logout: LogOut,
 };
 
