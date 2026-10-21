@@ -1,7 +1,7 @@
 'use client';
 
 // v1.15: the inbox (bell) unread count for the header and the Notifications page. Signed in:
-// read now, every 30 seconds while the tab is visible, and when the tab comes back. Signed out: 0.
+// read now, every 5 seconds while the tab is visible, and when the tab comes back. Signed out: 0.
 import { useEffect, useSyncExternalStore } from 'react';
 import { api } from './api';
 import { getSession, useSession } from './session';
@@ -40,7 +40,7 @@ export function useUnreadCount(): number {
     if (session.status !== 'authenticated') return;
     const t = setInterval(() => {
       if (document.visibilityState === 'visible') void refreshUnread();
-    }, 30_000);
+    }, 5_000);
     const onVisible = () => {
       if (document.visibilityState === 'visible') void refreshUnread();
     };

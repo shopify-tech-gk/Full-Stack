@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { authUserLabel } from '@youmart/shared-client';
 import { colors, font } from '@/theme';
 import { useCart } from '@/stores/cart';
@@ -47,7 +47,10 @@ export default function TabsLayout() {
         name="buy-again"
         options={{
           title: 'Buy Again',
-          tabBarIcon: ({ color, size }) => <Ionicons name="heart" size={size} color={color} />,
+          // youmartshop.com's Buy Again icon (Font Awesome solid shopping bag).
+          tabBarIcon: ({ color, size }) => (
+            <FontAwesome5 name="shopping-bag" solid size={size - 3} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -55,7 +58,17 @@ export default function TabsLayout() {
         options={{
           title: 'My Cart',
           tabBarBadge: itemCount > 0 ? (itemCount > 99 ? '99+' : itemCount) : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.price.discount, fontSize: 10 },
+          // Red count with a white ring so it stands out against the cart icon.
+          tabBarBadgeStyle: {
+            backgroundColor: colors.price.discount,
+            fontSize: 10,
+            borderWidth: 1.5,
+            borderColor: colors.white,
+            minWidth: 19,
+            height: 19,
+            borderRadius: 10,
+            lineHeight: 16,
+          },
           tabBarIcon: ({ color, size }) => <Ionicons name="cart" size={size} color={color} />,
         }}
       />

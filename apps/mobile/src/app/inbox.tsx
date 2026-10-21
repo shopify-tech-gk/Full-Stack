@@ -76,9 +76,12 @@ export default function InboxScreen() {
     }
   }, [filter, session.status]);
 
+  // While the screen is open new messages appear by themselves (every 5 seconds).
   useFocusEffect(
     useCallback(() => {
       void load();
+      const t = setInterval(() => void load(), 5_000);
+      return () => clearInterval(t);
     }, [load]),
   );
 

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Download, House, ShoppingBag, ShoppingCart, User, type LucideIcon } from 'lucide-react';
+import { Download, House, ShoppingCart, User } from 'lucide-react';
+import { FaShoppingBag } from '@/components/ui/FaIcons';
 import { BUSINESS, ROUTES } from '@youmart/shared-client';
 import { CartCountBadge, cartLinkLabel } from '@/components/cart/CartCountBadge';
 import { useCartCount } from '@/lib/cart';
@@ -10,7 +11,7 @@ import { useCartCount } from '@/lib/cart';
 interface Tab {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: React.ComponentType<{ className?: string; fill?: string; strokeWidth?: number; 'aria-hidden'?: boolean | 'true' }>;
   filled: boolean;
 }
 
@@ -18,7 +19,8 @@ interface Tab {
 const TABS: Tab[] = [
   { href: ROUTES.home, label: 'Home', icon: House, filled: true },
   { href: BUSINESS.appStoreHref, label: 'Install App', icon: Download, filled: false },
-  { href: ROUTES.wishlist, label: 'Buy Again', icon: ShoppingBag, filled: true },
+  // The live site's own Buy Again glyph (Font Awesome solid shopping bag).
+  { href: ROUTES.wishlist, label: 'Buy Again', icon: FaShoppingBag, filled: true },
   { href: ROUTES.cart, label: 'Cart', icon: ShoppingCart, filled: true },
   { href: ROUTES.account, label: 'Account', icon: User, filled: true },
 ];
