@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Download, House, ShoppingCart, User } from 'lucide-react';
-import { FaShoppingBag } from '@/components/ui/FaIcons';
+import { Bookmark, Download, House, ShoppingCart, User } from 'lucide-react';
 import { BUSINESS, ROUTES } from '@youmart/shared-client';
 import { CartCountBadge, cartLinkLabel } from '@/components/cart/CartCountBadge';
 import { useCartCount } from '@/lib/cart';
@@ -15,12 +14,11 @@ interface Tab {
   filled: boolean;
 }
 
-// Targets as live links them ("Buy Again" opens the wishlist).
+// Targets as live links them ("Favourites" opens the saved items / wishlist).
 const TABS: Tab[] = [
   { href: ROUTES.home, label: 'Home', icon: House, filled: true },
   { href: BUSINESS.appStoreHref, label: 'Install App', icon: Download, filled: false },
-  // The live site's own Buy Again glyph (Font Awesome solid shopping bag).
-  { href: ROUTES.wishlist, label: 'Buy Again', icon: FaShoppingBag, filled: true },
+  { href: ROUTES.wishlist, label: 'Favourites', icon: Bookmark, filled: true },
   { href: ROUTES.cart, label: 'Cart', icon: ShoppingCart, filled: true },
   { href: ROUTES.account, label: 'Account', icon: User, filled: true },
 ];
@@ -43,7 +41,7 @@ export function MobileBottomNav() {
           const active = isActive(pathname, href);
           return (
             <li key={href}>
-              {/* Every tab shares one baseline (the live "Buy Again" tab sits 4px low). */}
+              {/* Every tab shares one baseline (the live wishlist tab sits 4px low). */}
               <Link
                 href={href}
                 aria-current={active ? 'page' : undefined}

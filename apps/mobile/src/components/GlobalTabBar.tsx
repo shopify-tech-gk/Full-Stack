@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter, type Href } from 'expo-router';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -15,7 +15,7 @@ import { colors, font } from '@/theme';
 /** The four bottom tabs, in order (same as app/(tabs)). */
 const TABS = [
   { path: '/', label: 'Home' },
-  { path: '/buy-again', label: 'Buy Again' },
+  { path: '/buy-again', label: 'Favourites' },
   { path: '/cart', label: 'My Cart' },
   { path: '/account', label: 'Account' },
 ] as const;
@@ -27,7 +27,9 @@ export const BAR_HEIGHT = 52;
  * left a visible empty band; keep just enough to stay clear of the swipe-up line.
  */
 export function barBottomPad(bottomInset: number): number {
-  return bottomInset > 0 ? Math.max(6, Math.round(bottomInset * 0.4)) : 6;
+  // Android gets a little extra room under the icons; iPhone stays as tuned.
+  if (Platform.OS === 'android') return Math.max(22, Math.round(bottomInset * 0.6) + 12);
+  return bottomInset > 0 ? Math.max(10, Math.round(bottomInset * 0.6)) : 10;
 }
 
 /** The tab screens themselves draw the real tab bar. */
@@ -141,7 +143,7 @@ export function GlobalTabBar() {
                 {i === 0 ? (
                   <Ionicons name="home" size={24} color={color} />
                 ) : i === 1 ? (
-                  <FontAwesome5 name="shopping-bag" solid size={21} color={color} />
+                  <Ionicons name="bookmark" size={24} color={color} />
                 ) : i === 2 ? (
                   <Ionicons name="cart" size={24} color={color} />
                 ) : hasAvatar ? (

@@ -1,18 +1,11 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 import type { ProductCardData } from '@youmart/shared-client';
 import { colors, font, radii, space } from '@/theme';
 import { useWishlist } from '@/stores/wishlist';
 import { CartStepper } from './CartStepper';
+import { SaveButton } from './SaveButton';
 import { Price, ProductImage, Stars } from './ui';
 
 interface Props {
@@ -30,16 +23,13 @@ function ProductCardBase({ product, width, accent, compact }: Props) {
   const wishlist = useWishlist();
   const slug = product.slug ?? '';
   const saved = product.skuId ? wishlist.has(product.skuId) : false;
-  const pop = useSharedValue(1);
-  const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
 
   const open = () => {
     if (slug) router.push(`/product/${slug}`);
   };
 
-  const heart = () => {
+  const toggleSaved = () => {
     if (!product.skuId || !slug) return;
-    pop.value = withSequence(withTiming(1.3, { duration: 110 }), withSpring(1, { damping: 6 }));
     wishlist.toggle({
       skuId: product.skuId,
       productId: product.id,
@@ -73,24 +63,13 @@ function ProductCardBase({ product, width, accent, compact }: Props) {
         <ProductImage src={product.image} style={styles.image} />
         {accent ? <View style={[styles.accentStrip, { backgroundColor: accent }]} /> : null}
         {product.skuId ? (
-          <Pressable
-            onPress={heart}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.heart,
-              compact && styles.heartCompact,
-              saved && styles.heartSaved,
-              pressed && styles.heartPressed,
-            ]}
-          >
-            <Animated.View style={heartStyle}>
-              <Ionicons
-                name={saved ? 'heart' : 'heart-outline'}
-                size={compact ? 14 : 18}
-                color={saved ? colors.price.discount : colors.brand.DEFAULT}
-              />
-            </Animated.View>
-          </Pressable>
+          <SaveButton
+            saved={saved}
+            onToggle={toggleSaved}
+            size={compact ? 14 : 18}
+            diameter={compact ? 28 : 34}
+            style={styles.save}
+          />
         ) : null}
       </View>
 
@@ -135,30 +114,10 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   image: { borderTopLeftRadius: radii.productCard, borderTopRightRadius: radii.productCard },
   accentStrip: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3 },
-  heart: {
-    position: 'absolute',
-    top: space.sm,
-    right: space.sm,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.card.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  heartSaved: { backgroundColor: '#fff0f0', borderColor: colors.price.discount },
-  heartPressed: { opacity: 0.7 },
+  save: { position: 'absolute', top: space.sm, right: space.sm },
   body: { padding: space.md, gap: 6 },
   title: { fontFamily: font.body, fontSize: 13.5, lineHeight: 18, color: colors.text.strong },
   add: { marginTop: 4 },
-  heartCompact: { width: 26, height: 26, borderRadius: 13, top: 6, right: 6 },
   bodyCompact: { padding: 8, gap: 3 },
   titleCompact: { fontSize: 11.5, lineHeight: 15 },
   addCompact: { marginTop: 2 },

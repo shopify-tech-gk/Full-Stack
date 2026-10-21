@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { authUserLabel } from '@youmart/shared-client';
 import { colors, font } from '@/theme';
 import { useCart } from '@/stores/cart';
@@ -59,11 +59,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="buy-again"
         options={{
-          title: 'Buy Again',
-          // youmartshop.com's Buy Again icon (Font Awesome solid shopping bag).
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome5 name="shopping-bag" solid size={size - 3} color={color} />
-          ),
+          title: 'Favourites',
+          // Saved items: a solid bookmark, grey / blue like the other tab icons.
+          tabBarIcon: ({ color, size }) => <Ionicons name="bookmark" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

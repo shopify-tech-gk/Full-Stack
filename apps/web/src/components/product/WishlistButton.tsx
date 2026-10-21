@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Heart } from 'lucide-react';
+import { Bookmark } from 'lucide-react';
 import type { WishlistProduct } from '@youmart/shared-client';
 import { showCartToast } from '@/lib/cart-toast';
 import { WISHLIST_TOAST_ACTION, useWishlist, useWishlistItem } from '@/lib/wishlist';
@@ -18,6 +18,8 @@ export function WishlistButton({ product, variant }: WishlistButtonProps) {
   const wishlist = useWishlist();
   const saved = useWishlistItem(product?.skuId);
   const [busy, setBusy] = useState(false);
+  // Bumped on every save so the pop + ring animation replays (keyed elements remount).
+  const [popKey, setPopKey] = useState(0);
   const disabled = !product || wishlist.mode === 'loading' || busy;
 
   const toggle = async () => {
@@ -28,14 +30,15 @@ export function WishlistButton({ product, variant }: WishlistButtonProps) {
         if (await wishlist.remove(saved.wishlistItemId)) {
           showCartToast({
             tone: 'success',
-            message: `"${product.title}" was removed from your wishlist.`,
+            message: `"${product.title}" was removed from your Favourites.`,
             action: WISHLIST_TOAST_ACTION,
           });
         }
       } else if (await wishlist.add(product)) {
+        setPopKey((k) => k + 1);
         showCartToast({
           tone: 'success',
-          message: `"${product.title}" was added to your wishlist.`,
+          message: `"${product.title}" was saved to your Favourites.`,
           action: WISHLIST_TOAST_ACTION,
         });
       }
@@ -44,7 +47,7 @@ export function WishlistButton({ product, variant }: WishlistButtonProps) {
     }
   };
 
-  const label = saved ? 'Remove from wishlist' : 'Add to wishlist';
+  const label = saved ? 'Remove from Favourites' : 'Save to Favourites';
 
   if (variant === 'icon') {
     return (
@@ -55,11 +58,15 @@ export function WishlistButton({ product, variant }: WishlistButtonProps) {
         aria-pressed={Boolean(saved)}
         aria-label={product ? `${label}: ${product.title}` : label}
         title={label}
-        className="flex size-[34px] items-center justify-center rounded-full bg-white/90 text-brand shadow-[0_1px_4px_rgba(0,0,0,0.15)] transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+        className="relative flex size-[34px] items-center justify-center rounded-full bg-white/90 text-brand shadow-[0_1px_4px_rgba(0,0,0,0.15)] transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
       >
-        <Heart
+        {popKey > 0 && saved && (
+          <span key={`ring-${popKey}`} aria-hidden="true" className="ym-save-ring" />
+        )}
+        <Bookmark
+          key={popKey}
           aria-hidden="true"
-          className="size-[18px]"
+          className={`size-[18px] ${popKey > 0 && saved ? 'ym-save-pop' : ''}`}
           strokeWidth={2.25}
           fill={saved ? 'currentColor' : 'none'}
         />
@@ -75,8 +82,13 @@ export function WishlistButton({ product, variant }: WishlistButtonProps) {
       aria-pressed={Boolean(saved)}
       className="flex items-center gap-[5px] rounded-[5px] bg-brand px-[10px] py-[6px] font-sans text-[14.4px] font-semibold leading-[16.56px] text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <Heart aria-hidden="true" className="size-[22px]" fill={saved ? 'currentColor' : 'none'} />
-      {saved ? 'Saved to wishlist' : 'Add to wishlist'}
+      <Bookmark
+        key={popKey}
+        aria-hidden="true"
+        className={`size-[22px] ${popKey > 0 && saved ? 'ym-save-pop' : ''}`}
+        fill={saved ? 'currentColor' : 'none'}
+      />
+      {saved ? 'Saved to Favourites' : 'Save to Favourites'}
     </button>
   );
 }

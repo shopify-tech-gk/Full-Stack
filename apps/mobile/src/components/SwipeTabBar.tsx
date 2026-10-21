@@ -13,7 +13,7 @@ const SWIPE_VELOCITY = 500;
 
 /**
  * The normal bottom tab bar, plus swiping across it: right-to-left opens the next tab
- * (Home -> Buy Again -> My Cart -> Account), left-to-right the previous one - the same as swiping
+ * (Home -> Favourites -> My Cart -> Account), left-to-right the previous one - the same as swiping
  * on the screen itself (SwipeTabs). Taps on the icons behave exactly as before: the swipe only
  * takes over once the finger has clearly moved sideways.
  */

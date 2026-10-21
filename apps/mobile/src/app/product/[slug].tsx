@@ -23,6 +23,7 @@ import { emptyListingQuery, getProduct, listMoreProducts } from '@/lib/catalog';
 import { recordView } from '@/stores/recently-viewed';
 import { useCart } from '@/stores/cart';
 import { useWishlist } from '@/stores/wishlist';
+import { SaveButton } from '@/components/SaveButton';
 import { useSession } from '@/stores/session';
 import { Price, ProductImage, Stars } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
@@ -267,17 +268,13 @@ export default function ProductScreen() {
           </View>
         ) : null}
         {canBuy ? (
-          <Pressable
+          <SaveButton
+            saved={saved}
+            onToggle={() => wishlist.toggle(wishProduct())}
+            size={22}
+            diameter={40}
             style={styles.heart}
-            onPress={() => wishlist.toggle(wishProduct())}
-            hitSlop={8}
-          >
-            <Ionicons
-              name={saved ? 'heart' : 'heart-outline'}
-              size={22}
-              color={saved ? colors.price.discount : colors.brand.DEFAULT}
-            />
-          </Pressable>
+          />
         ) : null}
       </View>
 
@@ -477,22 +474,7 @@ const styles = StyleSheet.create({
   },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.card.border },
   dotActive: { backgroundColor: colors.brand.DEFAULT, width: 18 },
-  heart: {
-    position: 'absolute',
-    top: space.md,
-    right: space.md,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
+  heart: { position: 'absolute', top: space.md, right: space.md },
   info: {
     padding: space.lg,
     gap: space.md,

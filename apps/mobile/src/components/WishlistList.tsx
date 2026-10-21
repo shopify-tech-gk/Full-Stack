@@ -24,7 +24,7 @@ function cartProductOf(item: WishlistItem, image?: string): CartProduct | null {
 }
 
 /**
- * The saved-items list, shared by the "Buy Again" tab and the /wishlist stack screen. Tap an item to
+ * The saved-items list, shared by the Favourites tab and the /wishlist stack screen. Tap an item to
  * open it; "Add" turns into a quantity stepper; "Buy now" checks out just that item.
  */
 export function WishlistList() {
@@ -74,9 +74,9 @@ export function WishlistList() {
   if (wishlist.items.length === 0) {
     return (
       <View style={[styles.screen, styles.empty]}>
-        <Ionicons name="heart-outline" size={60} color={colors.card.border} />
+        <Ionicons name="bookmark-outline" size={60} color={colors.card.border} />
         <Text style={styles.emptyTitle}>No saved items yet</Text>
-        <Text style={styles.emptySub}>Tap the heart on any product to save it here.</Text>
+        <Text style={styles.emptySub}>Tap the bookmark on any product to save it here.</Text>
         <Pressable style={styles.shopBtn} onPress={() => router.push('/')}>
           <Text style={styles.shopText}>Explore products</Text>
         </Pressable>

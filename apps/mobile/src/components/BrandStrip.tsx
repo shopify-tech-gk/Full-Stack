@@ -141,5 +141,6 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   shopText: { fontFamily: font.uiSemibold, fontSize: 11.5, color: colors.brand.DEFAULT },
-  badge: { position: 'absolute', bottom: -6, left: -6 },
+  // Live: the starburst overlaps the poster's bottom-left corner.
+  badge: { position: 'absolute', bottom: -8, left: -8 },
 });

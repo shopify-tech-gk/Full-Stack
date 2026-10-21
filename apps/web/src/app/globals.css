@@ -225,3 +225,28 @@ body:has(> .skiptranslate) {
   .ym-intro__plate, .ym-intro__glow { animation: none; }
   .ym-intro__tagline { animation-delay: 0s; }
 }
+
+/* Save to Favourites: the bookmark pops with a little tilt and a ring goes out from the button. */
+@keyframes ym-save-pop {
+  0% { transform: scale(1) rotate(0); }
+  30% { transform: scale(1.45) rotate(-14deg); }
+  55% { transform: scale(0.9) rotate(10deg); }
+  80% { transform: scale(1.08) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes ym-save-ring {
+  from { opacity: 0.55; transform: scale(0.6); }
+  to { opacity: 0; transform: scale(1.5); }
+}
+.ym-save-pop { animation: ym-save-pop 0.55s ease-out; }
+.ym-save-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid #0142aa;
+  pointer-events: none;
+  animation: ym-save-ring 0.55s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ym-save-pop, .ym-save-ring { animation: none; }
+}

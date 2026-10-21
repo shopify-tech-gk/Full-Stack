@@ -98,7 +98,7 @@ const QUICK: (Item & { sub: string })[] = [
     to: '/orders',
     auth: true,
   },
-  { icon: 'heart', label: 'Wishlist', sub: 'Saved items', tint: 'rose', to: '/wishlist' },
+  { icon: 'bookmark', label: 'Favourites', sub: 'Saved items', tint: 'rose', to: '/wishlist' },
   // v1.13: Orders · Wishlist · Coupons · Help (Returns moved to the list below).
   { icon: 'pricetags', label: 'Coupons', sub: 'Offers for you', tint: 'green', to: '/coupons' },
   { icon: 'help-buoy', label: 'Help', sub: '24×7 support', tint: 'violet', to: '/help' },
