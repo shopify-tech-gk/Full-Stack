@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import type { Prisma } from '@youmart/db';
 import type { Money } from '@youmart/shared-types';
-import { add, multiplyByQuantity, subtract, sum } from '@youmart/shared-utils';
+import { add, deliveryFee, multiplyByQuantity, subtract, sum } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
 import { enqueueNotification, notifyInbox } from '@youmart/notifications-client';
 import { enqueueInvoiceGeneration } from '@youmart/invoice-client';
@@ -354,7 +354,9 @@ export async function checkout(
   // future-chapter behavior; this order-building step just records the
   // seller_id correctly on each line.
   const subtotal = sum(lines.map((line) => line.lineTotal));
-  const shippingTotal = '0.00' as Money; // shipping calculation is a later chapter
+  // v1.16: delivery charge by destination, free from FREE_DELIVERY_MIN (items subtotal before
+  // any coupon) - shared-utils/delivery.ts.
+  const shippingTotal = deliveryFee(subtotal, { city: address.city, state: address.state });
 
   // v1.13: the coupon is re-validated against the server-priced subtotal and ONE use reserved
   // atomically (limits enforced under a row lock); it is given back if this checkout fails.
@@ -520,6 +522,8 @@ export interface InternalOrderView {
   status: OrderStatusValue;
   grandTotal: Money;
   discountTotal: Money;
+  /** v1.16: delivery charge included in grandTotal. */
+  shippingTotal: Money;
   paymentMethod: 'ONLINE' | 'COD';
   /** The snapshot captured at checkout time (Ch6.1) - `null` only for
    * orders created before Ch6.1. Lets fulfillment/logistics access the
@@ -552,6 +556,7 @@ export async function getInternalOrder(orderId: string): Promise<InternalOrderVi
     status: order.status,
     grandTotal: decimalToMoney(order.grandTotal),
     discountTotal: decimalToMoney(order.discountTotal),
+    shippingTotal: decimalToMoney(order.shippingTotal),
     paymentMethod: order.paymentMethod,
     shippingAddress: toShippingAddressView(order),
     items: order.items.map((item) => ({

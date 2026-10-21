@@ -12,7 +12,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  CART_SHIPPING_TOTAL,
+  deliveryFee,
+  fromPaise,
+  toPaise,
   addressLines,
   cartTotals,
   codAvailable,
@@ -84,7 +86,6 @@ export default function CheckoutScreen() {
         }),
       )
       .catch(() => undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageIds]);
 
   const changeQuantity = async (cartItemId: string, quantity: number) => {
@@ -123,9 +124,14 @@ export default function CheckoutScreen() {
     }
   };
 
-  const totals = cartTotals(cart, CART_SHIPPING_TOTAL);
+  // v1.16: delivery by the chosen address (free from ₹2,000) - the server charges the same.
+  const shipAddress = addresses?.find((a) => a.id === selectedId) ?? null;
+  const shipping = deliveryFee(cart.subtotal, shipAddress) ?? '0.00';
+  const totals = cartTotals(cart, shipping);
   // v1.13: what's actually payable after the coupon (the server re-checks it at "Place order").
-  const payable = (coupon ? coupon.total : totals.total) as Money;
+  const payable = (
+    coupon ? fromPaise(toPaise(coupon.total) + toPaise(shipping)) : totals.total
+  ) as Money;
   const codOk = codAvailable(payable);
   const cod = method === 'COD' && codOk;
   // Cash on Delivery is never mixed with wallet money: the whole total is paid at the door.
@@ -282,7 +288,9 @@ export default function CheckoutScreen() {
                         style={styles.stepBtn}
                         disabled={!!qtyBusy || placing}
                         hitSlop={6}
-                        accessibilityLabel={line.quantity <= 1 ? 'Remove item' : 'Decrease quantity'}
+                        accessibilityLabel={
+                          line.quantity <= 1 ? 'Remove item' : 'Decrease quantity'
+                        }
                         onPress={() => void changeQuantity(line.cartItemId, line.quantity - 1)}
                       >
                         <Ionicons
@@ -322,8 +330,12 @@ export default function CheckoutScreen() {
             <Text style={styles.sumValue}>{formatMoney(totals.subtotal)}</Text>
           </View>
           <View style={styles.sumLine}>
-            <Text style={styles.sumLabel}>Shipping</Text>
-            <Text style={styles.free}>Free</Text>
+            <Text style={styles.sumLabel}>Delivery</Text>
+            {toPaise(shipping) === 0 ? (
+              <Text style={styles.free}>Free</Text>
+            ) : (
+              <Text style={styles.sumValue}>{formatMoney(shipping)}</Text>
+            )}
           </View>
           {coupon ? (
             <View style={styles.sumLine}>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  CART_SHIPPING_TOTAL,
+  deliveryFee,
   cartTotals,
   defaultCheckoutAddress,
   type CartLine,
@@ -82,9 +82,11 @@ export function CartView() {
     return <div aria-busy="true" aria-label="Loading your cart" className="min-h-[320px]" />;
   }
 
-  // Only a signed-in customer has a saved default address to estimate delivery to.
-  const destination =
-    mode === 'account' && addresses ? (defaultCheckoutAddress(addresses)?.state ?? null) : null;
+  // Only a signed-in customer has a saved default address to estimate delivery to (v1.16: the
+  // delivery charge depends on it; free from ₹2,000 either way).
+  const deliverTo = mode === 'account' && addresses ? defaultCheckoutAddress(addresses) : null;
+  const destination = deliverTo ? `${deliverTo.city}, ${deliverTo.state}` : null;
+  const fee = deliveryFee(cart.subtotal, deliverTo);
 
   const onRemove = (line: CartLine) => {
     setRemoved({ line, index: cart.items.findIndex((i) => i.cartItemId === line.cartItemId) });
@@ -137,7 +139,11 @@ export function CartView() {
           )
         }
       />
-      <CartTotals totals={cartTotals(cart, CART_SHIPPING_TOTAL)} destination={destination} />
+      <CartTotals
+        totals={cartTotals(cart, fee ?? '0.00')}
+        destination={destination}
+        feeKnown={fee !== null}
+      />
     </>
   );
 }

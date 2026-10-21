@@ -2,13 +2,21 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { CART_SHIPPING_TOTAL, cartTotals, formatMoney } from '@youmart/shared-client';
+import {
+  cartTotals,
+  deliveryFee,
+  deliveryLabel,
+  formatMoney,
+  toPaise,
+} from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { useCart } from '@/stores/cart';
 import { useSession } from '@/stores/session';
 import { ProductImage } from './ui';
 import { SwipeTabs } from './SwipeTabs';
 import { AppHeader } from './AppHeader';
+import { FreeDeliveryBar } from './FreeDeliveryBar';
+import { useAddresses } from '@/stores/address';
 import { colors, font, radii, space } from '@/theme';
 
 /**
@@ -31,7 +39,10 @@ export function CartContent({ inStack = false }: { inStack?: boolean }) {
   const top = 0;
   const session = useSession();
   const { cart, setQuantity, removeItem } = useCart();
-  const totals = cartTotals(cart, CART_SHIPPING_TOTAL);
+  // v1.16: delivery for the customer's delivery address (free from ₹2,000); unknown until signed in.
+  const { selected: deliverTo } = useAddresses();
+  const fee = deliveryFee(cart.subtotal, deliverTo);
+  const totals = cartTotals(cart, fee ?? '0.00');
 
   // Cart lines carry no image - look the products up (one request, cached per product id).
   const [images, setImages] = useState<Record<string, string>>({});
@@ -125,27 +136,39 @@ export function CartContent({ inStack = false }: { inStack?: boolean }) {
                   </Pressable>
                 </View>
               </View>
-              <Text style={styles.lineTotal}>{formatMoney(line.lineTotal)}</Text>
+              {/* Right column: line total on top, "Buy now" (just this item) beside the stepper. */}
+              <View style={styles.lineSide}>
+                <Text style={styles.lineTotal}>{formatMoney(line.lineTotal)}</Text>
+                <Pressable
+                  style={({ pressed }) => [styles.buyNow, pressed && { opacity: 0.85 }]}
+                  onPress={() => buyNow(line.cartItemId)}
+                  hitSlop={6}
+                  accessibilityLabel={`Buy now: ${line.title}`}
+                >
+                  <Ionicons name="bag-check" size={14} color={colors.white} />
+                  <Text style={styles.buyNowText}>Buy now</Text>
+                </Pressable>
+              </View>
             </View>
-            <Pressable
-              style={({ pressed }) => [styles.buyNow, pressed && { opacity: 0.85 }]}
-              onPress={() => buyNow(line.cartItemId)}
-            >
-              <Ionicons name="flash" size={15} color={colors.brand.DEFAULT} />
-              <Text style={styles.buyNowText}>Buy this now</Text>
-            </Pressable>
           </View>
         ))}
       </ScrollView>
 
       <View style={styles.summary}>
+        <FreeDeliveryBar subtotal={cart.subtotal} compact />
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Subtotal</Text>
           <Text style={styles.summaryValue}>{formatMoney(totals.subtotal)}</Text>
         </View>
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Shipping</Text>
-          <Text style={styles.free}>Free shipping</Text>
+          <Text style={styles.summaryLabel}>Delivery</Text>
+          {fee !== null && toPaise(fee) === 0 ? (
+            <Text style={styles.free}>FREE</Text>
+          ) : (
+            <Text style={fee === null ? styles.feeHint : styles.summaryValue}>
+              {deliveryLabel(fee)}
+            </Text>
+          )}
         </View>
         <View style={[styles.summaryRow, styles.totalRow]}>
           <Text style={styles.totalLabel}>Total</Text>
@@ -187,7 +210,6 @@ const styles = StyleSheet.create({
   },
   list: { paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.md },
   line: {
-    gap: space.md,
     backgroundColor: colors.white,
     borderRadius: radii.tile,
     padding: space.md,
@@ -196,17 +218,17 @@ const styles = StyleSheet.create({
   },
   lineTop: { flexDirection: 'row', gap: space.md },
   thumb: { width: 72, height: 72, borderRadius: 8 },
+  lineSide: { alignItems: 'flex-end', justifyContent: 'space-between' },
   buyNow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1.5,
-    borderColor: colors.brand.DEFAULT,
-    borderRadius: radii.button,
-    paddingVertical: 9,
+    gap: 5,
+    backgroundColor: colors.brand.DEFAULT,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
-  buyNowText: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.brand.DEFAULT },
+  buyNowText: { fontFamily: font.uiSemibold, fontSize: 12.5, color: colors.white },
   lineBody: { flex: 1, gap: 4 },
   lineTitle: { fontFamily: font.uiMedium, fontSize: 13.5, color: colors.text.strong },
   linePrice: { fontFamily: font.body, fontSize: 12.5, color: colors.text.body },
@@ -234,34 +256,37 @@ const styles = StyleSheet.create({
   lineTotal: { fontFamily: font.uiBold, fontSize: 14, color: colors.text.strong },
   summary: {
     backgroundColor: colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: space.lg,
-    gap: space.sm,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: space.lg,
+    paddingTop: 10,
+    paddingBottom: 10,
+    gap: 4,
     borderTopWidth: 1,
     borderTopColor: colors.cart.line,
   },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  summaryLabel: { fontFamily: font.body, fontSize: 14, color: colors.text.body },
-  summaryValue: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.text.strong },
-  free: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.feature.guarantee },
+  summaryLabel: { fontFamily: font.body, fontSize: 13, color: colors.text.body },
+  summaryValue: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.text.strong },
+  free: { fontFamily: font.uiSemibold, fontSize: 12.5, color: colors.feature.guarantee },
+  feeHint: { fontFamily: font.uiMedium, fontSize: 12, color: colors.text.muted },
   totalRow: {
     borderTopWidth: 1,
     borderTopColor: colors.cart.line,
-    paddingTop: space.sm,
-    marginTop: 2,
+    paddingTop: 5,
+    marginTop: 1,
   },
-  totalLabel: { fontFamily: font.uiBold, fontSize: 16, color: colors.text.strong },
-  totalValue: { fontFamily: font.uiBold, fontSize: 18, color: colors.brand.DEFAULT },
+  totalLabel: { fontFamily: font.uiBold, fontSize: 15, color: colors.text.strong },
+  totalValue: { fontFamily: font.uiBold, fontSize: 16, color: colors.brand.DEFAULT },
   checkout: {
-    marginTop: space.sm,
+    marginTop: 6,
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.brand.DEFAULT,
     borderRadius: radii.button,
-    paddingVertical: 14,
+    paddingVertical: 11,
   },
-  checkoutText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.white },
+  checkoutText: { fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.white },
 });

@@ -1,4 +1,4 @@
-# YouMart Public API Contract (v1.15)
+# YouMart Public API Contract (v1.16)
 
 **STATUS: FROZEN as of chapter-7-complete (2026-09-28); v1.1 additive
 revision 2026-09-29 (W1), v1.2 additive revision 2026-09-30 (W2), v1.3
@@ -1039,6 +1039,13 @@ claimed by the browser that created it (its `browserKey`, sent as the `x-qr-brow
 ---
 
 ## 17. Change log
+
+### v1.16 — 2026-10-21 (Delivery charges)
+
+- **Changed**: checkout now charges delivery. `OrderView.shippingTotal` is no longer always `0.00`: items subtotal (before coupon) of ₹2,000 or more is free; below that ₹80 to Coimbatore / Chennai / Hyderabad / Bangalore, ₹120 elsewhere in Tamil Nadu / Telangana / Karnataka, ₹150 to other states (by the order's shipping address). `grandTotal = subtotal - discountTotal + shippingTotal`.
+- `POST /api/orders/coupons/quote` is unchanged (its `total` excludes delivery; clients add it).
+- Invoices carry a "Delivery charges" line (SAC 996812, GST 18%, inclusive) when delivery was charged.
+- Rule: `deliveryFee()` in `@youmart/shared-utils` (authoritative) and `@youmart/shared-client` (previews: `deliveryFee`, `freeDeliveryProgress`).
 
 ### v1.15 — 2026-10-15 (Notifications inbox, additive)
 

@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { Check, ChevronDown, Loader2, Lock, Zap } from 'lucide-react';
 import {
   ApiError,
-  CART_SHIPPING_TOTAL,
+  deliveryFee,
+  fromPaise,
+  toPaise,
   CHECKOUT_BLOCKER_MESSAGE,
   PAYMENT_POLL,
   addressLines,
@@ -145,6 +147,11 @@ export function CheckoutView() {
       ? chosenId
       : (defaultCheckoutAddress(addresses ?? [])?.id ?? null);
 
+  // v1.16: delivery by the chosen address (free from ₹2,000) - order-service charges the same.
+  const shipAddress = addresses?.find((a) => a.id === addressId) ?? null;
+  const shipping = (cart ? deliveryFee(cart.subtotal, shipAddress) : null) ?? '0.00';
+  const withShipping = (amount: Money) => fromPaise(toPaise(amount) + toPaise(shipping));
+
   useEffect(() => () => polling.current?.abort(), []);
 
   // Quantities can change on this page: an applied coupon is checked again against the new lines
@@ -279,7 +286,9 @@ export function CheckoutView() {
     setPhase({ step: 'placing' });
     const useCod =
       payment === 'cod' &&
-      codAvailable((coupon?.total ?? cartTotals(cart, CART_SHIPPING_TOTAL).total) as Money);
+      codAvailable(
+        (coupon ? withShipping(coupon.total) : cartTotals(cart, shipping).total) as Money,
+      );
     let order: OrderView;
     try {
       // The real request runs under the "Placing your order" steps (a minimum so it reads as real;
@@ -401,11 +410,11 @@ export function CheckoutView() {
         quantity: line.quantity,
         lineTotal: line.lineTotal,
       }));
-  const preview = cartTotals(cart!, CART_SHIPPING_TOTAL);
+  const preview = cartTotals(cart!, shipping);
   const totals: CartTotals = order
     ? { subtotal: order.subtotal, shipping: order.shippingTotal, total: order.grandTotal }
     : coupon
-      ? { ...preview, total: coupon.total }
+      ? { ...preview, total: withShipping(coupon.total) }
       : preview;
   // v1.13: the coupon row - the placed order's own discount, or the one previewed here.
   const discount = order

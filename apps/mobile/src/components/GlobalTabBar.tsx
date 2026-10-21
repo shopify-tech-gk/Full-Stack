@@ -63,6 +63,11 @@ const ACCOUNT_AREA = [
 
 const under = (path: string, prefix: string) => path === prefix || path.startsWith(`${prefix}/`);
 
+/** True on any screen that shows a bottom bar (the four tabs, or this bar). */
+export function bottomBarShown(pathname: string): boolean {
+  return TAB_PATHS.has(pathname) || globalTabBarVisible(pathname);
+}
+
 export function globalTabBarVisible(pathname: string): boolean {
   return !TAB_PATHS.has(pathname) && !HIDDEN.some((p) => under(pathname, p));
 }

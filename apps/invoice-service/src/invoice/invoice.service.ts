@@ -22,6 +22,9 @@ function decimalToMoney(value: Prisma.Decimal): Money {
 }
 
 const ZERO: Money = '0.00' as Money;
+/** v1.16 delivery-charge line: SAC for courier / goods transport services, GST 18%. */
+const DELIVERY_SAC = '996812';
+const DELIVERY_GST_RATE = '18.00';
 
 export interface InvoiceLineView {
   productId: string;
@@ -201,6 +204,28 @@ export async function generateInvoice(orderId: string): Promise<InvoiceView> {
     });
   }
 
+  // v1.16: the delivery charge is its own line - GST-inclusive like the goods, at the courier /
+  // goods-transport rate (SAC 996812, 18%).
+  const shipping = order.shippingTotal ?? ZERO;
+  if (compare(shipping, ZERO) > 0) {
+    const { taxableValue, tax } = gstBackCalculate(shipping, DELIVERY_GST_RATE);
+    const split = taxType === 'CGST_SGST' ? splitTaxEqually(tax) : null;
+    lineInputs.push({
+      productId: 'delivery',
+      skuId: 'delivery',
+      titleSnapshot: 'Delivery charges',
+      hsnCode: DELIVERY_SAC,
+      quantity: 1,
+      unitPrice: shipping,
+      taxableValue,
+      gstRatePercent: DELIVERY_GST_RATE,
+      cgstAmount: split ? split.first : ZERO,
+      sgstAmount: split ? split.second : ZERO,
+      igstAmount: split ? ZERO : tax,
+      lineTotal: shipping,
+    });
+  }
+
   const subtotalTaxable = sum(lineInputs.map((l) => l.taxableValue));
   const totalCgst = sum(lineInputs.map((l) => l.cgstAmount));
   const totalSgst = sum(lineInputs.map((l) => l.sgstAmount));
@@ -210,8 +235,7 @@ export async function generateInvoice(orderId: string): Promise<InvoiceView> {
 
   // Reconciliation: grandTotal here is exactly sum(lineTotal) by
   // construction (taxableValue+tax reconstructs each lineTotal exactly),
-  // so this should always equal order.grandTotal today (shippingTotal is
-  // hard-coded "0.00" as of Ch4/Ch6 - see order.service.ts's checkout()).
+  // so this equals order.grandTotal (v1.16: the delivery charge is a line of its own above).
   // Logged (never thrown) so a future non-zero shipping/discount charge
   // that isn't reflected per-line surfaces loudly instead of silently
   // producing a non-reconciling invoice.

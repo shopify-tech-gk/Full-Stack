@@ -1,11 +1,19 @@
 import Link from 'next/link';
-import { formatMoney, shippingLabel, type CartTotals as Totals } from '@youmart/shared-client';
+import {
+  deliveryLabel,
+  formatMoney,
+  shippingLabel,
+  type CartTotals as Totals,
+} from '@youmart/shared-client';
+import { FreeDeliveryProgress } from './FreeDeliveryProgress';
 import { TEXT_LINK } from '@/components/account/formStyles';
 
 interface CartTotalsProps {
   totals: Totals;
   /** State from the customer's default address, when known. */
   destination: string | null;
+  /** v1.16: false = no delivery address yet, so the charge shows as a range. */
+  feeKnown?: boolean;
 }
 
 const TH =
@@ -18,8 +26,10 @@ const MOBILE_LABEL = 'float-left font-bold min-[922px]:hidden';
 // 922px; below that WooCommerce's responsive table puts each label inline, left of its value.
 // POLISH (W4, flagged): white panel with the cart table's soft blue shadow, tabular amounts, and
 // a brand-blue hover lift on the Checkout pill.
-export function CartTotals({ totals, destination }: CartTotalsProps) {
-  const shipping = shippingLabel(totals.shipping) ?? formatMoney(totals.shipping);
+export function CartTotals({ totals, destination, feeKnown = true }: CartTotalsProps) {
+  const shipping = !feeKnown
+    ? deliveryLabel(null)
+    : (shippingLabel(totals.shipping) ?? formatMoney(totals.shipping));
   return (
     <section
       aria-labelledby="cart-totals-title"
@@ -31,6 +41,9 @@ export function CartTotals({ totals, destination }: CartTotalsProps) {
       >
         Cart totals
       </h2>
+      <div className="mb-[16px]">
+        <FreeDeliveryProgress subtotal={totals.subtotal} />
+      </div>
       <table className="w-full border-separate border-spacing-0 rounded-[10px] border-b border-catalog-rule">
         <tbody>
           <tr>

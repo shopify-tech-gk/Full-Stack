@@ -20,6 +20,8 @@ import { AddressProvider } from '@/stores/address';
 import { LaunchScreen } from '@/components/LaunchScreen';
 import { WithGlobalTabBar } from '@/components/GlobalTabBar';
 import { BrandHeader } from '@/components/BrandHeader';
+import { FreeDeliveryNudge } from '@/components/FreeDeliveryNudge';
+import { CartNoticeToast } from '@/components/CartNoticeToast';
 import { colors } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
@@ -227,6 +229,10 @@ export default function RootLayout() {
                       />
                     </Stack>
                   </WithGlobalTabBar>
+                  {/* v1.16: free-delivery popup above the bottom bar after an add. */}
+                  <FreeDeliveryNudge />
+                  {/* Why an Add / quantity change was refused (out of stock...), on any screen. */}
+                  <CartNoticeToast />
                   <Intro />
                 </WishlistProvider>
               </CartProvider>

@@ -78,6 +78,9 @@ export default function CategoryScreen() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [sheet, setSheet] = useState(false);
+  // The filter sheet stays mounted with the last filters it had (only `visible` changes): taking
+  // a native Modal out of the tree mid-animation can leave an invisible, tap-blocking layer.
+  const [sheetFilters, setSheetFilters] = useState<NonNullable<Results['filters']> | null>(null);
   const brand = query.filters.brand ?? '';
   const filterKey = JSON.stringify(query.filters);
 
@@ -101,7 +104,11 @@ export default function CategoryScreen() {
         }))
       : getListing(catalogSlug, { ...query, page: 1 });
     load
-      .then((res) => active && setData(res))
+      .then((res) => {
+        if (!active) return;
+        setData(res);
+        if (res.filters) setSheetFilters(res.filters);
+      })
       .catch(() => active && setData({ products: [], total: 0, filters: null }))
       .finally(() => active && setLoading(false));
     return () => {
@@ -264,10 +271,10 @@ export default function CategoryScreen() {
         </View>
       </View>
 
-      {data?.filters ? (
+      {sheetFilters ? (
         <FilterSheet
           visible={sheet}
-          filters={data.filters}
+          filters={sheetFilters}
           query={query}
           onClose={() => setSheet(false)}
           onApply={setQuery}

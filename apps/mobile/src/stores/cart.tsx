@@ -21,6 +21,15 @@ import {
 } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { addedToCartFeedback, preloadFeedback } from '@/lib/feedback';
+
+// v1.16: "something was just added" (after an Add or a quantity increase really reached the
+// cart) - for any screen that wants to react; the free-delivery popup watches the item count.
+const addedListeners = new Set<() => void>();
+export function onCartAdded(listener: () => void): () => void {
+  addedListeners.add(listener);
+  return () => addedListeners.delete(listener);
+}
+const emitAdded = () => addedListeners.forEach((l) => l());
 import { getJSON, setJSON } from '@/lib/storage';
 import { getSession, useSession } from './session';
 
@@ -147,15 +156,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (isAccount()) {
           if (await accountCall(() => api.cart.addItem(product.skuId, quantity), quantity)) {
             addedToCartFeedback();
+            emitAdded();
           }
         } else {
           persistGuest(addGuestItem(cart, product, quantity));
           addedToCartFeedback();
+          emitAdded();
         }
       },
       setQuantity: async (id, quantity) => {
-        if (isAccount()) await accountCall(() => api.cart.updateItem(id, quantity));
+        const before = cart.items.find((line) => line.cartItemId === id)?.quantity ?? 0;
+        let ok = true;
+        if (isAccount()) ok = await accountCall(() => api.cart.updateItem(id, quantity));
         else persistGuest(setLineQuantity(cart, id, quantity));
+        if (ok && quantity > before) emitAdded();
       },
       removeItem: async (id) => {
         if (isAccount()) await accountCall(() => api.cart.removeItem(id));

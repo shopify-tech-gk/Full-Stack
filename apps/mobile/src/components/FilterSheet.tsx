@@ -102,8 +102,12 @@ export function FilterSheet({ visible, filters, query, onClose, onApply }: Props
           <Pressable
             style={styles.apply}
             onPress={() => {
-              onApply({ ...draft, page: 1 });
+              // Close first, apply once the sheet has slid away: reloading the listing while the
+              // native modal is still animating out could leave an invisible layer over the
+              // screen on iOS that swallowed every tap (Add to cart did nothing).
+              const next = { ...draft, page: 1 };
               onClose();
+              setTimeout(() => onApply(next), 320);
             }}
           >
             <Text style={styles.applyText}>Apply</Text>

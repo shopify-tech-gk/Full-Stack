@@ -28,6 +28,8 @@ export interface InternalOrderView {
   grandTotal: Money;
   /** v1.13: coupon discount already taken off grandTotal. */
   discountTotal?: Money;
+  /** v1.16: delivery charge included in grandTotal ('0.00' = free delivery). */
+  shippingTotal?: Money;
   /** COD = Cash on Delivery (paid in cash at delivery); ONLINE otherwise. */
   paymentMethod: 'ONLINE' | 'COD';
   /** Lets fulfillment/logistics access the real ship-to address for a real

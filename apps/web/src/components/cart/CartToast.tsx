@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { dismissCartToast, useCartToast } from '@/lib/cart-toast';
+import { useCart } from '@/lib/cart';
+import { FreeDeliveryProgress } from './FreeDeliveryProgress';
 
 const TONES = {
   success: {
@@ -28,7 +30,10 @@ const TONES = {
 export function CartToast() {
   const toast = useCartToast();
   const pathname = usePathname() ?? '';
+  const { cart } = useCart();
   if (!toast) return null;
+  // v1.16: an add-to-cart confirmation also shows how close the cart is to FREE delivery.
+  const cartAdd = toast.tone === 'success' && !toast.action && !!cart && cart.items.length > 0;
   const { border, icon } = TONES[toast.tone];
   const action = toast.action ?? { href: '/cart', label: 'View cart' };
   const onTarget = pathname.startsWith(action.href);
@@ -56,6 +61,20 @@ export function CartToast() {
             </>
           )}
         </p>
+        {cartAdd && cart && (
+          <div className="mt-[10px] rounded-[10px] bg-white px-[12px] py-[10px]">
+            <FreeDeliveryProgress subtotal={cart.subtotal} />
+            {!pathname.startsWith('/checkout') && (
+              <Link
+                href="/checkout"
+                onClick={dismissCartToast}
+                className="mt-[10px] flex h-[38px] items-center justify-center rounded-[10px] bg-[#ffc200] text-[14px] font-bold text-heading hover:bg-[#f5b800]"
+              >
+                Checkout &rarr;
+              </Link>
+            )}
+          </div>
+        )}
         {toast.details && toast.details.length > 0 && (
           <ul className="mt-[4px] list-disc pl-[18px] text-[14px]">
             {toast.details.map((detail) => (

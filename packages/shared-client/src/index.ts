@@ -11,6 +11,7 @@ export * from './recently-viewed';
 export * from './catalog';
 export * from './account';
 export * from './cart';
+export * from './delivery';
 export * from './guest-cart';
 export * from './guest-wishlist';
 export * from './checkout';
