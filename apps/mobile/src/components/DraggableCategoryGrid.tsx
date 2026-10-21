@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   LinearTransition,
@@ -50,6 +50,14 @@ export function DraggableCategoryGrid({
   const activeRef = useRef(-1);
   const pageRef = useRef(0);
   const edgeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // The "slide into place" transition only runs for a moment after a drop. Left on, iOS replays it
+  // when the saved order arrives just after mount and can leave cards stuck mid-move (overlapping
+  // cards, empty slots).
+  const [animateLayout, setAnimateLayout] = useState(false);
+  const layoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (layoutTimer.current) clearTimeout(layoutTimer.current);
+  }, []);
 
   // Shared values driven on the UI thread by the pan gesture.
   const overlayX = useSharedValue(0);
@@ -103,7 +111,12 @@ export function DraggableCategoryGrid({
       setDragging(false);
       setActiveIndex(-1);
       setActiveNode(null);
-      if (from >= 0) onMove(from, clamp(target, 0, cats.length - 1));
+      if (from >= 0) {
+        setAnimateLayout(true);
+        if (layoutTimer.current) clearTimeout(layoutTimer.current);
+        layoutTimer.current = setTimeout(() => setAnimateLayout(false), 600);
+        onMove(from, clamp(target, 0, cats.length - 1));
+      }
     },
     [clearEdge, onMove, cats.length],
   );
@@ -216,7 +229,7 @@ export function DraggableCategoryGrid({
                 return (
                   <Animated.View
                     key={c.slug}
-                    layout={LinearTransition.duration(220)}
+                    layout={animateLayout ? LinearTransition.duration(220) : undefined}
                     style={styles.slot}
                   >
                     <GestureDetector gesture={makePan(globalIndex)}>

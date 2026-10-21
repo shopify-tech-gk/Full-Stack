@@ -194,7 +194,6 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
     'Surgical Instruments',
     'needle-holder=Needle Holder;medical-forceps=Medical Forceps',
   ],
-  ['tailoring-materials', 'Tailoring Materials', 'sewing-measuring-kit=Sewing Measuring Kit'],
   [
     'tools',
     'Tools',

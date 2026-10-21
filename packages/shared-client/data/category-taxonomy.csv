@@ -39,7 +39,6 @@ Agri and Gardening,Greenhouse Accessories,Greenhouse Accessories
 Agri and Gardening,Greenhouse Accessories,Greenhouse Covers
 Agri and Gardening,Greenhouse Accessories,Greenhouse Frames
 Agri and Gardening,Greenhouse Accessories,Plant Trays
-Agri and Gardening,Greenhouse Accessories,Shade Nets
 Agri and Gardening,Irrigation Equipment,Drip Irrigation
 Agri and Gardening,Irrigation Equipment,Sprinklers
 Agri and Gardening,Irrigation Equipment,Drip Irrigation Kits
@@ -406,6 +405,7 @@ Electronics,Headphones,TWS Earbuds
 Electronics,Headphones,Over-Ear Headphones
 Electronics,Headphones,Neckbands
 Electronics,Laptops,Laptops
+Electronics,Mobiles,Mobiles
 Electronics,Mobile Accessories,Mobile Accessories
 Electronics,Mobile Accessories,Mobile Cases
 Electronics,Mobile Accessories,Screen Protectors
@@ -443,7 +443,6 @@ Electrical and Lights,Decorative Lights,Smart Lights
 Electrical and Lights,Decorative Lights,String Lights
 Electrical and Lights,Decorative Lights,Table Lamps
 Electrical and Lights,Decorative Lights,Fairy Lights
-Electrical and Lights,Electrical Wires,Cables
 Electrical and Lights,Electrical Wires,Distribution Boards
 Electrical and Lights,Electrical Wires,MCB
 Electrical and Lights,Electrical Wires,House Wires
@@ -491,10 +490,6 @@ Furniture,Outdoor Furniture,Garden Tables
 Furniture,Outdoor Furniture,Swings
 Furniture,Outdoor Furniture,Outdoor Sofas
 Furniture,Plastic Furniture,Plastic Furniture
-Furniture,Sofas,Recliners
-Furniture,Sofas,Sofa Beds
-Furniture,Sofas,Sofa Sets
-Furniture,Sofas,Sectional Sofas
 Furniture,Tables,Coffee Tables
 Furniture,Tables,Dining Tables
 Furniture,Tables,Office Tables
@@ -518,7 +513,6 @@ Fashion Jewellery,Artificial Jewellery,Temple Jewellery
 Fashion Jewellery,Artificial Jewellery,CZ Jewellery
 Fashion Jewellery,Body Jewellery,Body Jewellery
 Fashion Jewellery,Body Jewellery,Bangles
-Fashion Jewellery,Body Jewellery,Cuffs
 Fashion Jewellery,Body Jewellery,Charm Bracelets
 Fashion Jewellery,Body Jewellery,Chain Bracelets
 Fashion Jewellery,Bridal Jewellery,Bridal Jewellery
@@ -594,13 +588,11 @@ Gifts & Frames,Gift Sets & Greeting Cards,Gift Boxes
 Gifts & Frames,Gift Sets & Greeting Cards,Greeting Cards
 Gifts & Frames,Gift Sets & Greeting Cards,Personalised Gift Sets
 Gifts & Frames,Gift Sets & Greeting Cards,Couple Gift Sets
-Gifts & Frames,Personalized Gifts,Cushions
 Gifts & Frames,Personalized Gifts,Diaries
 Gifts & Frames,Personalized Gifts,Keychains
 Gifts & Frames,Personalized Gifts,Mugs
 Gifts & Frames,Personalized Gifts,Pens
 Gifts & Frames,Personalized Gifts,Photo Gifts
-Gifts & Frames,Personalized Gifts,T-Shirts
 Gifts & Frames,Photo Albums,Scrapbooks
 Gifts & Frames,Photo Albums,Photo Albums
 Gifts & Frames,Photo Albums,Memory Books
@@ -658,7 +650,6 @@ Hardwares,Fasteners,Screws
 Hardwares,Fasteners,Washers
 Hardwares,Furniture Fittings,Castors & Wheels
 Hardwares,Furniture Fittings,Drawer Slides
-Hardwares,Furniture Fittings,Castors
 Hardwares,Furniture Fittings,Hinges
 Hardwares,Furniture Fittings,Handles
 Hardwares,Ropes & Chains,Chains
@@ -860,7 +851,6 @@ Kitchenware,Stainless Steel,Stainless Steel Utensils
 Kitchenware,Stainless Steel,Stainless Steel Containers
 Kitchenware,Storage Containers,Food Storage Jars
 Kitchenware,Storage Containers,Lunch Boxes
-Kitchenware,Storage Containers,Water Bottles
 Kitchenware,Storage Containers,Plastic Bins
 Kitchenware,Storage Containers,Airtight Containers
 Kitchenware,Storage Containers,Spice Containers
@@ -922,7 +912,6 @@ Party Decorations,Party Decoration Kits,Party Decoration Kits
 Party Decorations,Party Decoration Kits,Party Hats
 Party Decorations,Party Decoration Kits,Party Masks
 Party Decorations,Party Decoration Kits,Photo Booth Props
-Party Decorations,Party Decoration Kits,Masks
 Party Decorations,Party Decoration Kits,Costume Props
 Party Decorations,Party Tableware,Disposable Cups
 Party Decorations,Party Tableware,Disposable Plates
@@ -1002,7 +991,6 @@ Sports & Fitness,Fitness & Gym,Dumbbells
 Sports & Fitness,Fitness & Gym,Exercise Bikes
 Sports & Fitness,Fitness & Gym,Kettlebells
 Sports & Fitness,Fitness & Gym,Treadmills
-Sports & Fitness,Fitness & Gym,Benches
 Sports & Fitness,Football,Football Accessories
 Sports & Fitness,Football,Footballs
 Sports & Fitness,Football,Football Shoes
@@ -1017,7 +1005,6 @@ Sports & Fitness,Swimming,Swimming
 Sports & Fitness,Swimming,Swimming Goggles
 Sports & Fitness,Swimming,Caps
 Sports & Fitness,Swimming,Kickboards
-Sports & Fitness,Swimming,Swimming Accessories
 Sports & Fitness,Table Tennis,Table Tennis
 Sports & Fitness,Tennis,Tennis
 Sports & Fitness,Volleyball,Volleyball
@@ -1027,9 +1014,7 @@ Sports & Fitness,Yoga,Yoga Straps
 Sports & Fitness,Yoga,Bolsters
 Stationary,Art Supplies,Art Supplies
 Stationary,Calculators,Calculators
-Stationary,Calculators,Basic
 Stationary,Calculators,Scientific
-Stationary,Calculators,Financial
 Stationary,Calculators,Printing Calculators
 Stationary,Files & Folders,Document Folders
 Stationary,Files & Folders,Folders
@@ -1070,37 +1055,37 @@ Stationary,School Supplies,Pencil Cases
 Stationary,School Supplies,School Bags
 Stationary,School Supplies,Lunch Boxes
 Stationary,School Supplies,Art Supplies
-Tailoring Materials,Buttons & Fasteners,Hooks & Eyes
-Tailoring Materials,Buttons & Fasteners,Velcro
-Tailoring Materials,Buttons & Fasteners,Zippers
-Tailoring Materials,Elastic & Trims,Bias Tapes
-Tailoring Materials,Elastic & Trims,Laces
-Tailoring Materials,Elastic & Trims,Ribbons
-Tailoring Materials,Elastic & Trims,Elastic Bands
-Tailoring Materials,Elastic & Trims,Waistband Elastic
-Tailoring Materials,Embroidery,Embroidery Kits
-Tailoring Materials,Embroidery,Patches
-Tailoring Materials,Embroidery,Embroidery Hoops
-Tailoring Materials,Embroidery,Frames
-Tailoring Materials,Interfacing,Fabric Glue
-Tailoring Materials,Interfacing,Fusible Interlining
-Tailoring Materials,Interfacing,Non-Woven Interfacing
-Tailoring Materials,Measuring & Marking,Marking Tools
-Tailoring Materials,Measuring & Marking,Tailor Chalk
-Tailoring Materials,Needles,Hand Sewing Needles
-Tailoring Materials,Needles,Machine Needles
-Tailoring Materials,Needles,Embroidery Needles
-Tailoring Materials,Needles,Needles
-Tailoring Materials,Scissors,Tailoring Scissors
-Tailoring Materials,Scissors,Embroidery Scissors
-Tailoring Materials,Scissors,Fabric Cutters
-Tailoring Materials,Sewing Kits,Sewing Kits
-Tailoring Materials,Sewing Machine Accessories,Bobbin Cases
-Tailoring Materials,Sewing Machine Accessories,Bobbins
-Tailoring Materials,Sewing Machine Accessories,Presser Feet
-Tailoring Materials,Sewing Threads,Cotton Threads
-Tailoring Materials,Sewing Threads,Embroidery Threads
-Tailoring Materials,Sewing Threads,Polyester Threads
+Clothing,Buttons & Fasteners,Hooks & Eyes
+Clothing,Buttons & Fasteners,Velcro
+Clothing,Buttons & Fasteners,Zippers
+Clothing,Elastic & Trims,Bias Tapes
+Clothing,Elastic & Trims,Laces
+Clothing,Elastic & Trims,Ribbons
+Clothing,Elastic & Trims,Elastic Bands
+Clothing,Elastic & Trims,Waistband Elastic
+Clothing,Embroidery,Embroidery Kits
+Clothing,Embroidery,Patches
+Clothing,Embroidery,Embroidery Hoops
+Clothing,Embroidery,Frames
+Clothing,Interfacing,Fabric Glue
+Clothing,Interfacing,Fusible Interlining
+Clothing,Interfacing,Non-Woven Interfacing
+Clothing,Measuring & Marking,Marking Tools
+Clothing,Measuring & Marking,Tailor Chalk
+Clothing,Needles,Hand Sewing Needles
+Clothing,Needles,Machine Needles
+Clothing,Needles,Embroidery Needles
+Clothing,Needles,Needles
+Clothing,Scissors,Tailoring Scissors
+Clothing,Scissors,Embroidery Scissors
+Clothing,Scissors,Fabric Cutters
+Clothing,Sewing Kits,Sewing Kits
+Clothing,Sewing Machine Accessories,Bobbin Cases
+Clothing,Sewing Machine Accessories,Bobbins
+Clothing,Sewing Machine Accessories,Presser Feet
+Clothing,Sewing Threads,Cotton Threads
+Clothing,Sewing Threads,Embroidery Threads
+Clothing,Sewing Threads,Polyester Threads
 Tools,Automotive Tools,Automotive Tools
 Tools,Automotive Tools,Diagnostic Tools
 Tools,Automotive Tools,Jack Stands
@@ -1149,10 +1134,8 @@ Toys & Games,Board Games & Puzzles,Puzzles
 Toys & Games,Board Games & Puzzles,Strategy Games
 Toys & Games,Board Games & Puzzles,Family Games
 Toys & Games,Board Games & Puzzles,Educational Games
-Toys & Games,Dolls & Action Figures,Action Figures
 Toys & Games,Dolls & Action Figures,Doll Houses
 Toys & Games,Dolls & Action Figures,Fashion Dolls
-Toys & Games,Dolls & Action Figures,Doll Accessories
 Toys & Games,Educational & Building Toys,Art & Craft Toys
 Toys & Games,Educational & Building Toys,Building Blocks
 Toys & Games,Educational & Building Toys,Construction Sets
@@ -1295,9 +1278,6 @@ Clothing,Formal Wear,"Blazers, Waistcoats and Suits"
 Clothing,Formal Wear,Blazers
 Clothing,Formal Wear,Suits
 Clothing,Formal Wear,Waistcoats
-Clothing,Kids' & Infant Footwear,Boys Footwear
-Clothing,Kids' & Infant Footwear,Girls Footwear
-Clothing,Kids' & Infant Footwear,Infants
 Clothing,Kids' Clothing,Kids' Clothing
 Clothing,Kids' Clothing,Kids' Apparel Combos
 Clothing,Kids' Clothing,Kids' Costume Wear
@@ -1319,24 +1299,11 @@ Clothing,"Lingerie, Sleep & Swimwear",Night Suits
 Clothing,"Lingerie, Sleep & Swimwear",Pyjamas and Lounge Pants
 Clothing,Men's Clothing,Clothing
 Clothing,Men's Clothing,Men's Clothing
-Clothing,Men's Footwear,Men's Casual Shoes
-Clothing,Men's Footwear,Men's Ethnic Shoes
-Clothing,Men's Footwear,Men's Formal Shoes
-Clothing,Men's Footwear,Men's Sandals & Floaters
-Clothing,Men's Footwear,Men's Slippers & Flip Flops
-Clothing,Men's Footwear,Men's Sports Shoes
-Clothing,Men's Footwear,Formal Shoes
-Clothing,Men's Footwear,Sneakers
-Clothing,Men's Footwear,Sandals
-Clothing,Men's Footwear,Slippers
-Clothing,Men's Footwear,Boots
 Clothing,Sarees and Saree Essentials,Blouses
 Clothing,Sarees and Saree Essentials,Petticoats
 Clothing,Sarees and Saree Essentials,Saree Falls
 Clothing,Sarees and Saree Essentials,Sarees
 Clothing,Sarees and Saree Essentials,Sarees and Saree Essentials
-Clothing,Shoe Care,Shoe Care
-Clothing,Shoe Care,Shoe Laces
 Clothing,Sports & Gym Wear,Kids' Tracksuits
 Clothing,Sports & Gym Wear,Men's Tracksuits
 Clothing,Sports & Gym Wear,Tracksuits
@@ -1355,21 +1322,6 @@ Clothing,Winter Wear,Sweaters and Cardigans
 Clothing,Winter Wear,Sweatshirts
 Clothing,Winter Wear,Thermals
 Clothing,Winter Wear,Windcheaters
-Clothing,Women's Footwear,Women's Ballerinas
-Clothing,Women's Footwear,Women's Casual Shoes
-Clothing,Women's Footwear,Women's Ethnic Shoes
-Clothing,Women's Footwear,Women's Flats
-Clothing,Women's Footwear,Women's Formals
-Clothing,Women's Footwear,Women's Heels
-Clothing,Women's Footwear,Women's Slippers & Flip Flops
-Clothing,Women's Footwear,Women's Sports Sandals
-Clothing,Women's Footwear,Women's Sports Shoes
-Clothing,Women's Footwear,Women's Wedges
-Clothing,Women's Footwear,Heels
-Clothing,Women's Footwear,Flats
-Clothing,Women's Footwear,Sandals
-Clothing,Women's Footwear,Sneakers
-Clothing,Women's Footwear,Boots
 Religion,Aarti & Puja Accessories,Aarti Thalis
 Religion,Aarti & Puja Accessories,Agarbatti Stands
 Religion,Aarti & Puja Accessories,Diyas & Akhand Lamps

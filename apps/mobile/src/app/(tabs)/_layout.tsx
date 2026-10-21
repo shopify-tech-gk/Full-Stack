@@ -8,6 +8,9 @@ import { useSession } from '@/stores/session';
 import { useAvatar } from '@/stores/profile';
 import { Avatar } from '@/components/Avatar';
 import { useOnboarding } from '@/stores/onboarding';
+import { SwipeTabBar } from '@/components/SwipeTabBar';
+import { BAR_HEIGHT, barBottomPad } from '@/components/GlobalTabBar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabsLayout() {
   const { itemCount } = useCart();
@@ -16,6 +19,8 @@ export default function TabsLayout() {
   const avatarName = session.status === 'authenticated' ? authUserLabel(session.user) : '';
   const hasAvatar = Boolean(uri) || avatarName.length > 0;
   const onboarding = useOnboarding();
+  const insets = useSafeAreaInsets();
+  const bottomPad = barBottomPad(insets.bottom);
 
   // First launch (or new Terms): welcome + accept Terms & Privacy before using the app.
   if (onboarding === 'loading') return null;
@@ -23,6 +28,8 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      // Swipe across the bottom bar to move between tabs, like swiping on the screen itself.
+      tabBar={(props) => <SwipeTabBar {...props} />}
       // Solid icons on every tab (active = brand blue, inactive = grey): outline icons in the same
       // grey read too pale.
       screenOptions={{
@@ -33,7 +40,13 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.brand.DEFAULT,
         tabBarInactiveTintColor: colors.nav.inactiveIcon,
         tabBarLabelStyle: { fontFamily: font.uiMedium, fontSize: 11 },
-        tabBarStyle: { backgroundColor: colors.white, borderTopColor: colors.border.menu },
+        // Same height and bottom spacing as the bar on the other screens (GlobalTabBar).
+        tabBarStyle: {
+          backgroundColor: colors.white,
+          borderTopColor: colors.border.menu,
+          height: BAR_HEIGHT + bottomPad,
+          paddingBottom: bottomPad,
+        },
       }}
     >
       <Tabs.Screen

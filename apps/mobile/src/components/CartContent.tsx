@@ -2,13 +2,13 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CART_SHIPPING_TOTAL, cartTotals, formatMoney } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { useCart } from '@/stores/cart';
 import { useSession } from '@/stores/session';
 import { ProductImage } from './ui';
 import { SwipeTabs } from './SwipeTabs';
+import { AppHeader } from './AppHeader';
 import { colors, font, radii, space } from '@/theme';
 
 /**
@@ -17,10 +17,18 @@ import { colors, font, radii, space } from '@/theme';
  */
 export function CartContent({ inStack = false }: { inStack?: boolean }) {
   const router = useRouter();
-  // The tab swipes between tabs and draws its own title; the pushed screen has a native header.
-  const wrap = (node: ReactNode) => (inStack ? node : <SwipeTabs index={2}>{node}</SwipeTabs>);
-  const top = inStack ? 0 : undefined;
-  const insets = useSafeAreaInsets();
+  // The tab swipes between tabs and has the same top section as the other tabs (logo, shortcuts,
+  // delivery address, search); the pushed screen has the inner-screen header (BrandHeader).
+  const wrap = (node: ReactNode) =>
+    inStack ? (
+      node
+    ) : (
+      <SwipeTabs index={2} style={styles.tab}>
+        <AppHeader />
+        {node}
+      </SwipeTabs>
+    );
+  const top = 0;
   const session = useSession();
   const { cart, setQuantity, removeItem } = useCart();
   const totals = cartTotals(cart, CART_SHIPPING_TOTAL);
@@ -46,7 +54,7 @@ export function CartContent({ inStack = false }: { inStack?: boolean }) {
 
   if (cart.items.length === 0) {
     return wrap(
-      <View style={[styles.screen, styles.empty, { paddingTop: top ?? insets.top }]}>
+      <View style={[styles.screen, styles.empty, { paddingTop: top }]}>
         <Ionicons name="cart-outline" size={64} color={colors.card.border} />
         <Text style={styles.emptyTitle}>Your Cart is Empty</Text>
         <Pressable style={styles.shopBtn} onPress={() => router.push('/')}>
@@ -72,7 +80,7 @@ export function CartContent({ inStack = false }: { inStack?: boolean }) {
   };
 
   return wrap(
-    <View style={[styles.screen, { paddingTop: top ?? insets.top }]}>
+    <View style={[styles.screen, { paddingTop: top }]}>
       {inStack ? null : <Text style={styles.header}>My Cart</Text>}
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
         {cart.items.map((line) => (
@@ -130,7 +138,7 @@ export function CartContent({ inStack = false }: { inStack?: boolean }) {
         ))}
       </ScrollView>
 
-      <View style={[styles.summary, { paddingBottom: insets.bottom + space.md }]}>
+      <View style={styles.summary}>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Subtotal</Text>
           <Text style={styles.summaryValue}>{formatMoney(totals.subtotal)}</Text>
@@ -159,6 +167,7 @@ export function CartContent({ inStack = false }: { inStack?: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  tab: { flex: 1, backgroundColor: colors.page },
   screen: { flex: 1, backgroundColor: colors.page },
   empty: { alignItems: 'center', justifyContent: 'center', gap: space.lg },
   emptyTitle: { fontFamily: font.uiBold, fontSize: 20, color: colors.text.strong },
