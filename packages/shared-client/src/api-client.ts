@@ -377,6 +377,7 @@ export function createApiClient(options: ApiClientOptions) {
       remove: async (id: Uuid): Promise<void> => {
         await send('DELETE', `/notifications/${id}`);
       },
+      removeAll: () => json<{ deleted: number }>('DELETE', '/notifications'),
     },
     support: {
       sendMessage: (body: SupportMessageBody) =>

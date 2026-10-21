@@ -389,6 +389,7 @@ Electronics,Cameras,Action Cameras
 Electronics,Cameras,Camera Accessories
 Electronics,Cameras,Digital Cameras
 Electronics,Cameras,DSLR Cameras
+Electronics,Cameras,CCTV
 Electronics,Computer Accessories,Keyboards
 Electronics,Computer Accessories,Mouse
 Electronics,Computer Accessories,Webcams
@@ -991,7 +992,6 @@ Sports & Fitness,Fitness & Gym,Dumbbells
 Sports & Fitness,Fitness & Gym,Exercise Bikes
 Sports & Fitness,Fitness & Gym,Kettlebells
 Sports & Fitness,Fitness & Gym,Treadmills
-Sports & Fitness,Football,Football Accessories
 Sports & Fitness,Football,Footballs
 Sports & Fitness,Football,Football Shoes
 Sports & Fitness,Football,Goal Posts
@@ -1055,6 +1055,15 @@ Stationary,School Supplies,Pencil Cases
 Stationary,School Supplies,School Bags
 Stationary,School Supplies,Lunch Boxes
 Stationary,School Supplies,Art Supplies
+Stationary,Books,Drawing & Painting Books
+Stationary,Books,Photography Books
+Stationary,Books,Music Books
+Stationary,Books,Manga
+Stationary,Books,Communication Skills
+Stationary,Books,Career Guidance
+Stationary,Books,Romance
+Stationary,Books,Fantasy & Science Fiction
+Stationary,Books,Historical Fiction
 Clothing,Buttons & Fasteners,Hooks & Eyes
 Clothing,Buttons & Fasteners,Velcro
 Clothing,Buttons & Fasteners,Zippers
@@ -1297,7 +1306,6 @@ Clothing,"Lingerie, Sleep & Swimwear","Lingerie, Sleep & Swimwear"
 Clothing,"Lingerie, Sleep & Swimwear",Night Dresses and Nighties
 Clothing,"Lingerie, Sleep & Swimwear",Night Suits
 Clothing,"Lingerie, Sleep & Swimwear",Pyjamas and Lounge Pants
-Clothing,Men's Clothing,Clothing
 Clothing,Men's Clothing,Men's Clothing
 Clothing,Sarees and Saree Essentials,Blouses
 Clothing,Sarees and Saree Essentials,Petticoats
@@ -1362,7 +1370,3 @@ Religion,Religious Jewellery,Kadas (Religious)
 Religion,Religious Jewellery,Om Pendants
 Religion,Religious Jewellery,Religious Pendants
 Religion,Religious Jewellery,Rudraksha Bracelets
-Religion,Religious Posters & Frames,God Photo Frames
-Religion,Religious Posters & Frames,Religious Wall Art
-Religion,Religious Posters & Frames,Religious Wall Posters
-Religion,Religious Posters & Frames,Tanjore Paintings

@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import Animated, {
-  LinearTransition,
   measure,
   runOnJS,
   useAnimatedRef,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -50,14 +57,10 @@ export function DraggableCategoryGrid({
   const activeRef = useRef(-1);
   const pageRef = useRef(0);
   const edgeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  // The "slide into place" transition only runs for a moment after a drop. Left on, iOS replays it
-  // when the saved order arrives just after mount and can leave cards stuck mid-move (overlapping
-  // cards, empty slots).
-  const [animateLayout, setAnimateLayout] = useState(false);
-  const layoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (layoutTimer.current) clearTimeout(layoutTimer.current);
-  }, []);
+  // No layout ("slide into place") animation on the tiles: on iOS it left cards stuck mid-move
+  // after a drop (overlapping cards, empty slots). Tiles jump to their new places and the one that
+  // was dropped gives a small pop instead.
+  const [dropped, setDropped] = useState<{ slug: string; n: number } | null>(null);
 
   // Shared values driven on the UI thread by the pan gesture.
   const overlayX = useSharedValue(0);
@@ -112,13 +115,12 @@ export function DraggableCategoryGrid({
       setActiveIndex(-1);
       setActiveNode(null);
       if (from >= 0) {
-        setAnimateLayout(true);
-        if (layoutTimer.current) clearTimeout(layoutTimer.current);
-        layoutTimer.current = setTimeout(() => setAnimateLayout(false), 600);
+        const slug = cats[from]?.slug;
+        if (slug) setDropped((d) => ({ slug, n: (d?.n ?? 0) + 1 }));
         onMove(from, clamp(target, 0, cats.length - 1));
       }
     },
-    [clearEdge, onMove, cats.length],
+    [clearEdge, onMove, cats],
   );
 
   const onScrollEnd = useCallback(
@@ -227,9 +229,9 @@ export function DraggableCategoryGrid({
                 const globalIndex = p * PER_PAGE + i;
                 const hidden = dragging && activeIndex === globalIndex;
                 return (
-                  <Animated.View
+                  <DropPop
                     key={c.slug}
-                    layout={animateLayout ? LinearTransition.duration(220) : undefined}
+                    pop={dropped?.slug === c.slug ? dropped.n : 0}
                     style={styles.slot}
                   >
                     <GestureDetector gesture={makePan(globalIndex)}>
@@ -243,7 +245,7 @@ export function DraggableCategoryGrid({
                         />
                       </View>
                     </GestureDetector>
-                  </Animated.View>
+                  </DropPop>
                 );
               })}
             </View>
@@ -275,6 +277,28 @@ export function DraggableCategoryGrid({
       ) : null}
     </View>
   );
+}
+
+/** A grid slot; when `pop` changes (this tile was just dropped) it does a quick scale pop. */
+function DropPop({
+  pop,
+  style,
+  children,
+}: {
+  pop: number;
+  style: StyleProp<ViewStyle>;
+  children: React.ReactNode;
+}) {
+  const scale = useSharedValue(1);
+  useEffect(() => {
+    if (!pop) return;
+    scale.value = withSequence(
+      withTiming(1.08, { duration: 120 }),
+      withSpring(1, { damping: 9, stiffness: 220 }),
+    );
+  }, [pop, scale]);
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return <Animated.View style={[style, anim]}>{children}</Animated.View>;
 }
 
 function PageDot({

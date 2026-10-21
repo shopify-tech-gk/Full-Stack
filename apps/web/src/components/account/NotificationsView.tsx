@@ -121,6 +121,15 @@ export function NotificationsView() {
     api.notifications.markAllRead().catch(() => void refreshUnread());
   };
 
+  const removeAll = () => {
+    if (!window.confirm('Delete all notifications? This clears every message.')) return;
+    setItems([]);
+    setCursor(null);
+    setUnreadLocal(0);
+    setUnread(0);
+    api.notifications.removeAll().catch(() => void load());
+  };
+
   const remove = (m: InboxMessage) => {
     setItems((prev) => prev?.filter((x) => x.id !== m.id) ?? prev);
     if (!m.read) {
@@ -170,16 +179,28 @@ export function NotificationsView() {
             );
           })}
         </div>
-        {unread > 0 && (
-          <button
-            type="button"
-            onClick={readAll}
-            className="flex items-center gap-[6px] text-[13.5px] font-semibold text-brand hover:underline"
-          >
-            <CheckCheck aria-hidden="true" className="size-[16px]" />
-            Mark all as read ({unread})
-          </button>
-        )}
+        <div className="flex items-center gap-[16px]">
+          {unread > 0 && (
+            <button
+              type="button"
+              onClick={readAll}
+              className="flex items-center gap-[6px] text-[13.5px] font-semibold text-brand hover:underline"
+            >
+              <CheckCheck aria-hidden="true" className="size-[16px]" />
+              Mark all as read ({unread})
+            </button>
+          )}
+          {items && items.length > 0 && (
+            <button
+              type="button"
+              onClick={removeAll}
+              className="flex items-center gap-[6px] text-[13.5px] font-semibold text-woo-error hover:underline"
+            >
+              <Trash2 aria-hidden="true" className="size-[15px]" />
+              Delete all
+            </button>
+          )}
+        </div>
       </div>
 
       {failed ? (
@@ -216,11 +237,7 @@ export function NotificationsView() {
                 >
                   <Icon aria-hidden="true" className="size-[19px]" />
                 </span>
-                <button
-                  type="button"
-                  onClick={() => open(m)}
-                  className="min-w-0 flex-1 text-left"
-                >
+                <button type="button" onClick={() => open(m)} className="min-w-0 flex-1 text-left">
                   <span className="flex items-center gap-[8px]">
                     <span
                       className={`flex-1 truncate text-[15px] text-heading ${m.read ? 'font-semibold' : 'font-bold'}`}
@@ -234,14 +251,19 @@ export function NotificationsView() {
                   </span>
                   {href && (
                     <span className="mt-[5px] block text-[13px] font-semibold text-brand group-hover:underline">
-                      {m.kind === 'SUPPORT' ? 'View in Customer Care' : `View order ${m.orderNumber}`}{' '}
+                      {m.kind === 'SUPPORT'
+                        ? 'View in Customer Care'
+                        : `View order ${m.orderNumber}`}{' '}
                       &rsaquo;
                     </span>
                   )}
                 </button>
                 <div className="flex flex-col items-end justify-between">
                   {!m.read ? (
-                    <span aria-label="Unread" className="mt-[6px] size-[9px] rounded-full bg-brand" />
+                    <span
+                      aria-label="Unread"
+                      className="mt-[6px] size-[9px] rounded-full bg-brand"
+                    />
                   ) : (
                     <span />
                   )}

@@ -406,3 +406,17 @@ export async function getTracking(shipmentId: string): Promise<ShipmentDetailVie
   });
   return { ...toShipmentView(shipment), events: events.map(toTrackingEventView) };
 }
+
+/** v1.16: a shipment by its courier tracking number (AWB) - guest Track Order accepts either the
+ * order number or the AWB. Case/space-insensitive; 404 when no live shipment has it. */
+export async function getShipmentByAwb(awb: string): Promise<ShipmentView> {
+  const clean = awb.replace(/\s+/g, '');
+  const shipment = await prisma.shipment.findFirst({
+    where: { awbNumber: { equals: clean, mode: 'insensitive' }, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!shipment) {
+    throw new AppError('NOT_FOUND', 404, 'No shipment with that tracking number');
+  }
+  return toShipmentView(shipment);
+}

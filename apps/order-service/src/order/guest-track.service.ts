@@ -38,7 +38,7 @@ export interface GuestTrackingView {
   timeline: { status: OrderStatusValue; at: string }[];
 }
 
-const NOT_FOUND_MESSAGE = 'No order matches that order number and phone number';
+const NOT_FOUND_MESSAGE = 'No order matches that order / tracking number and phone number';
 
 const HAS_SHIPMENT: OrderItemStatusValue[] = ['SHIPPED', 'DELIVERED', 'RETURNED'];
 
@@ -61,13 +61,31 @@ export async function trackOrderAsGuest(
   phone: string,
 ): Promise<GuestTrackingView> {
   const normalizedPhone = normalizePhoneE164(phone);
-  const order = await prisma.order.findFirst({
+  const include = {
+    items: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' as const } },
+    statusHistory: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' as const } },
+  };
+  let order = await prisma.order.findFirst({
     where: { orderNumber: orderNumber.trim().toUpperCase(), deletedAt: null },
-    include: {
-      items: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
-      statusHistory: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
-    },
+    include,
   });
+  // v1.16: not an order number? Try it as the courier tracking number (AWB) from the "shipped"
+  // message - the same phone check below still applies.
+  if (!order) {
+    const shipment = await logisticsClient.getTrackingByAwb(orderNumber.trim()).catch(() => null);
+    if (shipment) {
+      const item = await prisma.orderItem.findFirst({
+        where: { id: shipment.orderItemId, deletedAt: null },
+        select: { orderId: true },
+      });
+      if (item) {
+        order = await prisma.order.findFirst({
+          where: { id: item.orderId, deletedAt: null },
+          include,
+        });
+      }
+    }
+  }
 
   if (
     !order ||

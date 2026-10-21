@@ -38,7 +38,10 @@ export function TrackOrderForm({ initialOrderNumber }: { initialOrderNumber: str
     const number = orderNumber.trim().toUpperCase();
     const e164 = toE164Phone(phone);
     const next: Errors = {};
-    if (!ORDER_NUMBER_PATTERN.test(number)) next.orderNumber = 'Please enter your Order ID.';
+    // An Order ID (YM-...) or a courier tracking number (AWB) - both fit ORDER_NUMBER_PATTERN.
+    if (!ORDER_NUMBER_PATTERN.test(number)) {
+      next.orderNumber = 'Please enter your Order ID or tracking number.';
+    }
     if (!e164) next.phone = 'Please enter the 10-digit mobile number used for the order.';
     setErrors(next);
     setFailure(null);
@@ -52,7 +55,7 @@ export function TrackOrderForm({ initialOrderNumber }: { initialOrderNumber: str
         error instanceof ApiError && error.status === 429
           ? 'Too many tracking attempts. Please try again in a few minutes.'
           : error instanceof ApiError && error.status === 404
-            ? 'No order matches that Order ID and mobile number. Please check both and try again.'
+            ? 'No order matches that Order ID / tracking number and mobile number. Please check both and try again.'
             : 'We could not reach YouMart. Please check your connection and try again.',
       );
     } finally {
@@ -73,11 +76,13 @@ export function TrackOrderForm({ initialOrderNumber }: { initialOrderNumber: str
         className="mx-auto my-[20px] max-w-[500px]"
       >
         <p className={`${BODY_TEXT} mb-[25.6px]`}>
-          Enter your Order ID and the mobile number you used at checkout, then click Track.
+          Enter your Order ID <em>or</em> the courier tracking number from your
+          &ldquo;shipped&rdquo; message, and the mobile number you used at checkout, then click
+          Track.
         </p>
         <p className={FORM_ROW}>
           <label htmlFor={`${id}-orderNumber`} className={FORM_LABEL}>
-            Order ID
+            Order ID or tracking number
           </label>
           <input
             id={`${id}-orderNumber`}
@@ -85,7 +90,7 @@ export function TrackOrderForm({ initialOrderNumber }: { initialOrderNumber: str
             autoComplete="off"
             value={orderNumber}
             onChange={(e) => setOrderNumber(e.target.value)}
-            placeholder="e.g. YM-MUO212NA-4EAB"
+            placeholder="e.g. YM-MUO212NA-4EAB or AWB number"
             className={FORM_INPUT}
             {...field('orderNumber')}
           />

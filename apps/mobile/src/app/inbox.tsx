@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -10,7 +11,16 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  FadeOut,
+  LinearTransition,
+  interpolate,
+  useAnimatedStyle,
+  type SharedValue,
+} from 'react-native-reanimated';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import * as Haptics from 'expo-haptics';
 import type { InboxKind, InboxMessage } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { useSession } from '@/stores/session';
@@ -129,6 +139,23 @@ export default function InboxScreen() {
     api.notifications.remove(m.id).catch(() => void load());
   };
 
+  const removeAll = () => {
+    Alert.alert('Delete all notifications?', 'This clears every message in your Alerts.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete all',
+        style: 'destructive',
+        onPress: () => {
+          setItems([]);
+          setCursor(null);
+          setUnreadLocal(0);
+          setUnread(0);
+          api.notifications.removeAll().catch(() => void load());
+        },
+      },
+    ]);
+  };
+
   if (session.status !== 'authenticated') {
     return (
       <View style={styles.center}>
@@ -152,10 +179,23 @@ export default function InboxScreen() {
           headerShown: true,
           title: 'Notifications',
           headerRight: () =>
-            unread > 0 ? (
-              <Pressable onPress={() => void readAll()} hitSlop={8}>
-                <Text style={styles.readAll}>Mark all read</Text>
-              </Pressable>
+            items && items.length > 0 ? (
+              <View style={styles.headerActions}>
+                {unread > 0 ? (
+                  <Pressable onPress={() => void readAll()} hitSlop={8}>
+                    <Text style={styles.readAll}>Read all</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  onPress={removeAll}
+                  hitSlop={8}
+                  style={styles.deleteAll}
+                  accessibilityLabel="Delete all notifications"
+                >
+                  <Ionicons name="trash-outline" size={15} color={colors.cart.danger} />
+                  <Text style={styles.deleteAllText}>Delete all</Text>
+                </Pressable>
+              </View>
             ) : null,
         }}
       />
@@ -220,50 +260,102 @@ export default function InboxScreen() {
           renderItem={({ item: m, index }) => {
             const k = KIND[m.kind];
             return (
-              <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(260)}>
-                <Pressable
-                  onPress={() => open(m)}
-                  onLongPress={() => remove(m)}
-                  style={({ pressed }) => [
-                    styles.card,
-                    !m.read && styles.cardUnread,
-                    pressed && { opacity: 0.85 },
-                  ]}
+              <Animated.View
+                entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(260)}
+                exiting={FadeOut.duration(180)}
+                layout={LinearTransition.duration(200)}
+              >
+                {/* Swipe right-to-left: a red Delete panel slides in and, once open, the message
+                    is deleted. */}
+                <ReanimatedSwipeable
+                  friction={1.6}
+                  rightThreshold={70}
+                  overshootRight={false}
+                  renderRightActions={(progress) => <DeleteAction progress={progress} />}
+                  onSwipeableOpen={(direction) => {
+                    if (direction === 'left' || direction === 'right') {
+                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
+                        () => undefined,
+                      );
+                      remove(m);
+                    }
+                  }}
                 >
-                  <View style={[styles.icon, { backgroundColor: k.bg }]}>
-                    <Ionicons name={k.icon} size={19} color={k.tint} />
-                  </View>
-                  <View style={styles.body}>
-                    <View style={styles.titleRow}>
-                      <Text style={[styles.title, !m.read && styles.titleUnread]} numberOfLines={1}>
-                        {m.title}
-                      </Text>
-                      <Text style={styles.time}>{when(m.createdAt)}</Text>
+                  <Pressable
+                    onPress={() => open(m)}
+                    style={({ pressed }) => [
+                      styles.card,
+                      !m.read && styles.cardUnread,
+                      pressed && { opacity: 0.85 },
+                    ]}
+                  >
+                    <View style={[styles.icon, { backgroundColor: k.bg }]}>
+                      <Ionicons name={k.icon} size={19} color={k.tint} />
                     </View>
-                    <Text style={styles.text} numberOfLines={3}>
-                      {m.body}
-                    </Text>
-                    {m.orderNumber ? (
-                      <Text style={styles.link}>
-                        {m.kind === 'SUPPORT' ? 'View reply' : `Order ${m.orderNumber}`} ›
+                    <View style={styles.body}>
+                      <View style={styles.titleRow}>
+                        <Text
+                          style={[styles.title, !m.read && styles.titleUnread]}
+                          numberOfLines={1}
+                        >
+                          {m.title}
+                        </Text>
+                        <Text style={styles.time}>{when(m.createdAt)}</Text>
+                      </View>
+                      <Text style={styles.text} numberOfLines={3}>
+                        {m.body}
                       </Text>
-                    ) : null}
-                  </View>
-                  {!m.read ? <View style={styles.dot} /> : null}
-                </Pressable>
+                      {m.orderNumber ? (
+                        <Text style={styles.link}>
+                          {m.kind === 'SUPPORT' ? 'View reply' : `Order ${m.orderNumber}`} ›
+                        </Text>
+                      ) : null}
+                    </View>
+                    {!m.read ? <View style={styles.dot} /> : null}
+                  </Pressable>
+                </ReanimatedSwipeable>
               </Animated.View>
             );
           }}
         />
       )}
       {items && items.length > 0 ? (
-        <Text style={styles.hint}>Long-press a message to delete it</Text>
+        <Text style={styles.hint}>Swipe a message to the left to delete it</Text>
       ) : null}
     </View>
   );
 }
 
+/** The red panel revealed behind a message as it is swiped left. */
+function DeleteAction({ progress }: { progress: SharedValue<number> }) {
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.4, 1], [0, 0.8, 1]),
+    transform: [{ scale: interpolate(progress.value, [0, 1], [0.7, 1]) }],
+  }));
+  return (
+    <View style={styles.swipeDelete}>
+      <Animated.View style={[styles.swipeDeleteInner, style]}>
+        <Ionicons name="trash" size={20} color={colors.white} />
+        <Text style={styles.swipeDeleteText}>Delete</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  deleteAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  deleteAllText: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.cart.danger },
+  swipeDelete: {
+    width: 96,
+    marginLeft: space.sm,
+    borderRadius: 14,
+    backgroundColor: colors.cart.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swipeDeleteInner: { alignItems: 'center', gap: 2 },
+  swipeDeleteText: { fontFamily: font.uiBold, fontSize: 12, color: colors.white },
   screen: { flex: 1, backgroundColor: colors.page },
   filters: {
     flexDirection: 'row',

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   ListInboxQuery,
+  deleteAllMessages,
   deleteMessage,
   listInbox,
   markAllRead,
@@ -31,6 +32,10 @@ inboxRouter.post('/read-all', requireAuth, async (req, res) => {
 inboxRouter.post('/:id/read', requireAuth, async (req, res) => {
   await markRead(userId(req), idParam(req));
   res.status(204).send();
+});
+
+inboxRouter.delete('/', requireAuth, async (req, res) => {
+  res.status(200).json(await deleteAllMessages(userId(req)));
 });
 
 inboxRouter.delete('/:id', requireAuth, async (req, res) => {

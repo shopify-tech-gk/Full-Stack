@@ -142,3 +142,12 @@ export async function deleteMessage(userId: string, id: string): Promise<void> {
   });
   if (result.count === 0) throw new AppError('NOT_FOUND', 404, 'Message not found');
 }
+
+/** Clears the customer's whole inbox (soft delete). */
+export async function deleteAllMessages(userId: string): Promise<{ deleted: number }> {
+  const result = await prisma.inboxMessage.updateMany({
+    where: { userId, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  return { deleted: result.count };
+}

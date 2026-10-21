@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getShipmentByOrderItem, getTracking } from '../logistics/logistics.service';
+import { getShipmentByAwb, getShipmentByOrderItem, getTracking } from '../logistics/logistics.service';
 import { requireServiceAuth } from '../authMiddleware';
 
 export const internalLogisticsRouter: Router = Router();
@@ -15,3 +15,11 @@ internalLogisticsRouter.get(
     res.status(200).json(await getTracking(shipment.id));
   },
 );
+
+// SERVICE-ONLY (v1.16): the same, found by the courier tracking number (AWB). order-service
+// still matches the order's phone before showing anything.
+internalLogisticsRouter.get('/track/awb/:awb', requireServiceAuth, async (req, res) => {
+  const awb = typeof req.params.awb === 'string' ? req.params.awb : '';
+  const shipment = await getShipmentByAwb(awb);
+  res.status(200).json(await getTracking(shipment.id));
+});

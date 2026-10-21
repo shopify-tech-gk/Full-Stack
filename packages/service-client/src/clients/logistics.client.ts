@@ -36,6 +36,8 @@ export interface LogisticsClient {
   /** No ownership check server-side - the caller (order-service's guest order-track) has
    * already authorised the request. Throws `NOT_FOUND` when the item has no shipment yet. */
   getOrderItemTracking(orderItemId: string): Promise<ShipmentDetailView>;
+  /** v1.16: the shipment carrying this courier tracking number (AWB); NOT_FOUND when none. */
+  getTrackingByAwb(awb: string): Promise<ShipmentDetailView>;
 }
 
 /** `baseUrl` (e.g. `LOGISTICS_SERVICE_URL`) is injected by the caller. */
@@ -49,6 +51,15 @@ export function createLogisticsClient({
       return request<ShipmentDetailView>({
         baseUrl,
         path: `/logistics/internal/track/order-item/${orderItemId}`,
+        method: 'GET',
+        authToken: mintCallerServiceToken(serviceAuth),
+        timeoutMs,
+      });
+    },
+    getTrackingByAwb(awb) {
+      return request<ShipmentDetailView>({
+        baseUrl,
+        path: `/logistics/internal/track/awb/${encodeURIComponent(awb)}`,
         method: 'GET',
         authToken: mintCallerServiceToken(serviceAuth),
         timeoutMs,

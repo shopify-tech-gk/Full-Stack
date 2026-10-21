@@ -33,7 +33,9 @@ export default function TrackOrderScreen() {
     setError(null);
     const e164 = toE164Phone(phone);
     if (!orderNumber.trim() || !e164) {
-      setError('Enter your order number and the phone number used for the order.');
+      setError(
+        'Enter your order number or tracking number, and the phone number used for the order.',
+      );
       return;
     }
     setBusy(true);
@@ -57,11 +59,11 @@ export default function TrackOrderScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Text style={styles.label}>Order number</Text>
+        <Text style={styles.label}>Order number or tracking number</Text>
         <TextInput
           value={orderNumber}
           onChangeText={setOrderNumber}
-          placeholder="e.g. YM-2026-000123"
+          placeholder="e.g. YM-MUO212NA-4EAB or AWB number"
           placeholderTextColor={colors.text.placeholder}
           autoCapitalize="characters"
           style={styles.input}

@@ -10,6 +10,8 @@ const SECRETS = () => [config.msg91AuthKey];
 interface Msg91WhatsappComponentPayload {
   type: string;
   value: string;
+  /** Authentication templates' copy-code button is a URL-type button in MSG91's API. */
+  subtype?: string;
 }
 
 interface Msg91BulkResponse {
@@ -52,7 +54,11 @@ export class Msg91WhatsappProvider implements NotificationProvider {
       componentsPayload[`body_${index + 1}`] = { type: 'text', value };
     });
     if (components.authButtonCode !== undefined) {
-      componentsPayload.button_1 = { type: 'text', value: components.authButtonCode };
+      componentsPayload.button_1 = {
+        subtype: 'url',
+        type: 'text',
+        value: components.authButtonCode,
+      };
     }
 
     const body = {
@@ -91,7 +97,13 @@ export class Msg91WhatsappProvider implements NotificationProvider {
       }
 
       const dataEntry = Array.isArray(json?.data) ? json?.data[0] : json?.data;
-      return { status: 'SENT', providerMessageId: dataEntry?.messageId };
+      // No message id in MSG91's reply means it took the request but may not deliver it - keep a
+      // (redacted, short) copy of what it said so the log shows why.
+      return {
+        status: 'SENT',
+        providerMessageId:
+          dataEntry?.messageId ?? summarizeResponse(res.status, json, SECRETS()).slice(0, 400),
+      };
     } catch (err) {
       return { status: 'FAILED', error: describeError(err, SECRETS()) };
     }

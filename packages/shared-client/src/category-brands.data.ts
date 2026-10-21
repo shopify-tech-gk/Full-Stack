@@ -4304,10 +4304,6 @@ export const CATEGORY_BRAND_INDEX: Readonly<Record<string, readonly number[]>> =
   'religion/religious-jewellery/religious-pendants': [29, 32, 31, 561, 141, 69],
   'religion/religious-jewellery/rudraksha-bracelets': [29, 32, 31, 561, 141, 69],
   'religion/religious-posters-frames': [29, 69, 0, 11, 186, 383, 967],
-  'religion/religious-posters-frames/god-photo-frames': [29, 69, 0, 11, 186, 383, 967],
-  'religion/religious-posters-frames/religious-wall-art': [29, 69, 0, 11, 186, 383, 967],
-  'religion/religious-posters-frames/religious-wall-posters': [29, 69, 0, 11, 186, 383, 967],
-  'religion/religious-posters-frames/tanjore-paintings': [29, 69, 0, 11, 186, 383, 967],
   'sports-fitness': [
     68, 70, 93, 15, 532, 73, 508, 460, 840, 797, 1125, 1112, 740, 483, 461, 471, 472, 487, 458, 480,
     489, 470, 543, 560, 553, 558, 542, 540, 26, 1230, 1217, 1218, 895, 690, 869, 1238, 1211, 1232,
@@ -4380,7 +4376,6 @@ export const CATEGORY_BRAND_INDEX: Readonly<Record<string, readonly number[]>> =
     461, 471, 483, 70, 696, 472, 487, 660, 458, 480, 489, 470,
   ],
   'sports-fitness/football': [93, 73, 15, 68, 70],
-  'sports-fitness/football/football-accessories': [93, 68, 73, 15, 70],
   'sports-fitness/football/football-shoes': [93, 73, 15],
   'sports-fitness/football/footballs': [93, 68, 73, 15, 70],
   'sports-fitness/football/goal-posts': [93, 68, 73, 15, 70],

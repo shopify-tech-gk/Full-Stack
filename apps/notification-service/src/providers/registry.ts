@@ -22,9 +22,27 @@ export function resolveProvider(channel: NotificationChannelValue): Notification
   if (!config.notificationsEnabled) {
     return noopProvider;
   }
+  // Email waits until every Zoho value is really set (refresh token + account id are generated
+  // separately from the API-console app); until then it stays simulated instead of failing and
+  // retrying on every message, while WhatsApp already sends for real.
+  if (channel === 'EMAIL' && !zohoConfigured()) {
+    return noopProvider;
+  }
   const provider = realProviders[channel];
   if (!provider) {
     throw new Error(`No notification provider registered for channel "${channel}"`);
   }
   return provider;
+}
+
+const placeholder = (v: string | undefined) => !v || /^changeme/i.test(v) || /example/i.test(v);
+
+function zohoConfigured(): boolean {
+  return ![
+    config.zohoClientId,
+    config.zohoClientSecret,
+    config.zohoRefreshToken,
+    config.zohoFromEmail,
+    config.zohoAccountId,
+  ].some(placeholder);
 }
