@@ -154,6 +154,16 @@ export function AdminSupport() {
                 </div>
               </div>
               <div className="flex flex-col gap-[14px] px-[22px] py-[18px]">
+                {selected.chatTranscript && (
+                  <details className="rounded-[12px] border border-[#dfe6f3] bg-[#f8fafd] px-[14px] py-[10px]">
+                    <summary className="cursor-pointer text-[13px] font-semibold text-[#0142aa]">
+                      ✨ Came from YouMart Assistant - view the AI chat
+                    </summary>
+                    <p className="mt-[8px] max-h-[280px] overflow-y-auto whitespace-pre-wrap text-[13px] leading-[1.55] text-[#475569]">
+                      {selected.chatTranscript}
+                    </p>
+                  </details>
+                )}
                 <div className="max-w-[85%] rounded-[14px] rounded-tl-[4px] bg-[#f1f4f9] px-[16px] py-[12px]">
                   <p className="whitespace-pre-wrap text-[14.5px] leading-[1.55] text-[#24324d]">{selected.message}</p>
                   <p className="mt-[6px] text-[11.5px] text-[#8a95ab]">Customer · {fmtDateTime(selected.createdAt)}</p>

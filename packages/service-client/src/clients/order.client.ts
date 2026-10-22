@@ -98,10 +98,32 @@ export interface CreateOrderClientOptions {
   serviceAuth: ServiceAuthOptions;
 }
 
+/** v1.17: one of a customer's recent orders, shaped for the AI help assistant. */
+export interface AssistantOrderView {
+  orderNumber: string;
+  placedAt: string;
+  status: string;
+  paymentMethod: 'ONLINE' | 'COD';
+  paid: boolean;
+  total: Money;
+  deliveryCharge: Money;
+  couponDiscount: Money;
+  shipToCity: string | null;
+  cancelRequest: { status: string; reason: string } | null;
+  items: Array<{
+    title: string;
+    quantity: number;
+    status: string;
+    shipment: { carrier: string | null; trackingNumber: string | null; status: string } | null;
+  }>;
+}
+
 export interface OrderClient {
   /** Backed by `GET /orders/internal/:orderId` (Ch4.6) - no ownership
    * filter server-side; the caller must check `.userId` itself. */
   getInternalOrder(orderId: string): Promise<InternalOrderView>;
+  /** v1.17: `GET /orders/internal/users/:userId/assistant-orders` - newest first. */
+  getAssistantOrders(userId: string): Promise<{ items: AssistantOrderView[] }>;
   /** Backed by `POST /orders/internal/:orderId/confirm` (Ch4.6) -
    * PENDING_PAYMENT -> CONFIRMED and commits held stock. Idempotent. */
   confirmOrder(orderId: string, paymentMethod?: 'ONLINE' | 'COD'): Promise<void>;
@@ -153,6 +175,15 @@ export function createOrderClient({
   }
 
   return {
+    getAssistantOrders(userId) {
+      return request<{ items: AssistantOrderView[] }>({
+        baseUrl,
+        path: `/orders/internal/users/${userId}/assistant-orders`,
+        method: 'GET',
+        authToken: mintCallerServiceToken(serviceAuth),
+        timeoutMs,
+      });
+    },
     getInternalOrder(orderId) {
       return request<InternalOrderView>({
         baseUrl,

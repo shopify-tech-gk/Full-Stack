@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.133.0",
     "@youmart/auth-middleware": "workspace:*",
     "@youmart/config": "workspace:*",
     "@youmart/db": "workspace:*",

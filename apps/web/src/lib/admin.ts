@@ -284,6 +284,8 @@ export interface AdminTicket {
   message: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
   adminReply: string | null;
+  /** v1.17: the AI help chat this request came from. */
+  chatTranscript: string | null;
   repliedAt: string | null;
   createdAt: string;
   userId: string;

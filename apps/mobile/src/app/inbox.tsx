@@ -140,7 +140,7 @@ export default function InboxScreen() {
   };
 
   const removeAll = () => {
-    Alert.alert('Delete all notifications?', 'This clears every message in your Alerts.', [
+    Alert.alert('Delete all alerts?', 'This clears every message in your Alerts.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete all',
@@ -159,7 +159,7 @@ export default function InboxScreen() {
   if (session.status !== 'authenticated') {
     return (
       <View style={styles.center}>
-        <Stack.Screen options={{ headerShown: true, title: 'Notifications' }} />
+        <Stack.Screen options={{ headerShown: true, title: 'Alerts' }} />
         <View style={styles.emptyIcon}>
           <Ionicons name="notifications-outline" size={34} color={colors.brand.DEFAULT} />
         </View>
@@ -177,7 +177,7 @@ export default function InboxScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Notifications',
+          title: 'Alerts',
           headerRight: () =>
             items && items.length > 0 ? (
               <View style={styles.headerActions}>

@@ -7,7 +7,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import type { CartProduct } from '@youmart/shared-client';
 import { useCart } from '@/stores/cart';
@@ -59,7 +59,11 @@ export function CartStepper({
           <ActivityIndicator size="small" color={colors.white} />
         ) : (
           <>
-            <Ionicons name="cart-outline" size={compact ? 13 : 15} color={colors.white} />
+            <MaterialCommunityIcons
+              name="cart-plus"
+              size={compact ? 14 : 16}
+              color={colors.white}
+            />
             <Text style={[styles.addText, compact && styles.textCompact]}>Add</Text>
           </>
         )}

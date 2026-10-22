@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { PhoneCall } from 'lucide-react';
 import { CUSTOMER_CARE_PAGE } from '@youmart/shared-client';
 import { FaWhatsapp } from '@/components/ui/FaIcons';
+import { AssistantChat } from '@/components/info/AssistantChat';
 
 export const metadata: Metadata = { title: 'Customer Care - You Mart' };
 
@@ -20,6 +21,8 @@ export default function CustomerCarePage() {
       <p className="mt-[20px] text-center font-ui text-[14.6px] leading-[1.6] text-ink-body lg:text-[16px]">
         {CUSTOMER_CARE_PAGE.text}
       </p>
+      {/* v1.17 AI help - hides itself when the assistant is switched off. */}
+      <AssistantChat />
       <ul className="mt-[40px] grid gap-[20px] md:grid-cols-2 lg:mt-[55px] lg:px-[10px]">
         {CUSTOMER_CARE_PAGE.cards.map((card) => (
           <li

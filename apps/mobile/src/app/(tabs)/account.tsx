@@ -48,7 +48,7 @@ const ACTIVITY: Item[] = [
   { icon: 'location', label: 'Saved addresses', tint: 'teal', to: '/addresses', auth: true },
   { icon: 'cart', label: 'My cart', tint: 'amber', to: '/cart' },
   // v1.15: the inbox (also the bell in the header).
-  { icon: 'notifications', label: 'Notifications', tint: 'blue', to: '/inbox', auth: true },
+  { icon: 'notifications', label: 'Alerts', tint: 'blue', to: '/inbox', auth: true },
   {
     icon: 'return-down-back',
     label: 'Returns & refunds',

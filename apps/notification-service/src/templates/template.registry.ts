@@ -228,7 +228,13 @@ const templates: Record<TemplateKey, Partial<Record<RenderableChannel, ChannelRe
         data.customerName ?? '-',
       )}<br><strong>Phone:</strong> ${escapeHtml(data.phone ?? '-')}<br><strong>Email:</strong> ${escapeHtml(
         data.email ?? '-',
-      )}</p><p style="white-space:pre-wrap">${escapeHtml(data.message)}</p>`,
+      )}</p><p style="white-space:pre-wrap">${escapeHtml(data.message)}</p>${
+        data.chatTranscript
+          ? `<hr><p><strong>AI help chat before this request:</strong></p><p style="white-space:pre-wrap;color:#475569">${escapeHtml(
+              data.chatTranscript,
+            )}</p>`
+          : ''
+      }`,
     }),
   },
 };

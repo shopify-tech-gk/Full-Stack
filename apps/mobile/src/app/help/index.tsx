@@ -50,6 +50,23 @@ export default function HelpCenterScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
+      {/* v1.17 AI help - instant answers; hands over to the team when it can't solve something. */}
+      <Pressable
+        style={({ pressed }) => [styles.ai, pressed && { opacity: 0.9 }]}
+        onPress={() => router.push('/help/assistant')}
+      >
+        <View style={styles.aiIcon}>
+          <Ionicons name="sparkles" size={20} color={colors.brand.DEFAULT} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.aiTitle}>Ask YouMart Assistant</Text>
+          <Text style={styles.aiSub}>
+            Instant answers about orders, delivery, returns & refunds
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.white} />
+      </Pressable>
+
       <View style={styles.hero}>
         <Text style={styles.heroTitle}>How can we help?</Text>
         <Text style={styles.heroSub}>
@@ -142,6 +159,25 @@ export default function HelpCenterScreen() {
 }
 
 const styles = StyleSheet.create({
+  ai: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.brand.DEFAULT,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: space.md,
+  },
+  aiIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiTitle: { fontFamily: font.uiBold, fontSize: 15, color: colors.white },
+  aiSub: { fontFamily: font.body, fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
   screen: { flex: 1, backgroundColor: colors.page },
   body: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
   hero: {

@@ -53,12 +53,12 @@ export function AppHeader() {
             style={styles.tile}
             onPress={() => router.push('/inbox')}
             hitSlop={6}
-            accessibilityLabel={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+            accessibilityLabel={unread > 0 ? `Alerts, ${unread} unread` : 'Alerts'}
           >
             <View>
               <Ionicons
                 name={unread > 0 ? 'notifications' : 'notifications-outline'}
-                size={22}
+                size={26}
                 color={colors.brand.DEFAULT}
               />
               {unread > 0 ? (

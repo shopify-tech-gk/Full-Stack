@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter, type Href } from 'expo-router';
@@ -10,9 +11,10 @@ import { useCart } from '@/stores/cart';
 import { useSession } from '@/stores/session';
 import { useAvatar } from '@/stores/profile';
 import { Avatar } from '@/components/Avatar';
+import { AiNavButton } from '@/components/AiNavButton';
 import { colors, font } from '@/theme';
 
-/** The four bottom tabs, in order (same as app/(tabs)). */
+/** The four bottom tabs, in order (same as app/(tabs)); YouMart AI sits between Favourites and My Cart. */
 const TABS = [
   { path: '/', label: 'Home' },
   { path: '/buy-again', label: 'Favourites' },
@@ -45,6 +47,8 @@ const HIDDEN = [
   '/order-success',
   '/auth',
   '/addresses/map',
+  // The assistant chat has its own message bar at the bottom.
+  '/help/assistant',
 ];
 
 const ACCOUNT_AREA = [
@@ -134,38 +138,40 @@ export function GlobalTabBar() {
           const on = i === active;
           const color = on ? colors.brand.DEFAULT : colors.nav.inactiveIcon;
           return (
-            <Pressable
-              key={tab.path}
-              style={styles.tab}
-              onPress={() => goTab(i)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
-              accessibilityLabel={
-                i === 2 && itemCount > 0 ? `My Cart, ${itemCount} items` : tab.label
-              }
-            >
-              <View>
-                {i === 0 ? (
-                  <Ionicons name="home" size={24} color={color} />
-                ) : i === 1 ? (
-                  <Ionicons name="bookmark" size={24} color={color} />
-                ) : i === 2 ? (
-                  <Ionicons name="cart" size={24} color={color} />
-                ) : hasAvatar ? (
-                  <View style={[styles.avatarRing, on && styles.avatarRingOn]}>
-                    <Avatar name={avatarName} uri={uri} size={24} />
-                  </View>
-                ) : (
-                  <Ionicons name="person" size={24} color={color} />
-                )}
-                {i === 2 && itemCount > 0 ? (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{itemCount > 99 ? '99+' : itemCount}</Text>
-                  </View>
-                ) : null}
-              </View>
-              <Text style={[styles.label, { color }]}>{tab.label}</Text>
-            </Pressable>
+            <Fragment key={tab.path}>
+              {i === 2 ? <AiNavButton /> : null}
+              <Pressable
+                style={styles.tab}
+                onPress={() => goTab(i)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={
+                  i === 2 && itemCount > 0 ? `My Cart, ${itemCount} items` : tab.label
+                }
+              >
+                <View>
+                  {i === 0 ? (
+                    <Ionicons name="home" size={24} color={color} />
+                  ) : i === 1 ? (
+                    <Ionicons name="bookmark" size={24} color={color} />
+                  ) : i === 2 ? (
+                    <Ionicons name="cart" size={24} color={color} />
+                  ) : hasAvatar ? (
+                    <View style={[styles.avatarRing, on && styles.avatarRingOn]}>
+                      <Avatar name={avatarName} uri={uri} size={24} />
+                    </View>
+                  ) : (
+                    <Ionicons name="person" size={24} color={color} />
+                  )}
+                  {i === 2 && itemCount > 0 ? (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{itemCount > 99 ? '99+' : itemCount}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={[styles.label, { color }]}>{tab.label}</Text>
+              </Pressable>
+            </Fragment>
           );
         })}
       </View>

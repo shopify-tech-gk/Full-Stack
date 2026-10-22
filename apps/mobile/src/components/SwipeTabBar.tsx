@@ -21,7 +21,9 @@ export function SwipeTabBar(props: BottomTabBarProps) {
   const { state, navigation } = props;
 
   const go = (dir: number) => {
-    const next = state.index + dir;
+    // Skip the centre YouMart AI button: it opens the assistant, it is not a page to swipe to.
+    let next = state.index + dir;
+    if (state.routes[next]?.name === 'ai') next += dir;
     const route = state.routes[next];
     if (!route) return;
     void Haptics.selectionAsync().catch(() => undefined);

@@ -16,6 +16,8 @@ export const CreateTicketBody = z.object({
   orderId: z.string().uuid().optional(),
   topic: TicketTopic,
   message: z.string().trim().min(10).max(2000),
+  /** v1.17: the AI help chat this request came from (shown to support). */
+  transcript: z.string().trim().max(12000).optional(),
 });
 export type CreateTicketBody = z.infer<typeof CreateTicketBody>;
 

@@ -39,6 +39,7 @@ import {
 import { NotifyPreferenceBody } from '../order/notify-preference.schema';
 import { getNotifyPreference, setNotifyPreference } from '../order/notify-preference.service';
 import { requireAuth, requireServiceAuth, requireAdmin } from '../authMiddleware';
+import { listOrdersForAssistant } from '../order/assistant-orders.service';
 import {
   AdminOrdersQuery,
   getAdminOrder,
@@ -149,6 +150,16 @@ orderRouter.get('/internal/purchases', requireServiceAuth, async (req, res) => {
 });
 
 // W9: auth-service refuses account deletion while an order is still in progress.
+// v1.17 AI help: the signed-in customer's recent orders (notification-service's assistant).
+orderRouter.get(
+  '/internal/users/:userId/assistant-orders',
+  requireServiceAuth,
+  async (req, res) => {
+    const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
+    res.status(200).json({ items: await listOrdersForAssistant(userId) });
+  },
+);
+
 orderRouter.get('/internal/users/:userId/open-orders', requireServiceAuth, async (req, res) => {
   const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
   res.status(200).json(await countOpenOrders(userId));

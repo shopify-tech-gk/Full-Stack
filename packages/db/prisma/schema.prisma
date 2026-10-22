@@ -1381,6 +1381,9 @@ model SupportTicket {
   topic       SupportTicketTopic
   message     String
   status      SupportTicketStatus @default(OPEN)
+  /// v1.17: the AI help chat that led to this request ("You: ... / Assistant: ..."), so support
+  /// sees what was already tried. Null for requests raised directly.
+  chatTranscript String?          @map("chat_transcript")
   /// v1.14: support's answer, shown to the customer under My Help Requests.
   adminReply  String?             @map("admin_reply")
   repliedAt   DateTime?           @map("replied_at")

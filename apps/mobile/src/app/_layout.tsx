@@ -176,7 +176,7 @@ export default function RootLayout() {
                       />
                       <Stack.Screen
                         name="inbox"
-                        options={{ headerShown: true, title: 'Notifications' }}
+                        options={{ headerShown: true, title: 'Alerts' }}
                       />
                       <Stack.Screen
                         name="account/recently-viewed"
@@ -217,6 +217,10 @@ export default function RootLayout() {
                       <Stack.Screen
                         name="help/index"
                         options={{ headerShown: true, title: 'Help Center' }}
+                      />
+                      <Stack.Screen
+                        name="help/assistant"
+                        options={{ headerShown: true, title: 'YouMart Assistant' }}
                       />
                       <Stack.Screen
                         name="help/new"

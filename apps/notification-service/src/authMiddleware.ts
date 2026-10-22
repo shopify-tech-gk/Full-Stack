@@ -15,6 +15,8 @@ const authMiddleware: AuthMiddleware = createAuthMiddleware({
 });
 
 export const requireAuth: RequestHandler = authMiddleware.requireAuth;
+/** v1.17: AI help works signed out too (store questions only); signed in it can see your orders. */
+export const optionalAuth: RequestHandler = authMiddleware.optionalAuth;
 
 // v1.14 admin dashboard: the help-request inbox.
 const adminAuthMiddleware: AdminAuthMiddleware = createAdminAuthMiddleware({

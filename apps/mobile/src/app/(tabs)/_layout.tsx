@@ -9,6 +9,7 @@ import { useAvatar } from '@/stores/profile';
 import { Avatar } from '@/components/Avatar';
 import { useOnboarding } from '@/stores/onboarding';
 import { SwipeTabBar } from '@/components/SwipeTabBar';
+import { AiNavButton } from '@/components/AiNavButton';
 import { BAR_HEIGHT, barBottomPad } from '@/components/GlobalTabBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -63,6 +64,11 @@ export default function TabsLayout() {
           // Saved items: a solid bookmark, grey / blue like the other tab icons.
           tabBarIcon: ({ color, size }) => <Ionicons name="bookmark" size={size} color={color} />,
         }}
+      />
+      {/* v1.17: YouMart AI in the middle - a raised button that opens the assistant on top. */}
+      <Tabs.Screen
+        name="ai"
+        options={{ title: 'YouMart AI', tabBarButton: () => <AiNavButton /> }}
       />
       <Tabs.Screen
         name="cart"

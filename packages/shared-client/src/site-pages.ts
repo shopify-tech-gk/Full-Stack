@@ -694,7 +694,7 @@ export const FAQ_PAGE: { title: string; subtitle: string; heading: string; items
     {
       question: 'Are there any shipping charges?',
       answer: [
-        'Shipping charges vary depending on the product, location, and order value. Free shipping is available on select orders. Check your cart for applicable charges.',
+        'Delivery is **free on orders of ₹2,000 or more**. Below that it is ₹80 to Coimbatore, Chennai, Hyderabad and Bangalore, ₹120 elsewhere in Tamil Nadu, Telangana and Karnataka, and ₹150 to other states. Your cart and checkout show the exact charge for your address.',
       ],
     },
     {

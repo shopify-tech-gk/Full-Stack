@@ -16,7 +16,8 @@ import {
   listMyTickets,
   updateAdminTicket,
 } from '../support/ticket.service';
-import { requireAdmin, requireAuth } from '../authMiddleware';
+import { optionalAuth, requireAdmin, requireAuth } from '../authMiddleware';
+import { AssistantChatBody, assistantAvailable, chat } from '../assistant/assistant.service';
 
 export const supportRouter: Router = Router();
 
@@ -83,4 +84,17 @@ supportRouter.get('/admin/tickets', requireAdmin('support.manage'), async (req, 
 supportRouter.patch('/admin/tickets/:id', requireAdmin('support.manage'), async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   res.status(200).json(await updateAdminTicket(id, AdminUpdateTicketBody.parse(req.body)));
+});
+
+// v1.17 AI help. Works signed out (store questions; daily limit per IP) and signed in (it can
+// look at the customer's own orders; daily limit per customer).
+supportRouter.get('/assistant', (_req, res) => {
+  res.status(200).json({ available: assistantAvailable() });
+});
+
+supportRouter.post('/assistant', optionalAuth, async (req, res) => {
+  const body = AssistantChatBody.parse(req.body);
+  res
+    .status(200)
+    .json(await chat(body, { userId: req.auth?.userId ?? null, ip: req.ip ?? 'unknown' }));
 });

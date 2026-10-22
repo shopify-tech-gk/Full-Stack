@@ -23,6 +23,12 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
     .string()
     .default('true')
     .transform((v) => v === 'true'),
+  // Email only (default on): false keeps EMAIL simulated while WhatsApp still sends for real -
+  // e.g. in development while the sending domain isn't live.
+  EMAIL_SENDING_ENABLED: z
+    .string()
+    .default('true')
+    .transform((v) => v === 'true'),
 
   // --- MSG91 (WhatsApp - 5 final approved templates, Ch6.2c) ---
   MSG91_AUTH_KEY: z.string().min(1),
@@ -79,6 +85,11 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
 
   // W1: where public contact-form messages are forwarded (EMAIL). Not a secret.
   SUPPORT_INBOX_EMAIL: z.string().email().default('info@youmart.in'),
+  // v1.17 AI help (Claude). Empty key = the assistant is off (503, the Help screen hides it).
+  ANTHROPIC_API_KEY: z.string().default(''),
+  ASSISTANT_MODEL: z.string().min(1).default('claude-haiku-5-5'),
+  /** Questions per customer (or per IP when signed out) per day. */
+  ASSISTANT_DAILY_LIMIT: z.coerce.number().int().positive().default(40),
 
   // W9: customer help tickets (signed-in) + per-customer notification settings.
   ORDER_SERVICE_URL: z.string().url(),
@@ -103,6 +114,7 @@ export interface NotificationServiceConfig {
   jwtIssuer: string;
   jwtAudience: string;
   notificationsEnabled: boolean;
+  emailSendingEnabled: boolean;
   msg91AuthKey: string;
   msg91IntegratedNumber: string;
   msg91WhatsappNamespace: string;
@@ -122,6 +134,9 @@ export interface NotificationServiceConfig {
   zohoAccountRegion: string;
   zohoAccountId: string;
   supportInboxEmail: string;
+  anthropicApiKey: string;
+  assistantModel: string;
+  assistantDailyLimit: number;
   orderServiceUrl: string;
   authServiceUrl: string;
   serviceHttpTimeoutMs: number;
@@ -140,6 +155,7 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   jwtIssuer: parsed.JWT_ISSUER,
   jwtAudience: parsed.JWT_AUDIENCE,
   notificationsEnabled: parsed.NOTIFICATIONS_ENABLED,
+  emailSendingEnabled: parsed.EMAIL_SENDING_ENABLED,
   msg91AuthKey: parsed.MSG91_AUTH_KEY,
   msg91IntegratedNumber: parsed.MSG91_INTEGRATED_NUMBER,
   msg91WhatsappNamespace: parsed.MSG91_WHATSAPP_NAMESPACE,
@@ -159,6 +175,9 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   zohoAccountRegion: parsed.ZOHO_ACCOUNT_REGION,
   zohoAccountId: parsed.ZOHO_ACCOUNT_ID,
   supportInboxEmail: parsed.SUPPORT_INBOX_EMAIL,
+  anthropicApiKey: parsed.ANTHROPIC_API_KEY,
+  assistantModel: parsed.ASSISTANT_MODEL,
+  assistantDailyLimit: parsed.ASSISTANT_DAILY_LIMIT,
   orderServiceUrl: parsed.ORDER_SERVICE_URL,
   authServiceUrl: parsed.AUTH_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,

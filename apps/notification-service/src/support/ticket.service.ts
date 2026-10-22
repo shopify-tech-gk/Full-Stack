@@ -96,6 +96,7 @@ export async function createTicket(userId: string, input: CreateTicketBody): Pro
       orderNumber,
       topic: input.topic,
       message: input.message,
+      chatTranscript: input.transcript ?? null,
     },
   });
   const view = toView(row);
@@ -114,6 +115,7 @@ export async function createTicket(userId: string, input: CreateTicketBody): Pro
       phone: contact?.phone ?? null,
       email: contact?.email ?? null,
       message: row.message,
+      ...(input.transcript ? { chatTranscript: input.transcript } : {}),
     },
   });
 
@@ -154,6 +156,8 @@ export async function getMyTicket(userId: string, ticketId: string): Promise<Tic
 
 export interface AdminTicketView extends TicketView {
   userId: string;
+  /** v1.17: the AI help chat behind this request, if any. */
+  chatTranscript: string | null;
   customer: { phone: string | null; email: string | null } | null;
 }
 
@@ -206,6 +210,7 @@ export async function listAdminTickets(query: AdminListTicketsQuery): Promise<{
       return {
         ...toView(row),
         userId: row.userId,
+        chatTranscript: row.chatTranscript ?? null,
         customer: contact ? { phone: contact.phone ?? null, email: contact.email ?? null } : null,
       };
     }),

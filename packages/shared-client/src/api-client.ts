@@ -17,6 +17,8 @@ import type {
   CancelOrderResult,
   CreateWalletTopupResult,
   HelpTicket,
+  AssistantReply,
+  AssistantTurn,
   InboxKind,
   InboxPage,
   HelpTopic,
@@ -380,10 +382,21 @@ export function createApiClient(options: ApiClientOptions) {
       removeAll: () => json<{ deleted: number }>('DELETE', '/notifications'),
     },
     support: {
+      /** v1.17 AI help: is it switched on? */
+      assistantStatus: () => json<{ available: boolean }>('GET', '/support/assistant'),
+      /** v1.17 AI help: send the conversation so far (last turn = the new question). */
+      askAssistant: (messages: AssistantTurn[]) =>
+        json<AssistantReply>('POST', '/support/assistant', { body: { messages } }),
       sendMessage: (body: SupportMessageBody) =>
         json<SupportMessageReceipt>('POST', '/support/messages', { body }),
       /** W9: a signed-in customer's help request, optionally about one of their orders. */
-      createTicket: (body: { orderId?: Uuid; topic: HelpTopic; message: string }) =>
+      createTicket: (body: {
+        orderId?: Uuid;
+        topic: HelpTopic;
+        message: string;
+        /** v1.17: the AI help chat this came from. */
+        transcript?: string;
+      }) =>
         json<HelpTicket>('POST', '/support/tickets', { body }),
       listTickets: (query?: PaginationQuery) =>
         json<Paginated<HelpTicket>>('GET', '/support/tickets', { query }),

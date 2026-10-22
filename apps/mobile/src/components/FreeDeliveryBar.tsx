@@ -1,7 +1,13 @@
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import {
   FREE_DELIVERY_MIN,
   formatMoney,
@@ -35,14 +41,9 @@ export function FreeDeliveryBar({
   return (
     <View style={[styles.wrap, compact && styles.wrapCompact]}>
       <View style={styles.row}>
-        {/* Delivery person with a parcel (was a bicycle); a green tick joins it once delivery is
-            free. */}
-        <View>
-          <MaterialIcons
-            name="delivery-dining"
-            size={compact ? 20 : 26}
-            color={dark ? colors.white : colors.brand.DEFAULT}
-          />
+        {/* A delivery rider zooming along; a green tick joins it once delivery is free. */}
+        <View style={p.unlocked ? styles.iconUnlocked : undefined}>
+          <SpeedBike size={compact ? 22 : 28} color={dark ? colors.white : colors.brand.DEFAULT} />
           {p.unlocked ? (
             <View style={styles.tick}>
               <Ionicons name="checkmark" size={9} color={colors.white} />
@@ -90,16 +91,45 @@ export function FreeDeliveryBar({
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const RIDER = require('../../assets/icons/delivery-rider.png');
+/** The rider artwork is 42 x 35. */
+const RIDER_RATIO = 42 / 35;
+
+/** Delivery rider (helmet, parcel box, scooter, speed lines) riding along with a slight bounce. */
+function SpeedBike({ size, color }: { size: number; color: string }) {
+  const bounce = useSharedValue(0);
+  useEffect(() => {
+    bounce.value = withRepeat(
+      withSequence(withTiming(1, { duration: 140 }), withTiming(0, { duration: 160 })),
+      -1,
+      false,
+    );
+  }, [bounce]);
+  const bikeStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -bounce.value * 1.2 }] }));
+  return (
+    <Animated.View style={bikeStyle}>
+      <Image
+        source={RIDER}
+        style={{ width: size * RIDER_RATIO, height: size, tintColor: color }}
+        resizeMode="contain"
+      />
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   wrap: { gap: 6 },
   wrapCompact: { gap: 4 },
   textCompact: { fontSize: 12 },
   trackCompact: { height: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  // Room for the tick, which sits just outside the rider's top-right so it never covers the scooter.
+  iconUnlocked: { marginRight: 8 },
   tick: {
     position: 'absolute',
-    right: -3,
-    bottom: -2,
+    right: -12,
+    top: -5,
     width: 14,
     height: 14,
     borderRadius: 7,

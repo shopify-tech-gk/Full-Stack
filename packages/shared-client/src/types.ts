@@ -645,6 +645,23 @@ export interface InboxPage {
   unread: number;
 }
 
+/** v1.17 AI help. */
+export interface AssistantTurn {
+  role: 'user' | 'assistant';
+  text: string;
+}
+export interface AssistantEscalation {
+  topic: HelpTopic;
+  /** Prefills the "Send to support" form. */
+  summary: string;
+  orderNumber: string | null;
+}
+export interface AssistantReply {
+  reply: string;
+  escalate: AssistantEscalation | null;
+  remaining: number;
+}
+
 export interface HelpTicket {
   ticketId: Uuid;
   /** Short reference to quote to support, e.g. "HLP-1A2B3C4D". */

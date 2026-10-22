@@ -25,7 +25,7 @@ export function resolveProvider(channel: NotificationChannelValue): Notification
   // Email waits until every Zoho value is really set (refresh token + account id are generated
   // separately from the API-console app); until then it stays simulated instead of failing and
   // retrying on every message, while WhatsApp already sends for real.
-  if (channel === 'EMAIL' && !zohoConfigured()) {
+  if (channel === 'EMAIL' && (!config.emailSendingEnabled || !zohoConfigured())) {
     return noopProvider;
   }
   const provider = realProviders[channel];

@@ -5,7 +5,7 @@
 // - order notify -> GET/PUT /api/orders/:id/notify (signed in, own order)
 import { ApiError } from './api-client';
 import { toE164Phone } from './account';
-import type { SupportMessageBody } from './types';
+import type { AssistantTurn, HelpTopic, SupportMessageBody } from './types';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -113,3 +113,33 @@ export const NOTIFY_CHANNELS = [
   { key: 'whatsapp', label: 'WhatsApp updates' },
   { key: 'sms', label: 'SMS updates' },
 ] as const;
+
+// --- v1.17 AI help ---
+
+/** Topic names, as the help-request form and the assistant's handover card show them. */
+export const HELP_TOPIC_LABELS: Record<HelpTopic, string> = {
+  ORDER_STATUS: 'Where is my order?',
+  CANCELLATION: 'Cancel my order',
+  RETURN_REFUND: 'Return / refund',
+  DAMAGED_WRONG_ITEM: 'Damaged or wrong item',
+  PAYMENT_WALLET: 'Payment / wallet',
+  ACCOUNT: 'My account',
+  OTHER: 'Something else',
+};
+
+/** Starter questions shown in an empty assistant chat. */
+export const ASSISTANT_SUGGESTIONS = [
+  'Where is my order?',
+  'How do I return an item?',
+  'Is Cash on Delivery available?',
+  'When will I get my refund?',
+  'Is there a delivery charge?',
+] as const;
+
+/** The chat as plain text for the support team ("Customer: ... / Assistant: ..."). */
+export function assistantTranscript(turns: readonly AssistantTurn[]): string {
+  return turns
+    .map((t) => `${t.role === 'user' ? 'Customer' : 'Assistant'}: ${t.text}`)
+    .join('\n\n')
+    .slice(-11000);
+}
