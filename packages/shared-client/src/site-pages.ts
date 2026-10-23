@@ -8,6 +8,12 @@ export const BUSINESS = {
   /** Live's "Download App" / "Install App" target. */
   appStoreHref: 'https://play.google.com/store/apps/details?id=com.infinest.youmart',
   whatsappHref: 'https://wa.me/919944557815?text=Hello%20Team,%20I%20need%20assistance.',
+  /** v1.17 Customer care: the WhatsApp number (same as our WhatsApp updates) and support email
+   * (the address our emails come from), with a prefilled subject. */
+  whatsapp: '+91 99445 57815',
+  supportEmailHref: 'mailto:info@youmart.in?subject=YouMart%20support%20request',
+  mapsHref:
+    'https://www.google.com/maps/search/?api=1&query=OLD%20NO.251%2C%20NEW%20NO.%20162%2C%20THAMBU%20CHETTY%20STREET%2C%20CHENNAI-600%20001',
   address: 'OLD NO.251, NEW NO. 162, THAMBU CHETTY STREET, CHENNAI-600 001',
   mapEmbedSrc:
     'https://maps.google.com/maps?q=OLD%20NO.251%2C%20NEW%20NO.%20162%2C%20THAMBU%20CHETTY%20STREET%2C%20CHENNAI-600%20001&t=m&z=14&output=embed&iwloc=near',
@@ -649,6 +655,13 @@ export const CUSTOMER_CARE_PAGE = {
       title: 'Call Our Support Team',
       href: BUSINESS.phoneHref,
       text: 'Prefer speaking directly with us? Our customer support team is available to listen, guide, and resolve your concerns with care and attention.',
+    },
+    // v1.17
+    {
+      id: 'email',
+      title: 'Email Our Team',
+      href: BUSINESS.supportEmailHref,
+      text: 'Have something detailed to share - an order issue, a bulk enquiry or feedback? Write to us and our team will get back to you.',
     },
   ],
 } as const;

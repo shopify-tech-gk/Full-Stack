@@ -59,6 +59,10 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
   // e.g. "...Rs {{2}} for order {{3}} has been added to your YouMart Wallet"), set its name here.
   // Until then refund WhatsApps are skipped (email still goes out) rather than sending wrong text.
   MSG91_WHATSAPP_WALLET_REFUND_TEMPLATE: z.string().optional(),
+  /** v1.17 "back in stock" WhatsApp - an approved MSG91 template; unset = WhatsApp leg skipped. */
+  MSG91_WHATSAPP_RESTOCK_TEMPLATE: z.string().optional(),
+  /** v1.17 the storefront's public address, for links in emails ("View on website"). */
+  STOREFRONT_URL: z.string().url().default('http://localhost:3000'),
   // Sender id for MSG91's legacy plain-text SMS API - SMS is DROPPED as an
   // active routing target (WhatsApp+email only, Ch6.2b); Msg91SmsProvider
   // and this setting are kept for a possible future fallback, not read by
@@ -127,6 +131,8 @@ export interface NotificationServiceConfig {
   msg91WhatsappOrderDeliveredTemplate: string;
   msg91WhatsappRefundTemplate: string;
   msg91WhatsappWalletRefundTemplate: string | undefined;
+  msg91WhatsappRestockTemplate: string | undefined;
+  storefrontUrl: string;
   msg91SenderId: string;
   msg91OtpTemplateId: string | undefined;
   zohoClientId: string;
@@ -169,6 +175,8 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   msg91WhatsappOrderDeliveredTemplate: parsed.MSG91_WHATSAPP_ORDER_DELIVERED_TEMPLATE,
   msg91WhatsappRefundTemplate: parsed.MSG91_WHATSAPP_REFUND_TEMPLATE,
   msg91WhatsappWalletRefundTemplate: parsed.MSG91_WHATSAPP_WALLET_REFUND_TEMPLATE || undefined,
+  msg91WhatsappRestockTemplate: parsed.MSG91_WHATSAPP_RESTOCK_TEMPLATE || undefined,
+  storefrontUrl: parsed.STOREFRONT_URL.replace(/\/+$/, ''),
   msg91SenderId: parsed.MSG91_SENDER_ID,
   msg91OtpTemplateId: parsed.MSG91_OTP_TEMPLATE_ID,
   zohoClientId: parsed.ZOHO_CLIENT_ID,

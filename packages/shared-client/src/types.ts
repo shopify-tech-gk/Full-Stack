@@ -636,6 +636,9 @@ export interface InboxMessage {
   orderNumber: string | null;
   ticketId: Uuid | null;
   imageUrl: string | null;
+  /** v1.17 where tapping it goes - app path / website path (e.g. a "back in stock" product). */
+  link: string | null;
+  webLink: string | null;
   read: boolean;
   createdAt: IsoDateTime;
 }

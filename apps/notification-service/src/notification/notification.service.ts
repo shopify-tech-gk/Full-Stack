@@ -16,6 +16,10 @@ const SETTING_FOR_TEMPLATE: Record<string, 'orderUpdates' | 'offers'> = {
   ORDER_SHIPPED: 'orderUpdates',
   ORDER_DELIVERED: 'orderUpdates',
   REFUND_PROCESSED: 'orderUpdates',
+  // v1.17: "back in stock" - the customer asked to be told (their own "Request restock"), so it
+  // follows their order-update choices (offers default to off, which would drop what they asked
+  // for). The in-app Alert always arrives.
+  RESTOCK_AVAILABLE: 'orderUpdates',
 };
 
 /**

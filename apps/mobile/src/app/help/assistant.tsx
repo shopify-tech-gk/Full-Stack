@@ -411,6 +411,7 @@ export default function AssistantScreen() {
                         item={b.restock.item}
                         transcript={transcript}
                         sent={b.restockSent}
+                        signedIn={signedIn}
                         onSent={() => markBubble(b.id, { restockSent: true })}
                       />
                     ) : null}

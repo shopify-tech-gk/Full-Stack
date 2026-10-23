@@ -94,6 +94,12 @@ const TEMPLATES: Record<string, (d: Record<string, unknown>) => InboxContent> = 
     title: 'Return not approved',
     body: `We couldn't accept the return of ${what(d)}${str(d.note) ? `: ${str(d.note)}` : '.'}`,
   }),
+  // v1.17 Admin marked a "Request restock" as restocked.
+  RESTOCK_AVAILABLE: (d) => ({
+    kind: 'OFFER',
+    title: 'Back in stock for you',
+    body: `${str(d.label, str(d.item, 'What you asked for'))} is now available on YouMart. Tap to have a look.`,
+  }),
   SUPPORT_REPLY: (d) => ({
     kind: 'SUPPORT',
     title: 'YouMart Support replied',

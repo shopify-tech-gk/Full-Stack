@@ -2,7 +2,14 @@
 
 import { useState } from 'react';
 import { CheckCircle2, Mail, PackageSearch, Phone, RotateCcw, Users, XCircle } from 'lucide-react';
-import { adminFetch, timeAgo, type AdminProductRequest, type Page, type Tone } from '@/lib/admin';
+import {
+  adminFetch,
+  fmtDateTime,
+  timeAgo,
+  type AdminProductRequest,
+  type Page,
+  type Tone,
+} from '@/lib/admin';
 import {
   Badge,
   Button,
@@ -17,6 +24,7 @@ import {
   useDebounced,
   useToast,
 } from './ui';
+import { RestockPanel, type RestockLink } from './RestockPanel';
 
 // v1.17 Admin -> Product requests: things shoppers asked YouMart AI for that we don't stock, sent
 // with its "Request restock" button. Mark them restocked (or closed) once handled.
@@ -44,14 +52,30 @@ export function AdminProductRequests() {
   const items = list.data?.items ?? [];
   const counts = list.data?.counts;
 
-  const setRequestStatus = async (id: string, next: Status, done: string) => {
+  const [restocking, setRestocking] = useState<string | null>(null);
+
+  const setRequestStatus = async (
+    id: string,
+    next: Status,
+    done: string,
+    extra: { link?: RestockLink; notifyAll?: boolean } = {},
+  ) => {
     setBusy(`${id}:${next}`);
     try {
-      await adminFetch(`/support/admin/product-requests/${id}`, {
-        method: 'PATCH',
-        body: { status: next },
-      });
-      toast.ok(done);
+      const res = await adminFetch<{ notified: number; guests: number }>(
+        `/support/admin/product-requests/${id}`,
+        { method: 'PATCH', body: { status: next, ...extra } },
+      );
+      toast.ok(
+        next === 'RESTOCKED'
+          ? `Marked restocked · ${res.notified} ${res.notified === 1 ? 'shopper' : 'shoppers'} notified${
+              res.guests
+                ? ` (${res.guests} guest ${res.guests === 1 ? 'request' : 'requests'} can't be messaged)`
+                : ''
+            }`
+          : done,
+      );
+      setRestocking(null);
       await list.reload();
     } catch (failure) {
       toast.fail(failure);
@@ -149,9 +173,8 @@ export function AdminProductRequests() {
                         <Button
                           variant="primary"
                           icon={CheckCircle2}
-                          busy={busy === `${r.requestId}:RESTOCKED`}
                           onClick={() =>
-                            void setRequestStatus(r.requestId, 'RESTOCKED', 'Marked restocked')
+                            setRestocking(restocking === r.requestId ? null : r.requestId)
                           }
                         >
                           Restocked
@@ -175,6 +198,27 @@ export function AdminProductRequests() {
                     )}
                   </div>
                 </div>
+                {restocking === r.requestId && (
+                  <RestockPanel
+                    item={r.item}
+                    others={Math.max(0, r.sameItemOpen - 1)}
+                    busy={busy === `${r.requestId}:RESTOCKED`}
+                    onCancel={() => setRestocking(null)}
+                    onConfirm={(link, notifyAll) =>
+                      void setRequestStatus(r.requestId, 'RESTOCKED', 'Marked restocked', {
+                        ...(link ? { link } : {}),
+                        notifyAll,
+                      })
+                    }
+                  />
+                )}
+                {r.status === 'RESTOCKED' && r.notifiedAt && (
+                  <p className="mt-[8px] text-[12.5px] text-[#16a34a]">
+                    ✓ Notified {fmtDateTime(r.notifiedAt)}
+                    {r.restockLabel ? ` · linked to “${r.restockLabel}”` : ' · no link'}
+                    {!r.customer ? ' (guest - no message sent)' : ''}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

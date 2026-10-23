@@ -1293,6 +1293,10 @@ model InboxMessage {
   orderNumber String?   @map("order_number")
   ticketId    String?   @map("ticket_id")
   imageUrl    String?   @map("image_url")
+  /// v1.17: where tapping it goes - an app path ("/product/<slug>", "/category/<slug>?taxo=...")
+  /// and the website path for the same page (e.g. a "back in stock" message).
+  link        String?
+  webLink     String?   @map("web_link")
   readAt      DateTime? @map("read_at")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
@@ -1419,6 +1423,11 @@ model ProductRequest {
   /// The AI chat it came from ("You: ... / Assistant: ...").
   chatTranscript String?              @map("chat_transcript")
   status         ProductRequestStatus @default(OPEN)
+  /// v1.17: when marked restocked - what the shopper was sent (label + app / website paths) and when.
+  restockLabel   String?              @map("restock_label")
+  restockLink    String?              @map("restock_link")
+  restockWebLink String?              @map("restock_web_link")
+  notifiedAt     DateTime?            @map("notified_at")
   createdAt      DateTime             @default(now()) @map("created_at")
   updatedAt      DateTime             @updatedAt @map("updated_at")
 

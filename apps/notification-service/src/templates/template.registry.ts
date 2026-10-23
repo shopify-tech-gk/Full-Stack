@@ -8,7 +8,8 @@ export type TemplateKey =
   | 'ORDER_DELIVERED'
   | 'REFUND_PROCESSED'
   | 'SUPPORT_MESSAGE'
-  | 'SUPPORT_TICKET';
+  | 'SUPPORT_TICKET'
+  | 'RESTOCK_AVAILABLE';
 
 /** W9: the template exists, but this channel can't be sent right now (e.g. its MSG91 template
  * isn't approved/configured yet) - the job is logged SKIPPED, not FAILED or retried. */
@@ -199,6 +200,46 @@ const templates: Record<TemplateKey, Partial<Record<RenderableChannel, ChannelRe
         data.orderNumber,
       )}</strong> has been added to your YouMart Wallet. You can use it right away on your next purchase.</p>`,
     }),
+  },
+
+  // v1.17 "Back in stock" for a shopper's restock request. WhatsApp: MSG91 template
+  // MSG91_WHATSAPP_RESTOCK_TEMPLATE ("youmart_restock_alert", approved by Meta as MARKETING):
+  // "Hi {{1}}, good news! {{2}}, which you asked us to restock, is now available on YouMart. Open
+  // the YouMart app to view it and place your order." - {{1}}=customerName, {{2}}=label;
+  // until it is set the WhatsApp leg is SKIPPED. The email links straight into the app
+  // (youmart://...) and to the same page on the website.
+  RESTOCK_AVAILABLE: {
+    WHATSAPP: (data) => {
+      if (!config.msg91WhatsappRestockTemplate) {
+        throw new TemplateUnavailableError(
+          'no restock WhatsApp template configured (MSG91_WHATSAPP_RESTOCK_TEMPLATE)',
+        );
+      }
+      return {
+        channel: 'WHATSAPP',
+        templateName: config.msg91WhatsappRestockTemplate,
+        namespace: config.msg91WhatsappNamespace,
+        category: 'MARKETING',
+        components: {
+          bodyParams: [String(data.customerName ?? 'there'), singleLine(data.label, 60)],
+        },
+      };
+    },
+    EMAIL: (data) => {
+      const appLink = typeof data.link === 'string' ? `youmart:/${data.link}` : 'youmart://';
+      const webLink = `${config.storefrontUrl}${typeof data.webLink === 'string' ? data.webLink : ''}`;
+      return {
+        channel: 'EMAIL',
+        subject: `Back in stock: ${singleLine(data.label)}`,
+        html: `<p>Hi ${escapeHtml(data.customerName ?? 'there')},</p><p>Good news - <strong>${escapeHtml(
+          data.label,
+        )}</strong> that you asked us for is now available on YouMart.</p><p><a href="${escapeHtml(
+          appLink,
+        )}" style="display:inline-block;background:#0142aa;color:#ffffff;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:600">Open in the YouMart app</a></p><p><a href="${escapeHtml(
+          webLink,
+        )}">View it on the website</a></p><p>Thanks for telling us what you need!</p>`,
+      };
+    },
   },
 
   // W1: public contact-form message forwarded to the store's support inbox (EMAIL only). Every

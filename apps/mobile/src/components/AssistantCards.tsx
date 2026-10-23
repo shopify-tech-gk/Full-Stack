@@ -146,12 +146,15 @@ export function RestockCard({
   transcript,
   sent,
   onSent,
+  signedIn = true,
 }: {
   item: string;
   transcript: () => string;
   /** Already sent (a saved chat reopened) - shows the confirmation, never sends twice. */
   sent?: boolean;
   onSent?: () => void;
+  /** Signed out: we can't message them when it's back, so suggest signing in. */
+  signedIn?: boolean;
 }) {
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>(sent ? 'sent' : 'idle');
   const [error, setError] = useState<string | null>(null);
@@ -183,7 +186,11 @@ export function RestockCard({
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.restockTitle}>Request sent</Text>
-          <Text style={styles.restockText}>Thanks! Our team will look at stocking {item}.</Text>
+          <Text style={styles.restockText}>
+            {signedIn
+              ? `Thanks! We'll message you in Alerts when ${item} is back.`
+              : `Thanks! Our team will look at stocking ${item}.`}
+          </Text>
         </View>
       </Animated.View>
     );
@@ -203,6 +210,11 @@ export function RestockCard({
         </View>
       </View>
       <Text style={styles.restockAsk}>Do you want us to restock it?</Text>
+      {!signedIn ? (
+        <Text style={styles.restockHint}>
+          Sign in first if you&apos;d like a message when it&apos;s back.
+        </Text>
+      ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Pressable
         onPress={() => void send()}
@@ -327,6 +339,7 @@ const styles = StyleSheet.create({
   restockTitle: { fontFamily: font.uiBold, fontSize: 14, color: colors.heading },
   restockText: { fontFamily: font.body, fontSize: 12.5, color: colors.text.body, marginTop: 1 },
   restockAsk: { fontFamily: font.uiSemibold, fontSize: 13, color: '#92400e' },
+  restockHint: { fontFamily: font.body, fontSize: 12, color: '#92400e', marginTop: -4 },
   error: { fontFamily: font.uiMedium, fontSize: 12, color: '#c62828' },
   restockBtn: {
     flexDirection: 'row',

@@ -51,6 +51,7 @@ function when(iso: string): string {
 }
 
 function target(m: InboxMessage): string | null {
+  if (m.webLink) return m.webLink; // v1.17 e.g. "Back in stock" -> that product / category
   if (m.kind === 'SUPPORT') return ROUTES.customerCare;
   if (m.orderNumber) return orderHref(m.orderNumber);
   return null;
@@ -251,9 +252,11 @@ export function NotificationsView() {
                   </span>
                   {href && (
                     <span className="mt-[5px] block text-[13px] font-semibold text-brand group-hover:underline">
-                      {m.kind === 'SUPPORT'
-                        ? 'View in Customer Care'
-                        : `View order ${m.orderNumber}`}{' '}
+                      {m.webLink
+                        ? 'Shop now'
+                        : m.kind === 'SUPPORT'
+                          ? 'View in Customer Care'
+                          : `View order ${m.orderNumber}`}{' '}
                       &rsaquo;
                     </span>
                   )}

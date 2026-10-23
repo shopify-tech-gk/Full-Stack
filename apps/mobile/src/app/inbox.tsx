@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useRouter, type Href } from 'expo-router';
 import Animated, {
   FadeInDown,
   FadeOut,
@@ -118,7 +118,9 @@ export default function InboxScreen() {
       setUnread(unread - 1);
       api.notifications.markRead(m.id).catch(() => void refreshUnread());
     }
-    if (m.kind === 'SUPPORT') router.push('/help');
+    // v1.17: a message with its own link (e.g. "Back in stock") opens that product / category.
+    if (m.link) router.push(m.link as Href);
+    else if (m.kind === 'SUPPORT') router.push('/help');
     else if (m.kind === 'REFUND' && !m.orderNumber) router.push('/wallet');
     else if (m.orderNumber) router.push(`/orders/${m.orderNumber}`);
   };
@@ -305,7 +307,9 @@ export default function InboxScreen() {
                       <Text style={styles.text} numberOfLines={3}>
                         {m.body}
                       </Text>
-                      {m.orderNumber ? (
+                      {m.link ? (
+                        <Text style={styles.link}>Shop now ›</Text>
+                      ) : m.orderNumber ? (
                         <Text style={styles.link}>
                           {m.kind === 'SUPPORT' ? 'View reply' : `Order ${m.orderNumber}`} ›
                         </Text>

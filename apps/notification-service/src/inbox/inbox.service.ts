@@ -25,6 +25,9 @@ export interface InboxMessageView {
   orderNumber: string | null;
   ticketId: string | null;
   imageUrl: string | null;
+  /** v1.17 where tapping it goes: app path / website path (null = the default for its kind). */
+  link: string | null;
+  webLink: string | null;
   read: boolean;
   createdAt: string;
 }
@@ -38,6 +41,8 @@ type Row = {
   orderNumber: string | null;
   ticketId: string | null;
   imageUrl: string | null;
+  link: string | null;
+  webLink: string | null;
   readAt: Date | null;
   createdAt: Date;
 };
@@ -51,6 +56,8 @@ const toView = (row: Row): InboxMessageView => ({
   orderNumber: row.orderNumber,
   ticketId: row.ticketId,
   imageUrl: row.imageUrl,
+  link: row.link,
+  webLink: row.webLink,
   read: row.readAt !== null,
   createdAt: row.createdAt.toISOString(),
 });
@@ -58,6 +65,11 @@ const toView = (row: Row): InboxMessageView => ({
 const since = () => new Date(Date.now() - KEEP_DAYS * 86_400_000);
 
 /** Writes one message from a templateKey + data. Returns false when the event has no inbox text. */
+/** Only our own relative paths ("/product/...") - never an outside URL in a tappable message. */
+function safePath(v: unknown): string | null {
+  return typeof v === 'string' && /^\/(?!\/)[\w\-./?=&%~]*$/.test(v) ? v : null;
+}
+
 export async function addInboxMessage(
   userId: string,
   templateKey: string,
@@ -77,6 +89,8 @@ export async function addInboxMessage(
       orderNumber: text(data.orderNumber),
       ticketId: text(data.ticketId),
       imageUrl: text(data.imageUrl),
+      link: safePath(data.link),
+      webLink: safePath(data.webLink),
     },
   });
   return true;

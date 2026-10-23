@@ -26,7 +26,7 @@ export type RenderedMessage =
       channel: 'WHATSAPP';
       templateName: string;
       namespace: string;
-      category: 'AUTHENTICATION' | 'UTILITY';
+      category: 'AUTHENTICATION' | 'UTILITY' | 'MARKETING';
       components: WhatsappComponents;
     }
   | { channel: 'EMAIL'; subject: string; html: string };

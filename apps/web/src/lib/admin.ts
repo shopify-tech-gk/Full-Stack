@@ -286,6 +286,10 @@ export interface AdminProductRequest {
   note: string | null;
   chatTranscript: string | null;
   status: 'OPEN' | 'RESTOCKED' | 'CLOSED';
+  /** What the shopper was sent when it was marked restocked. */
+  restockLabel: string | null;
+  restockLink: string | null;
+  notifiedAt: string | null;
   createdAt: string;
   /** Null when the shopper wasn't signed in. */
   customer: { userId: string; phone: string | null; email: string | null } | null;
