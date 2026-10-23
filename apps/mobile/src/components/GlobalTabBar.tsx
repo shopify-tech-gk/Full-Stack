@@ -2,7 +2,11 @@ import { Fragment } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter, type Href } from 'expo-router';
-import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaInsetsContext,
+  initialWindowMetrics,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -33,6 +37,13 @@ export function barBottomPad(bottomInset: number): number {
   if (Platform.OS === 'android') return Math.max(22, Math.round(bottomInset * 0.6) + 12);
   return bottomInset > 0 ? Math.max(10, Math.round(bottomInset * 0.6)) : 10;
 }
+
+/**
+ * The bar's full height (icons + the space under them), from the phone's bottom safe area measured
+ * at launch - one fixed number, so the tab screens' bar and this bar always match exactly (even
+ * mid-transition, when screens see adjusted insets).
+ */
+export const BAR_SPACE = BAR_HEIGHT + barBottomPad(initialWindowMetrics?.insets.bottom ?? 0);
 
 /** The tab screens themselves draw the real tab bar. */
 const TAB_PATHS = new Set<string>(TABS.map((t) => t.path));
@@ -76,6 +87,13 @@ export function globalTabBarVisible(pathname: string): boolean {
   return !TAB_PATHS.has(pathname) && !HIDDEN.some((p) => under(pathname, p));
 }
 
+/** For the root Stack: does this route (e.g. "category/[slug]") sit above this bar? */
+export function routeNeedsBar(routeName: string): boolean {
+  if (routeName.startsWith('(')) return false; // the (tabs) group draws its own bar
+  const path = `/${routeName}`;
+  return !HIDDEN.some((p) => under(path, p));
+}
+
 /** Which tab a stacked screen belongs to (highlighted in the bar). */
 function activeTab(pathname: string): number {
   if (under(pathname, '/my-cart')) return 2;
@@ -92,7 +110,6 @@ function activeTab(pathname: string): number {
 export function GlobalTabBar() {
   const pathname = usePathname() ?? '/';
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { itemCount } = useCart();
   const session = useSession();
   const { uri } = useAvatar();
@@ -125,15 +142,7 @@ export function GlobalTabBar() {
 
   return (
     <GestureDetector gesture={pan}>
-      <View
-        style={[
-          styles.bar,
-          {
-            paddingBottom: barBottomPad(insets.bottom),
-            height: BAR_HEIGHT + barBottomPad(insets.bottom),
-          },
-        ]}
-      >
+      <View style={[styles.bar, { paddingBottom: BAR_SPACE - BAR_HEIGHT, height: BAR_SPACE }]}>
         {TABS.map((tab, i) => {
           const on = i === active;
           const color = on ? colors.brand.DEFAULT : colors.nav.inactiveIcon;
@@ -181,7 +190,13 @@ export function GlobalTabBar() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  // Laid over the screens (they keep room for it via the Stack's contentStyle), never squeezing
+  // them - so going back to a tab, whose own bar sits in exactly this spot, shows no second bar.
   bar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     backgroundColor: colors.white,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -209,8 +224,9 @@ const styles = StyleSheet.create({
 });
 
 /**
- * Lays the screen stack out above the bar. While the bar shows it owns the bottom safe area, so
- * screens inside are told the bottom inset is 0 (no double gap under their own bottom buttons).
+ * The screen stack with the bar over its bottom edge. While the bar shows it owns the bottom safe
+ * area, so screens inside are told the bottom inset is 0 (no double gap under their own bottom
+ * buttons); the room above it comes from the Stack's contentStyle (routeNeedsBar + BAR_SPACE).
  */
 export function WithGlobalTabBar({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '/';

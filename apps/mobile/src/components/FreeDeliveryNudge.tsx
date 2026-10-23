@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeOutDown,
   FadeInDown,
@@ -15,7 +14,7 @@ import Animated, {
 import { formatMoney, freeDeliveryProgress } from '@youmart/shared-client';
 import { useCart } from '@/stores/cart';
 import { useSession } from '@/stores/session';
-import { BAR_HEIGHT, barBottomPad, bottomBarShown } from './GlobalTabBar';
+import { BAR_SPACE, bottomBarShown } from './GlobalTabBar';
 import { FreeDeliveryBar } from './FreeDeliveryBar';
 import { colors, font, space } from '@/theme';
 
@@ -30,7 +29,6 @@ const SHOW_MS = 5000;
 export function FreeDeliveryNudge() {
   const pathname = usePathname() ?? '/';
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const session = useSession();
   const { cart } = useCart();
   const [visible, setVisible] = useState(false);
@@ -95,7 +93,7 @@ export function FreeDeliveryNudge() {
       entering={FadeInDown.duration(220)}
       exiting={FadeOutDown.duration(180)}
       pointerEvents="box-none"
-      style={[styles.wrap, { bottom: BAR_HEIGHT + barBottomPad(insets.bottom) + 10 }]}
+      style={[styles.wrap, { bottom: BAR_SPACE + 10 }]}
     >
       <Animated.View
         style={[styles.card, progress.unlocked && styles.cardUnlocked, popStyle]}

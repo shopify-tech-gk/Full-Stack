@@ -10,8 +10,7 @@ import { Avatar } from '@/components/Avatar';
 import { useOnboarding } from '@/stores/onboarding';
 import { SwipeTabBar } from '@/components/SwipeTabBar';
 import { AiNavButton } from '@/components/AiNavButton';
-import { BAR_HEIGHT, barBottomPad } from '@/components/GlobalTabBar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BAR_HEIGHT, BAR_SPACE } from '@/components/GlobalTabBar';
 
 export default function TabsLayout() {
   const { itemCount } = useCart();
@@ -20,8 +19,6 @@ export default function TabsLayout() {
   const avatarName = session.status === 'authenticated' ? authUserLabel(session.user) : '';
   const hasAvatar = Boolean(uri) || avatarName.length > 0;
   const onboarding = useOnboarding();
-  const insets = useSafeAreaInsets();
-  const bottomPad = barBottomPad(insets.bottom);
 
   // First launch (or new Terms): welcome + accept Terms & Privacy before using the app.
   if (onboarding === 'loading') return null;
@@ -45,8 +42,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopColor: colors.border.menu,
-          height: BAR_HEIGHT + bottomPad,
-          paddingBottom: bottomPad,
+          height: BAR_SPACE,
+          paddingBottom: BAR_SPACE - BAR_HEIGHT,
         },
       }}
     >

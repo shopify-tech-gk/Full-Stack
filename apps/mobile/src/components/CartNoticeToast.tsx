@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useCart } from '@/stores/cart';
-import { BAR_HEIGHT, barBottomPad, bottomBarShown } from './GlobalTabBar';
+import { BAR_SPACE, bottomBarShown } from './GlobalTabBar';
 import { colors, font, space } from '@/theme';
 
 const SHOW_MS = 5000;
@@ -33,9 +33,7 @@ export function CartNoticeToast() {
   }, [notice]);
 
   if (!notice) return null;
-  const bottom = bottomBarShown(pathname)
-    ? BAR_HEIGHT + barBottomPad(insets.bottom) + 10
-    : insets.bottom + 16;
+  const bottom = bottomBarShown(pathname) ? BAR_SPACE + 10 : insets.bottom + 16;
 
   return (
     <Animated.View

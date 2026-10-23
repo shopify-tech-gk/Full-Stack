@@ -18,7 +18,7 @@ import { WishlistProvider } from '@/stores/wishlist';
 import { AvatarProvider } from '@/stores/profile';
 import { AddressProvider } from '@/stores/address';
 import { LaunchScreen } from '@/components/LaunchScreen';
-import { WithGlobalTabBar } from '@/components/GlobalTabBar';
+import { BAR_SPACE, WithGlobalTabBar, routeNeedsBar } from '@/components/GlobalTabBar';
 import { BrandHeader } from '@/components/BrandHeader';
 import { FreeDeliveryNudge } from '@/components/FreeDeliveryNudge';
 import { CartNoticeToast } from '@/components/CartNoticeToast';
@@ -90,16 +90,20 @@ export default function RootLayout() {
                   {/* The bottom tab bar on every screen, not only the tabs. */}
                   <WithGlobalTabBar>
                     <Stack
-                      screenOptions={{
+                      screenOptions={({ route }) => ({
                         headerShown: false,
                         headerBackButtonDisplayMode: 'minimal',
-                        contentStyle: { backgroundColor: colors.page },
+                        // Room for the bottom bar, which is drawn over the screens.
+                        contentStyle: {
+                          backgroundColor: colors.page,
+                          paddingBottom: routeNeedsBar(route.name) ? BAR_SPACE : 0,
+                        },
                         headerTintColor: colors.brand.DEFAULT,
                         headerTitleStyle: {
                           fontFamily: 'Outfit_600SemiBold',
                           color: colors.heading,
                         },
-                      }}
+                      })}
                     >
                       <Stack.Screen name="(tabs)" />
                       <Stack.Screen name="welcome" options={{ gestureEnabled: false }} />
