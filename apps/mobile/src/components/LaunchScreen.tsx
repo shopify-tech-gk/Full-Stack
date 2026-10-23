@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 import { Image } from 'expo-image';
 import Animated, {
   Easing,
+  FadeIn,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -11,42 +12,56 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
+  ReduceMotion,
   type SharedValue,
 } from 'react-native-reanimated';
-import { lookupCategoryImage } from '@/lib/category-images';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, font } from '@/theme';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const LOGO = require('../../assets/images/logo.png');
 
-/** Mixed products for the rain - the app's own bundled category artwork (works offline). */
-const PRODUCT_KEYS = [
-  'electronics/headphones/over-ear-headphones',
-  'electronics/headphones/tws-earbuds',
-  'electronics/speakers/bluetooth-speakers',
-  'electronics/cameras/dslr-cameras',
-  'clothing/sarees-and-saree-essentials/sarees',
-  'clothing/ethnic-wear/kurtas',
-  'cosmetics/makeup/lipstick',
-  'cosmetics/fragrances/perfumes',
-  'footwear/sports-footwear/running-shoes',
-  'wall-clock-watches/watches/analog-watches',
-  'fashion-jewellery/rings/cocktail-rings',
-  'fashion-jewellery/earrings/drop-earrings',
-  'travel-accessories/travel-bags/backpacks',
-  'electrical-and-lights/decorative-lights/table-lamps',
-  'home-appliances/small-kitchen-appliances/air-fryers',
-  'musical-instruments/guitars/acoustic-guitars',
-  'sports-fitness/cricket/cricket-bats',
-  'furniture/chairs/office-chairs',
-  'agri-and-gardening/plant-saplings/indoor-plants',
-  'kitchenware/plastic-household/water-bottles',
-];
-const SOURCES = PRODUCT_KEYS.map(lookupCategoryImage).filter((s) => s !== undefined);
+/**
+ * Shopping icons for the flow (only on this screen), drawn Flipkart-style in YouMart's colours: the
+ * solid shape in logo yellow under its outline in brand blue. Each name has a `-outline` variant.
+ */
+const ICONS = [
+  'shopping',
+  'tshirt-crew',
+  'lamp',
+  'gift',
+  'sofa',
+  'bottle-tonic',
+  'camera',
+  'bag-personal',
+  'gamepad-variant',
+  'fridge',
+  'food-apple',
+  'toy-brick',
+  'book-open-variant',
+  'baby-bottle',
+  'blender',
+  'bag-suitcase',
+  'palette',
+  'flower',
+] as const;
+type IconName = (typeof ICONS)[number];
 
-const PARTICLES = 54;
+const BLUE = colors.brand.DEFAULT;
+/** The yellow of "MART" in the logo. */
+const YELLOW = '#ffe500';
+
+/** Products drift across one after another: a new one every FLOW_GAP ms, each crossing in FLOW_MS,
+ * so two or three are on screen at a time. */
+const PARTICLES = 12;
+const FLOW_MS = 3200;
+const FLOW_GAP = 1000;
+const FLOW_CYCLE = PARTICLES * FLOW_GAP;
 /** The intro runs at least this long, then fades as soon as the app is ready underneath. */
-const MIN_MS = 5600;
+const MIN_MS = 4500;
+/** ...but never longer than this, even if the app is still starting (e.g. a slow sign-in check):
+ * the app shows its own loading states underneath. */
+const MAX_MS = 7000;
 const FADE_MS = 450;
 
 /** Deterministic pseudo-random, so the layout is stable across re-renders. */
@@ -59,55 +74,111 @@ function rng(seed: number) {
 }
 
 interface Particle {
-  source: (typeof SOURCES)[number];
-  startX: number;
+  icon: IconName;
+  /** Vertical offset from the logo's centre line. */
+  lane: number;
   size: number;
-  duration: number;
   delay: number;
   rot: number;
-  spin: number;
+  /** Phase of the gentle up-and-down wave. */
+  phase: number;
 }
 
-function FallingProduct({ p, cx, cy }: { p: Particle; cx: number; cy: number }) {
-  const t = useSharedValue(0);
-  useEffect(() => {
-    // Staggered start, then a continuous loop - a steady stream, never one by one.
-    t.value = withDelay(
-      p.delay,
-      withRepeat(withTiming(1, { duration: p.duration, easing: Easing.linear }), -1, false),
-    );
-  }, [t, p.delay, p.duration]);
-
+/** One small shopping icon gliding in from the left edge, into the logo, and back out of its right side.
+ * Its position comes from the shared `clock` (ms into the cycle), so every product runs off one simple
+ * looping animation. */
+function FlowingProduct({
+  p,
+  clock,
+  width,
+  cy,
+  logoHalf,
+  calm,
+}: {
+  p: Particle;
+  clock: SharedValue<number>;
+  width: number;
+  cy: number;
+  /** Half the logo's visible width: the product is hidden while "inside" it. */
+  logoHalf: number;
+  /** Reduce Motion: a straight glide, no bob or tilt. */
+  calm: boolean;
+}) {
   const style = useAnimatedStyle(() => {
-    const v = t.value;
-    // Falls mostly straight at first, then is pulled sideways into the logo (ease-in on x).
-    const pull = v * v * v;
-    const x = p.startX + (cx - p.startX) * pull - p.size / 2;
-    const y = -p.size + (cy + p.size) * (v * (0.55 + 0.45 * v)) - p.size / 2;
-    const shrink = v < 0.72 ? 1 : 1 - ((v - 0.72) / 0.28) * 0.85;
-    const opacity = v < 0.06 ? v / 0.06 : v > 0.82 ? Math.max(0, (1 - v) / 0.18) : 1;
+    // Where this product is in its own crossing: 0..1 while on screen, otherwise hidden.
+    const local = (clock.value - p.delay + FLOW_CYCLE) % FLOW_CYCLE;
+    if (local >= FLOW_MS) return { opacity: 0 };
+    const v = local / FLOW_MS; // steady speed - a calm flow
+    const cxp = -p.size + (width + p.size * 2) * v; // the product's centre
+    const left = width / 2 - logoHalf;
+    const right = width / 2 + logoHalf;
+    // Distance outside the logo (0 at its edge): shrink + fade going in, grow + appear coming out.
+    const out = cxp < left ? left - cxp : cxp > right ? cxp - right : 0;
+    const near = Math.min(1, out / 36);
+    const edge = Math.min(1, cxp / 30, (width - cxp) / 30);
+    const y = cy + p.lane + (calm ? 0 : Math.sin(v * Math.PI * 4 + p.phase) * 3) - p.size / 2;
     return {
-      opacity,
+      opacity: Math.max(0, Math.min(near, edge)),
       transform: [
-        { translateX: x },
+        { translateX: cxp - p.size / 2 },
         { translateY: y },
-        { scale: shrink },
-        { rotate: `${p.rot + p.spin * v}deg` },
+        { scale: 0.5 + 0.5 * near },
+        { rotate: `${calm ? 0 : p.rot}deg` },
       ],
     };
   });
 
   return (
-    <Animated.View
-      style={[
-        styles.particle,
-        { width: p.size, height: p.size, borderRadius: p.size * 0.28 },
-        style,
-      ]}
-    >
-      <Image source={p.source} style={styles.particleImage} contentFit="cover" />
+    <Animated.View style={[styles.particle, { width: p.size, height: p.size }, style]}>
+      {/* Two-tone: yellow solid shape, blue outline on top. */}
+      <MaterialCommunityIcons
+        name={p.icon}
+        size={p.size}
+        color={YELLOW}
+        style={StyleSheet.absoluteFill}
+      />
+      <MaterialCommunityIcons name={`${p.icon}-outline`} size={p.size} color={BLUE} />
     </Animated.View>
   );
+}
+
+/** "Loading your store" with three pulsing dots, shown only while the app is still starting. */
+function StillLoading() {
+  return (
+    <Animated.View entering={FadeIn.duration(300)} style={styles.loading}>
+      <Text style={styles.loadingText}>Loading your store</Text>
+      <View style={styles.dots}>
+        {[0, 1, 2].map((i) => (
+          <LoadingDot key={i} delay={i * 160} />
+        ))}
+      </View>
+    </Animated.View>
+  );
+}
+
+function LoadingDot({ delay }: { delay: number }) {
+  const v = useSharedValue(0);
+  useEffect(() => {
+    v.value = withDelay(
+      delay,
+      withRepeat(
+        withTiming(1, {
+          duration: 450,
+          easing: Easing.inOut(Easing.quad),
+          reduceMotion: ReduceMotion.Never,
+        }),
+        -1,
+        true,
+        undefined,
+        ReduceMotion.Never,
+      ),
+    );
+  }, [v, delay]);
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.3 + v.value * 0.7,
+    transform: [{ translateY: -v.value * 3 }],
+  }));
+  return <Animated.View style={[styles.dot, style]} />;
 }
 
 function useEntrance(
@@ -127,31 +198,50 @@ function useEntrance(
 }
 
 /**
- * Opening animation on every cold start: the YouMart logo in the centre while a continuous rain of
- * mini product pictures pours into it. Doubles as the loading screen - the app (fonts, session,
+ * Opening animation on every cold start: the YouMart logo in the centre while small shopping icons
+ * glide in from the left, disappear into it and come out of its right side, two or three at a time. Doubles as the loading screen - the app (fonts, session,
  * cart) starts underneath, and the intro fades once both the minimum time has passed and `ready`
- * is true. Tap to skip. With Reduce Motion on, only the logo fades in.
+ * is true. Tap to skip. With Reduce Motion on (common on iPhones) the products still flow, just in a
+ * straight line without the bob and tilt.
  */
 export function LaunchScreen({ ready, onDone }: { ready: boolean; onDone: () => void }) {
   const { width, height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
-  const cx = width / 2;
   const cy = height * 0.46;
+  // The logo box (smaller than before; no white card behind it any more).
+  const PLATE = Math.min(width * 0.46, 190);
 
   const particles = useMemo<Particle[]>(() => {
-    if (SOURCES.length === 0) return [];
     const r = rng(20261015);
+    // Along the logo's centre line, a little above / below so consecutive products vary.
+    const lanes = [-8, 6, -2, 10, -10, 2];
     return Array.from({ length: PARTICLES }, (_, i) => ({
-      source: SOURCES[i % SOURCES.length]!,
-      startX: -20 + r() * (width + 40),
-      size: 24 + Math.round(r() * 16),
-      duration: 1500 + Math.round(r() * 900),
-      // Spread the first drops over ~1.6s so the stream is already full, then it just keeps going.
-      delay: Math.round(r() * 1600),
-      rot: -25 + r() * 50,
-      spin: -120 + r() * 240,
+      icon: ICONS[i % ICONS.length]!,
+      lane: lanes[i % lanes.length]! + (r() - 0.5) * 16,
+      size: 26 + Math.round(r() * 6),
+      delay: i * FLOW_GAP,
+      rot: -8 + r() * 16,
+      phase: r() * Math.PI * 2,
     }));
   }, [width]);
+
+  // One clock for the whole product flow: counts 0 -> FLOW_CYCLE ms, then loops.
+  const clock = useSharedValue(0);
+  useEffect(() => {
+    // ReduceMotion.Never: Reanimated otherwise jumps straight to the end when the phone's Reduce
+    // Motion is on (common on iPhones) - the clock froze and products sat still mid-screen.
+    clock.value = withRepeat(
+      withTiming(FLOW_CYCLE, {
+        duration: FLOW_CYCLE,
+        easing: Easing.linear,
+        reduceMotion: ReduceMotion.Never,
+      }),
+      -1,
+      false,
+      undefined,
+      ReduceMotion.Never,
+    );
+  }, [clock]);
 
   const logo = useEntrance(0);
   const tagline = useEntrance(2600, 0.9);
@@ -160,7 +250,7 @@ export function LaunchScreen({ ready, onDone }: { ready: boolean; onDone: () => 
   const fade = useSharedValue(1);
 
   useEffect(() => {
-    // A gentle heartbeat while products pour in - it also covers a slow start (waiting on `ready`).
+    // A gentle heartbeat while products glide past - it also covers a slow start (waiting on `ready`).
     pulse.value = withDelay(
       500,
       withRepeat(
@@ -178,9 +268,9 @@ export function LaunchScreen({ ready, onDone }: { ready: boolean; onDone: () => 
 
   const [minDone, setMinDone] = useState(false);
   useEffect(() => {
-    const id = setTimeout(() => setMinDone(true), reduceMotion ? 1000 : MIN_MS);
+    const id = setTimeout(() => setMinDone(true), MIN_MS);
     return () => clearTimeout(id);
-  }, [reduceMotion]);
+  }, []);
 
   const finished = useRef(false);
   const finish = () => {
@@ -193,6 +283,11 @@ export function LaunchScreen({ ready, onDone }: { ready: boolean; onDone: () => 
   useEffect(() => {
     if (minDone && ready) finish();
   }, [minDone, ready]);
+
+  useEffect(() => {
+    const id = setTimeout(finish, MAX_MS);
+    return () => clearTimeout(id);
+  }, []);
 
   const rootStyle = useAnimatedStyle(() => ({
     opacity: fade.value,
@@ -211,16 +306,22 @@ export function LaunchScreen({ ready, onDone }: { ready: boolean; onDone: () => 
     transform: [{ translateY: (1 - tagline.scale.value) * 60 }],
   }));
 
-  const PLATE = Math.min(width * 0.62, 260);
-
   return (
     <Animated.View style={[StyleSheet.absoluteFill, styles.root, rootStyle]}>
       <Pressable style={StyleSheet.absoluteFill} onPress={finish} accessibilityLabel="Skip intro">
         <View style={[StyleSheet.absoluteFill, styles.halo]} pointerEvents="none" />
 
-        {reduceMotion
-          ? null
-          : particles.map((p, i) => <FallingProduct key={i} p={p} cx={cx} cy={cy} />)}
+        {particles.map((p, i) => (
+          <FlowingProduct
+            key={i}
+            p={p}
+            clock={clock}
+            width={width}
+            cy={cy}
+            logoHalf={PLATE * 0.42}
+            calm={reduceMotion}
+          />
+        ))}
 
         <View
           pointerEvents="none"
@@ -250,6 +351,8 @@ export function LaunchScreen({ ready, onDone }: { ready: boolean; onDone: () => 
         >
           <Text style={styles.tagline}>Shop Easy, Live Better</Text>
           <View style={styles.taglineBar} />
+          {/* The intro's minimum time is up but the app is still starting: say so. */}
+          {minDone && !ready ? <StillLoading /> : null}
         </Animated.View>
       </Pressable>
     </Animated.View>
@@ -267,21 +370,7 @@ const styles = StyleSheet.create({
     experimental_backgroundImage:
       'radial-gradient(circle at 50% 46%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 45%)',
   },
-  particle: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    overflow: 'hidden',
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.white,
-    shadowColor: '#0b3d91',
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  particleImage: { width: '100%', height: '100%' },
+  particle: { position: 'absolute', left: 0, top: 0 },
   center: {
     position: 'absolute',
     left: 0,
@@ -294,20 +383,8 @@ const styles = StyleSheet.create({
     experimental_backgroundImage:
       'radial-gradient(circle, rgba(32,138,239,0.45) 0%, rgba(32,138,239,0) 65%)',
   },
-  plate: {
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 22,
-    shadowColor: '#0b3d91',
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(32,138,239,0.18)',
-  },
-  logo: { width: '100%', height: '78%' },
+  plate: { alignItems: 'center', justifyContent: 'center' },
+  logo: { width: '100%', height: '100%' },
   taglineWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 8 },
   tagline: {
     fontFamily: font.uiSemibold,
@@ -315,5 +392,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     color: colors.brand.DEFAULT,
   },
+  loading: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14 },
+  loadingText: { fontFamily: font.uiMedium, fontSize: 13, color: colors.text.muted },
+  dots: { flexDirection: 'row', gap: 4, alignItems: 'center', height: 12 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.brand.DEFAULT },
   taglineBar: { width: 44, height: 3, borderRadius: 2, backgroundColor: colors.brand.accent },
 });

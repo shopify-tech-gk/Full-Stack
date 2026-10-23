@@ -439,8 +439,11 @@ export default function ProductScreen() {
           onPress={async () => {
             // Signed in: straight to checkout with just this product (Flipkart-style).
             if (session.status === 'authenticated') {
-              const id = await cart.buyNow(cartProduct());
-              if (id) router.push(`/checkout?buy=${id}`);
+              // `temp`: taken back out of the cart if they leave checkout without ordering.
+              const product = cartProduct();
+              const inCart = cart.cart.items.some((l) => l.skuId === product.skuId);
+              const id = await cart.buyNow(product);
+              if (id) router.push(`/checkout?buy=${id}${inCart ? '' : '&temp=1'}`);
               return;
             }
             await cart.addItem(cartProduct());

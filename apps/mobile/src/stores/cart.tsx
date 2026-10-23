@@ -172,8 +172,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (ok && quantity > before) emitAdded();
       },
       removeItem: async (id) => {
-        if (isAccount()) await accountCall(() => api.cart.removeItem(id));
-        else persistGuest(removeLine(cart, id));
+        if (isAccount()) {
+          // Gone from the screen at once (no "1" lingering while the server catches up); the
+          // server's reply - or a re-fetch if it fails - then settles the real cart.
+          setCart((c) => removeLine(c, id));
+          await accountCall(() => api.cart.removeItem(id));
+        } else persistGuest(removeLine(cart, id));
       },
       buyNow: async (product) => {
         if (!isAccount()) return null;

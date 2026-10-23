@@ -17,7 +17,7 @@ import { colors, font } from '@/theme';
 const ORB_GRADIENT = 'linear-gradient(135deg, #60a5fa 0%, #0142aa 45%, #7c3aed 100%)';
 
 /**
- * v1.17 the centre item of the bottom bar (both the tab bar and GlobalTabBar): a raised, breathing
+ * v1.17 the centre item of the bottom bar (both the tab bar and GlobalTabBar): a breathing
  * gradient orb that opens YouMart AI. It is a shortcut, not a tab - the assistant opens on top.
  */
 export function AiNavButton() {
@@ -44,8 +44,8 @@ export function AiNavButton() {
   }, [glow, twinkle]);
 
   const halo = useAnimatedStyle(() => ({
-    opacity: 0.16 + glow.value * 0.22,
-    transform: [{ scale: 1 + glow.value * 0.22 }],
+    opacity: 0.12 + glow.value * 0.18,
+    transform: [{ scale: 0.9 + glow.value * 0.15 }],
   }));
   const orb = useAnimatedStyle(() => ({ transform: [{ scale: press.value }] }));
   const spark = useAnimatedStyle(() => ({
@@ -72,7 +72,7 @@ export function AiNavButton() {
         <Animated.View style={[styles.halo, halo]} />
         <Animated.View style={[styles.orb, orb]}>
           <Animated.View style={spark}>
-            <Ionicons name="sparkles" size={22} color={colors.white} />
+            <Ionicons name="sparkles" size={15} color={colors.white} />
           </Animated.View>
         </Animated.View>
       </View>
@@ -81,38 +81,29 @@ export function AiNavButton() {
   );
 }
 
-const SIZE = 50;
+/** About the size of the other tab icons (24), so the orb sits in the same row. */
+const SIZE = 28;
+const HALO = SIZE + 6;
 
 const styles = StyleSheet.create({
-  item: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 2 },
-  raise: {
-    width: SIZE + 8,
-    height: SIZE + 8,
-    marginTop: -24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  // Same layout as the other bar items: icon, then the label, centred.
+  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, paddingTop: 4 },
+  // 24 tall like the other icons; the slightly bigger orb overflows by 2 on each side.
+  raise: { width: HALO, height: 24, alignItems: 'center', justifyContent: 'center' },
   halo: {
     position: 'absolute',
-    width: SIZE + 8,
-    height: SIZE + 8,
-    borderRadius: (SIZE + 8) / 2,
+    width: HALO,
+    height: HALO,
+    borderRadius: HALO / 2,
     backgroundColor: '#3b82f6',
   },
   orb: {
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
-    borderWidth: 3,
-    borderColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     experimental_backgroundImage: ORB_GRADIENT,
-    shadowColor: '#0142aa',
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
   },
-  label: { fontFamily: font.uiBold, fontSize: 11, color: colors.brand.DEFAULT, marginTop: 1 },
+  label: { fontFamily: font.uiBold, fontSize: 11, color: colors.brand.DEFAULT },
 });

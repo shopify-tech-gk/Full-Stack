@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   deliveryFee,
@@ -43,9 +43,14 @@ const PLACING_STEP_MS = 850;
 
 export default function CheckoutScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { cart: fullCart, refresh, setQuantity, removeItem } = useCart();
-  const { addressId: pickedId, buy } = useLocalSearchParams<{ addressId?: string; buy?: string }>();
+  const {
+    addressId: pickedId,
+    buy,
+    temp,
+  } = useLocalSearchParams<{ addressId?: string; buy?: string; temp?: string }>();
   // "Buy this now" from the cart: only these lines (comma-separated cart item ids) are ordered.
   const buyIds = typeof buy === 'string' && buy ? buy.split(',') : null;
   const cart = buyIds
@@ -54,6 +59,30 @@ export default function CheckoutScreen() {
         fullCart.items.filter((line) => buyIds.includes(line.cartItemId)),
       )
     : fullCart;
+
+  // `temp=1`: a product card's / product page's "Buy" put this line into the cart only so it could
+  // be checked out. Leaving checkout without ordering takes it back out - the shopper never added it.
+  const ordered = useRef(false);
+  const released = useRef(false);
+  const removeRef = useRef(removeItem);
+  removeRef.current = removeItem;
+  useEffect(() => {
+    const tempIds = temp === '1' && buyIds ? buyIds : null;
+    if (!tempIds) return;
+    const release = () => {
+      if (released.current || ordered.current) return;
+      released.current = true;
+      for (const id of tempIds) void removeRef.current(id).catch(() => undefined);
+    };
+    // As soon as they head back (before the slide-out animation), so the screen underneath never
+    // shows the line; unmount is the fallback.
+    const unsubscribe = navigation.addListener('beforeRemove', release);
+    return () => {
+      unsubscribe();
+      release();
+    };
+    // Once per visit: the ids this checkout was opened with.
+  }, []);
 
   const [addresses, setAddresses] = useState<Address[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -188,6 +217,7 @@ export default function CheckoutScreen() {
         })(),
         placingSteps.length * PLACING_STEP_MS + 250,
       );
+      ordered.current = true;
       void refresh(); // the ordered lines have left the cart
       if (cod) {
         router.replace({ pathname: '/order-success', params: { orderId: order.orderId } });

@@ -46,7 +46,16 @@ type Results = { products: ProductCardData[]; total: number; filters: Listing['f
  * product grid. Navigation inside the category happens in place, like a native store app.
  */
 export default function CategoryScreen() {
-  const { slug, taxo } = useLocalSearchParams<{ slug: string; taxo?: string }>();
+  // `brand` (from Top Brands on home): open with just that brand selected.
+  const {
+    slug,
+    taxo,
+    brand: brandParam,
+  } = useLocalSearchParams<{
+    slug: string;
+    taxo?: string;
+    brand?: string;
+  }>();
   const routeSlug = String(slug ?? '');
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
@@ -73,7 +82,12 @@ export default function CategoryScreen() {
   const searchTerm = node && node.href.startsWith('/search') ? node.name : null;
   const catalogSlug = node ? catalogSlugOf(node.href) : routeSlug;
 
-  const [query, setQuery] = useState<ListingQuery>(emptyListingQuery());
+  const [query, setQuery] = useState<ListingQuery>(() => {
+    const q = emptyListingQuery();
+    return typeof brandParam === 'string' && brandParam
+      ? { ...q, filters: { ...q.filters, brand: brandParam } }
+      : q;
+  });
   const [data, setData] = useState<Results | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -153,8 +167,20 @@ export default function CategoryScreen() {
     const stocked = [...facet].sort((a, b) => b.count - a.count).map((v) => v.value);
     const seen = new Set(stocked.map((b) => b.toLowerCase()));
     const listed = brandsFor(path).filter((b) => !seen.has(b.toLowerCase()));
-    return [...stocked, ...listed].slice(0, MAX_BRANDS);
-  }, [data, path]);
+    const all = [...stocked, ...listed];
+    // The brand picked on Home (Top Brands) goes first, right after "All", so it's visible without
+    // swiping; brands picked here stay in place (no jumping tiles). The selected brand always has
+    // a tile, even if this category lists it nowhere else.
+    const pinned = typeof brandParam === 'string' ? brandParam : '';
+    const first = [pinned, brand].find(
+      (b) => b && (b === pinned || !all.some((x) => x.toLowerCase() === b.toLowerCase())),
+    );
+    if (!first) return all.slice(0, MAX_BRANDS);
+    return [first, ...all.filter((b) => b.toLowerCase() !== first.toLowerCase())].slice(
+      0,
+      MAX_BRANDS,
+    );
+  }, [data, path, brand, brandParam]);
 
   const pickBrand = (b: string) =>
     setQuery((q) => {

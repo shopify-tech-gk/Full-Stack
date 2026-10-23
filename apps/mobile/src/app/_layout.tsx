@@ -124,6 +124,11 @@ export default function RootLayout() {
                         name="product/[slug]"
                         options={{ headerShown: true, title: '', header: brandHeader }}
                       />
+                      {/* v1.17: a home rail's "View all" (Top Deals, Trending...). */}
+                      <Stack.Screen
+                        name="rail/[key]"
+                        options={{ headerShown: true, title: '', header: brandHeader }}
+                      />
                       <Stack.Screen
                         name="auth/login"
                         options={{ headerShown: true, title: 'Sign in' }}
@@ -174,10 +179,7 @@ export default function RootLayout() {
                         name="coupons"
                         options={{ headerShown: true, title: 'Coupons' }}
                       />
-                      <Stack.Screen
-                        name="inbox"
-                        options={{ headerShown: true, title: 'Alerts' }}
-                      />
+                      <Stack.Screen name="inbox" options={{ headerShown: true, title: 'Alerts' }} />
                       <Stack.Screen
                         name="account/recently-viewed"
                         options={{

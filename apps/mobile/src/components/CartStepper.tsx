@@ -21,11 +21,14 @@ import { colors, font, radii } from '@/theme';
 export function CartStepper({
   product,
   compact,
+  dense,
   style,
 }: {
   /** null = can't be bought (no SKU / unavailable) - renders nothing. */
   product: CartProduct | null;
   compact?: boolean;
+  /** Tighter − qty + spacing, for sitting beside another button (product cards: Add + Buy). */
+  dense?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const cart = useCart();
@@ -88,7 +91,7 @@ export function CartStepper({
       <Pressable
         onPress={() => step(-1)}
         hitSlop={6}
-        style={styles.stepBtn}
+        style={[styles.stepBtn, dense && styles.stepBtnDense]}
         accessibilityLabel={line.quantity === 1 ? 'Remove from cart' : 'Decrease quantity'}
       >
         <Ionicons
@@ -100,12 +103,14 @@ export function CartStepper({
       {busy ? (
         <ActivityIndicator size="small" color={colors.white} />
       ) : (
-        <Text style={[styles.qty, compact && styles.textCompact]}>{line.quantity}</Text>
+        <Text style={[styles.qty, compact && styles.textCompact, dense && styles.qtyDense]}>
+          {line.quantity}
+        </Text>
       )}
       <Pressable
         onPress={() => step(1)}
         hitSlop={6}
-        style={styles.stepBtn}
+        style={[styles.stepBtn, dense && styles.stepBtnDense]}
         accessibilityLabel="Increase quantity"
       >
         <Ionicons name="add" size={compact ? 14 : 17} color={colors.white} />
@@ -122,10 +127,12 @@ const styles = StyleSheet.create({
     borderRadius: radii.button,
     minHeight: 36,
   },
-  add: { justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 12 },
+  add: { justifyContent: 'center', gap: 5, paddingVertical: 8, paddingHorizontal: 8 },
   pressed: { backgroundColor: colors.brand.accent },
   stepper: { justifyContent: 'space-between', paddingVertical: 4, paddingHorizontal: 4 },
   stepBtn: { paddingHorizontal: 10, paddingVertical: 4 },
+  stepBtnDense: { paddingHorizontal: 4 },
+  qtyDense: { minWidth: 16 },
   compact: { minHeight: 30, paddingVertical: 4, gap: 4 },
   addText: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.white },
   qty: {

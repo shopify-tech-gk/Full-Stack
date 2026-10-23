@@ -13,8 +13,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { FEATURE_CARDS, type FeatureCard } from '@youmart/shared-client';
 import { AppHeader } from '@/components/AppHeader';
 import { PromoCarousel } from '@/components/PromoCarousel';
-import { ProductRail } from '@/components/ProductRail';
-import { ProductRailTabs } from '@/components/ProductRailTabs';
+import { RailPanels } from '@/components/RailPanels';
 import { BrandStrip } from '@/components/BrandStrip';
 import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
@@ -24,7 +23,6 @@ import { DraggableCategoryGrid } from '@/components/DraggableCategoryGrid';
 import { getHome, type HomeData } from '@/lib/catalog';
 import { mainCategories, catalogSlugOf, type CatNode } from '@/lib/home-categories';
 import { useCategoryOrder } from '@/stores/category-order';
-import { useRailLayout, type RailLayout } from '@/stores/prefs';
 import { colors, font, radii, space } from '@/theme';
 
 const FEATURE_ICON: Record<FeatureCard['id'], keyof typeof Ionicons.glyphMap> = {
@@ -52,7 +50,6 @@ type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; da
 export default function HomeScreen() {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
-  const [railLayout, setRailLayout] = useRailLayout();
 
   const load = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
@@ -106,18 +103,11 @@ export default function HomeScreen() {
             <CategoryPager />
           </HScrollZone>
 
-          <RailsHeader layout={railLayout} onChange={setRailLayout} />
-          {railLayout === 'tabbed' ? (
-            <HScrollZone>
-              <ProductRailTabs rails={state.data.rails} />
-            </HScrollZone>
-          ) : (
-            state.data.rails.map((rail) => (
-              <HScrollZone key={rail.key}>
-                <ProductRail rail={rail} />
-              </HScrollZone>
-            ))
-          )}
+          <RailsHeader />
+          {/* v1.17: swipeable 2 x 2 deal panels, one or two per rail. */}
+          <HScrollZone>
+            <RailPanels rails={state.data.rails} />
+          </HScrollZone>
 
           <HScrollZone>
             <BrandStrip />
@@ -151,42 +141,12 @@ function CategoryPager() {
   return <DraggableCategoryGrid cats={ordered} onOpen={open} onMove={move} />;
 }
 
-function RailsHeader({
-  layout,
-  onChange,
-}: {
-  layout: RailLayout;
-  onChange: (l: RailLayout) => void;
-}) {
+function RailsHeader() {
   return (
     <View style={styles.railsHead}>
       <View style={styles.railsTitleRow}>
         <View style={styles.railsAccent} />
         <Text style={styles.railsTitle}>Handpicked for you</Text>
-      </View>
-      <View style={styles.toggle}>
-        <Pressable
-          style={[styles.segment, layout === 'stacked' && styles.segmentActive]}
-          onPress={() => onChange('stacked')}
-          accessibilityLabel="Stacked rails view"
-        >
-          <Ionicons
-            name="reorder-three-outline"
-            size={16}
-            color={layout === 'stacked' ? colors.white : colors.brand.DEFAULT}
-          />
-        </Pressable>
-        <Pressable
-          style={[styles.segment, layout === 'tabbed' && styles.segmentActive]}
-          onPress={() => onChange('tabbed')}
-          accessibilityLabel="Tabbed slider view"
-        >
-          <Ionicons
-            name="albums-outline"
-            size={15}
-            color={layout === 'tabbed' ? colors.white : colors.brand.DEFAULT}
-          />
-        </Pressable>
       </View>
     </View>
   );
@@ -236,21 +196,6 @@ const styles = StyleSheet.create({
   railsTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
   railsAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: colors.brand.DEFAULT },
   railsTitle: { fontFamily: font.uiBold, fontSize: 17, color: colors.heading },
-  toggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.brandPopup.bg,
-    borderRadius: radii.pill,
-    padding: 3,
-    gap: 2,
-  },
-  segment: {
-    width: 36,
-    height: 30,
-    borderRadius: radii.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentActive: { backgroundColor: colors.brand.DEFAULT },
   features: {
     flexDirection: 'row',
     gap: space.sm,

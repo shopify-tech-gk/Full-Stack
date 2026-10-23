@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import type { ProductCardData } from '@youmart/shared-client';
 import { colors, font, radii, space } from '@/theme';
 import { useWishlist } from '@/stores/wishlist';
+import { BuyNowButton } from './BuyNowButton';
 import { CartStepper } from './CartStepper';
 import { SaveButton } from './SaveButton';
 import { Price, ProductImage, Stars } from './ui';
@@ -27,6 +28,18 @@ function ProductCardBase({ product, width, accent, compact }: Props) {
   const open = () => {
     if (slug) router.push(`/product/${slug}`);
   };
+
+  const cartProduct =
+    product.skuId && slug
+      ? {
+          skuId: product.skuId,
+          productId: product.id,
+          productSlug: slug,
+          title: product.title,
+          price: product.sellingPrice,
+          image: product.image,
+        }
+      : null;
 
   const toggleSaved = () => {
     if (!product.skuId || !slug) return;
@@ -79,22 +92,11 @@ function ProductCardBase({ product, width, accent, compact }: Props) {
         </Text>
         <Stars rating={product.rating} size={compact ? 10 : 13} />
         <Price mrp={product.mrp} price={product.sellingPrice} size={compact ? 'xs' : 'sm'} />
-        <CartStepper
-          product={
-            product.skuId && slug
-              ? {
-                  skuId: product.skuId,
-                  productId: product.id,
-                  productSlug: slug,
-                  title: product.title,
-                  price: product.sellingPrice,
-                  image: product.image,
-                }
-              : null
-          }
-          compact={compact}
-          style={compact ? styles.addCompact : styles.add}
-        />
+        {/* v1.17: Add + Buy side by side (Buy = straight to checkout with just this product). */}
+        <View style={[styles.actions, compact ? styles.addCompact : styles.add]}>
+          <CartStepper product={cartProduct} compact={compact} dense style={styles.addBtn} />
+          <BuyNowButton product={cartProduct} compact={compact} style={styles.buyBtn} />
+        </View>
       </View>
     </Pressable>
   );
@@ -118,6 +120,9 @@ const styles = StyleSheet.create({
   body: { padding: space.md, gap: 6 },
   title: { fontFamily: font.body, fontSize: 13.5, lineHeight: 18, color: colors.text.strong },
   add: { marginTop: 4 },
+  actions: { flexDirection: 'row', gap: 5 },
+  addBtn: { flex: 1.3 },
+  buyBtn: { flex: 1 },
   bodyCompact: { padding: 8, gap: 3 },
   titleCompact: { fontSize: 11.5, lineHeight: 15 },
   addCompact: { marginTop: 2 },

@@ -5,6 +5,7 @@ import {
   ApiError,
   bestCategories,
   catalogQuery,
+  discountPercent,
   resolveProductRails,
   resolveStoreCategories,
   searchResultToCardData,
@@ -19,6 +20,7 @@ import {
   type ProductDetailData,
   type ProductFilter,
   type ProductListItem,
+  type ProductRailKey,
   type ProductRailSlider,
   type StoreSubcategory,
 } from '@youmart/shared-client';
@@ -100,6 +102,43 @@ export async function getHome(): Promise<HomeData> {
     showcase: { new: newest, all: topRated, sale: deals },
     best: bestCategories(resolveStoreCategories()),
   };
+}
+
+/** Each home rail's "View all" list: the catalog sort its products come from. */
+// (Each a different order, so no two "View all" lists look the same.)
+const RAIL_SORT: Record<ProductRailKey, CatalogSort> = {
+  'left-off': 'newest',
+  trending: 'rating',
+  'top-deals': 'discount',
+  recommended: 'price_asc',
+  explore: 'price_desc',
+};
+const RAIL_PAGE_SIZE = 24;
+
+/**
+ * One page of a home rail's full list (the "View all" screen). Page 1 of "Pick up where you left
+ * off" starts with the shopper's own recently viewed products; Top Deals keeps discounted ones only.
+ */
+export async function getRailPage(
+  key: ProductRailKey,
+  page: number,
+): Promise<{ products: ProductCardData[]; hasMore: boolean }> {
+  const res = await api.catalog.listProducts({
+    sort: RAIL_SORT[key],
+    limit: RAIL_PAGE_SIZE,
+    page,
+  });
+  let products = res.items.map(toCardData);
+  if (key === 'top-deals') {
+    products = products.filter((p) => discountPercent(p.mrp, p.sellingPrice) > 0);
+  }
+  if (key === 'left-off' && page === 1) {
+    const mine = (await recentlyViewedFeed('left-off')) ?? [];
+    const ids = new Set(mine.map((p) => p.id));
+    products = [...mine, ...products.filter((p) => !ids.has(p.id))];
+  }
+  const hasMore = res.items.length === RAIL_PAGE_SIZE && page * RAIL_PAGE_SIZE < res.total;
+  return { products, hasMore };
 }
 
 export interface Listing {

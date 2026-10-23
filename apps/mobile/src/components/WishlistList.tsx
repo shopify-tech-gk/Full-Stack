@@ -64,8 +64,10 @@ export function WishlistList() {
     }
     setBuying(item.wishlistItemId);
     try {
+      // `temp`: taken back out of the cart if they leave checkout without ordering.
+      const inCart = cart.cart.items.some((l) => l.skuId === product.skuId);
       const id = await cart.buyNow(product);
-      if (id) router.push(`/checkout?buy=${id}`);
+      if (id) router.push(`/checkout?buy=${id}${inCart ? '' : '&temp=1'}`);
     } finally {
       setBuying(null);
     }
