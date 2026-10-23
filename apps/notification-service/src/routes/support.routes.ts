@@ -18,6 +18,14 @@ import {
 } from '../support/ticket.service';
 import { optionalAuth, requireAdmin, requireAuth } from '../authMiddleware';
 import { AssistantChatBody, assistantAvailable, chat } from '../assistant/assistant.service';
+import {
+  AdminListProductRequestsQuery,
+  AdminUpdateProductRequestBody,
+  CreateProductRequestBody,
+  createProductRequest,
+  listAdminProductRequests,
+  updateAdminProductRequest,
+} from '../support/product-request.service';
 
 export const supportRouter: Router = Router();
 
@@ -98,3 +106,41 @@ supportRouter.post('/assistant', optionalAuth, async (req, res) => {
     .status(200)
     .json(await chat(body, { userId: req.auth?.userId ?? null, ip: req.ip ?? 'unknown' }));
 });
+
+// v1.17 "Request restock" from YouMart AI (signed in or not). Per customer / per IP: at most 10 an
+// hour, so the team's list can't be flooded.
+const restockRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `restock:${req.auth?.userId ?? req.ip ?? '-'}`,
+  handler: (_req, res) => {
+    res
+      .status(429)
+      .json(buildApiError('RATE_LIMITED', 'Too many requests, please try again later'));
+  },
+});
+
+supportRouter.post('/product-requests', optionalAuth, restockRateLimiter, async (req, res) => {
+  const body = CreateProductRequestBody.parse(req.body);
+  res.status(201).json(await createProductRequest(req.auth?.userId ?? null, body));
+});
+
+// Admin -> Product requests: what shoppers asked for that we don't stock.
+supportRouter.get('/admin/product-requests', requireAdmin('support.manage'), async (req, res) => {
+  res
+    .status(200)
+    .json(await listAdminProductRequests(AdminListProductRequestsQuery.parse(req.query)));
+});
+
+supportRouter.patch(
+  '/admin/product-requests/:id',
+  requireAdmin('support.manage'),
+  async (req, res) => {
+    const id = typeof req.params.id === 'string' ? req.params.id : '';
+    res
+      .status(200)
+      .json(await updateAdminProductRequest(id, AdminUpdateProductRequestBody.parse(req.body)));
+  },
+);

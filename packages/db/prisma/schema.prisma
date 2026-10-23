@@ -1398,6 +1398,35 @@ model SupportTicket {
   @@schema("notifications")
 }
 
+enum ProductRequestStatus {
+  OPEN
+  RESTOCKED
+  CLOSED
+
+  @@schema("notifications")
+}
+
+/// v1.17 "Restock this for me": a product a shopper asked YouMart AI for that the store doesn't
+/// have in stock. Shown to the team in Admin -> Product requests. Works signed out too.
+model ProductRequest {
+  id             String               @id @default(uuid(7))
+  /// Null for a signed-out shopper.
+  userId         String?              @map("user_id")
+  /// What they wanted, in their words via the AI (e.g. "waterproof hiking shoes").
+  item           String
+  /// Optional extra detail the shopper typed.
+  note           String?
+  /// The AI chat it came from ("You: ... / Assistant: ...").
+  chatTranscript String?              @map("chat_transcript")
+  status         ProductRequestStatus @default(OPEN)
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@map("product_request")
+  @@schema("notifications")
+}
+
 // ---------------------------------------------------------------------------
 // promotions schema - coupons. DATA LAYER ONLY: no discount-application
 // logic here.

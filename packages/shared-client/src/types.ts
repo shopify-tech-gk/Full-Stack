@@ -656,10 +656,34 @@ export interface AssistantEscalation {
   summary: string;
   orderNumber: string | null;
 }
+/** v1.17 a store category YouMart AI suggests; `taxo` = the taxonomy path ("main~sub~leaf"). */
+export interface AssistantCategory {
+  taxo: string;
+  name: string;
+  /** "Main > Sub"; '' for a main category. */
+  parents: string;
+}
+/** v1.17 a real product YouMart AI suggests (prices in rupees, e.g. "1299.00"). */
+export interface AssistantProduct {
+  id: string;
+  slug: string;
+  title: string;
+  price: Money;
+  mrp: Money;
+  imageUrl: string | null;
+  category: string;
+}
 export interface AssistantReply {
   reply: string;
   escalate: AssistantEscalation | null;
   remaining: number;
+  /** v1.17 tappable cards under the reply. */
+  categories: AssistantCategory[];
+  products: AssistantProduct[];
+  /** v1.17 "not in stock - request a restock?" for this item; null = none. */
+  restock: { item: string } | null;
+  /** v1.17 tap-to-answer options when the AI asks a question (e.g. "Beach", "Hill station"). */
+  quickReplies: string[];
 }
 
 export interface HelpTicket {

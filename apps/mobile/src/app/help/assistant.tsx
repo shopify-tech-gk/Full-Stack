@@ -9,6 +9,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -19,11 +20,13 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
+  ReduceMotion,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withRepeat,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -31,10 +34,18 @@ import {
   ApiError,
   HELP_TOPIC_LABELS,
   assistantTranscript,
+  type AssistantCategory,
   type AssistantEscalation,
+  type AssistantProduct,
   type AssistantTurn,
 } from '@youmart/shared-client';
+import {
+  AssistantCategoryCards,
+  AssistantProductCards,
+  RestockCard,
+} from '@/components/AssistantCards';
 import { api } from '@/lib/api';
+import { getJSON, removeKey, setJSON } from '@/lib/storage';
 import { useSession } from '@/stores/session';
 import { colors, font, space } from '@/theme';
 
@@ -47,14 +58,29 @@ const BRAND = colors.brand.DEFAULT;
 const HERO_GRADIENT = 'linear-gradient(145deg, #0b1b3f 0%, #0142aa 55%, #3b6fe0 100%)';
 const ORB_GRADIENT = 'linear-gradient(135deg, #60a5fa 0%, #0142aa 45%, #7c3aed 100%)';
 const USER_GRADIENT = 'linear-gradient(135deg, #0142aa 0%, #2f6ae8 100%)';
+const SCREEN_GRADIENT = 'linear-gradient(180deg, #e9f0ff 0%, #f5f8fe 32%, #f4f7fd 100%)';
+/** Play every animation here even with the phone's Reduce Motion on (common on iPhones) -
+ * otherwise the intro, the thinking ring and the cards all sat still. */
+const RM = ReduceMotion.Never;
 
-const SUGGESTIONS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
+/** Quick follow-ups under a shopping answer (tap = ask it). */
+const SHOPPING_FOLLOW_UPS = [
+  'Show cheaper options',
+  'What else will I need?',
+  'Anything under ₹1,000?',
+];
+
+const SUGGESTIONS: { icon: keyof typeof Ionicons.glyphMap; text: string; featured?: boolean }[] = [
+  {
+    icon: 'airplane-outline',
+    text: "I'm going on a vacation trip - what should I buy?",
+    featured: true,
+  },
+  { icon: 'balloon-outline', text: "I'm having a party at home - what do I need?", featured: true },
   { icon: 'cube-outline', text: 'Where is my order?' },
+  { icon: 'gift-outline', text: 'Gift ideas under ₹2,000' },
   { icon: 'return-down-back-outline', text: 'How do I return an item?' },
-  { icon: 'cash-outline', text: 'Is Cash on Delivery available?' },
-  { icon: 'wallet-outline', text: 'When will I get my refund?' },
   { icon: 'bicycle-outline', text: 'Is there a delivery charge?' },
-  { icon: 'pricetags-outline', text: 'How do coupons work?' },
 ];
 
 /** Never answer instantly - a short, natural think time even when the model is fast. */
@@ -68,12 +94,33 @@ const TICK_MS = 55;
 interface Bubble extends AssistantTurn {
   id: number;
   escalate?: AssistantEscalation | null;
+  /** v1.17 cards the AI picked: categories, products, a restock offer. */
+  categories?: AssistantCategory[];
+  products?: AssistantProduct[];
+  restock?: { item: string } | null;
+  /** The restock request / support request from this answer was already sent. */
+  restockSent?: boolean;
+  handoverRef?: string;
+  /** Tap-to-answer options when the AI asked a question. */
+  quickReplies?: string[];
   error?: boolean;
   /** Typewriter: tokens shown so far (undefined = fully shown). */
   shown?: number;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// The chat is saved on this phone per account ("guest" when signed out), so leaving and coming
+// back continues it. A different account on the same phone has its own chat. Kept for a week and
+// the last MAX_SAVED messages; "New chat" clears it.
+const SAVED_KEY = (who: string) => `ym_ai_chat:${who}`;
+const SAVED_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_SAVED = 40;
+
+interface SavedChat {
+  savedAt: number;
+  bubbles: Bubble[];
+}
 
 export default function AssistantScreen() {
   const router = useRouter();
@@ -90,6 +137,37 @@ export default function AssistantScreen() {
   const scroll = useRef<ScrollView>(null);
   const nextId = useRef(1);
   const typing = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Restore this account's saved chat; save it again whenever it changes (after typing ends).
+  const who = session.status === 'authenticated' ? session.user.id : 'guest';
+  const restored = useRef<string | null>(null);
+  useEffect(() => {
+    if (session.status === 'loading') return;
+    let active = true;
+    restored.current = null;
+    void getJSON<SavedChat>(SAVED_KEY(who)).then((saved) => {
+      if (!active) return;
+      const fresh = saved && Date.now() - saved.savedAt < SAVED_TTL_MS ? saved.bubbles : [];
+      setBubbles(fresh.map((b) => ({ ...b, shown: undefined })));
+      nextId.current = fresh.reduce((max, b) => Math.max(max, b.id), 0) + 1;
+      restored.current = who;
+    });
+    return () => {
+      active = false;
+    };
+  }, [who, session.status]);
+
+  const typingNow = bubbles.some((b) => b.shown !== undefined);
+  useEffect(() => {
+    if (restored.current !== who || typingNow) return;
+    const keep = bubbles.filter((b) => !b.error).slice(-MAX_SAVED);
+    if (keep.length === 0) void removeKey(SAVED_KEY(who));
+    else void setJSON(SAVED_KEY(who), { savedAt: Date.now(), bubbles: keep } satisfies SavedChat);
+  }, [bubbles, who, typingNow]);
+
+  /** Remember on an answer that its restock / support request went out. */
+  const markBubble = (id: number, patch: Partial<Bubble>) =>
+    setBubbles((all) => all.map((b) => (b.id === id ? { ...b, ...patch } : b)));
 
   useEffect(
     () => () => {
@@ -143,7 +221,16 @@ export default function AssistantScreen() {
         }),
       ]);
       setRemaining(res.remaining);
-      next = { id: nextId.current++, role: 'assistant', text: res.reply, escalate: res.escalate };
+      next = {
+        id: nextId.current++,
+        role: 'assistant',
+        text: res.reply,
+        escalate: res.escalate,
+        categories: res.categories ?? [],
+        products: res.products ?? [],
+        restock: res.restock ?? null,
+        quickReplies: res.quickReplies ?? [],
+      };
     } catch (err) {
       next = {
         id: nextId.current++,
@@ -170,6 +257,14 @@ export default function AssistantScreen() {
     );
 
   const empty = bubbles.length === 0;
+  // Chips under the latest answer once it has finished typing: the AI's own tap-to-answer options
+  // when it asked a question ("Beach", "Hill station"...), else follow-ups after a shopping answer.
+  const last = bubbles[bubbles.length - 1];
+  const settled = !busy && last?.role === 'assistant' && !last.error && last.shown === undefined;
+  const lastQuickReplies = settled && last.quickReplies?.length ? last.quickReplies : null;
+  const lastFollowUps =
+    lastQuickReplies ??
+    (settled && (last.categories?.length || last.products?.length) ? SHOPPING_FOLLOW_UPS : null);
 
   return (
     <View style={styles.screen}>
@@ -180,12 +275,19 @@ export default function AssistantScreen() {
         <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back}>
           <Ionicons name="chevron-back" size={24} color={colors.white} />
         </Pressable>
-        <Orb size={34} />
+        <Orb size={38} glow />
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>YouMart AI</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.headerTitle}>YouMart AI</Text>
+            <View style={styles.aiBadge}>
+              <Text style={styles.aiBadgeText}>AI</Text>
+            </View>
+          </View>
           <View style={styles.statusRow}>
             <View style={styles.online} />
-            <Text style={styles.headerSub}>Your shopping assistant · online</Text>
+            <Text style={styles.headerSub}>
+              {busy ? 'Thinking…' : 'Shopping assistant · online'}
+            </Text>
           </View>
         </View>
         {!empty ? (
@@ -193,6 +295,7 @@ export default function AssistantScreen() {
             onPress={() => {
               if (typing.current) clearInterval(typing.current);
               setBubbles([]);
+              void removeKey(SAVED_KEY(who));
             }}
             hitSlop={10}
             accessibilityLabel="New chat"
@@ -215,27 +318,48 @@ export default function AssistantScreen() {
         >
           {empty ? (
             <Animated.View
-              entering={FadeInDown.delay(intro ? 1500 : 0).duration(420)}
+              entering={FadeInDown.delay(intro ? 1500 : 0)
+                .duration(420)
+                .reduceMotion(RM)}
               style={styles.welcome}
             >
               <Orb size={64} glow />
               <Text style={styles.hello}>{firstName ? `Hi ${firstName} 👋` : 'Hi there 👋'}</Text>
-              <Text style={styles.helloSub}>How can I help you today?</Text>
+              <Text style={styles.helloSub}>
+                Plan a trip, a party or a gift - or ask about your orders.
+              </Text>
+              <Text style={styles.tryLabel}>TRY ASKING</Text>
               <View style={styles.grid}>
                 {SUGGESTIONS.map((s, i) => (
                   <Animated.View
                     key={s.text}
-                    entering={FadeInUp.delay((intro ? 1650 : 100) + i * 70).duration(320)}
+                    entering={FadeInUp.delay((intro ? 1650 : 100) + i * 70)
+                      .duration(320)
+                      .reduceMotion(RM)}
                     style={styles.gridCell}
                   >
                     <Pressable
                       onPress={() => void ask(s.text)}
-                      style={({ pressed }) => [styles.suggestion, pressed && styles.pressed]}
+                      style={({ pressed }) => [
+                        styles.suggestion,
+                        s.featured && styles.suggestionFeatured,
+                        pressed && styles.pressed,
+                      ]}
                     >
-                      <View style={styles.suggestionIcon}>
-                        <Ionicons name={s.icon} size={17} color={BRAND} />
+                      <View
+                        style={[styles.suggestionIcon, s.featured && styles.suggestionIconFeatured]}
+                      >
+                        <Ionicons
+                          name={s.icon}
+                          size={17}
+                          color={s.featured ? colors.white : BRAND}
+                        />
                       </View>
-                      <Text style={styles.suggestionText}>{s.text}</Text>
+                      <Text
+                        style={[styles.suggestionText, s.featured && styles.suggestionTextFeatured]}
+                      >
+                        {s.text}
+                      </Text>
                     </Pressable>
                   </Animated.View>
                 ))}
@@ -251,31 +375,81 @@ export default function AssistantScreen() {
 
           {bubbles.map((b) =>
             b.role === 'user' ? (
-              <Animated.View key={b.id} entering={FadeInUp.duration(200)} style={styles.userRow}>
+              <Animated.View
+                key={b.id}
+                entering={FadeInUp.duration(200).reduceMotion(RM)}
+                style={styles.userRow}
+              >
                 <View style={styles.userBubble}>
                   <Text style={styles.userText}>{b.text}</Text>
                 </View>
               </Animated.View>
             ) : (
-              <Animated.View key={b.id} entering={FadeIn.duration(220)} style={styles.aiBlock}>
+              <Animated.View
+                key={b.id}
+                entering={FadeIn.duration(220).reduceMotion(RM)}
+                style={styles.aiBlock}
+              >
                 <View style={styles.aiHead}>
                   <Orb size={22} error={b.error} />
                   <Text style={styles.aiName}>YouMart AI</Text>
                 </View>
                 <AiText text={b.text} shown={b.shown} error={b.error} />
+                {/* Cards appear once the reply has finished typing. */}
+                {b.shown === undefined &&
+                (b.categories?.length || b.products?.length || b.restock) ? (
+                  <Animated.View
+                    entering={FadeInUp.duration(320).reduceMotion(RM)}
+                    style={styles.cards}
+                  >
+                    {b.categories?.length ? (
+                      <AssistantCategoryCards categories={b.categories} />
+                    ) : null}
+                    {b.products?.length ? <AssistantProductCards products={b.products} /> : null}
+                    {b.restock ? (
+                      <RestockCard
+                        item={b.restock.item}
+                        transcript={transcript}
+                        sent={b.restockSent}
+                        onSent={() => markBubble(b.id, { restockSent: true })}
+                      />
+                    ) : null}
+                  </Animated.View>
+                ) : null}
                 {b.escalate && b.shown === undefined ? (
-                  <Animated.View entering={FadeInUp.duration(300)}>
+                  <Animated.View entering={FadeInUp.duration(300).reduceMotion(RM)}>
                     <HandoverCard
                       escalation={b.escalate}
                       signedIn={signedIn}
                       transcript={transcript}
                       onSignIn={() => router.push('/auth/login')}
+                      sentRef={b.handoverRef}
+                      onSent={(ref) => markBubble(b.id, { handoverRef: ref })}
                     />
                   </Animated.View>
                 ) : null}
               </Animated.View>
             ),
           )}
+          {lastFollowUps ? (
+            <Animated.View
+              entering={FadeInUp.delay(250).duration(300).reduceMotion(RM)}
+              style={styles.followUps}
+            >
+              {lastFollowUps.map((f) => (
+                <Pressable
+                  key={f}
+                  onPress={() => void ask(f)}
+                  style={({ pressed }) => [styles.followUp, pressed && styles.pressed]}
+                >
+                  {lastQuickReplies ? null : (
+                    <Ionicons name="sparkles-outline" size={12} color={BRAND} />
+                  )}
+                  <Text style={styles.followUpText}>{f}</Text>
+                </Pressable>
+              ))}
+            </Animated.View>
+          ) : null}
           {busy ? <Thinking /> : null}
         </ScrollView>
 
@@ -291,18 +465,11 @@ export default function AssistantScreen() {
               maxLength={1500}
               editable={!busy}
             />
-            <Pressable
+            <SendButton
+              ready={!busy && Boolean(text.trim())}
+              busy={busy}
               onPress={() => void ask(text)}
-              disabled={busy || !text.trim()}
-              style={[styles.send, (busy || !text.trim()) && styles.sendOff]}
-              accessibilityLabel="Send"
-            >
-              {busy ? (
-                <ActivityIndicator size="small" color={colors.white} />
-              ) : (
-                <Ionicons name="arrow-up" size={20} color={colors.white} />
-              )}
-            </Pressable>
+            />
           </View>
           <Text style={styles.disclaimer}>
             {remaining !== null && remaining <= 5
@@ -323,14 +490,16 @@ function Orb({ size, glow, error }: { size: number; glow?: boolean; error?: bool
   useEffect(() => {
     if (!glow) return;
     pulse.value = withRepeat(
-      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad) }),
+      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad), reduceMotion: RM }),
       -1,
       true,
+      undefined,
+      RM,
     );
   }, [glow, pulse]);
   const halo = useAnimatedStyle(() => ({
-    opacity: 0.22 + pulse.value * 0.22,
-    transform: [{ scale: 1.15 + pulse.value * 0.2 }],
+    opacity: 0.2 + pulse.value * 0.25,
+    transform: [{ scale: 1.12 + pulse.value * 0.22 }],
   }));
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -342,7 +511,7 @@ function Orb({ size, glow, error }: { size: number; glow?: boolean; error?: bool
               width: size,
               height: size,
               borderRadius: size / 2,
-              backgroundColor: '#3b82f6',
+              backgroundColor: '#60a5fa',
             },
             halo,
           ]}
@@ -355,6 +524,8 @@ function Orb({ size, glow, error }: { size: number; glow?: boolean; error?: bool
           borderRadius: size / 2,
           alignItems: 'center',
           justifyContent: 'center',
+          borderWidth: size >= 30 ? 1.5 : 0,
+          borderColor: 'rgba(255,255,255,0.55)',
           experimental_backgroundImage: error
             ? 'linear-gradient(135deg, #f87171 0%, #b91c1c 100%)'
             : ORB_GRADIENT,
@@ -375,17 +546,25 @@ function IntroOverlay({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => undefined);
-    orb.value = withSpring(1, { damping: 11, stiffness: 120 });
+    orb.value = withSpring(1, { damping: 11, stiffness: 120, reduceMotion: RM });
     ring.value = withDelay(
       250,
-      withRepeat(withTiming(1, { duration: 1100, easing: Easing.out(Easing.quad) }), 2, false),
+      withRepeat(
+        withTiming(1, { duration: 1100, easing: Easing.out(Easing.quad), reduceMotion: RM }),
+        2,
+        false,
+        undefined,
+        RM,
+      ),
+      RM,
     );
-    title.value = withDelay(480, withTiming(1, { duration: 450 }));
+    title.value = withDelay(480, withTiming(1, { duration: 450, reduceMotion: RM }), RM);
     leave.value = withDelay(
       1450,
-      withTiming(1, { duration: 420, easing: Easing.in(Easing.quad) }, (done) => {
+      withTiming(1, { duration: 420, easing: Easing.in(Easing.quad), reduceMotion: RM }, (done) => {
         if (done) runOnJS(onDone)();
       }),
+      RM,
     );
   }, [orb, ring, title, leave, onDone]);
 
@@ -422,42 +601,97 @@ function IntroOverlay({ onDone }: { onDone: () => void }) {
   );
 }
 
-/** Loading state while the AI answers: a spinning ring around the orb + three pulsing dots. */
+/**
+ * Loading while the AI answers (ChatGPT / Gemini style): the orb with a spinning gradient ring, and
+ * a skeleton answer card - grey lines with a light sweeping across them - under a pulsing
+ * "Thinking" label.
+ */
 function Thinking() {
+  const { width } = useWindowDimensions();
+  const cardWidth = Math.min(width - 96, 280);
   const spin = useSharedValue(0);
+  const sweep = useSharedValue(0);
+  const pulse = useSharedValue(0);
   useEffect(() => {
-    spin.value = withRepeat(withTiming(1, { duration: 1200, easing: Easing.linear }), -1, false);
-  }, [spin]);
+    spin.value = withRepeat(
+      withTiming(1, { duration: 1100, easing: Easing.linear, reduceMotion: RM }),
+      -1,
+      false,
+      undefined,
+      RM,
+    );
+    sweep.value = withRepeat(
+      withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.quad), reduceMotion: RM }),
+      -1,
+      false,
+      undefined,
+      RM,
+    );
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 700, reduceMotion: RM }),
+        withTiming(0, { duration: 700, reduceMotion: RM }),
+      ),
+      -1,
+      false,
+      undefined,
+      RM,
+    );
+  }, [spin, sweep, pulse]);
   const ringStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
+  const sweepStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -120 + sweep.value * (cardWidth + 160) }],
+  }));
+  const labelStyle = useAnimatedStyle(() => ({ opacity: 0.45 + pulse.value * 0.55 }));
 
   return (
-    <Animated.View entering={FadeIn.duration(200)} style={styles.thinking}>
-      <View style={styles.thinkingOrb}>
-        <Animated.View style={[styles.thinkingRing, ringStyle]} />
-        <Orb size={22} />
+    <Animated.View entering={FadeIn.duration(220).reduceMotion(RM)} style={styles.thinking}>
+      <View style={styles.aiHead}>
+        <View style={styles.thinkingOrb}>
+          <Animated.View style={[styles.thinkingRing, ringStyle]} />
+          <Orb size={22} />
+        </View>
+        <Animated.Text style={[styles.thinkingLabel, labelStyle]}>Thinking…</Animated.Text>
       </View>
-      <View style={styles.dots}>
-        {[0, 1, 2].map((i) => (
-          <Dot key={i} delay={i * 160} />
+      <View style={[styles.skeleton, { width: cardWidth }]}>
+        {[0.92, 0.78, 0.55].map((w) => (
+          <View key={w} style={[styles.skeletonLine, { width: (cardWidth - 28) * w }]} />
         ))}
+        <Animated.View style={[styles.sweep, sweepStyle]} pointerEvents="none" />
       </View>
     </Animated.View>
   );
 }
 
-function Dot({ delay }: { delay: number }) {
-  const v = useSharedValue(0);
+/** Send: grows in with a spring when there's something to send; a spinner while answering. */
+function SendButton({
+  ready,
+  busy,
+  onPress,
+}: {
+  ready: boolean;
+  busy: boolean;
+  onPress: () => void;
+}) {
+  const on = useSharedValue(ready ? 1 : 0);
   useEffect(() => {
-    v.value = withDelay(
-      delay,
-      withRepeat(withTiming(1, { duration: 480, easing: Easing.inOut(Easing.quad) }), -1, true),
-    );
-  }, [v, delay]);
+    on.value = withSpring(ready || busy ? 1 : 0, { damping: 12, stiffness: 220, reduceMotion: RM });
+  }, [ready, busy, on]);
   const style = useAnimatedStyle(() => ({
-    opacity: 0.3 + v.value * 0.7,
-    transform: [{ translateY: -v.value * 4 }],
+    opacity: 0.35 + on.value * 0.65,
+    transform: [{ scale: 0.82 + on.value * 0.18 }],
   }));
-  return <Animated.View style={[styles.dot, style]} />;
+  return (
+    <Pressable onPress={onPress} disabled={!ready} accessibilityLabel="Send" hitSlop={6}>
+      <Animated.View style={[styles.send, style]}>
+        {busy ? (
+          <ActivityIndicator size="small" color={colors.white} />
+        ) : (
+          <Ionicons name="arrow-up" size={20} color={colors.white} />
+        )}
+      </Animated.View>
+    </Pressable>
+  );
 }
 
 /** AI answer text: **bold**, "- " bullets, and the typewriter reveal (`shown` tokens). */
@@ -499,15 +733,20 @@ function HandoverCard({
   signedIn,
   transcript,
   onSignIn,
+  sentRef,
+  onSent,
 }: {
   escalation: AssistantEscalation;
   signedIn: boolean;
   transcript: () => string;
   onSignIn: () => void;
+  /** Already sent (a saved chat reopened): its reference - shows the confirmation. */
+  sentRef?: string;
+  onSent?: (reference: string) => void;
 }) {
   const [message, setMessage] = useState(escalation.summary);
-  const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
-  const [reference, setReference] = useState<string | null>(null);
+  const [state, setState] = useState<'idle' | 'sending' | 'sent'>(sentRef ? 'sent' : 'idle');
+  const [reference, setReference] = useState<string | null>(sentRef ?? null);
   const [error, setError] = useState<string | null>(null);
 
   const send = async () => {
@@ -532,6 +771,7 @@ function HandoverCard({
       });
       setReference(ticket.reference);
       setState('sent');
+      onSent?.(ticket.reference);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => undefined,
       );
@@ -603,15 +843,31 @@ function HandoverCard({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f4f7fd' },
+  screen: { flex: 1, backgroundColor: '#f4f7fd', experimental_backgroundImage: SCREEN_GRADIENT },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: space.md,
-    paddingBottom: 12,
+    paddingBottom: 14,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     experimental_backgroundImage: HERO_GRADIENT,
+    shadowColor: '#0b1b3f',
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+    zIndex: 2,
   },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  aiBadge: {
+    backgroundColor: '#ffe500',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  aiBadgeText: { fontFamily: font.uiBold, fontSize: 10, color: '#1f1300', letterSpacing: 0.4 },
   back: { width: 32, alignItems: 'center' },
   headerTitle: { fontFamily: font.uiBold, fontSize: 17, color: colors.white },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 1 },
@@ -629,7 +885,23 @@ const styles = StyleSheet.create({
   listEmpty: { flexGrow: 1, justifyContent: 'center' },
   welcome: { alignItems: 'center', gap: 6 },
   hello: { fontFamily: font.uiBold, fontSize: 24, color: colors.heading, marginTop: 10 },
-  helloSub: { fontFamily: font.uiMedium, fontSize: 15, color: colors.text.muted, marginBottom: 14 },
+  helloSub: {
+    fontFamily: font.uiMedium,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.muted,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  tryLabel: {
+    alignSelf: 'flex-start',
+    fontFamily: font.uiBold,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: '#8a95ab',
+    marginTop: 18,
+    marginBottom: 2,
+  },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, width: '100%' },
   gridCell: { width: '48%', flexGrow: 1 },
   suggestion: {
@@ -646,6 +918,15 @@ const styles = StyleSheet.create({
     elevation: 1,
     minHeight: 86,
   },
+  suggestionFeatured: {
+    borderColor: 'transparent',
+    experimental_backgroundImage: 'linear-gradient(140deg, #0b1b3f 0%, #0142aa 60%, #3b6fe0 100%)',
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  suggestionIconFeatured: { backgroundColor: 'rgba(255,255,255,0.18)' },
+  suggestionTextFeatured: { color: colors.white },
   pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   suggestionIcon: {
     width: 30,
@@ -678,25 +959,65 @@ const styles = StyleSheet.create({
   },
   userText: { fontFamily: font.body, fontSize: 14.5, lineHeight: 21, color: colors.white },
   aiBlock: { gap: 7 },
+  cards: { gap: 12, marginTop: 2 },
   aiHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   aiName: { fontFamily: font.uiBold, fontSize: 12.5, color: colors.heading },
   aiCard: {
     backgroundColor: colors.white,
-    borderRadius: 18,
+    borderRadius: 20,
     borderTopLeftRadius: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    gap: 3,
-    borderWidth: 1,
-    borderColor: '#e2e9f6',
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+    gap: 4,
+    shadowColor: '#0b1b3f',
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   aiCardError: { borderColor: '#f5c6c6', backgroundColor: '#fff7f7' },
-  aiText: { fontFamily: font.body, fontSize: 14.5, lineHeight: 22, color: colors.text.strong },
+  aiText: { fontFamily: font.body, fontSize: 15, lineHeight: 23, color: colors.text.strong },
   bold: { fontFamily: font.uiBold, color: colors.heading },
   cursor: { color: BRAND, fontFamily: font.uiBold },
   bulletRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   bulletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: BRAND, marginTop: 8 },
-  thinking: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
+  thinking: { gap: 8, paddingVertical: 2 },
+  thinkingLabel: { fontFamily: font.uiSemibold, fontSize: 13, color: BRAND },
+  skeleton: {
+    backgroundColor: colors.white,
+    borderRadius: 20,
+    borderTopLeftRadius: 6,
+    padding: 14,
+    gap: 10,
+    overflow: 'hidden',
+    shadowColor: '#0b1b3f',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  skeletonLine: { height: 10, borderRadius: 5, backgroundColor: '#e8eef9' },
+  sweep: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 110,
+    experimental_backgroundImage:
+      'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 100%)',
+  },
+  followUps: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: -4 },
+  followUp: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.white,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: '#cfdcf4',
+  },
+  followUpText: { fontFamily: font.uiSemibold, fontSize: 12.5, color: BRAND },
   thinkingOrb: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   thinkingRing: {
     position: 'absolute',
@@ -708,12 +1029,9 @@ const styles = StyleSheet.create({
     borderTopColor: BRAND,
     borderRightColor: '#7c3aed',
   },
-  dots: { flexDirection: 'row', gap: 5, alignItems: 'center', height: 20 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: BRAND },
   composer: {
     paddingHorizontal: space.md,
     paddingTop: 8,
-    backgroundColor: '#f4f7fd',
     gap: 6,
   },
   inputWrap: {
@@ -721,14 +1039,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 8,
     backgroundColor: colors.white,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: '#dbe4f3',
-    paddingLeft: 16,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: '#d6e2f7',
+    paddingLeft: 18,
     padding: 5,
     shadowColor: BRAND,
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
@@ -750,7 +1068,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     experimental_backgroundImage: USER_GRADIENT,
   },
-  sendOff: { opacity: 0.4 },
   disclaimer: {
     textAlign: 'center',
     fontFamily: font.body,

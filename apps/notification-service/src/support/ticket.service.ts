@@ -233,7 +233,8 @@ export async function updateAdminTicket(
     where: { id: ticketId },
     data: {
       // A reply on an untouched request moves it to In progress unless a status was chosen.
-      status: input.status ?? (input.reply && existing.status === 'OPEN' ? 'IN_PROGRESS' : undefined),
+      status:
+        input.status ?? (input.reply && existing.status === 'OPEN' ? 'IN_PROGRESS' : undefined),
       ...(input.reply ? { adminReply: input.reply, repliedAt: new Date() } : {}),
     },
   });

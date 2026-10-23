@@ -1,5 +1,5 @@
-// v1.17 Tapping the YouMart logo while already on Home (Instagram-style): the header tells the Home
-// screen, which scrolls back to the top - or, if it is already at the top, reloads.
+// v1.17 Tapping the YouMart logo (or the Home tab) while already on Home (Instagram-style): the
+// Home screen scrolls back to the top - or, if it is already at the top, reloads.
 type Listener = () => void;
 const listeners = new Set<Listener>();
 

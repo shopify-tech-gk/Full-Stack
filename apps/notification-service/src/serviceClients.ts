@@ -1,6 +1,7 @@
 import {
   createAuthClient,
   createOrderClient,
+  createSearchClient,
   type ServiceAuthOptions,
 } from '@youmart/service-client';
 import { config } from './config';
@@ -22,6 +23,13 @@ export const orderClient = createOrderClient({
 /** Notification settings: which channels the customer wants for order updates / offers. */
 export const authClient = createAuthClient({
   baseUrl: config.authServiceUrl,
+  timeoutMs: config.serviceHttpTimeoutMs,
+  serviceAuth,
+});
+
+/** v1.17 YouMart AI: finds real products for shopping questions ("what do I need for a trip?"). */
+export const searchClient = createSearchClient({
+  baseUrl: config.searchServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
   serviceAuth,
 });

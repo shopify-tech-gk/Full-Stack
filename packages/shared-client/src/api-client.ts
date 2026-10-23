@@ -387,6 +387,11 @@ export function createApiClient(options: ApiClientOptions) {
       /** v1.17 AI help: send the conversation so far (last turn = the new question). */
       askAssistant: (messages: AssistantTurn[]) =>
         json<AssistantReply>('POST', '/support/assistant', { body: { messages } }),
+      /** v1.17 "Request restock" for something YouMart AI couldn't find (works signed out). */
+      requestRestock: (body: { item: string; note?: string; transcript?: string }) =>
+        json<{ requestId: string; createdAt: string }>('POST', '/support/product-requests', {
+          body,
+        }),
       sendMessage: (body: SupportMessageBody) =>
         json<SupportMessageReceipt>('POST', '/support/messages', { body }),
       /** W9: a signed-in customer's help request, optionally about one of their orders. */

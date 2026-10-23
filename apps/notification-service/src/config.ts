@@ -94,6 +94,8 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
   // W9: customer help tickets (signed-in) + per-customer notification settings.
   ORDER_SERVICE_URL: z.string().url(),
   AUTH_SERVICE_URL: z.string().url(),
+  /** v1.17 YouMart AI: product search for shopping questions. */
+  SEARCH_SERVICE_URL: z.string().url().default('http://localhost:4013'),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
@@ -139,6 +141,7 @@ export interface NotificationServiceConfig {
   assistantDailyLimit: number;
   orderServiceUrl: string;
   authServiceUrl: string;
+  searchServiceUrl: string;
   serviceHttpTimeoutMs: number;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
@@ -180,6 +183,7 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   assistantDailyLimit: parsed.ASSISTANT_DAILY_LIMIT,
   orderServiceUrl: parsed.ORDER_SERVICE_URL,
   authServiceUrl: parsed.AUTH_SERVICE_URL,
+  searchServiceUrl: parsed.SEARCH_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,

@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   PackageCheck,
+  PackageSearch,
   Undo2,
   Users,
   X,
@@ -84,8 +85,18 @@ const NAV: Array<{ heading: string; items: NavItem[] }> = [
   {
     heading: 'Catalog',
     items: [
-      { href: '/admin/products', label: 'Products & stock', icon: Boxes, permission: 'catalog.manage' },
-      { href: '/admin/coupons', label: 'Coupons', icon: BadgePercent, permission: 'promotions.manage' },
+      {
+        href: '/admin/products',
+        label: 'Products & stock',
+        icon: Boxes,
+        permission: 'catalog.manage',
+      },
+      {
+        href: '/admin/coupons',
+        label: 'Coupons',
+        icon: BadgePercent,
+        permission: 'promotions.manage',
+      },
     ],
   },
   {
@@ -98,6 +109,13 @@ const NAV: Array<{ heading: string; items: NavItem[] }> = [
         icon: Headset,
         permission: 'support.manage',
         count: (c) => c.tickets,
+      },
+      // v1.17: what shoppers asked YouMart AI for that we don't stock.
+      {
+        href: '/admin/product-requests',
+        label: 'Product requests',
+        icon: PackageSearch,
+        permission: 'support.manage',
       },
     ],
   },
@@ -239,7 +257,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   if (!session) return <AdminLogin />;
 
   const sidebar = (
-    <nav aria-label="Admin" className="flex flex-1 flex-col gap-[18px] overflow-y-auto px-[14px] pb-[18px]">
+    <nav
+      aria-label="Admin"
+      className="flex flex-1 flex-col gap-[18px] overflow-y-auto px-[14px] pb-[18px]"
+    >
       {NAV.map((group) => {
         const items = group.items.filter((item) => can(session, item.permission));
         if (items.length === 0) return null;
@@ -505,9 +526,7 @@ function AdminLogin() {
             <LockKeyhole aria-hidden="true" className="size-[22px]" />
           </span>
           <h2 className="text-[24px] font-semibold text-[#0b1b3f]">Admin sign in</h2>
-          <p className="mb-[22px] mt-[4px] text-[14px] text-[#5d6b85]">
-            For YouMart staff only.
-          </p>
+          <p className="mb-[22px] mt-[4px] text-[14px] text-[#5d6b85]">For YouMart staff only.</p>
           <label className="mb-[14px] flex flex-col gap-[6px]">
             <span className="text-[13px] font-semibold text-[#24324d]">Work email</span>
             <input

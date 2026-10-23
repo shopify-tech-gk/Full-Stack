@@ -9,6 +9,7 @@ import { useAvatar } from '@/stores/profile';
 import { Avatar } from '@/components/Avatar';
 import { useOnboarding } from '@/stores/onboarding';
 import { SwipeTabBar } from '@/components/SwipeTabBar';
+import { emitHomeLogoTap } from '@/lib/home-tap';
 import { AiNavButton } from '@/components/AiNavButton';
 import { BAR_HEIGHT, BAR_SPACE } from '@/components/GlobalTabBar';
 
@@ -49,6 +50,13 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
+        // Instagram-style: tapping Home while already on Home scrolls it to the top, and tapping
+        // again at the top reloads it (same as tapping the YouMart logo there).
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            if (navigation.isFocused()) emitHomeLogoTap();
+          },
+        })}
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,

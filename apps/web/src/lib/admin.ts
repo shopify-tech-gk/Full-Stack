@@ -104,8 +104,7 @@ export async function adminFetch<T>(
   });
   if (res.status === 204) return undefined as T;
   const body = (await res.json().catch(() => null)) as
-    | (T & { error?: { message?: string } })
-    | null;
+    (T & { error?: { message?: string } }) | null;
   if (!res.ok) {
     if (res.status === 401) writeAdminSession(null);
     throw new AdminApiError(
@@ -124,13 +123,7 @@ export const can = (session: AdminSession | null, permission: string): boolean =
 // --- Response shapes (docs/contracts/API.md v1.14) ---
 
 export type ItemStatus =
-  | 'PENDING'
-  | 'CONFIRMED'
-  | 'PACKED'
-  | 'SHIPPED'
-  | 'DELIVERED'
-  | 'CANCELLED'
-  | 'RETURNED';
+  'PENDING' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'RETURNED';
 
 export interface AdminStats {
   today: { orders: number; revenue: Money };
@@ -149,13 +142,7 @@ export interface AdminStats {
 }
 
 export type OrderStage =
-  | 'ALL'
-  | 'TO_PACK'
-  | 'TO_SHIP'
-  | 'IN_TRANSIT'
-  | 'DELIVERED'
-  | 'UNPAID'
-  | 'CANCELLED';
+  'ALL' | 'TO_PACK' | 'TO_SHIP' | 'IN_TRANSIT' | 'DELIVERED' | 'UNPAID' | 'CANCELLED';
 
 export interface AdminOrderListItem {
   orderId: string;
@@ -290,6 +277,20 @@ export interface AdminTicket {
   createdAt: string;
   userId: string;
   customer: { phone: string | null; email: string | null } | null;
+}
+
+/** v1.17 a "Request restock" from YouMart AI (Admin -> Product requests). */
+export interface AdminProductRequest {
+  requestId: string;
+  item: string;
+  note: string | null;
+  chatTranscript: string | null;
+  status: 'OPEN' | 'RESTOCKED' | 'CLOSED';
+  createdAt: string;
+  /** Null when the shopper wasn't signed in. */
+  customer: { userId: string; phone: string | null; email: string | null } | null;
+  /** Open requests for the same item (same text, any case). */
+  sameItemOpen: number;
 }
 
 // --- Display helpers ---
