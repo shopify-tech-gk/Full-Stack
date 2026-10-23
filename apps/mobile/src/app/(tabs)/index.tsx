@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -14,6 +14,14 @@ import { FEATURE_CARDS, type FeatureCard } from '@youmart/shared-client';
 import { AppHeader } from '@/components/AppHeader';
 import { PromoCarousel } from '@/components/PromoCarousel';
 import { RailPanels } from '@/components/RailPanels';
+import { consumeLogoArrival, onHomeLogoTap } from '@/lib/home-tap';
+import Animated, {
+  Easing,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { BrandStrip } from '@/components/BrandStrip';
 import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
@@ -63,11 +71,40 @@ export default function HomeScreen() {
     }
   }, []);
 
+  // YouMart logo tapped while on Home (Instagram-style): scrolled down -> back to the top;
+  // already at the top -> reload.
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollY = useRef(0);
+  useEffect(
+    () =>
+      onHomeLogoTap(() => {
+        if (scrollY.current > 8) scrollRef.current?.scrollTo({ y: 0, animated: true });
+        else void load(true);
+      }),
+    [load],
+  );
+
+  // Arriving from Favourites / My Cart via the logo: the page glides up and fades in.
+  const enter = useSharedValue(1);
+  const enterStyle = useAnimatedStyle(() => ({
+    flex: 1,
+    opacity: 0.25 + enter.value * 0.75,
+    transform: [{ translateY: (1 - enter.value) * 26 }, { scale: 0.97 + enter.value * 0.03 }],
+  }));
+
   // Re-fetch on focus so recently-viewed rails reflect products viewed since last visit.
   useFocusEffect(
     useCallback(() => {
+      if (consumeLogoArrival()) {
+        enter.value = 0;
+        enter.value = withTiming(1, {
+          duration: 380,
+          easing: Easing.out(Easing.cubic),
+          reduceMotion: ReduceMotion.Never,
+        });
+      }
       void load();
-    }, [load]),
+    }, [load, enter]),
   );
 
   return (
@@ -85,42 +122,49 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.body}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => load(true)}
-              tintColor={colors.brand.DEFAULT}
-            />
-          }
-        >
-          <HScrollZone>
-            <PromoCarousel />
-          </HScrollZone>
-          <HScrollZone>
-            <CategoryPager />
-          </HScrollZone>
+        <Animated.View style={enterStyle}>
+          <ScrollView
+            ref={scrollRef}
+            onScroll={(e) => {
+              scrollY.current = e.nativeEvent.contentOffset.y;
+            }}
+            scrollEventThrottle={64}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.body}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => load(true)}
+                tintColor={colors.brand.DEFAULT}
+              />
+            }
+          >
+            <HScrollZone>
+              <PromoCarousel />
+            </HScrollZone>
+            <HScrollZone>
+              <CategoryPager />
+            </HScrollZone>
 
-          <RailsHeader />
-          {/* v1.17: swipeable 2 x 2 deal panels, one or two per rail. */}
-          <HScrollZone>
-            <RailPanels rails={state.data.rails} />
-          </HScrollZone>
+            <RailsHeader />
+            {/* v1.17: swipeable 2 x 2 deal panels, one or two per rail. */}
+            <HScrollZone>
+              <RailPanels rails={state.data.rails} />
+            </HScrollZone>
 
-          <HScrollZone>
-            <BrandStrip />
-          </HScrollZone>
-          <HScrollZone>
-            <ProductShowcase showcase={state.data.showcase} />
-          </HScrollZone>
-          <HScrollZone>
-            <BestCategories />
-          </HScrollZone>
-          <FeatureStrip />
-          <Footer />
-        </ScrollView>
+            <HScrollZone>
+              <BrandStrip />
+            </HScrollZone>
+            <HScrollZone>
+              <ProductShowcase showcase={state.data.showcase} />
+            </HScrollZone>
+            <HScrollZone>
+              <BestCategories />
+            </HScrollZone>
+            <FeatureStrip />
+            <Footer />
+          </ScrollView>
+        </Animated.View>
       )}
     </SwipeTabs>
   );

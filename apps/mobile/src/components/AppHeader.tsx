@@ -2,13 +2,23 @@ import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SEARCH_PLACEHOLDER } from '@youmart/shared-client';
 import { colors, font, radii, space } from '@/theme';
 import { DeliveryBar } from '@/components/DeliveryBar';
 import { VoiceSearchSheet } from '@/components/VoiceSearchSheet';
 import { useUnreadCount } from '@/stores/inbox';
+import { emitHomeLogoTap, markLogoArrival } from '@/lib/home-tap';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const LOGO = require('../../assets/images/logo.png');
@@ -21,11 +31,38 @@ export function AppHeader() {
   const insets = useSafeAreaInsets();
   const [voice, setVoice] = useState(false);
   const unread = useUnreadCount();
+  const pathname = usePathname();
+
+  // A quick squeeze-and-bounce on the logo; from another tab Home then glides in (see Home).
+  const logoScale = useSharedValue(1);
+  const logoStyle = useAnimatedStyle(() => ({ transform: [{ scale: logoScale.value }] }));
+  const logoTap = () => {
+    void Haptics.selectionAsync().catch(() => undefined);
+    logoScale.value = withSequence(
+      withTiming(0.86, { duration: 90, reduceMotion: ReduceMotion.Never }),
+      withSpring(1, { damping: 7, stiffness: 260, reduceMotion: ReduceMotion.Never }),
+    );
+    if (pathname === '/') {
+      emitHomeLogoTap();
+      return;
+    }
+    markLogoArrival();
+    // Let the bounce show before the screen changes.
+    setTimeout(() => {
+      if (router.canDismiss()) router.dismissAll();
+      router.navigate('/');
+    }, 160);
+  };
 
   return (
     <View style={[styles.wrap, { paddingTop: insets.top + 6 }]}>
       <View style={styles.row}>
-        <Image source={LOGO} style={styles.logo} contentFit="contain" />
+        {/* Logo: elsewhere -> Home; on Home -> back to the top, or reload if already there. */}
+        <Pressable onPress={logoTap} hitSlop={6} accessibilityLabel="YouMart home">
+          <Animated.View style={logoStyle}>
+            <Image source={LOGO} style={styles.logo} contentFit="contain" />
+          </Animated.View>
+        </Pressable>
         <View style={styles.actions}>
           <Pressable
             style={styles.tile}
