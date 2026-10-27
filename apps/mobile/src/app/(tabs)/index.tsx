@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type ScrollViewInstance,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -23,6 +24,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { BrandStrip } from '@/components/BrandStrip';
+import { BrandBanners } from '@/components/BrandBanners';
 import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
@@ -73,7 +75,7 @@ export default function HomeScreen() {
 
   // YouMart logo tapped while on Home (Instagram-style): scrolled down -> back to the top;
   // already at the top -> reload.
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const scrollY = useRef(0);
   useEffect(
     () =>
@@ -154,6 +156,10 @@ export default function HomeScreen() {
 
             <HScrollZone>
               <BrandStrip />
+            </HScrollZone>
+            {/* v1.17: "500000+ Products" / "8000+ Brands" banner slider. */}
+            <HScrollZone>
+              <BrandBanners />
             </HScrollZone>
             <HScrollZone>
               <ProductShowcase showcase={state.data.showcase} />

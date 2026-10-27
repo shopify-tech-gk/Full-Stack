@@ -273,7 +273,7 @@ export default function CategoryScreen() {
               ListFooterComponent={
                 loadingMore ? (
                   <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
-                ) : null
+                ) : undefined
               }
             />
           ) : (

@@ -60,7 +60,7 @@ function runLocked<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
   });
 }
 
-type TxnType = 'TOPUP' | 'REFUND' | 'ORDER_PAYMENT' | 'FORFEIT';
+type TxnType = 'TOPUP' | 'REFUND' | 'ORDER_PAYMENT' | 'FORFEIT' | 'REFERRAL_REWARD';
 
 interface LedgerEntry {
   userId: string;
@@ -466,5 +466,45 @@ export async function forfeitWallet(userId: string): Promise<{ forfeited: Money 
       idempotencyKey: `forfeit:${wallet.id}:${Date.now()}`,
     });
     return { forfeited: wallet.balance };
+  });
+}
+
+/**
+ * v1.17 Refer & Earn (order-service, SERVICE-ONLY): CREDIT pays a referral reward into the
+ * referrer's wallet; DEBIT takes it back when the friend returns the item - never more than the
+ * wallet's spendable balance, so it can't go negative (the rest is simply written off). Both are
+ * idempotent on `idempotencyKey`.
+ */
+export async function referralEntry(
+  userId: string,
+  input: {
+    direction: 'CREDIT' | 'DEBIT';
+    amount: Money;
+    idempotencyKey: string;
+    orderId?: string | null;
+    orderNumber?: string | null;
+  },
+): Promise<{ applied: Money }> {
+  return runLocked(async (tx) => {
+    const wallet = await lockWallet(tx, userId);
+    let amount = input.amount;
+    if (input.direction === 'DEBIT') {
+      amount = minMoney(amount, subtract(wallet.balance, wallet.held));
+      if (compare(amount, ZERO) <= 0) return { applied: ZERO };
+    }
+    await applyEntry(tx, wallet, {
+      userId,
+      type: 'REFERRAL_REWARD',
+      direction: input.direction,
+      amount,
+      orderId: input.orderId ?? null,
+      orderNumber: input.orderNumber ?? null,
+      description:
+        input.direction === 'CREDIT'
+          ? 'Refer & Earn reward - a friend you referred got their order'
+          : 'Refer & Earn reward reversed - the item was returned',
+      idempotencyKey: input.idempotencyKey,
+    });
+    return { applied: amount };
   });
 }

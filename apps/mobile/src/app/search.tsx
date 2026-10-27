@@ -8,6 +8,7 @@ import {
   Text,
   TextInput,
   View,
+  type TextInputInstance,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -33,7 +34,7 @@ export default function SearchScreen() {
   const [state, setState] = useState<State>({ status: 'idle' });
   const [loadingMore, setLoadingMore] = useState(false);
   const [voice, setVoice] = useState(false);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Guards against stale responses when the user keeps typing.
   const reqId = useRef(0);
@@ -249,7 +250,7 @@ export default function SearchScreen() {
           ListFooterComponent={
             loadingMore ? (
               <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
-            ) : null
+            ) : undefined
           }
         />
       )}

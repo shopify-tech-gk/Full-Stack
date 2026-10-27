@@ -76,7 +76,10 @@ export default function CheckoutScreen() {
     };
     // As soon as they head back (before the slide-out animation), so the screen underneath never
     // shows the line; unmount is the fallback.
-    const unsubscribe = navigation.addListener('beforeRemove', release);
+    // (Typed loosely: expo-router's untyped navigation doesn't list the stack's beforeRemove.)
+    const unsubscribe = (
+      navigation as unknown as { addListener: (e: 'beforeRemove', cb: () => void) => () => void }
+    ).addListener('beforeRemove', release);
     return () => {
       unsubscribe();
       release();

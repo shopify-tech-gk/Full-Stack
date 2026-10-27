@@ -113,7 +113,7 @@ export default function RailScreen() {
       ListFooterComponent={
         loading ? (
           <ActivityIndicator style={{ marginVertical: space.lg }} color={colors.brand.DEFAULT} />
-        ) : null
+        ) : undefined
       }
     />
   );

@@ -70,20 +70,12 @@ export function AppHeader() {
             hitSlop={6}
             accessibilityLabel="Scan QR to sign in on a computer"
           >
-            <Ionicons name="qr-code-outline" size={21} color={colors.brand.DEFAULT} />
+            <Ionicons name="qr-code-outline" size={22} color={colors.brand.DEFAULT} />
             <Text style={styles.tileLabel}>QR{'\n'}Login</Text>
           </Pressable>
           <Pressable style={styles.tile} onPress={() => router.push('/track-order')} hitSlop={6}>
             <Ionicons name="cube-outline" size={22} color={colors.brand.DEFAULT} />
             <Text style={styles.tileLabel}>Track{'\n'}Order</Text>
-          </Pressable>
-          <Pressable
-            style={styles.tile}
-            onPress={() => router.push('/info/customer-care')}
-            hitSlop={6}
-          >
-            <Ionicons name="headset-outline" size={22} color={colors.brand.DEFAULT} />
-            <Text style={styles.tileLabel}>Customer{'\n'}Care</Text>
           </Pressable>
           {/* v1.15: the inbox - order updates, refunds, support replies. */}
           <Pressable
@@ -95,7 +87,7 @@ export function AppHeader() {
             <View>
               <Ionicons
                 name={unread > 0 ? 'notifications' : 'notifications-outline'}
-                size={26}
+                size={22}
                 color={colors.brand.DEFAULT}
               />
               {unread > 0 ? (
@@ -105,6 +97,14 @@ export function AppHeader() {
               ) : null}
             </View>
             <Text style={styles.tileLabel}>Alerts</Text>
+          </Pressable>
+          <Pressable
+            style={styles.tile}
+            onPress={() => router.push('/info/customer-care')}
+            hitSlop={6}
+          >
+            <Ionicons name="headset-outline" size={22} color={colors.brand.DEFAULT} />
+            <Text style={styles.tileLabel}>Customer{'\n'}Care</Text>
           </Pressable>
         </View>
       </View>
@@ -153,7 +153,8 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   logo: { width: 132, height: 50 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 'auto' },
+  // Tiles line up by their tops so every icon sits on one row (labels are 1 or 2 lines).
+  actions: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginLeft: 'auto' },
   tile: { alignItems: 'center', gap: 2, width: 46 },
   badge: {
     position: 'absolute',

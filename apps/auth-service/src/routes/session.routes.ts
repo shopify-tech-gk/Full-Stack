@@ -20,6 +20,7 @@ import {
   setNotificationSettings,
 } from '../user/notification-settings.service';
 import { checkAccountDeletion, deleteAccount } from '../user/account-deletion.service';
+import { ApplyReferralBody, applyReferralCode, getMyReferral } from '../user/referral.service';
 import {
   ContactChangeRequestBody,
   ContactChangeVerifyBody,
@@ -57,6 +58,20 @@ sessionRouter.get('/me', requireAuth, async (req, res) => {
     throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
   }
   res.status(200).json(await getSessionUser(userId));
+});
+
+// v1.17 Refer & Earn: the customer's own code + stats, and entering a friend's code.
+sessionRouter.get('/me/referral', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  res.status(200).json(await getMyReferral(userId));
+});
+
+sessionRouter.post('/me/referral/apply', requireAuth, async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) throw new AppError('UNAUTHORIZED', 401, 'Authentication required');
+  const { code } = ApplyReferralBody.parse(req.body);
+  res.status(200).json(await applyReferralCode(userId, code));
 });
 
 const UpdateProfileBody = z.object({

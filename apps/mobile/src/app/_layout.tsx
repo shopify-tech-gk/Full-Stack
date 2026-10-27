@@ -141,6 +141,11 @@ export default function RootLayout() {
                         name="auth/otp"
                         options={{ headerShown: true, title: 'Verify' }}
                       />
+                      {/* v1.17 Refer & Earn: one-time "Got a friend's code?" after sign-up. */}
+                      <Stack.Screen
+                        name="auth/referral"
+                        options={{ headerShown: true, title: 'Referral code' }}
+                      />
                       <Stack.Screen
                         name="wishlist"
                         options={{ headerShown: true, title: 'Favourites', header: brandHeader }}
@@ -207,6 +212,11 @@ export default function RootLayout() {
                       <Stack.Screen
                         name="account/privacy"
                         options={{ headerShown: true, title: 'Privacy & account' }}
+                      />
+                      {/* v1.17 Refer & Earn */}
+                      <Stack.Screen
+                        name="refer"
+                        options={{ headerShown: true, title: 'Refer & Earn' }}
                       />
                       <Stack.Screen
                         name="wallet/index"

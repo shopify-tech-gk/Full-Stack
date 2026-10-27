@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextInputInstance,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   OTP_LENGTH,
@@ -10,12 +19,13 @@ import {
 } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { loginWithOtp } from '@/stores/session';
+import { referralAfterSignIn } from '@/lib/referral-signup';
 import { colors, font, radii, space } from '@/theme';
 
 // OTP entry -> verify -> logged in. The session store captures the refresh token into secure-store.
 export default function OtpScreen() {
   const router = useRouter();
-  const { identifier } = useLocalSearchParams<{ identifier: string }>();
+  const { identifier, ref } = useLocalSearchParams<{ identifier: string; ref?: string }>();
   const id = String(identifier ?? '');
   const detected = detectIdentifier(id);
   const label = detected ? identifierLabel(detected) : id;
@@ -24,7 +34,7 @@ export default function OtpScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(OTP_RESEND_SECONDS);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
 
   useEffect(() => {
     if (seconds <= 0) return;
@@ -41,10 +51,24 @@ export default function OtpScreen() {
     setBusy(true);
     setError(null);
     try {
-      await loginWithOtp(id, value);
+      const user = await loginWithOtp(id, value);
+      // v1.17 Refer & Earn: apply a code typed on the sign-in screen, or ask a new account once.
+      const referral = await referralAfterSignIn(
+        user.id,
+        typeof ref === 'string' ? ref : undefined,
+      );
       // Back to wherever the user came from (tabs); the session change merges guest data.
       router.dismissAll?.();
       router.replace('/(tabs)/account');
+      if (referral.kind === 'ask') router.push('/auth/referral');
+      else if (referral.kind === 'applied') {
+        Alert.alert(
+          'Referral code added',
+          `You joined with ${referral.friend ?? 'your friend'}'s code. Happy shopping!`,
+        );
+      } else if (referral.kind === 'failed') {
+        Alert.alert('Referral code not added', referral.message);
+      }
     } catch (err) {
       setError(otpErrorMessage(err, 'verify'));
       setCode('');

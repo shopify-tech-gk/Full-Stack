@@ -191,6 +191,11 @@ model User {
   /// W8: profile photo as a small (resized, ~20-40 KB) image data URL, owned by the account so it
   /// follows the customer across devices. Null = initials avatar.
   avatar          String?    @db.Text
+  /// v1.17 Refer & Earn: this customer's own code to share (created the first time they open
+  /// Refer & Earn), and who referred them (set once, within a few days of joining).
+  referralCode    String?    @unique @map("referral_code")
+  referredById    String?    @map("referred_by_id")
+  referredAt      DateTime?  @map("referred_at")
   createdAt       DateTime   @default(now()) @map("created_at")
   updatedAt       DateTime   @updatedAt @map("updated_at")
   deletedAt       DateTime?  @map("deleted_at")
@@ -200,6 +205,7 @@ model User {
 
   @@index([phone])
   @@index([email])
+  @@index([referredById])
   @@map("user")
   @@schema("auth")
 }
@@ -769,6 +775,34 @@ model OrderItem {
   @@schema("orders")
 }
 
+enum ReferralRewardStatus {
+  CREDITED
+  REVERSED
+
+  @@schema("orders")
+}
+
+/// v1.17 Refer & Earn: one reward per delivered order line of a referred customer - 2.5% of what
+/// they paid for it (lineTotal - discount), when the order's items total after coupons is Rs 500+.
+/// `orderItemId` is unique, so a line can never pay out twice; REVERSED when it's returned.
+/// `referrerId` / `buyerId` are soft references to auth.user.id.
+model ReferralReward {
+  id          String               @id @default(uuid(7))
+  referrerId  String               @map("referrer_id")
+  buyerId     String               @map("buyer_id")
+  orderId     String               @map("order_id")
+  orderItemId String               @unique @map("order_item_id")
+  amount      Decimal              @db.Decimal(12, 2)
+  status      ReferralRewardStatus @default(CREDITED)
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@index([referrerId, createdAt])
+  @@index([orderId])
+  @@map("referral_reward")
+  @@schema("orders")
+}
+
 /// An audit trail entry for an order's status transitions. `orderId` is a
 /// same-schema relation to Order (a real FK is fine here).
 model OrderStatusHistory {
@@ -1003,6 +1037,9 @@ enum WalletTxnType {
   ORDER_PAYMENT
   /// Balance given up when the customer deleted their account.
   FORFEIT
+  /// v1.17 Refer & Earn: 2.5% of a referred friend's delivered item (CREDIT), taken back if
+  /// that item is returned (DEBIT).
+  REFERRAL_REWARD
 
   @@schema("payments")
 }

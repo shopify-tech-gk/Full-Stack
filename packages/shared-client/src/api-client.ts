@@ -7,6 +7,8 @@ import type {
   ApiErrorCode,
   AccountDeletionCheck,
   AuthUser,
+  MyReferral,
+  MyReferralRewards,
   AvailableCoupon,
   CouponQuote,
   Money,
@@ -205,6 +207,12 @@ export function createApiClient(options: ApiClientOptions) {
       me: () => json<AuthUser>('GET', '/auth/me'),
       /** v1.6: display name only (phone/email are OTP-verified login identifiers). */
       updateProfile: (body: { name: string }) => json<AuthUser>('PATCH', '/auth/me', { body }),
+      /** v1.17 Refer & Earn: my code + friends joined; and entering a friend's code. */
+      referral: () => json<MyReferral>('GET', '/auth/me/referral'),
+      applyReferral: (code: string) =>
+        json<{ referredBy: { name: string | null } }>('POST', '/auth/me/referral/apply', {
+          body: { code },
+        }),
       /** v1.12: change/add the mobile number or email - a code goes to the NEW value first. */
       requestContactChange: (identifier: string) =>
         json<{ status: 'otp_sent'; expiresInSeconds: number }>('POST', '/auth/me/contact/request', {
@@ -329,6 +337,8 @@ export function createApiClient(options: ApiClientOptions) {
       setDefault: (id: Uuid) => json<Address>('POST', `/addresses/${id}/default`),
     },
     orders: {
+      /** v1.17 Refer & Earn: rewards earned from friends' delivered orders. */
+      referralRewards: () => json<MyReferralRewards>('GET', '/orders/me/referral-rewards'),
       /** `cartItemIds` (v1.11, "Buy this now"): order only these cart lines; omit for the whole cart. */
       /** v1.13: `couponCode` is validated and reserved by the server (never a client discount). */
       checkout: (addressId: Uuid, cartItemIds?: readonly Uuid[], couponCode?: string) =>
@@ -401,8 +411,7 @@ export function createApiClient(options: ApiClientOptions) {
         message: string;
         /** v1.17: the AI help chat this came from. */
         transcript?: string;
-      }) =>
-        json<HelpTicket>('POST', '/support/tickets', { body }),
+      }) => json<HelpTicket>('POST', '/support/tickets', { body }),
       listTickets: (query?: PaginationQuery) =>
         json<Paginated<HelpTicket>>('GET', '/support/tickets', { query }),
     },

@@ -1,5 +1,13 @@
 import { useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type ScrollViewInstance,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -19,7 +27,7 @@ export function BestCategories() {
   const router = useRouter();
   const slides = useMemo(() => bestCategorySlides(), []);
   const [index, setIndex] = useState(0);
-  const chipsRef = useRef<ScrollView>(null);
+  const chipsRef = useRef<ScrollViewInstance>(null);
   const trackRef = useRef<FlatList>(null);
   const slide = slides[index];
   if (!slide) return null;

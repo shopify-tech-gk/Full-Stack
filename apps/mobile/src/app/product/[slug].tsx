@@ -28,6 +28,8 @@ import { useSession } from '@/stores/session';
 import { Price, ProductImage, Stars } from '@/components/ui';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductReviews } from '@/components/ProductReviews';
+import { shareProduct } from '@/lib/share';
+import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { colors, font, radii, space } from '@/theme';
 
@@ -276,6 +278,22 @@ export default function ProductScreen() {
             style={styles.heart}
           />
         ) : null}
+        {/* v1.17 Share: the phone's share sheet (WhatsApp, Instagram, Facebook, Copy...). */}
+        <Pressable
+          onPress={() => {
+            void Haptics.selectionAsync().catch(() => undefined);
+            void shareProduct({ title: prod.title, slug: prod.slug, price: prod.sellingPrice });
+          }}
+          style={({ pressed }) => [
+            styles.shareBtn,
+            canBuy ? null : styles.shareBtnTop,
+            pressed && { opacity: 0.8, transform: [{ scale: 0.94 }] },
+          ]}
+          hitSlop={6}
+          accessibilityLabel={`Share ${prod.title}`}
+        >
+          <Ionicons name="share-social" size={20} color={colors.brand.DEFAULT} />
+        </Pressable>
       </View>
 
       <View style={styles.info}>
@@ -372,7 +390,7 @@ export default function ProductScreen() {
         ListFooterComponent={
           loadingMore ? (
             <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
-          ) : null
+          ) : undefined
         }
       />
 
@@ -478,6 +496,23 @@ const styles = StyleSheet.create({
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.card.border },
   dotActive: { backgroundColor: colors.brand.DEFAULT, width: 18 },
   heart: { position: 'absolute', top: space.md, right: space.md },
+  shareBtn: {
+    position: 'absolute',
+    top: space.md + 48,
+    right: space.md,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  shareBtnTop: { top: space.md },
   info: {
     padding: space.lg,
     gap: space.md,

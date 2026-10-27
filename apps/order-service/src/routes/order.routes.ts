@@ -40,6 +40,7 @@ import { NotifyPreferenceBody } from '../order/notify-preference.schema';
 import { getNotifyPreference, setNotifyPreference } from '../order/notify-preference.service';
 import { requireAuth, requireServiceAuth, requireAdmin } from '../authMiddleware';
 import { listOrdersForAssistant } from '../order/assistant-orders.service';
+import { listMyReferralRewards } from '../order/referral-rewards.service';
 import {
   AdminOrdersQuery,
   getAdminOrder,
@@ -311,6 +312,11 @@ orderRouter.put('/:id/notify', requireAuth, async (req, res) => {
   const id = typeof req.params.id === 'string' ? req.params.id : '';
   const body = NotifyPreferenceBody.parse(req.body);
   res.status(200).json(await setNotifyPreference(userId, id, body));
+});
+
+// v1.17 Refer & Earn: the signed-in customer's own rewards (amounts only).
+orderRouter.get('/me/referral-rewards', requireAuth, async (req, res) => {
+  res.status(200).json(await listMyReferralRewards(requireUserId(req)));
 });
 
 orderRouter.get('/', requireAuth, async (req, res) => {

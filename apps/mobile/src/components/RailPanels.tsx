@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  type ScrollViewInstance,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -83,7 +84,7 @@ export function RailPanels({ rails }: { rails: ProductRailSlider[] }) {
   const { width } = useWindowDimensions();
   const panelWidth = Math.min(width - 48, 380);
   const panels = toPanels(rails);
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const [page, setPage] = useState(0);
 
   if (panels.length === 0) return null;

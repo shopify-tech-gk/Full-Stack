@@ -53,6 +53,18 @@ export interface PaymentClient {
   getWallet(userId: string): Promise<WalletSummary>;
   /** W9: account deletion - the customer agreed to give up the balance. */
   forfeitWallet(userId: string): Promise<{ forfeited: Money }>;
+  /** v1.17 Refer & Earn: pay a reward into the referrer's wallet (CREDIT) or take it back after a
+   * return (DEBIT, capped at the spendable balance). Idempotent on `idempotencyKey`. */
+  referralEntry(
+    userId: string,
+    input: {
+      direction: 'CREDIT' | 'DEBIT';
+      amount: Money;
+      idempotencyKey: string;
+      orderId?: string;
+      orderNumber?: string;
+    },
+  ): Promise<{ applied: Money }>;
 }
 
 /** `baseUrl` (e.g. `PAYMENT_SERVICE_URL`) is injected by the caller - this
@@ -130,6 +142,17 @@ export function createPaymentClient({
         baseUrl,
         path: `/wallet/internal/users/${userId}/forfeit`,
         method: 'POST',
+        authToken: authToken(),
+        timeoutMs,
+      });
+    },
+
+    referralEntry(userId, input) {
+      return request<{ applied: Money }>({
+        baseUrl,
+        path: `/wallet/internal/users/${userId}/referral`,
+        method: 'POST',
+        body: input,
         authToken: authToken(),
         timeoutMs,
       });

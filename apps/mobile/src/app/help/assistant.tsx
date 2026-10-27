@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
   useWindowDimensions,
+  type ScrollViewInstance,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
@@ -134,7 +135,7 @@ export default function AssistantScreen() {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const nextId = useRef(1);
   const typing = useRef<ReturnType<typeof setInterval> | null>(null);
 

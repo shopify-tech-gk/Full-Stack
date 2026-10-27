@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getUserContact } from '../user/user.service';
 import { getNotificationSettings } from '../user/notification-settings.service';
+import { getReferrer } from '../user/referral.service';
 import { requireServiceAuth } from '../authMiddleware';
 
 export const internalRouter: Router = Router();
@@ -22,3 +23,9 @@ internalRouter.get(
     res.status(200).json(await getNotificationSettings(userId));
   },
 );
+
+// v1.17 SERVICE-ONLY: who referred this customer - order-service pays them the Refer & Earn reward.
+internalRouter.get('/internal/users/:userId/referrer', requireServiceAuth, async (req, res) => {
+  const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
+  res.status(200).json(await getReferrer(userId));
+});

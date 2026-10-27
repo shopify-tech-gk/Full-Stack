@@ -1,11 +1,16 @@
 import { Router } from 'express';
-import { CreateTopupBody, WalletTransactionsQuery } from '../wallet/wallet.schema';
+import {
+  CreateTopupBody,
+  ReferralEntryBody,
+  WalletTransactionsQuery,
+} from '../wallet/wallet.schema';
 import {
   createTopup,
   forfeitWallet,
   getTopup,
   getWalletSummary,
   listTransactions,
+  referralEntry,
   releaseHold,
 } from '../wallet/wallet.service';
 import { requireAuth, requireServiceAuth } from '../authMiddleware';
@@ -33,6 +38,12 @@ walletRouter.post('/internal/holds/:orderId/release', requireServiceAuth, async 
   const orderId = typeof req.params.orderId === 'string' ? req.params.orderId : '';
   await releaseHold(orderId);
   res.status(200).json({ released: true });
+});
+
+// v1.17 order-service: a Refer & Earn reward paid in (CREDIT) or taken back after a return (DEBIT).
+walletRouter.post('/internal/users/:userId/referral', requireServiceAuth, async (req, res) => {
+  const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
+  res.status(200).json(await referralEntry(userId, ReferralEntryBody.parse(req.body)));
 });
 
 // --- Customer -----------------------------------------------------------------------------------

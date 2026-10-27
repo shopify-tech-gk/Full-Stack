@@ -1581,6 +1581,6 @@ const CATEGORY_IMAGES: Record<string, ImageSourcePropType> = {
 };
 
 /** Returns the bundled image for a taxonomy slug path, or undefined to fall back to a placeholder. */
-export function lookupCategoryImage(key: string | undefined): ImageSourcePropType | undefined {
-  return key ? CATEGORY_IMAGES[key] : undefined;
+export function lookupCategoryImage(key: string | undefined): number | undefined {
+  return key ? (CATEGORY_IMAGES[key] as number | undefined) : undefined;
 }

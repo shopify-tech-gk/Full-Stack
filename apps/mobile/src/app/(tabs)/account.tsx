@@ -44,6 +44,8 @@ interface Item {
 }
 
 const ACTIVITY: Item[] = [
+  // v1.17: earn 2.5% of friends' orders.
+  { icon: 'gift', label: 'Refer & Earn', tint: 'violet', to: '/refer' },
   { icon: 'navigate', label: 'Track an order', tint: 'blue', to: '/track-order' },
   { icon: 'location', label: 'Saved addresses', tint: 'teal', to: '/addresses', auth: true },
   { icon: 'cart', label: 'My cart', tint: 'amber', to: '/cart' },

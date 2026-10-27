@@ -90,7 +90,7 @@ export default function CouponsScreen() {
           <Pressable style={styles.shop} onPress={() => router.push('/')}>
             <Text style={styles.shopText}>Start shopping</Text>
           </Pressable>
-        ) : null
+        ) : undefined
       }
     />
   );

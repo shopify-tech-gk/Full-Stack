@@ -19,6 +19,7 @@ const TYPE_ICON: Record<WalletTransaction['type'], keyof typeof Ionicons.glyphMa
   REFUND: 'return-down-back',
   ORDER_PAYMENT: 'bag-handle',
   FORFEIT: 'remove-circle',
+  REFERRAL_REWARD: 'gift',
 };
 
 function when(iso: string): string {
@@ -146,7 +147,7 @@ export default function WalletScreen() {
       ListFooterComponent={
         loadingMore ? (
           <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
-        ) : null
+        ) : undefined
       }
       renderItem={({ item }) => {
         const credit = item.direction === 'CREDIT';

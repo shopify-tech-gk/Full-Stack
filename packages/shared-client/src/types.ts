@@ -518,7 +518,28 @@ export interface WalletSummary {
   available: Money;
   topupLimits: { min: Money; max: Money; maxBalance: Money };
 }
-export type WalletTxnType = 'TOPUP' | 'REFUND' | 'ORDER_PAYMENT' | 'FORFEIT';
+export type WalletTxnType = 'TOPUP' | 'REFUND' | 'ORDER_PAYMENT' | 'FORFEIT' | 'REFERRAL_REWARD';
+
+/** v1.17 Refer & Earn: the customer's code and stats (GET /auth/me/referral). */
+export interface MyReferral {
+  code: string;
+  friendsJoined: number;
+  /** Who referred this customer (null = nobody). */
+  referredBy: { name: string | null } | null;
+  /** They can still enter a friend's code (new account, none entered yet). */
+  canApplyCode: boolean;
+  applyWindowDays: number;
+}
+/** v1.17 Refer & Earn: rewards earned from friends' delivered orders (amounts only). */
+export interface MyReferralRewards {
+  totalEarned: Money;
+  rewards: Array<{
+    rewardId: Uuid;
+    amount: Money;
+    status: 'CREDITED' | 'REVERSED';
+    createdAt: IsoDateTime;
+  }>;
+}
 export interface WalletTransaction {
   id: Uuid;
   type: WalletTxnType;

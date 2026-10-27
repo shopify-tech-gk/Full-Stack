@@ -257,7 +257,7 @@ export default function InboxScreen() {
           ListFooterComponent={
             loadingMore ? (
               <ActivityIndicator style={{ margin: 16 }} color={colors.brand.DEFAULT} />
-            ) : null
+            ) : undefined
           }
           renderItem={({ item: m, index }) => {
             const k = KIND[m.kind];

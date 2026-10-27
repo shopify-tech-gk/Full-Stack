@@ -94,6 +94,13 @@ const TEMPLATES: Record<string, (d: Record<string, unknown>) => InboxContent> = 
     title: 'Return not approved',
     body: `We couldn't accept the return of ${what(d)}${str(d.note) ? `: ${str(d.note)}` : '.'}`,
   }),
+  // v1.17 Refer & Earn: a friend they referred got their order - 2.5% added to the wallet.
+  // REFUND kind with no order, so tapping it opens the Wallet.
+  REFERRAL_REWARD: (d) => ({
+    kind: 'REFUND',
+    title: `${rupees(d.amount)} referral reward added`,
+    body: `A friend you referred got their order, so ${rupees(d.amount)} has been added to your YouMart Wallet. Keep sharing your code!`,
+  }),
   // v1.17 Admin marked a "Request restock" as restocked.
   RESTOCK_AVAILABLE: (d) => ({
     kind: 'OFFER',

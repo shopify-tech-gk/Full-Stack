@@ -4,6 +4,7 @@ import type { Money } from '@youmart/shared-types';
 import { add, deliveryFee, multiplyByQuantity, subtract, sum } from '@youmart/shared-utils';
 import { AppError } from '@youmart/errors';
 import { enqueueNotification, notifyInbox } from '@youmart/notifications-client';
+import { rewardReferrerForDelivery, reverseReferralReward } from './referral-rewards.service';
 import { enqueueInvoiceGeneration } from '@youmart/invoice-client';
 import { prisma } from '../db';
 import {
@@ -1028,6 +1029,15 @@ export async function setSellerItemStatusInternal(
     where: { id: orderItemId },
     data: { sellerStatus: nextStatus },
   });
+
+  // v1.17 Refer & Earn: delivered -> pay the referrer; returned -> take it back. Best-effort.
+  try {
+    if (nextStatus === 'DELIVERED') await rewardReferrerForDelivery(orderItemId);
+    else if (nextStatus === 'RETURNED') await reverseReferralReward(orderItemId);
+  } catch (err: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('refer & earn: reward update failed', err);
+  }
 
   // Cash on Delivery: once every live line is delivered, the courier has collected the cash.
   if (nextStatus === 'DELIVERED' && item.order.paymentMethod === 'COD') {

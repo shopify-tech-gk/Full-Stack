@@ -1,4 +1,5 @@
-import { Redirect, Tabs } from 'expo-router';
+import { Redirect } from 'expo-router';
+import { Tabs } from 'expo-router/js-tabs';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { authUserLabel } from '@youmart/shared-client';
@@ -59,7 +60,9 @@ export default function TabsLayout() {
         })}
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color as string} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -67,7 +70,9 @@ export default function TabsLayout() {
         options={{
           title: 'Favourites',
           // Saved items: a solid bookmark, grey / blue like the other tab icons.
-          tabBarIcon: ({ color, size }) => <Ionicons name="bookmark" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bookmark" size={size} color={color as string} />
+          ),
         }}
       />
       {/* v1.17: YouMart AI in the middle - a raised button that opens the assistant on top. */}
@@ -91,7 +96,9 @@ export default function TabsLayout() {
             borderRadius: 10,
             lineHeight: 16,
           },
-          tabBarIcon: ({ color, size }) => <Ionicons name="cart" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cart" size={size} color={color as string} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -111,7 +118,7 @@ export default function TabsLayout() {
                 <Avatar name={avatarName} uri={uri} size={size} />
               </View>
             ) : (
-              <Ionicons name="person" size={size} color={color} />
+              <Ionicons name="person" size={size} color={color as string} />
             ),
         }}
       />

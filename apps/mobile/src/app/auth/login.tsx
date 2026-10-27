@@ -21,6 +21,9 @@ export default function LoginScreen() {
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // v1.17 Refer & Earn: an optional friend's code, applied right after the OTP is verified.
+  const [showRef, setShowRef] = useState(false);
+  const [refCode, setRefCode] = useState('');
 
   const kind = identifierKind(value);
   const identifier = detectIdentifier(value);
@@ -34,7 +37,13 @@ export default function LoginScreen() {
     setBusy(true);
     try {
       await api.auth.requestOtp(identifier.value);
-      router.push({ pathname: '/auth/otp', params: { identifier: identifier.value } });
+      router.push({
+        pathname: '/auth/otp',
+        params: {
+          identifier: identifier.value,
+          ...(refCode.trim() ? { ref: refCode.trim() } : {}),
+        },
+      });
     } catch (err) {
       setError(otpErrorMessage(err, 'request'));
     } finally {
@@ -81,6 +90,34 @@ export default function LoginScreen() {
         </View>
         <Text style={styles.hint}>Use your mobile number or email — no password needed.</Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        {/* v1.17 Refer & Earn: optional friend's code (new accounts). */}
+        {showRef ? (
+          <View style={styles.refBox}>
+            <Text style={styles.label}>Friend&apos;s referral code (optional)</Text>
+            <View style={styles.field}>
+              <Ionicons name="gift-outline" size={18} color={colors.text.placeholder} />
+              <TextInput
+                value={refCode}
+                onChangeText={(t) => setRefCode(t.toUpperCase().replace(/\s+/g, ''))}
+                placeholder="e.g. YMAB12CD"
+                placeholderTextColor={colors.text.placeholder}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={20}
+                style={styles.input}
+              />
+            </View>
+            <Text style={styles.hint}>
+              New to YouMart? Your friend earns a reward when you shop.
+            </Text>
+          </View>
+        ) : (
+          <Pressable onPress={() => setShowRef(true)} hitSlop={8} style={styles.refLink}>
+            <Ionicons name="gift-outline" size={15} color={colors.brand.DEFAULT} />
+            <Text style={styles.refLinkText}>Have a friend&apos;s referral code?</Text>
+          </Pressable>
+        )}
 
         <Pressable
           style={[styles.button, (!identifier || busy) && styles.buttonDisabled]}
@@ -143,5 +180,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonDisabled: { opacity: 0.5 },
+  refLink: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
+  refLinkText: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.brand.DEFAULT },
+  refBox: { gap: space.sm },
   buttonText: { fontFamily: font.uiSemibold, fontSize: 16, color: colors.white },
 });

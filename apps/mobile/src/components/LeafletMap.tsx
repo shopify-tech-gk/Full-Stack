@@ -1,6 +1,17 @@
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  type ComponentType,
+  type Ref,
+} from 'react';
 import { StyleSheet } from 'react-native';
-import { WebView, type WebViewMessageEvent } from 'react-native-webview';
+import { WebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
+
+// react-native-webview 14's class typings resolve its props to `never` under React 19.3's types;
+// the component itself is fine, so give it its documented props + ref explicitly.
+const Web = WebView as unknown as ComponentType<WebViewProps & { ref?: Ref<WebView> }>;
 import type { Region } from 'react-native-maps';
 
 export interface LeafletMapHandle {
@@ -101,7 +112,7 @@ export const LeafletMap = forwardRef<LeafletMapHandle, Props>(function LeafletMa
   };
 
   return (
-    <WebView
+    <Web
       ref={web}
       style={StyleSheet.absoluteFill}
       source={{ html, baseUrl: 'https://youmart.in' }}

@@ -32,6 +32,8 @@ export interface AuthClient {
   getUserContact(userId: string): Promise<UserContactView>;
   /** W9: the customer's notification settings (defaults when never changed). */
   getNotificationSettings(userId: string): Promise<NotificationSettings>;
+  /** v1.17 Refer & Earn: who referred this customer (null = nobody / no longer active). */
+  getReferrer(userId: string): Promise<{ referrerId: string | null }>;
 }
 
 /** `baseUrl` (e.g. `AUTH_SERVICE_URL`) is injected by the caller - this
@@ -56,6 +58,16 @@ export function createAuthClient({
       return request<NotificationSettings>({
         baseUrl,
         path: `/auth/internal/users/${userId}/notification-settings`,
+        method: 'GET',
+        authToken: mintCallerServiceToken(serviceAuth),
+        timeoutMs,
+      });
+    },
+
+    getReferrer(userId) {
+      return request<{ referrerId: string | null }>({
+        baseUrl,
+        path: `/auth/internal/users/${userId}/referrer`,
         method: 'GET',
         authToken: mintCallerServiceToken(serviceAuth),
         timeoutMs,
