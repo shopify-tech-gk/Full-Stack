@@ -98,6 +98,11 @@ export default function RootLayout() {
                           backgroundColor: colors.page,
                           paddingBottom: routeNeedsBar(route.name) ? BAR_SPACE : 0,
                         },
+                        // Solid title bars everywhere: on newer iOS the default bar is see-through
+                        // and drawn over the screen, so the top of a page slid under it.
+                        headerTransparent: false,
+                        headerStyle: { backgroundColor: colors.page },
+                        headerShadowVisible: false,
                         headerTintColor: colors.brand.DEFAULT,
                         headerTitleStyle: {
                           fontFamily: 'Outfit_600SemiBold',

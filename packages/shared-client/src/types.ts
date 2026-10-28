@@ -355,6 +355,20 @@ export interface OrderListItem {
   /** v1.13: each line's progress (Processing / Packed / Shipped / Delivered on the list). */
   itemStatuses?: SellerItemStatus[];
   paymentMethod?: 'ONLINE' | 'COD';
+  /** v1.17 */
+  updatedAt?: IsoDateTime;
+  /** v1.17 the order's lines, for product rows on the list (images come from the catalog). */
+  lines?: OrderListLine[];
+}
+export interface OrderListLine {
+  orderItemId: Uuid;
+  productId: Uuid;
+  skuId: Uuid;
+  title: string;
+  quantity: number;
+  sellerStatus: SellerItemStatus;
+  /** When this line last changed - "Delivered on" / "Shipped on" date. */
+  updatedAt: IsoDateTime;
 }
 
 /** POST /api/orders/track (public): deliberately no ids, prices or full address. */

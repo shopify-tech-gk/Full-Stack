@@ -103,6 +103,20 @@ export interface OrderListItem {
   itemStatuses: OrderItemStatusValue[];
   /** v1.13 */
   paymentMethod: 'ONLINE' | 'COD';
+  /** v1.17 */
+  updatedAt: string;
+  /** v1.17 the order's lines, for the list's product rows (title, qty, progress, last change). */
+  lines: OrderListLine[];
+}
+
+export interface OrderListLine {
+  orderItemId: string;
+  productId: string;
+  skuId: string;
+  title: string;
+  quantity: number;
+  sellerStatus: OrderItemStatusValue;
+  updatedAt: string;
 }
 
 export const ORDER_WITH_ITEMS_INCLUDE = {
@@ -829,7 +843,21 @@ export async function getMyOrders(
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limit + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-    include: { items: { where: { deletedAt: null }, select: { sellerStatus: true } } },
+    include: {
+      items: {
+        where: { deletedAt: null },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          productId: true,
+          skuId: true,
+          titleSnapshot: true,
+          quantity: true,
+          sellerStatus: true,
+          updatedAt: true,
+        },
+      },
+    },
   });
 
   const hasMore = rows.length > limit;
@@ -843,8 +871,19 @@ export async function getMyOrders(
       status: order.status,
       grandTotal: decimalToMoney(order.grandTotal),
       createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
       itemStatuses: order.items.map((item) => item.sellerStatus),
       paymentMethod: order.paymentMethod,
+      // v1.17 lines for the list's product rows (image comes from the catalog by productId).
+      lines: order.items.map((item) => ({
+        orderItemId: item.id,
+        productId: item.productId,
+        skuId: item.skuId,
+        title: item.titleSnapshot,
+        quantity: item.quantity,
+        sellerStatus: item.sellerStatus,
+        updatedAt: item.updatedAt.toISOString(),
+      })),
     })),
     nextCursor,
   };
