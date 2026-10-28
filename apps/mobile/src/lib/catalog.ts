@@ -13,6 +13,7 @@ import {
   toProductDetailData,
   type ApiCategory,
   type CatalogSort,
+  type SearchFilterGroup,
   type SearchSort,
   type CategoryFilters,
   type ListingQuery,
@@ -225,6 +226,80 @@ export async function searchProductsPage(
     .filter((r) => allowed.has((r.categoryName ?? '').trim().toLowerCase()))
     .map(searchResultToCardData);
   return { products, total: products.length };
+}
+
+/** v1.17 what the search results' filter sheet has selected. */
+export interface SearchFilters {
+  brands: string[];
+  categories: string[];
+  minPrice: number | null;
+  maxPrice: number | null;
+  minRating: number;
+  minDiscount: number;
+  /** attribute key -> selected values ("ram" -> ["8", "12"]). */
+  attributes: Record<string, string[]>;
+}
+
+export const emptySearchFilters = (): SearchFilters => ({
+  brands: [],
+  categories: [],
+  minPrice: null,
+  maxPrice: null,
+  minRating: 0,
+  minDiscount: 0,
+  attributes: {},
+});
+
+/** How many filters are on (the "Filters (3)" badge). */
+export function countSearchFilters(f: SearchFilters): number {
+  return (
+    f.brands.length +
+    f.categories.length +
+    (f.minPrice != null || f.maxPrice != null ? 1 : 0) +
+    (f.minRating ? 1 : 0) +
+    (f.minDiscount ? 1 : 0) +
+    Object.values(f.attributes).reduce((n, v) => n + v.length, 0)
+  );
+}
+
+/** v1.17 one page of search results with filters applied, plus the filters on offer (page 1). */
+export async function searchFiltered(
+  q: string,
+  page: number,
+  perPage: number,
+  sort: SearchSort,
+  f: SearchFilters,
+): Promise<{
+  products: ProductCardData[];
+  total: number;
+  filters: SearchFilterGroup[];
+  price: { min: number; max: number } | null;
+}> {
+  const attrs = Object.fromEntries(
+    Object.entries(f.attributes)
+      .filter(([, v]) => v.length)
+      .map(([k, v]) => [`f_${k}`, v.join(',')]),
+  );
+  const result = await api.search.products({
+    q: q.trim(),
+    page,
+    perPage,
+    ...(sort !== 'relevance' ? { sort } : {}),
+    ...(f.brands.length ? { brand: f.brands.join(',') } : {}),
+    ...(f.categories.length ? { categories: f.categories.join(',') } : {}),
+    ...(f.minPrice != null ? { minPrice: f.minPrice } : {}),
+    ...(f.maxPrice != null ? { maxPrice: f.maxPrice } : {}),
+    ...(f.minRating ? { minRating: f.minRating } : {}),
+    ...(f.minDiscount ? { minDiscount: f.minDiscount } : {}),
+    ...(page === 1 ? { withFilters: '1' as const } : {}),
+    ...attrs,
+  });
+  return {
+    products: result.results.map(searchResultToCardData),
+    total: result.found,
+    filters: result.filters ?? [],
+    price: result.price ?? null,
+  };
 }
 
 /** A fresh, default listing query (overridden by the filter sheet). */

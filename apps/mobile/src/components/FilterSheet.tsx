@@ -22,8 +22,8 @@ interface Props {
   onApply: (next: ListingQuery) => void;
 }
 
-// v1.17 Flipkart / Amazon-style filters: filter names down the left, a tick-box checklist (with
-// product counts) on the right. Attribute facets still come from each category's data-driven
+// v1.17 Flipkart / Amazon-style filters: filter names down the left, a tick-box checklist on the
+// right. Attribute facets still come from each category's data-driven
 // filter definition (W3) - every category gets this sheet with its own filters.
 
 const BRAND = colors.brand.DEFAULT;
@@ -185,7 +185,6 @@ export function FilterSheet({ visible, filters, query, onClose, onApply }: Props
           <CheckRow
             key={v.value}
             label={valueLabel(facet, v.value)}
-            count={v.count}
             on={sel.includes(v.value)}
             onPress={() => toggleFacet(facet.key, v.value)}
           />
@@ -281,14 +280,12 @@ function CheckRow({
   label,
   on,
   onPress,
-  count,
   round,
   star,
 }: {
   label: string;
   on: boolean;
   onPress: () => void;
-  count?: number;
   round?: boolean;
   star?: boolean;
 }) {
@@ -315,7 +312,6 @@ function CheckRow({
         {star ? <Text style={styles.star}>{'★'}</Text> : null}
         {star ? ' & above' : null}
       </Text>
-      {count != null ? <Text style={styles.count}>{count}</Text> : null}
     </Pressable>
   );
 }
@@ -458,7 +454,6 @@ const styles = StyleSheet.create({
   rowText: { flex: 1, fontFamily: font.ui, fontSize: 14, color: colors.text.strong },
   rowTextOn: { fontFamily: font.uiSemibold, color: colors.heading },
   star: { color: '#f5a524' },
-  count: { fontFamily: font.uiMedium, fontSize: 12, color: colors.text.muted },
   footer: {
     flexDirection: 'row',
     gap: space.md,

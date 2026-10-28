@@ -19,11 +19,18 @@ import {
   SEARCH_PLACEHOLDER,
   formatMoney,
   type ProductCardData,
+  type SearchFilterGroup,
   type SearchSort,
   type SearchSuggestions,
 } from '@youmart/shared-client';
 import { api } from '@/lib/api';
-import { searchProductsPage } from '@/lib/catalog';
+import {
+  countSearchFilters,
+  emptySearchFilters,
+  searchFiltered,
+  type SearchFilters,
+} from '@/lib/catalog';
+import { SearchFilterSheet } from '@/components/SearchFilterSheet';
 import { getJSON, setJSON } from '@/lib/storage';
 import { ProductCard } from '@/components/ProductCard';
 import { VoiceSearchSheet } from '@/components/VoiceSearchSheet';
@@ -60,7 +67,8 @@ const SORTS: { key: SearchSort; label: string }[] = [
 ];
 
 type Results = { products: ProductCardData[]; total: number; page: number };
-type Submitted = { term: string; brand: string | null; sort: SearchSort };
+type Submitted = { term: string; sort: SearchSort; filters: SearchFilters };
+type Offered = { groups: SearchFilterGroup[]; price: { min: number; max: number } | null };
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -69,6 +77,9 @@ export default function SearchScreen() {
   const [query, setQuery] = useState(String(q ?? ''));
   const [submitted, setSubmitted] = useState<Submitted | null>(null);
   const [results, setResults] = useState<Results | null>(null);
+  // The filters the results offer (kept from the last page-1 response) + the sheet's visibility.
+  const [offered, setOffered] = useState<Offered>({ groups: [], price: null });
+  const [sheet, setSheet] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [suggest, setSuggest] = useState<SearchSuggestions | null>(null);
@@ -114,18 +125,12 @@ export default function SearchScreen() {
     if (!submitted) return;
     const id = (reqId.current += 1);
     setLoading(true);
-    searchProductsPage(
-      submitted.term,
-      1,
-      PER_PAGE,
-      submitted.brand ?? undefined,
-      undefined,
-      submitted.sort,
-    )
-      .then(
-        (res) =>
-          reqId.current === id && setResults({ products: res.products, total: res.total, page: 1 }),
-      )
+    searchFiltered(submitted.term, 1, PER_PAGE, submitted.sort, submitted.filters)
+      .then((res) => {
+        if (reqId.current !== id) return;
+        setResults({ products: res.products, total: res.total, page: 1 });
+        setOffered({ groups: res.filters, price: res.price });
+      })
       .catch(() => reqId.current === id && setResults({ products: [], total: 0, page: 1 }))
       .finally(() => reqId.current === id && setLoading(false));
   }, [submitted]);
@@ -144,7 +149,12 @@ export default function SearchScreen() {
     if (!t) return;
     setQuery(t);
     setResults(null);
-    setSubmitted({ term: t, brand, sort: 'relevance' });
+    setOffered({ groups: [], price: null });
+    setSubmitted({
+      term: t,
+      sort: 'relevance',
+      filters: { ...emptySearchFilters(), brands: brand ? [brand] : [] },
+    });
     remember(t);
     inputRef.current?.blur();
   }
@@ -154,13 +164,12 @@ export default function SearchScreen() {
     setLoadingMore(true);
     const id = reqId.current;
     try {
-      const res = await searchProductsPage(
+      const res = await searchFiltered(
         submitted.term,
         results.page + 1,
         PER_PAGE,
-        submitted.brand ?? undefined,
-        undefined,
         submitted.sort,
+        submitted.filters,
       );
       if (reqId.current !== id) return;
       setResults((prev) =>
@@ -370,6 +379,7 @@ export default function SearchScreen() {
     </ScrollView>
   );
 
+  const activeFilters = submitted ? countSearchFilters(submitted.filters) : 0;
   const resultsHeader = submitted ? (
     <View>
       {categoryStrip}
@@ -385,15 +395,26 @@ export default function SearchScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.sortRow}
       >
-        {submitted.brand ? (
-          <Pressable
-            style={[styles.sortChip, styles.sortChipOn]}
-            onPress={() => setSubmitted({ ...submitted, brand: null })}
-          >
-            <Text style={[styles.sortText, styles.sortTextOn]}>{submitted.brand}</Text>
-            <Ionicons name="close" size={14} color={colors.white} />
-          </Pressable>
-        ) : null}
+        <Pressable
+          style={[styles.sortChip, styles.filterChip, activeFilters > 0 && styles.filterChipOn]}
+          onPress={() => {
+            tap();
+            setSheet(true);
+          }}
+          accessibilityLabel="More filters"
+        >
+          <Ionicons
+            name="options-outline"
+            size={15}
+            color={activeFilters > 0 ? colors.white : BRAND}
+          />
+          <Text style={[styles.filterText, activeFilters > 0 && styles.sortTextOn]}>Filters</Text>
+          {activeFilters > 0 ? (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeFilters}</Text>
+            </View>
+          ) : null}
+        </Pressable>
         {SORTS.map((s) => {
           const on = submitted.sort === s.key;
           return (
@@ -436,9 +457,20 @@ export default function SearchScreen() {
           />
           <Text style={styles.hintText}>
             {categories.length
-              ? `No products for “${submitted!.term}” yet - browse the categories above.`
+              ? `No products for “${submitted!.term}”${activeFilters ? ' with these filters' : ' yet - browse the categories above'}.`
               : `No products found for “${submitted!.term}”. Try a different or more general word.`}
           </Text>
+          {activeFilters > 0 ? (
+            <Pressable
+              style={styles.clearFilters}
+              onPress={() => {
+                setResults(null);
+                setSubmitted((cur) => (cur ? { ...cur, filters: emptySearchFilters() } : cur));
+              }}
+            >
+              <Text style={styles.clearFiltersText}>Clear filters</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     );
@@ -516,6 +548,19 @@ export default function SearchScreen() {
           </Pressable>
         </View>
       </View>
+      {submitted ? (
+        <SearchFilterSheet
+          visible={sheet}
+          groups={offered.groups}
+          price={offered.price}
+          value={submitted.filters}
+          onClose={() => setSheet(false)}
+          onApply={(filters) => {
+            setResults(null);
+            setSubmitted((cur) => (cur ? { ...cur, filters } : cur));
+          }}
+        />
+      ) : null}
       <VoiceSearchSheet
         visible={voice}
         onClose={() => setVoice(false)}
@@ -671,6 +716,26 @@ const styles = StyleSheet.create({
   sortChipOn: { backgroundColor: BRAND, borderColor: BRAND },
   sortText: { fontFamily: font.uiSemibold, fontSize: 12.5, color: colors.text.strong },
   sortTextOn: { color: colors.white },
+  filterChip: { borderColor: BRAND, borderWidth: 1.5 },
+  filterChipOn: { backgroundColor: BRAND },
+  filterText: { fontFamily: font.uiBold, fontSize: 12.5, color: BRAND },
+  filterBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBadgeText: { fontFamily: font.uiBold, fontSize: 10.5, color: BRAND },
+  clearFilters: {
+    backgroundColor: BRAND,
+    borderRadius: radii.pill,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+  },
+  clearFiltersText: { fontFamily: font.uiBold, fontSize: 14, color: colors.white },
   catBlock: { paddingTop: space.xs, paddingBottom: space.md, gap: space.sm },
   catRow: { paddingHorizontal: space.lg, gap: space.sm },
   catItem: { width: 104, gap: 4 },

@@ -180,10 +180,29 @@ export interface SearchQuery {
   category?: Uuid;
   minPrice?: number;
   maxPrice?: number;
+  /** One brand, or several comma-separated (v1.17). */
   brand?: string;
   sort?: SearchSort;
   page?: number;
   perPage?: number;
+  /** v1.17 filters: category names (comma-separated), min stars, min % off. */
+  categories?: string;
+  minRating?: number;
+  minDiscount?: number;
+  /** v1.17 `'1'`: also return the filters the results offer. */
+  withFilters?: '1';
+  /** v1.17 attribute filters, `f_<key>`: comma-separated values ("f_ram": "8,12"). */
+  [attribute: `f_${string}`]: string | undefined;
+}
+/** v1.17 one filter search results offer (brand, category or a product attribute). */
+export interface SearchFilterGroup {
+  /** `brand`, `category`, or an attribute key (sent back as `f_<key>`). */
+  key: string;
+  label: string;
+  /** `boolean`: a yes/no attribute ("Organic") - its only value is "true". */
+  type: 'multi' | 'boolean';
+  unit?: string;
+  values: FacetCount[];
 }
 export interface SearchResult {
   id: Uuid;
@@ -219,6 +238,9 @@ export interface SearchResponse {
   found: number;
   page: number;
   perPage: number;
+  /** v1.17 with `withFilters`: the filters offered and the results' price range (rupees). */
+  filters?: SearchFilterGroup[];
+  price?: { min: number; max: number } | null;
 }
 
 /** v1.10 YouMart Lens: photo search. */

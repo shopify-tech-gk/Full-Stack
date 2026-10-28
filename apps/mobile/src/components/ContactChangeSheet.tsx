@@ -123,6 +123,8 @@ export function ContactChangeSheet({
               maxLength={8}
               autoFocus
               textContentType="oneTimeCode"
+              autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
+              importantForAutofill="yes"
               style={[styles.input, styles.codeInput]}
             />
           )}

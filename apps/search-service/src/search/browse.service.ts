@@ -33,6 +33,8 @@ export const TEXT_PARAMS = {
 const MAX_FACET_VALUES = 100;
 const PRICE_FIELD = 'pricePaise';
 const PRICE_KEY = '__price';
+/** v1.17 category-name filter / facet key (search results filtered by category). */
+export const CATEGORY_NAME_KEY = '__category_name';
 
 // Legacy v1 `GET /api/search/products` price buckets (whole rupees -> paise).
 export const PRICE_BUCKET_FACET =
@@ -138,6 +140,10 @@ export async function browse(
   );
   if (price) clauses.set(PRICE_KEY, price);
   if (body.minRating) clauses.set('__rating', `rating:>=${body.minRating}`);
+  if (body.categoryNames?.length) {
+    clauses.set(CATEGORY_NAME_KEY, `categoryName:=[${body.categoryNames.map(quote).join(',')}]`);
+  }
+  if (body.minDiscount) clauses.set('__discount', `discountPct:>=${body.minDiscount}`);
 
   for (const filter of body.filters) {
     const field =
@@ -170,6 +176,7 @@ export async function browse(
     if (fields.has(field)) facetFields.set(facet.key, field);
   }
   if (body.includeStats) facetFields.set(PRICE_KEY, PRICE_FIELD);
+  if (body.facetCategories) facetFields.set(CATEGORY_NAME_KEY, 'categoryName');
 
   const filterWithout = (skip?: string) =>
     [...clauses]
@@ -180,7 +187,9 @@ export async function browse(
   const openFacets = [...facetFields]
     .filter(([key]) => !clauses.has(key))
     .map(([, field]) => field);
-  if (body.includeStats || options.priceBuckets) openFacets.push('categoryName');
+  if ((body.includeStats || options.priceBuckets) && !facetFields.has(CATEGORY_NAME_KEY)) {
+    openFacets.push('categoryName');
+  }
   if (options.priceBuckets) openFacets.push(PRICE_BUCKET_FACET);
 
   const hasText = Boolean(body.q && body.q.trim());

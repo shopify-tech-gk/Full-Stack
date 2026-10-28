@@ -39,6 +39,11 @@ export const BrowseRequestBody = z.object({
   minPrice: z.number().nonnegative().optional(),
   maxPrice: z.number().nonnegative().optional(),
   minRating: z.number().min(0).max(5).optional(),
+  /** v1.17 search filters: only these categories (by name), and a minimum % off MRP. */
+  categoryNames: z.array(FilterValue).min(1).max(20).optional(),
+  minDiscount: z.number().int().min(1).max(99).optional(),
+  /** v1.17 also return (disjunctive) category counts as `facets.__category_name`. */
+  facetCategories: z.boolean().optional(),
   facets: z
     .array(z.object({ key: AttributeKey, kind: z.enum(['values', 'range']) }))
     .max(30)

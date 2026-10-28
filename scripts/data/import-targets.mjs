@@ -123,4 +123,13 @@ export const TARGETS = {
     filters: FERTILIZER_FILTERS,
     derive: deriveFertilizer,
   },
+  'Organic Fertilizers': {
+    chain: [
+      ['lawn-and-gardening', 'Agri and Gardening'],
+      ['fertilizer', 'Fertilizer'],
+      ['organic-fertilizers', 'Organic Fertilizers'],
+    ],
+    filters: FERTILIZER_FILTERS,
+    derive: deriveFertilizer,
+  },
 };

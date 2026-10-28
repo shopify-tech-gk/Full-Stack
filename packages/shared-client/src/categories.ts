@@ -219,7 +219,8 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
 /** Third menu level, keyed `categorySlug/subcategorySlug` (live desktop flyouts). */
 const THIRD_LEVEL: Readonly<Record<string, string>> = {
   // v1.17 catalog import: Compost (products imported from the data delivery).
-  'lawn-and-gardening/fertilizer': 'compost=Compost;organic-manure=Organic Manure',
+  'lawn-and-gardening/fertilizer':
+    'compost=Compost;organic-manure=Organic Manure;organic-fertilizers=Organic Fertilizers',
   'bath-fittings/taps-bath-fittings':
     'flexo-ebony-series=Flexo-Ebony Series;flexo-series=Flexo Series;plastic-taps=Plastic Taps',
   'cleaning-products/brooms': 'floor-brooms=Floor Brooms',

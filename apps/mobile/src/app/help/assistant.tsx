@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -307,10 +306,9 @@ export default function AssistantScreen() {
         ) : null}
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      {/* "padding" on Android too: the app draws edge-to-edge (SDK 58), so the window no longer
+          resizes for the keyboard and the message box would sit behind it. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView
           ref={scroll}
           contentContainerStyle={[styles.list, empty && styles.listEmpty]}

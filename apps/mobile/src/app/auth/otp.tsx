@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -102,23 +103,30 @@ export default function OtpScreen() {
         <Text style={styles.strong}>{label}</Text>
       </Text>
 
-      <Pressable onPress={() => inputRef.current?.focus()} style={styles.boxes}>
+      <View style={styles.boxes}>
         {Array.from({ length: OTP_LENGTH }).map((_, i) => (
           <View key={i} style={[styles.box, i === code.length && styles.boxActive]}>
             <Text style={styles.boxText}>{code[i] ?? ''}</Text>
           </View>
         ))}
-      </Pressable>
-
-      <TextInput
-        ref={inputRef}
-        value={code}
-        onChangeText={onChange}
-        keyboardType="number-pad"
-        maxLength={OTP_LENGTH}
-        style={styles.hiddenInput}
-        autoFocus
-      />
+        {/* The real input lies invisibly over the boxes (full size - Android's autofill skips a
+            1px field). Marked as a one-time code, so the code from the SMS is offered above the
+            keyboard: iOS "From Messages", Android's SMS code suggestion (Gboard / Google). */}
+        <TextInput
+          ref={inputRef}
+          value={code}
+          onChangeText={onChange}
+          keyboardType="number-pad"
+          maxLength={OTP_LENGTH}
+          style={styles.overlayInput}
+          caretHidden
+          autoFocus
+          textContentType="oneTimeCode"
+          autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
+          importantForAutofill="yes"
+          accessibilityLabel={`${OTP_LENGTH}-digit code`}
+        />
+      </View>
 
       {busy ? (
         <ActivityIndicator color={colors.brand.DEFAULT} style={{ marginTop: space.lg }} />
@@ -159,7 +167,13 @@ const styles = StyleSheet.create({
   },
   boxActive: { borderColor: colors.brand.DEFAULT },
   boxText: { fontFamily: font.uiBold, fontSize: 22, color: colors.text.strong },
-  hiddenInput: { position: 'absolute', opacity: 0, height: 1, width: 1 },
+  // Over the boxes, practically invisible (opacity 0 can hide a field from Android autofill).
+  overlayInput: {
+    ...StyleSheet.absoluteFill,
+    opacity: 0.02,
+    color: 'transparent',
+    fontSize: 1,
+  },
   error: {
     fontFamily: font.uiMedium,
     fontSize: 13,

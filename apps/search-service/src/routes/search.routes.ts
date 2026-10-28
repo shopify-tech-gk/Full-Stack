@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { AppError } from '@youmart/errors';
 import { optionalAuth, requireAuth, requireServiceAuth } from '../authMiddleware';
 import { LensRequestBody, lensSearch } from '../lens/lens.service';
-import { SearchProductsQuery, SuggestQuery } from '../search/search.schema';
+import { SearchProductsQuery, SuggestQuery, attributeFilters } from '../search/search.schema';
 import { searchProducts, suggest } from '../search/search.service';
 import { BrowseRequestBody } from '../search/browse.schema';
 import { browse } from '../search/browse.service';
@@ -21,7 +21,10 @@ searchRouter.post('/internal/browse', requireServiceAuth, async (req, res) => {
 // search/browse never requires being signed in.
 searchRouter.get('/products', optionalAuth, async (req, res) => {
   const query = SearchProductsQuery.parse(req.query);
-  const result = await searchProducts(query);
+  const result = await searchProducts({
+    ...query,
+    attributes: attributeFilters(req.query as Record<string, unknown>),
+  });
   res.status(200).json(result);
 });
 
