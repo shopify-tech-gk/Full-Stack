@@ -77,9 +77,10 @@ export interface HomeData {
 /** Home: real category list + product rails (recently-viewed personalization + heading-matched
  * fallback), plus the showcase grid and the best-categories carousel (same logic as web). */
 export async function getHome(): Promise<HomeData> {
+  // 21 = "Shop our picks" fills 7 rows of 3 (components/ProductShowcase.tsx); rails take 4.
   const fetchSorted = (sort: CatalogSort) =>
     api.catalog
-      .listProducts({ sort, limit: 12 })
+      .listProducts({ sort, limit: 21 })
       .then((page) => page.items)
       .catch(() => [] as ProductListItem[]);
   const [categories, newestItems, topRatedItems, dealItems] = await Promise.all([

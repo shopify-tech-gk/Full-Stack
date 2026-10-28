@@ -8,6 +8,11 @@ import {
   type ProductFilter,
 } from '@youmart/shared-client';
 import { ProductCard } from './ProductCard';
+
+/** Cards per row (v1.17 trying 3, compact cards; was 2 - set back to 2 to revert). */
+const COLS: number = 3;
+/** Rows shown at 3 across (7 x 3 = 21 products; getHome fetches 21 per tab). */
+const ROWS = 7;
 import { colors, font, space } from '@/theme';
 
 // "Shop our picks": the three poster tabs from the desktop site (New Arrival / Hot Sale / Best
@@ -132,7 +137,7 @@ export function ProductShowcase({
   showcase: Record<ProductFilter, ProductCardData[]>;
 }) {
   const [tab, setTab] = useState<ProductFilter>('new');
-  const items = (showcase[tab] ?? []).slice(0, 8);
+  const items = (showcase[tab] ?? []).slice(0, COLS === 3 ? COLS * ROWS : 8);
 
   return (
     <View style={styles.wrap}>
@@ -157,8 +162,8 @@ export function ProductShowcase({
 
       <View style={styles.grid}>
         {items.map((product) => (
-          <View key={product.id} style={styles.cell}>
-            <ProductCard product={product} />
+          <View key={product.id} style={[styles.cell, COLS === 3 && styles.cell3]}>
+            <ProductCard product={product} compact={COLS === 3} stacked={COLS === 3} />
           </View>
         ))}
       </View>
@@ -223,6 +228,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: COLS === 3 ? space.sm : space.md },
   cell: { width: '47%', flexGrow: 1 },
+  // 3 across: no grow, so a short last row keeps the same card width.
+  cell3: { width: '31.5%', flexGrow: 0 },
 });

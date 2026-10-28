@@ -17,9 +17,12 @@ interface Props {
   accent?: string;
   /** Tighter card for narrow grids (category screen beside the sub-category rail). */
   compact?: boolean;
+  /** v1.17 very narrow card (3 across): Add / the − qty + stepper and Buy stacked full-width,
+   * so the stepper's "+" is never squeezed out. */
+  stacked?: boolean;
 }
 
-function ProductCardBase({ product, width, accent, compact }: Props) {
+function ProductCardBase({ product, width, accent, compact, stacked }: Props) {
   const router = useRouter();
   const wishlist = useWishlist();
   const slug = product.slug ?? '';
@@ -92,10 +95,26 @@ function ProductCardBase({ product, width, accent, compact }: Props) {
         </Text>
         <Stars rating={product.rating} size={compact ? 10 : 13} />
         <Price mrp={product.mrp} price={product.sellingPrice} size={compact ? 'xs' : 'sm'} />
-        {/* v1.17: Add + Buy side by side (Buy = straight to checkout with just this product). */}
-        <View style={[styles.actions, compact ? styles.addCompact : styles.add]}>
-          <CartStepper product={cartProduct} compact={compact} dense style={styles.addBtn} />
-          <BuyNowButton product={cartProduct} compact={compact} style={styles.buyBtn} />
+        {/* v1.17: Add + Buy side by side (Buy = straight to checkout with just this product);
+            stacked on very narrow cards. */}
+        <View
+          style={[
+            styles.actions,
+            stacked && styles.actionsStacked,
+            compact ? styles.addCompact : styles.add,
+          ]}
+        >
+          <CartStepper
+            product={cartProduct}
+            compact={compact}
+            dense
+            style={stacked ? undefined : styles.addBtn}
+          />
+          <BuyNowButton
+            product={cartProduct}
+            compact={compact}
+            style={stacked ? undefined : styles.buyBtn}
+          />
         </View>
       </View>
     </Pressable>
@@ -121,6 +140,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: font.body, fontSize: 13.5, lineHeight: 18, color: colors.text.strong },
   add: { marginTop: 4 },
   actions: { flexDirection: 'row', gap: 5 },
+  actionsStacked: { flexDirection: 'column', gap: 5 },
   addBtn: { flex: 1.3 },
   buyBtn: { flex: 1 },
   bodyCompact: { padding: 8, gap: 3 },
