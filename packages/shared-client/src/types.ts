@@ -202,6 +202,17 @@ export interface FacetCount {
   value: string;
   count: number;
 }
+/** v1.17 `GET /search/suggest` - what the search box offers while typing. */
+export interface SearchSuggestions {
+  /** Best matching products (same relevance as the results page). */
+  items: SearchResult[];
+  /** Completions of the word being typed: "vermi" -> "vermicompost". */
+  completions: string[];
+  /** Brands starting with the typed text, with product counts. */
+  brands: FacetCount[];
+  /** Categories the matching products are in. */
+  categories: FacetCount[];
+}
 export interface SearchResponse {
   results: SearchResult[];
   facets: { category: FacetCount[]; brand: FacetCount[]; price: FacetCount[] };

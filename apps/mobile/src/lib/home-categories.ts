@@ -379,12 +379,25 @@ export interface CategoryMatch {
 export function searchCategories(term: string, limit = 10): CategoryMatch[] {
   const q = term.trim().toLowerCase();
   if (q.length < 2) return [];
+  // v1.17 whole words: "car" offers "Car Accessories", not "Carpets" or "Cards". A word may differ
+  // only by a plural ("mobile" -> "Mobiles", "dress" -> "Dresses").
+  const words = (s: string) =>
+    s
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean);
+  const wordHit = (w: string) =>
+    w === q || w === `${q}s` || w === `${q}es` || `${w}s` === q || `${w}es` === q;
+  const qWords = words(q);
   const rank = (name: string): number => {
     const n = name.toLowerCase();
     if (n === q) return 0;
-    if (n.startsWith(q)) return 1;
-    if (n.split(/[\s&,/-]+/).some((w) => w.startsWith(q))) return 2;
-    return n.includes(q) ? 3 : -1;
+    const ws = words(n);
+    // Every typed word appears as a word of the name, in order at the start: "ethnic wear".
+    if (n.startsWith(q) && (n.length === q.length || /[^a-z0-9]/.test(n[q.length]!))) return 1;
+    if (qWords.length === 1 && ws.some(wordHit)) return 2;
+    if (qWords.length > 1 && qWords.every((qw) => ws.includes(qw))) return 3;
+    return -1;
   };
   const hits: (CategoryMatch & { score: number })[] = [];
   for (const main of tree()) {

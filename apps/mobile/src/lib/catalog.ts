@@ -13,6 +13,7 @@ import {
   toProductDetailData,
   type ApiCategory,
   type CatalogSort,
+  type SearchSort,
   type CategoryFilters,
   type ListingQuery,
   type PersonalRailFeed,
@@ -205,6 +206,8 @@ export async function searchProductsPage(
   /** Keep only hits filed under one of these categories (a taxonomy node and its parents), so
    * a node the catalog doesn't hold yet never shows another category's products. One page. */
   inCategories?: readonly string[],
+  /** v1.17 results order (default: relevance). */
+  sort?: SearchSort,
 ): Promise<{ products: ProductCardData[]; total: number }> {
   if (!q.trim()) return { products: [], total: 0 };
   const result = await api.search.products({
@@ -212,6 +215,7 @@ export async function searchProductsPage(
     page,
     perPage,
     ...(brand ? { brand } : {}),
+    ...(sort && sort !== 'relevance' ? { sort } : {}),
   });
   if (!inCategories) {
     return { products: result.results.map(searchResultToCardData), total: result.found };

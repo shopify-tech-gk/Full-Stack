@@ -14,10 +14,21 @@ export const PRODUCTS_ALIAS = 'products';
 export const ATTR_STRING_PREFIX = 'attrs_';
 export const ATTR_NUMBER_PREFIX = 'attrn_';
 
+/** Typesense's built-in sentence model (runs inside Typesense, downloaded once): turns a product's
+ * text into a meaning vector, so "phone" finds mobiles and "car" finds car accessories, not
+ * carpets. Changing it (or EMBED_FROM) needs a full reindex. */
+export const EMBED_MODEL = 'ts/all-MiniLM-L12-v2';
+export const EMBED_FROM = ['title', 'brand', 'categoryPath', 'keywords'];
+
 export interface ProductDocument {
   id: string;
   title: string;
   description: string;
+  /** v1.17 searchable text: the brand, the category path ("Electronics Mobiles"), and short
+   * descriptive attribute values (product type, form...). */
+  brand: string;
+  categoryPath: string;
+  keywords: string;
   slug: string;
   categoryId: string;
   categoryName: string;
@@ -64,8 +75,16 @@ function buildCollectionSchema(name: string): CollectionCreateSchema {
   return {
     name,
     fields: [
-      { name: 'title', type: 'string' },
+      { name: 'title', type: 'string', stem: true },
       { name: 'description', type: 'string' },
+      { name: 'brand', type: 'string', optional: true },
+      { name: 'categoryPath', type: 'string', optional: true, stem: true },
+      { name: 'keywords', type: 'string', optional: true, stem: true },
+      {
+        name: 'embedding',
+        type: 'float[]',
+        embed: { from: EMBED_FROM, model_config: { model_name: EMBED_MODEL } },
+      },
       { name: 'slug', type: 'string', index: false },
       { name: 'categoryId', type: 'string', facet: true },
       { name: 'categoryName', type: 'string', facet: true },
@@ -87,12 +106,19 @@ function buildCollectionSchema(name: string): CollectionCreateSchema {
   };
 }
 
-/** True when the live collection predates the W3 generic-attribute schema (needs a rebuild). */
+/** True when the live collection predates the current schema - the W3 generic attributes or the
+ * v1.17 semantic embedding (needs a rebuild). */
 export async function collectionNeedsRebuild(): Promise<boolean> {
   const name = await currentPhysicalCollectionName();
   if (!name) return false;
   const schema = await typesenseClient.collections(name).retrieve();
-  return !schema.fields?.some((field) => field.name === `${ATTR_STRING_PREFIX}.*`);
+  const names = new Set((schema.fields ?? []).map((field) => field.name));
+  const title = (schema.fields ?? []).find((field) => field.name === 'title');
+  return (
+    !names.has(`${ATTR_STRING_PREFIX}.*`) ||
+    !names.has('embedding') ||
+    !(title as { stem?: boolean } | undefined)?.stem
+  );
 }
 
 async function currentPhysicalCollectionName(): Promise<string | null> {

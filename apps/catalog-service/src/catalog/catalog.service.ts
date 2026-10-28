@@ -212,6 +212,9 @@ export interface ProductForIndex {
   /** W3: lets a parent category's listing include its descendants' products. */
   categorySlug: string;
   categoryPathIds: string[];
+  /** v1.17 names along the same path, root first ("Agri and Gardening", "Fertilizer", "Compost") -
+   * searchable, so a query for a category finds its products. */
+  categoryPathNames: string[];
   price: Money | null;
   /** MRP of the cheapest SKU (the one `price` comes from). */
   mrp: Money | null;
@@ -224,13 +227,21 @@ export interface ProductForIndex {
   createdAt: string;
 }
 
-/** id -> parentId for every live category; categories are few, products are many. */
-async function loadCategoryParents(): Promise<Map<string, string | null>> {
+/** id -> parentId (and name) for every live category; categories are few, products are many. */
+interface CategoryLinks {
+  parents: Map<string, string | null>;
+  names: Map<string, string>;
+}
+
+async function loadCategoryParents(): Promise<CategoryLinks> {
   const rows = await prisma.category.findMany({
     where: { deletedAt: null },
-    select: { id: true, parentId: true },
+    select: { id: true, parentId: true, name: true },
   });
-  return new Map(rows.map((row) => [row.id, row.parentId]));
+  return {
+    parents: new Map(rows.map((row) => [row.id, row.parentId])),
+    names: new Map(rows.map((row) => [row.id, row.name])),
+  };
 }
 
 export function categoryPathIds(categoryId: string, parents: Map<string, string | null>): string[] {
@@ -244,8 +255,9 @@ export function categoryPathIds(categoryId: string, parents: Map<string, string 
 
 function toProductForIndex(
   product: ProductWithListRelations,
-  parents: Map<string, string | null>,
+  links: CategoryLinks,
 ): ProductForIndex {
+  const pathIds = categoryPathIds(product.categoryId, links.parents);
   const cheapest = cheapestSku(product.skus);
   const primaryImage = product.images[0];
   return {
@@ -258,7 +270,11 @@ function toProductForIndex(
     categoryId: product.categoryId,
     categoryName: product.category.name,
     categorySlug: product.category.slug,
-    categoryPathIds: categoryPathIds(product.categoryId, parents),
+    categoryPathIds: pathIds,
+    categoryPathNames: pathIds
+      .map((id) => links.names.get(id))
+      .filter((name): name is string => Boolean(name))
+      .reverse(),
     price: cheapest ? decimalToMoney(cheapest.sellingPrice) : null,
     mrp: cheapest ? decimalToMoney(cheapest.mrp) : null,
     skuId: cheapest?.id ?? null,
@@ -341,8 +357,8 @@ export async function listProductsForIndex(query: {
   const pageRows = hasMore ? rows.slice(0, limit) : rows;
   const nextCursor = hasMore ? (pageRows[pageRows.length - 1]?.id ?? null) : null;
 
-  const parents = await loadCategoryParents();
-  return { items: pageRows.map((row) => toProductForIndex(row, parents)), nextCursor };
+  const links = await loadCategoryParents();
+  return { items: pageRows.map((row) => toProductForIndex(row, links)), nextCursor };
 }
 
 export async function getProductBySlug(slug: string): Promise<PublicProductDetail> {

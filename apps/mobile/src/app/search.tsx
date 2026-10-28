@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -10,90 +10,162 @@ import {
   View,
   type TextInputInstance,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SEARCH_PLACEHOLDER, type ProductCardData } from '@youmart/shared-client';
+import * as Haptics from 'expo-haptics';
+import {
+  SEARCH_PLACEHOLDER,
+  formatMoney,
+  type ProductCardData,
+  type SearchSort,
+  type SearchSuggestions,
+} from '@youmart/shared-client';
+import { api } from '@/lib/api';
 import { searchProductsPage } from '@/lib/catalog';
+import { getJSON, setJSON } from '@/lib/storage';
 import { ProductCard } from '@/components/ProductCard';
 import { VoiceSearchSheet } from '@/components/VoiceSearchSheet';
 import { CategoryCard } from '@/components/CategoryCard';
+import { BrandLogo } from '@/components/BrandLogo';
 import { searchCategories, type CategoryMatch } from '@/lib/home-categories';
 import { colors, font, radii, space } from '@/theme';
 
-const PER_PAGE = 50;
+// v1.17 Search, Amazon / Flipkart style. Empty box: recent + popular searches. While typing: a
+// suggestion panel - matching categories, word completions ("vermi" -> vermicompost), brands (logo
+// + product count) and the best products - from /search/suggest. Submitting (keyboard, a
+// completion, "See all") shows the results grid with sort chips and an optional brand filter.
+// Matching is whole-word + semantic on the server, so "car" never brings up carpets.
 
-type Results = { term: string; products: ProductCardData[]; total: number; page: number };
-type State = { status: 'idle' } | { status: 'loading' } | { status: 'done'; results: Results };
+const PER_PAGE = 40;
+const RECENT_KEY = 'ym_recent_searches';
+const MAX_RECENT = 8;
+const BRAND = colors.brand.DEFAULT;
+const POPULAR = [
+  'Vermicompost',
+  'iPhone',
+  'Potting mix',
+  'Diapers',
+  'Earbuds',
+  'Cow dung manure',
+  'Chargers',
+  'Neem cake',
+];
+const SORTS: { key: SearchSort; label: string }[] = [
+  { key: 'relevance', label: 'Relevance' },
+  { key: 'price_asc', label: 'Price: Low to High' },
+  { key: 'price_desc', label: 'Price: High to Low' },
+  { key: 'newest', label: 'Newest' },
+];
+
+type Results = { products: ProductCardData[]; total: number; page: number };
+type Submitted = { term: string; brand: string | null; sort: SearchSort };
 
 export default function SearchScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { q } = useLocalSearchParams<{ q?: string }>();
   const [query, setQuery] = useState(String(q ?? ''));
-  const [state, setState] = useState<State>({ status: 'idle' });
+  const [submitted, setSubmitted] = useState<Submitted | null>(null);
+  const [results, setResults] = useState<Results | null>(null);
+  const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [suggest, setSuggest] = useState<SearchSuggestions | null>(null);
+  const [recent, setRecent] = useState<string[]>([]);
   const [voice, setVoice] = useState(false);
   const inputRef = useRef<TextInputInstance>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Guards against stale responses when the user keeps typing.
   const reqId = useRef(0);
+  const sugId = useRef(0);
 
   useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 300);
-    return () => clearTimeout(t);
+    void getJSON<string[]>(RECENT_KEY).then((r) => setRecent(r ?? []));
+    if (q) submit(String(q));
+    else {
+      const t = setTimeout(() => inputRef.current?.focus(), 300);
+      return () => clearTimeout(t);
+    }
+    // Only on open: `q` is the initial query from the link.
   }, []);
 
-  // Debounced first-page search as the user types.
+  const term = query.trim();
+  // Showing results only while the box still says what was searched; editing it goes back to
+  // suggestions.
+  const showResults = submitted !== null && submitted.term.toLowerCase() === term.toLowerCase();
+
+  // Suggestions as the user types.
   useEffect(() => {
-    if (timer.current) clearTimeout(timer.current);
-    const term = query.trim();
-    if (term.length < 2) {
-      reqId.current += 1;
-      setState({ status: 'idle' });
+    if (showResults || term.length < 2) {
+      setSuggest(null);
       return;
     }
-    setState({ status: 'loading' });
+    const id = (sugId.current += 1);
+    const t = setTimeout(() => {
+      api.search
+        .suggest(term, 5)
+        .then((s) => sugId.current === id && setSuggest(s))
+        .catch(() => sugId.current === id && setSuggest(null));
+    }, 180);
+    return () => clearTimeout(t);
+  }, [term, showResults]);
+
+  // Results for the submitted search (and whenever its sort / brand changes).
+  useEffect(() => {
+    if (!submitted) return;
     const id = (reqId.current += 1);
-    timer.current = setTimeout(() => {
-      searchProductsPage(term, 1, PER_PAGE)
-        .then((res) => {
-          if (reqId.current !== id) return;
-          setState({
-            status: 'done',
-            results: { term, products: res.products, total: res.total, page: 1 },
-          });
-        })
-        .catch(() => {
-          if (reqId.current !== id) return;
-          setState({ status: 'done', results: { term, products: [], total: 0, page: 1 } });
-        });
-    }, 350);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, [query]);
+    setLoading(true);
+    searchProductsPage(
+      submitted.term,
+      1,
+      PER_PAGE,
+      submitted.brand ?? undefined,
+      undefined,
+      submitted.sort,
+    )
+      .then(
+        (res) =>
+          reqId.current === id && setResults({ products: res.products, total: res.total, page: 1 }),
+      )
+      .catch(() => reqId.current === id && setResults({ products: [], total: 0, page: 1 }))
+      .finally(() => reqId.current === id && setLoading(false));
+  }, [submitted]);
+
+  const remember = (text: string) => {
+    const next = [text, ...recent.filter((r) => r.toLowerCase() !== text.toLowerCase())].slice(
+      0,
+      MAX_RECENT,
+    );
+    setRecent(next);
+    void setJSON(RECENT_KEY, next);
+  };
+
+  function submit(text: string, brand: string | null = null) {
+    const t = text.trim();
+    if (!t) return;
+    setQuery(t);
+    setResults(null);
+    setSubmitted({ term: t, brand, sort: 'relevance' });
+    remember(t);
+    inputRef.current?.blur();
+  }
 
   const loadMore = useCallback(async () => {
-    if (state.status !== 'done' || loadingMore) return;
-    const { term, products, total, page } = state.results;
-    if (products.length >= total) return;
+    if (!submitted || !results || loadingMore || results.products.length >= results.total) return;
     setLoadingMore(true);
     const id = reqId.current;
     try {
-      const res = await searchProductsPage(term, page + 1, PER_PAGE);
+      const res = await searchProductsPage(
+        submitted.term,
+        results.page + 1,
+        PER_PAGE,
+        submitted.brand ?? undefined,
+        undefined,
+        submitted.sort,
+      );
       if (reqId.current !== id) return;
-      setState((prev) =>
-        prev.status === 'done'
-          ? {
-              status: 'done',
-              results: {
-                ...prev.results,
-                products: [...prev.results.products, ...res.products],
-                total: res.total,
-                page: page + 1,
-              },
-            }
+      setResults((prev) =>
+        prev
+          ? { products: [...prev.products, ...res.products], total: res.total, page: prev.page + 1 }
           : prev,
       );
     } catch {
@@ -101,25 +173,20 @@ export default function SearchScreen() {
     } finally {
       setLoadingMore(false);
     }
-  }, [state, loadingMore]);
+  }, [submitted, results, loadingMore]);
 
-  // Categories whose name matches - searching "religion" or "clothing" offers the category itself
-  // (its sub-categories + brands), even when no product matches yet.
-  const categories = useMemo(() => searchCategories(query), [query]);
+  const categories = useMemo(() => searchCategories(term, 8), [term]);
   const openCategory = useCallback(
     (c: CategoryMatch) =>
       router.push(`/category/${c.path[c.path.length - 1]}?taxo=${c.path.join('~')}`),
     [router],
   );
-  const onSubmit = () => {
-    const exact = categories.find((c) => c.exact);
-    if (exact) openCategory(exact);
-  };
+  const tap = () => void Haptics.selectionAsync().catch(() => undefined);
 
   const categoryStrip =
     categories.length > 0 ? (
       <View style={styles.catBlock}>
-        <Text style={styles.catTitle}>Categories</Text>
+        <Text style={styles.blockTitle}>Categories</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -146,6 +213,256 @@ export default function SearchScreen() {
       </View>
     ) : null;
 
+  /** Recent + popular, shown with an empty box. */
+  const start = (
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.panel}>
+      {recent.length > 0 ? (
+        <View style={styles.block}>
+          <View style={styles.blockHead}>
+            <Text style={styles.blockTitle}>Recent searches</Text>
+            <Pressable
+              hitSlop={8}
+              onPress={() => {
+                setRecent([]);
+                void setJSON(RECENT_KEY, []);
+              }}
+            >
+              <Text style={styles.clear}>Clear</Text>
+            </Pressable>
+          </View>
+          {recent.map((r) => (
+            <Pressable key={r} style={styles.row} onPress={() => submit(r)}>
+              <Ionicons name="time-outline" size={18} color={colors.text.muted} />
+              <Text style={styles.rowText} numberOfLines={1}>
+                {r}
+              </Text>
+              <Pressable
+                hitSlop={10}
+                onPress={() => {
+                  const next = recent.filter((x) => x !== r);
+                  setRecent(next);
+                  void setJSON(RECENT_KEY, next);
+                }}
+              >
+                <Ionicons name="close" size={17} color={colors.text.muted} />
+              </Pressable>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      <View style={styles.block}>
+        <Text style={styles.blockTitle}>Popular on YouMart</Text>
+        <View style={styles.chips}>
+          {POPULAR.map((p) => (
+            <Pressable key={p} style={styles.chip} onPress={() => submit(p)}>
+              <Ionicons name="trending-up" size={14} color={BRAND} />
+              <Text style={styles.chipText}>{p}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    </ScrollView>
+  );
+
+  /** The live suggestion panel while typing. */
+  const suggestions = (
+    <ScrollView
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      contentContainerStyle={styles.panel}
+    >
+      {categoryStrip}
+      {suggest?.completions.length ? (
+        <View style={styles.block}>
+          {suggest.completions.map((c) => (
+            <Pressable key={c} style={styles.row} onPress={() => submit(c)}>
+              <Ionicons name="search" size={17} color={colors.text.muted} />
+              <Text style={styles.rowText} numberOfLines={1}>
+                <Text style={styles.rowTyped}>{c.slice(0, term.length)}</Text>
+                {c.slice(term.length)}
+              </Text>
+              <Pressable
+                hitSlop={10}
+                onPress={() => setQuery(`${c} `)}
+                accessibilityLabel={`Fill in ${c}`}
+              >
+                <Ionicons
+                  name="arrow-up-outline"
+                  size={17}
+                  color={colors.text.muted}
+                  style={styles.fill}
+                />
+              </Pressable>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      {suggest?.brands.length ? (
+        <View style={styles.block}>
+          <Text style={styles.blockTitle}>Brands</Text>
+          {suggest.brands.map((b) => (
+            <Pressable
+              key={b.value}
+              style={styles.row}
+              onPress={() => {
+                tap();
+                submit(b.value, b.value);
+              }}
+            >
+              <View style={styles.brandLogo}>
+                <BrandLogo name={b.value} width={40} height={28} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowText} numberOfLines={1}>
+                  {b.value}
+                </Text>
+                <Text style={styles.rowSub}>
+                  Brand · {b.count} product{b.count === 1 ? '' : 's'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.text.muted} />
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      {suggest?.items.length ? (
+        <View style={styles.block}>
+          <Text style={styles.blockTitle}>Products</Text>
+          {suggest.items.map((p) => (
+            <Pressable
+              key={p.id}
+              style={styles.row}
+              onPress={() => router.push(`/product/${p.slug}`)}
+            >
+              <View style={styles.thumb}>
+                {p.primaryImageUrl ? (
+                  <Image
+                    source={{ uri: p.primaryImageUrl }}
+                    style={styles.thumbImg}
+                    contentFit="contain"
+                  />
+                ) : (
+                  <Ionicons name="image-outline" size={20} color={colors.card.border} />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowText} numberOfLines={2}>
+                  {p.title}
+                </Text>
+                <Text style={styles.rowPrice}>{formatMoney(p.price)}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+      {term.length >= 2 ? (
+        <Pressable style={styles.seeAll} onPress={() => submit(term)}>
+          <Ionicons name="search" size={17} color={BRAND} />
+          <Text style={styles.seeAllText} numberOfLines={1}>
+            See all results for “{term}”
+          </Text>
+          <Ionicons name="arrow-forward" size={16} color={BRAND} />
+        </Pressable>
+      ) : null}
+      {suggest && !suggest.items.length && !suggest.brands.length && !categories.length ? (
+        <Text style={styles.noSuggest}>No matches for “{term}” yet - try another word.</Text>
+      ) : null}
+    </ScrollView>
+  );
+
+  const resultsHeader = submitted ? (
+    <View>
+      {categoryStrip}
+      <View style={styles.resultsHead}>
+        <Text style={styles.count}>
+          {results ? `${results.total} result${results.total === 1 ? '' : 's'}` : 'Searching'} for “
+          {submitted.term}”
+        </Text>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.sortRow}
+      >
+        {submitted.brand ? (
+          <Pressable
+            style={[styles.sortChip, styles.sortChipOn]}
+            onPress={() => setSubmitted({ ...submitted, brand: null })}
+          >
+            <Text style={[styles.sortText, styles.sortTextOn]}>{submitted.brand}</Text>
+            <Ionicons name="close" size={14} color={colors.white} />
+          </Pressable>
+        ) : null}
+        {SORTS.map((s) => {
+          const on = submitted.sort === s.key;
+          return (
+            <Pressable
+              key={s.key}
+              style={[styles.sortChip, on && styles.sortChipOn]}
+              onPress={() => {
+                tap();
+                setSubmitted({ ...submitted, sort: s.key });
+              }}
+            >
+              <Text style={[styles.sortText, on && styles.sortTextOn]}>{s.label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  ) : null;
+
+  let body: ReactNode;
+  if (!showResults) body = term.length < 2 ? start : suggestions;
+  else if (loading && !results)
+    body = (
+      <View style={styles.flex}>
+        {resultsHeader}
+        <View style={styles.hint}>
+          <ActivityIndicator size="large" color={BRAND} />
+        </View>
+      </View>
+    );
+  else if (!results || results.products.length === 0)
+    body = (
+      <View style={styles.flex}>
+        {resultsHeader}
+        <View style={styles.hint}>
+          <Ionicons
+            name={categories.length ? 'grid-outline' : 'search-outline'}
+            size={44}
+            color={colors.card.border}
+          />
+          <Text style={styles.hintText}>
+            {categories.length
+              ? `No products for “${submitted!.term}” yet - browse the categories above.`
+              : `No products found for “${submitted!.term}”. Try a different or more general word.`}
+          </Text>
+        </View>
+      </View>
+    );
+  else
+    body = (
+      <FlatList
+        data={results.products}
+        keyExtractor={(p) => p.id}
+        numColumns={2}
+        columnWrapperStyle={styles.col}
+        contentContainerStyle={styles.grid}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        onEndReached={loadMore}
+        onEndReachedThreshold={1.2}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={resultsHeader ?? undefined}
+        renderItem={({ item }) => <ProductCard product={item} />}
+        ListFooterComponent={
+          loadingMore ? <ActivityIndicator color={BRAND} style={{ margin: space.lg }} /> : undefined
+        }
+      />
+    );
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top + 6 }]}>
       <View style={styles.bar}>
@@ -164,10 +481,17 @@ export default function SearchScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
-            onSubmitEditing={onSubmit}
+            onSubmitEditing={() => submit(query)}
           />
           {query.length > 0 ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+            <Pressable
+              onPress={() => {
+                setQuery('');
+                setSubmitted(null);
+                inputRef.current?.focus();
+              }}
+              hitSlop={8}
+            >
               <Ionicons name="close-circle" size={18} color={colors.text.placeholder} />
             </Pressable>
           ) : null}
@@ -177,7 +501,7 @@ export default function SearchScreen() {
             hitSlop={8}
             accessibilityLabel="Search with a photo"
           >
-            <Ionicons name="camera-outline" size={20} color={colors.brand.DEFAULT} />
+            <Ionicons name="camera-outline" size={20} color={BRAND} />
           </Pressable>
           <Pressable
             style={styles.mic}
@@ -197,69 +521,17 @@ export default function SearchScreen() {
         onClose={() => setVoice(false)}
         onResult={(text) => {
           setVoice(false);
-          setQuery(text);
+          submit(text);
         }}
       />
-
-      {state.status === 'idle' ? (
-        <View style={styles.hint}>
-          <Ionicons name="search-outline" size={48} color={colors.card.border} />
-          <Text style={styles.hintText}>Search for products, brands and categories</Text>
-        </View>
-      ) : state.status === 'loading' ? (
-        <View style={styles.flex}>
-          {categoryStrip}
-          <View style={styles.hint}>
-            <ActivityIndicator size="large" color={colors.brand.DEFAULT} />
-          </View>
-        </View>
-      ) : state.results.products.length === 0 ? (
-        <View style={styles.flex}>
-          {categoryStrip}
-          <View style={styles.hint}>
-            <Ionicons
-              name={categories.length ? 'grid-outline' : 'sad-outline'}
-              size={44}
-              color={colors.card.border}
-            />
-            <Text style={styles.hintText}>
-              {categories.length
-                ? `No products for “${state.results.term}” yet - browse the categories above.`
-                : `No products found for “${state.results.term}”.`}
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <FlatList
-          data={state.results.products}
-          keyExtractor={(p) => p.id}
-          numColumns={2}
-          columnWrapperStyle={styles.col}
-          contentContainerStyle={styles.grid}
-          keyboardShouldPersistTaps="handled"
-          onEndReached={loadMore}
-          onEndReachedThreshold={1.2}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <>
-              {categoryStrip}
-              <Text style={styles.count}>Results for “{state.results.term}”</Text>
-            </>
-          }
-          renderItem={({ item }) => <ProductCard product={item} />}
-          ListFooterComponent={
-            loadingMore ? (
-              <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
-            ) : undefined
-          }
-        />
-      )}
+      {body}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
+  flex: { flex: 1 },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -281,6 +553,97 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   input: { flex: 1, fontFamily: font.body, fontSize: 15, color: colors.text.input },
+  scan: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  mic: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: BRAND,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  panel: { paddingBottom: space.xxl },
+  block: { paddingTop: space.md, gap: 2 },
+  blockHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: space.lg,
+  },
+  blockTitle: {
+    fontFamily: font.uiBold,
+    fontSize: 13,
+    letterSpacing: 0.4,
+    color: colors.text.muted,
+    textTransform: 'uppercase',
+    paddingHorizontal: space.lg,
+    paddingBottom: 6,
+  },
+  clear: { fontFamily: font.uiBold, fontSize: 13, color: BRAND },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: space.lg,
+    paddingVertical: 10,
+  },
+  rowText: { flex: 1, fontFamily: font.uiMedium, fontSize: 14.5, color: colors.text.strong },
+  rowTyped: { fontFamily: font.uiBold, color: colors.heading },
+  rowSub: { fontFamily: font.uiMedium, fontSize: 11.5, color: colors.text.muted, marginTop: 1 },
+  rowPrice: { fontFamily: font.uiBold, fontSize: 13, color: colors.heading, marginTop: 2 },
+  fill: { transform: [{ rotate: '-45deg' }] },
+  brandLogo: {
+    width: 48,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: '#e3e8f1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  thumbImg: { width: '90%', height: '90%' },
+  seeAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: space.lg,
+    marginTop: space.md,
+    paddingHorizontal: space.md,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: '#eaf1ff',
+  },
+  seeAllText: { flex: 1, fontFamily: font.uiBold, fontSize: 14, color: BRAND },
+  noSuggest: {
+    fontFamily: font.body,
+    fontSize: 13.5,
+    color: colors.text.body,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: space.lg },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#dbe4f3',
+    backgroundColor: colors.white,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  chipText: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.text.strong },
   hint: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md },
   hintText: {
     fontFamily: font.body,
@@ -289,22 +652,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: space.xl,
   },
-  grid: { padding: space.lg, gap: space.md },
-  col: { gap: space.md },
-  count: {
-    fontFamily: font.uiMedium,
-    fontSize: 13,
-    color: colors.text.body,
-    marginBottom: space.sm,
+  grid: { paddingBottom: space.lg, gap: space.md },
+  col: { gap: space.md, paddingHorizontal: space.lg },
+  resultsHead: { paddingHorizontal: space.lg },
+  count: { fontFamily: font.uiMedium, fontSize: 13, color: colors.text.body },
+  sortRow: { gap: 8, paddingHorizontal: space.lg, paddingVertical: space.md },
+  sortChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#dbe4f3',
+    backgroundColor: colors.white,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
-  flex: { flex: 1 },
+  sortChipOn: { backgroundColor: BRAND, borderColor: BRAND },
+  sortText: { fontFamily: font.uiSemibold, fontSize: 12.5, color: colors.text.strong },
+  sortTextOn: { color: colors.white },
   catBlock: { paddingTop: space.xs, paddingBottom: space.md, gap: space.sm },
-  catTitle: {
-    fontFamily: font.uiBold,
-    fontSize: 15,
-    color: colors.heading,
-    paddingHorizontal: space.lg,
-  },
   catRow: { paddingHorizontal: space.lg, gap: space.sm },
   catItem: { width: 104, gap: 4 },
   catCard: { flex: 0 },
@@ -313,14 +680,5 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     color: colors.text.muted,
     textAlign: 'center',
-  },
-  scan: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
-  mic: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.brand.DEFAULT,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

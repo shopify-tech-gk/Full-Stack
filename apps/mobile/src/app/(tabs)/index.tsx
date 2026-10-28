@@ -25,6 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { BrandStrip } from '@/components/BrandStrip';
 import { BrandBanners } from '@/components/BrandBanners';
+import { ReferBanner } from '@/components/ReferBanner';
 import { BestCategories } from '@/components/BestCategories';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
@@ -153,6 +154,9 @@ export default function HomeScreen() {
             <HScrollZone>
               <RailPanels rails={state.data.rails} />
             </HScrollZone>
+
+            {/* v1.17: Refer & Earn banner - after the deals, before Top Brands. */}
+            <ReferBanner />
 
             <HScrollZone>
               <BrandStrip />

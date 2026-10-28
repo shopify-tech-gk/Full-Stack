@@ -9,13 +9,26 @@ import {
 } from './collection';
 import { moneyToPaise, paiseToMoney } from './money-paise';
 import type { BrowseRequestBody } from './browse.schema';
+import { SYNONYM_SET } from './synonyms';
 
-// Title >> description relevance, search-as-you-type on title, typo tolerance (Ch6.3 tuning).
-const TEXT_PARAMS = {
-  query_by: 'title,description',
-  query_by_weights: '4,1',
-  prefix: 'true,false',
-  num_typos: '2,1',
+// v1.17 hybrid search: keyword relevance (title > brand > category path / product type >
+// description) on WHOLE words - "car" must not match "carpet" or "care" (prefix completions live in
+// /search/suggest) - plus the semantic embedding, so "phone" finds mobiles and a query nothing
+// really matches returns nothing rather than look-alikes. Short words get no typo matching
+// ("car" -> "cat"), long ones forgive one or two. Tuned against the live catalog.
+export const TEXT_PARAMS = {
+  query_by: 'title,brand,categoryPath,keywords,description,embedding',
+  query_by_weights: '10,8,5,5,1,0',
+  prefix: 'false',
+  num_typos: '2,1,1,1,0,0',
+  min_len_1typo: 4,
+  min_len_2typo: 8,
+  synonym_sets: SYNONYM_SET,
+  // distance_threshold: how close in meaning a product must be to count (0 = identical); alpha:
+  // the semantic share of the final ranking (keyword matches lead).
+  vector_query: 'embedding:([], distance_threshold: 0.6, alpha: 0.25)',
+  // The vectors are big and the API never returns them.
+  exclude_fields: 'embedding',
 };
 const MAX_FACET_VALUES = 100;
 const PRICE_FIELD = 'pricePaise';
@@ -171,7 +184,10 @@ export async function browse(
   if (options.priceBuckets) openFacets.push(PRICE_BUCKET_FACET);
 
   const hasText = Boolean(body.q && body.q.trim());
-  const common = { q: hasText ? body.q!.trim() : '*', ...TEXT_PARAMS };
+  // Plain browsing (q = *) has no text to embed: keyword-only params.
+  const common = hasText
+    ? { q: body.q!.trim(), ...TEXT_PARAMS }
+    : { q: '*', query_by: 'title', exclude_fields: 'embedding' };
   const sort = sortBy(body.sort, hasText);
   const searches: Record<string, unknown>[] = [
     {

@@ -24,6 +24,8 @@ export interface CatalogProductForIndex {
   /** W3 additions. `categoryPathIds` = the category and all its ancestors. */
   categorySlug: string;
   categoryPathIds: string[];
+  /** v1.17 names along that path, root first (searchable). */
+  categoryPathNames?: string[];
   mrp: string | null;
   skuId?: string | null;
   rating: string | null;

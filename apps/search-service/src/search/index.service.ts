@@ -13,6 +13,7 @@ import {
   type ProductDocument,
 } from './collection';
 import type { CatalogProductForIndex } from '../catalogClient';
+import { ensureSynonyms } from './synonyms';
 
 /** Same normalisation the catalog applies to filter-definition keys (lower_snake_case). */
 export function normalizeAttributeKey(raw: string): string {
@@ -49,13 +50,35 @@ function flattenAttributes(attributes: unknown): Record<string, string[] | numbe
   return fields;
 }
 
+/** Attribute keys whose short values describe what a product IS (searchable as keywords). */
+const KEYWORD_ATTRIBUTES = ['product_type', 'form', 'type', 'material', 'style_name'];
+/** Brand placeholders that aren't a brand - kept out of the searchable brand text. */
+const NOT_A_BRAND = /^(generic|unbranded|no brand|na|n\/a)$/i;
+
+function attributeText(attributes: unknown, key: string): string[] {
+  if (!attributes || typeof attributes !== 'object' || Array.isArray(attributes)) return [];
+  const raw = (attributes as Record<string, unknown>)[key];
+  return (Array.isArray(raw) ? raw : [raw]).filter(
+    (v): v is string => typeof v === 'string' && v.trim().length > 0,
+  );
+}
+
 function toDocument(product: CatalogProductForIndex): ProductDocument {
   const pricePaise = product.price ? moneyToPaise(product.price) : 0;
   const mrpPaise = product.mrp ? moneyToPaise(product.mrp) : pricePaise;
+  const brand = attributeText(product.attributes, 'brand')[0]?.trim() ?? '';
   return {
     id: product.id,
     title: product.title,
     description: product.description ?? '',
+    brand: NOT_A_BRAND.test(brand) ? '' : brand,
+    categoryPath: (product.categoryPathNames?.length
+      ? product.categoryPathNames
+      : [product.categoryName]
+    ).join(' '),
+    keywords: [...new Set(KEYWORD_ATTRIBUTES.flatMap((k) => attributeText(product.attributes, k)))]
+      .join(' ')
+      .slice(0, 300),
     slug: product.slug,
     categoryId: product.categoryId,
     categoryName: product.categoryName,
@@ -165,11 +188,12 @@ export async function fullReindex(): Promise<{ indexed: number; collectionName: 
 }
 
 export async function initSearchIndex(): Promise<void> {
+  await ensureSynonyms();
   await ensureCollection();
-  // W3 changed the document shape (generic attrs_*/attrn_* fields); rebuild an older collection
-  // once, zero-downtime via the same alias swap as the nightly job.
+  // W3 (generic attrs_*/attrn_* fields) and v1.17 (semantic embedding) changed the document
+  // shape; rebuild an older collection once, zero-downtime via the same alias swap as nightly.
   if (await collectionNeedsRebuild()) {
-    logger.info('products collection predates the generic-attribute schema - rebuilding');
+    logger.info('products collection predates the current schema - rebuilding');
     await fullReindex();
   }
 }
