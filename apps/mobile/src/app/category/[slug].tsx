@@ -81,6 +81,17 @@ export default function CategoryScreen() {
   // catalog doesn't hold yet. Off-taxonomy links fall back to the route's catalog slug.
   const searchTerm = node && node.href.startsWith('/search') ? node.name : null;
   const catalogSlug = node ? catalogSlugOf(node.href) : routeSlug;
+  // Not in the catalog yet: its link is an ancestor's page, but the ancestor's products (e.g.
+  // Compost under Fertilizer) aren't this node's - it shows "coming soon" instead.
+  const comingSoon = node?.match === 'parent';
+  // A searched node only shows products filed under it or its parents (never a sibling's).
+  const searchCategories = useMemo(
+    () =>
+      node
+        ? node.path.map((_, i) => taxNode(node.path.slice(0, i + 1))?.name ?? '').filter(Boolean)
+        : [],
+    [node],
+  );
 
   const [query, setQuery] = useState<ListingQuery>(() => {
     const q = emptyListingQuery();
@@ -110,9 +121,14 @@ export default function CategoryScreen() {
 
   useEffect(() => {
     let active = true;
+    if (comingSoon) {
+      setData({ products: [], total: 0, filters: null });
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const load: Promise<Results> = searchTerm
-      ? searchProductsPage(searchTerm, 1, 40, brand || undefined).then((r) => ({
+      ? searchProductsPage(searchTerm, 1, 100, brand || undefined, searchCategories).then((r) => ({
           ...r,
           filters: null,
         }))
@@ -130,7 +146,9 @@ export default function CategoryScreen() {
     };
   }, [
     catalogSlug,
+    comingSoon,
     searchTerm,
+    searchCategories,
     brand,
     query.sort,
     query.minRating,
@@ -145,7 +163,7 @@ export default function CategoryScreen() {
     const nextPage = query.page + 1;
     try {
       const res = searchTerm
-        ? await searchProductsPage(searchTerm, nextPage, 40, brand || undefined)
+        ? await searchProductsPage(searchTerm, nextPage, 100, brand || undefined, searchCategories)
         : await listMoreProducts(catalogSlug, { ...query, page: nextPage });
       setData((prev) =>
         prev ? { ...prev, products: [...prev.products, ...res.products], total: res.total } : prev,
@@ -156,7 +174,7 @@ export default function CategoryScreen() {
     } finally {
       setLoadingMore(false);
     }
-  }, [data, loadingMore, loading, query, catalogSlug, searchTerm, brand]);
+  }, [data, loadingMore, loading, query, catalogSlug, searchTerm, searchCategories, brand]);
 
   // Brands: the ones with products here first (most products first), then the rest of the
   // category sheet's brands for this node.
@@ -238,7 +256,7 @@ export default function CategoryScreen() {
             </View>
           ) : null}
 
-          {brands.length ? (
+          {brands.length && !comingSoon ? (
             <View style={styles.brandWrap}>
               <Text style={styles.brandLabel}>Shop by brand</Text>
               <ScrollView
@@ -282,10 +300,18 @@ export default function CategoryScreen() {
                 <Ionicons name="cube-outline" size={30} color={colors.brand.DEFAULT} />
               </View>
               <Text style={styles.emptyTitle}>
-                {brand ? `No ${brand} products here yet` : 'No products here yet'}
+                {comingSoon
+                  ? `${node?.name ?? 'Products'} coming soon`
+                  : brand
+                    ? `No ${brand} products here yet`
+                    : 'No products here yet'}
               </Text>
               <Text style={styles.emptyText}>
-                {brand ? 'Try another brand or "All".' : 'Check another category from the list.'}
+                {comingSoon
+                  ? "We're adding products here. Meanwhile, check another category from the list."
+                  : brand
+                    ? 'Try another brand or "All".'
+                    : 'Check another category from the list.'}
               </Text>
               {brand ? (
                 <Pressable style={styles.emptyBtn} onPress={() => pickBrand('')}>

@@ -3,6 +3,7 @@ import { PixelRatio, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { avatarColor } from '@/components/Avatar';
 import { BRAND_LOGO_HEADERS, brandLogoUrl, type BrandLogoType } from '@/lib/brand-logos';
+import { bundledBrandLogo } from '@/lib/brand-logo-files';
 import { font } from '@/theme';
 
 type Props = {
@@ -15,10 +16,27 @@ type Props = {
 const STAGES: BrandLogoType[] = ['logo', 'icon'];
 
 /**
- * A brand's logo fitted into a box: the wordmark first, then its square icon, and finally a
- * styled name "wordmark" when Brandfetch has neither (or the brand's domain is unknown).
+ * A brand's logo fitted into a box: a bundled logo (lib/brand-logo-files) when we have one, else
+ * Brandfetch's wordmark, then its square icon, and finally a styled name "wordmark" when Brandfetch
+ * has neither (or the brand's domain is unknown).
  */
 function BrandLogoBase({ name, width, height }: Props) {
+  const bundled = bundledBrandLogo(name);
+  if (bundled) {
+    return (
+      <Image
+        source={bundled}
+        style={{ width, height }}
+        contentFit="contain"
+        accessibilityLabel={`${name} logo`}
+      />
+    );
+  }
+  return <RemoteLogo name={name} width={width} height={height} />;
+}
+
+/** Brandfetch: the wordmark, then the square icon, then the name tile. */
+function RemoteLogo({ name, width, height }: Props) {
   const [stage, setStage] = useState(0);
   const scale = Math.min(PixelRatio.get(), 3);
   const type = STAGES[stage];

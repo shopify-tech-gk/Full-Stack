@@ -70,16 +70,25 @@ export function Price({
   );
 }
 
-export function Stars({ rating, size = 13 }: { rating: number; size?: number }) {
+/** `bold`: solid stars (a deeper gold, grey for the rest) instead of thin outlines - product page. */
+export function Stars({
+  rating,
+  size = 13,
+  bold = false,
+}: {
+  rating: number;
+  size?: number;
+  bold?: boolean;
+}) {
   const full = Math.round(rating);
   return (
-    <View style={styles.stars}>
+    <View style={[styles.stars, bold && { gap: 2 }]}>
       {[1, 2, 3, 4, 5].map((n) => (
         <Ionicons
           key={n}
-          name={n <= full ? 'star' : 'star-outline'}
+          name={bold || n <= full ? 'star' : 'star-outline'}
           size={size}
-          color={colors.star.filled}
+          color={bold ? (n <= full ? '#f5a524' : '#d5dbe5') : colors.star.filled}
         />
       ))}
     </View>

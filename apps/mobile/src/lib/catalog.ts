@@ -202,6 +202,9 @@ export async function searchProductsPage(
   page: number,
   perPage = 50,
   brand?: string,
+  /** Keep only hits filed under one of these categories (a taxonomy node and its parents), so
+   * a node the catalog doesn't hold yet never shows another category's products. One page. */
+  inCategories?: readonly string[],
 ): Promise<{ products: ProductCardData[]; total: number }> {
   if (!q.trim()) return { products: [], total: 0 };
   const result = await api.search.products({
@@ -210,7 +213,14 @@ export async function searchProductsPage(
     perPage,
     ...(brand ? { brand } : {}),
   });
-  return { products: result.results.map(searchResultToCardData), total: result.found };
+  if (!inCategories) {
+    return { products: result.results.map(searchResultToCardData), total: result.found };
+  }
+  const allowed = new Set(inCategories.map((n) => n.trim().toLowerCase()));
+  const products = result.results
+    .filter((r) => allowed.has((r.categoryName ?? '').trim().toLowerCase()))
+    .map(searchResultToCardData);
+  return { products, total: products.length };
 }
 
 /** A fresh, default listing query (overridden by the filter sheet). */

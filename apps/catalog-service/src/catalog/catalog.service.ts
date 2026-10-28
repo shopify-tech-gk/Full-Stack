@@ -390,19 +390,24 @@ function specifications(
     const index = definition.findIndex((entry) => entry.key === key);
     return index === -1 ? definition.length : index;
   };
-  return Object.entries(attributes as Record<string, unknown>)
-    .map(([key, raw]) => {
-      const entry = definition.find((e) => e.key === key);
-      const values = (Array.isArray(raw) ? raw : [raw]).filter(
-        (v) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean',
-      );
-      const value = values
-        .map((v) => (typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v)))
-        .join(', ');
-      return { key, label: entry?.label ?? labelFor(key), value, unit: entry?.unit ?? null };
-    })
-    .filter((row) => row.value.length > 0)
-    .sort((a, b) => rank(a.key) - rank(b.key) || a.label.localeCompare(b.label));
+  return (
+    Object.entries(attributes as Record<string, unknown>)
+      // `*_band` keys (e.g. weight_band, discount_band) exist only to drive listing filters;
+      // `unavailable_packs` is shown by the pack-size selector instead.
+      .filter(([key]) => !key.endsWith('_band') && !key.startsWith('unavailable_'))
+      .map(([key, raw]) => {
+        const entry = definition.find((e) => e.key === key);
+        const values = (Array.isArray(raw) ? raw : [raw]).filter(
+          (v) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean',
+        );
+        const value = values
+          .map((v) => (typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v)))
+          .join(', ');
+        return { key, label: entry?.label ?? labelFor(key), value, unit: entry?.unit ?? null };
+      })
+      .filter((row) => row.value.length > 0)
+      .sort((a, b) => rank(a.key) - rank(b.key) || a.label.localeCompare(b.label))
+  );
 }
 
 export interface SkuDetail {
@@ -992,7 +997,13 @@ export interface AdminProductListItem {
   category: CategoryRef;
   rating: string | null;
   ratingCount: number;
-  skus: Array<{ id: string; skuCode: string; mrp: Money; sellingPrice: Money; attributes: unknown }>;
+  skus: Array<{
+    id: string;
+    skuCode: string;
+    mrp: Money;
+    sellingPrice: Money;
+    attributes: unknown;
+  }>;
   updatedAt: string;
 }
 

@@ -9,6 +9,7 @@
 //      kept but listed in the report for review.
 //
 // Usage: node scripts/build-brand-domains.mjs [--report <file>]
+import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -252,7 +253,70 @@ async function pool(items, size, fn) {
   return out;
 }
 
+/**
+ * Brands on live catalog products (imports bring brands the category sheet never listed), with the
+ * storefront main each sells under. Read from the dev database; skipped when it isn't reachable.
+ */
+function loadCatalogBrands() {
+  // Catalog root slugs that differ from the taxonomy mains CATEGORY_WORDS is keyed by.
+  const ROOT_ALIAS = { 'lawn-and-gardening': 'agri-and-gardening' };
+  try {
+    process.loadEnvFile(resolve(ROOT, '.env'));
+    const sql = `WITH RECURSIVE up AS (
+        SELECT id, parent_id, slug FROM catalog.category WHERE deleted_at IS NULL
+      ), roots AS (
+        SELECT id, id AS leaf, parent_id, slug FROM up
+        UNION ALL SELECT u.id, r.leaf, u.parent_id, u.slug FROM roots r JOIN up u ON u.id = r.parent_id
+      )
+      SELECT DISTINCT p.attributes->>'brand', r.slug
+      FROM catalog.product p JOIN roots r ON r.leaf = p.category_id AND r.parent_id IS NULL
+      WHERE p.deleted_at IS NULL AND p.status = 'ACTIVE' AND coalesce(p.attributes->>'brand', '') <> '';`;
+    const out = execFileSync(
+      'docker',
+      [
+        'compose',
+        '-f',
+        'docker/docker-compose.yml',
+        '--env-file',
+        '.env',
+        'exec',
+        '-T',
+        'postgres',
+        'psql',
+        '-U',
+        process.env.POSTGRES_USER,
+        '-d',
+        process.env.POSTGRES_DB,
+        '-At',
+      ],
+      { cwd: ROOT, input: sql },
+    ).toString();
+    return out
+      .trim()
+      .split('\n')
+      .filter((l) => l.includes('|'))
+      .map((l) => {
+        const i = l.lastIndexOf('|');
+        const root = l.slice(i + 1);
+        return { brand: l.slice(0, i).trim(), main: ROOT_ALIAS[root] ?? root };
+      });
+  } catch (e) {
+    console.warn(`catalog brands skipped (${e.message.split('\n')[0]})`);
+    return [];
+  }
+}
+
 const { list: excel, mains: brandMains } = loadExcelBrands();
+// Catalog brands join the sheet's (case-insensitively - the sheet's spelling wins).
+const excelLower = new Set(excel.map((b) => b.toLowerCase()));
+for (const { brand, main } of loadCatalogBrands()) {
+  if (!excelLower.has(brand.toLowerCase())) {
+    excel.push(brand);
+    excelLower.add(brand.toLowerCase());
+  }
+  if (!brandMains.has(brand)) brandMains.set(brand, new Set());
+  brandMains.get(brand).add(main);
+}
 const manualRaw = JSON.parse(readFileSync(MANUAL, 'utf8'));
 delete manualRaw._comment;
 const manual = new Map(Object.entries(manualRaw));

@@ -25,7 +25,8 @@ import { useCart } from '@/stores/cart';
 import { useWishlist } from '@/stores/wishlist';
 import { SaveButton } from '@/components/SaveButton';
 import { useSession } from '@/stores/session';
-import { Price, ProductImage, Stars } from '@/components/ui';
+import { ProductGallery } from '@/components/ProductGallery';
+import { ProductAbout, ProductHeading, ProductPricing } from '@/components/ProductDetails';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductReviews } from '@/components/ProductReviews';
 import { shareProduct } from '@/lib/share';
@@ -75,11 +76,12 @@ export default function ProductScreen() {
   );
   const wishlist = useWishlist();
   const [product, setProduct] = useState<ProductDetailData | null | 'error'>(null);
-  const [gallery, setGallery] = useState(0);
   const [more, setMore] = useState<MoreState | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showBar, setShowBar] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('info');
+  // Chosen pack size / option (null = the product's default SKU).
+  const [pickedSku, setPickedSku] = useState<string | null>(null);
 
   const listRef = useRef<FlatList<ProductCardData>>(null);
   const sections = useRef({ info: 0, reviews: 0, explore: 0 });
@@ -96,6 +98,7 @@ export default function ProductScreen() {
     let active = true;
     setProduct(null);
     setMore(null);
+    setPickedSku(null);
     getProduct(String(slug ?? ''))
       .then((p) => {
         if (!active) return;
@@ -194,9 +197,14 @@ export default function ProductScreen() {
     );
   }
 
-  const canBuy = Boolean(prod.skuId);
+  // The selected option drives the price and what Add / Buy / Save act on.
+  const variant = prod.variants.find((v) => v.skuId === (pickedSku ?? prod.skuId));
+  const skuId = variant?.skuId ?? prod.skuId;
+  const price = variant?.sellingPrice ?? prod.sellingPrice;
+  const mrp = variant?.mrp ?? prod.mrp;
+  const canBuy = Boolean(skuId);
   // Once it's in the cart the button says so (Flipkart-style "Go to Cart") instead of resetting.
-  const inCart = prod.skuId ? cart.cart.items.find((i) => i.skuId === prod.skuId) : undefined;
+  const inCart = skuId ? cart.cart.items.find((i) => i.skuId === skuId) : undefined;
   const addToCart = async () => {
     if (adding) return;
     setAdding(true);
@@ -209,27 +217,36 @@ export default function ProductScreen() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(false), 2400);
   };
-  const saved = prod.skuId ? wishlist.has(prod.skuId) : false;
-  const images = prod.images.length > 0 ? [...prod.images] : [''];
+  const saved = skuId ? wishlist.has(skuId) : false;
+  // A picked variant with its own photo / title leads with them (the product's otherwise).
+  const picked = pickedSku ? variant : undefined;
+  const shownTitle = picked?.title ?? null;
+  const baseImages = prod.images.length > 0 ? [...prod.images] : [''];
+  const images = picked?.image
+    ? [picked.image, ...baseImages.filter((u) => u && u !== picked.image)]
+    : baseImages;
+  const lineTitle = variant
+    ? (variant.title ?? `${prod.title}${variant.label ? ` (${variant.label})` : ''}`)
+    : prod.title;
   const similar = more ? more.products.slice(0, 12) : [];
   const gridData = more ? more.products.slice(12) : [];
   const hasExplore = prod.related.length > 0 || similar.length > 0 || gridData.length > 0;
 
   const cartProduct = (): CartProduct => ({
-    skuId: prod.skuId!,
+    skuId: skuId!,
     productId: prod.id,
     productSlug: prod.slug,
-    title: prod.title,
-    price: prod.sellingPrice,
+    title: lineTitle,
+    price,
     image: images[0],
   });
   const wishProduct = (): WishlistProduct => ({
-    skuId: prod.skuId!,
+    skuId: skuId!,
     productId: prod.id,
     productSlug: prod.slug,
-    title: prod.title,
-    price: prod.sellingPrice,
-    mrp: prod.mrp,
+    title: lineTitle,
+    price,
+    mrp,
   });
 
   const renderRail = (title: string, items: readonly ProductCardData[]) =>
@@ -250,25 +267,7 @@ export default function ProductScreen() {
 
   const header = (
     <View>
-      <View style={styles.galleryWrap}>
-        <FlatList
-          horizontal
-          pagingEnabled
-          data={images}
-          keyExtractor={(_, i) => String(i)}
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(e) => setGallery(Math.round(e.nativeEvent.contentOffset.x / width))}
-          renderItem={({ item }) => (
-            <ProductImage src={item || undefined} style={{ width, height: width }} icon={56} />
-          )}
-        />
-        {images.length > 1 ? (
-          <View style={styles.dots}>
-            {images.map((_, i) => (
-              <View key={i} style={[styles.dot, i === gallery && styles.dotActive]} />
-            ))}
-          </View>
-        ) : null}
+      <ProductGallery key={images[0] ?? ''} images={images} width={width}>
         {canBuy ? (
           <SaveButton
             saved={saved}
@@ -282,7 +281,7 @@ export default function ProductScreen() {
         <Pressable
           onPress={() => {
             void Haptics.selectionAsync().catch(() => undefined);
-            void shareProduct({ title: prod.title, slug: prod.slug, price: prod.sellingPrice });
+            void shareProduct({ title: prod.title, slug: prod.slug, price });
           }}
           style={({ pressed }) => [
             styles.shareBtn,
@@ -294,16 +293,17 @@ export default function ProductScreen() {
         >
           <Ionicons name="share-social" size={20} color={colors.brand.DEFAULT} />
         </Pressable>
-      </View>
+      </ProductGallery>
 
       <View style={styles.info}>
-        <Text style={styles.title}>{prod.title}</Text>
-        <View style={styles.ratingRow}>
-          <Stars rating={prod.rating} size={16} />
-          <Text style={styles.ratingCount}>({prod.ratingCount} reviews)</Text>
-        </View>
-        <Price mrp={prod.mrp} price={prod.sellingPrice} size="lg" />
-        {prod.shortDescription ? <Text style={styles.short}>{prod.shortDescription}</Text> : null}
+        <ProductHeading prod={prod} title={shownTitle} />
+        <ProductPricing
+          prod={prod}
+          price={price}
+          mrp={mrp}
+          selectedSkuId={skuId}
+          onSelect={setPickedSku}
+        />
       </View>
 
       <View style={styles.assurance}>
@@ -327,20 +327,7 @@ export default function ProductScreen() {
           sections.current.info = e.nativeEvent.layout.y;
         }}
       >
-        {prod.specifications.length > 0 ? (
-          <View style={styles.specs}>
-            <Text style={styles.specsTitle}>Specifications</Text>
-            {prod.specifications.map((s) => (
-              <View key={s.label} style={styles.specRow}>
-                <Text style={styles.specLabel}>{s.label}</Text>
-                <Text style={styles.specValue}>{s.value}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-        {prod.description ? (
-          <Text style={[styles.desc, { paddingHorizontal: space.lg }]}>{prod.description}</Text>
-        ) : null}
+        <ProductAbout prod={prod} />
       </View>
 
       <View
@@ -485,16 +472,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.page,
   },
   err: { fontFamily: font.uiSemibold, fontSize: 16, color: colors.text.strong },
-  galleryWrap: { backgroundColor: colors.white },
-  dots: {
-    position: 'absolute',
-    bottom: space.md,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.card.border },
-  dotActive: { backgroundColor: colors.brand.DEFAULT, width: 18 },
   heart: { position: 'absolute', top: space.md, right: space.md },
   shareBtn: {
     position: 'absolute',
@@ -514,17 +491,12 @@ const styles = StyleSheet.create({
   },
   shareBtnTop: { top: space.md },
   info: {
-    padding: space.lg,
-    gap: space.md,
+    paddingBottom: space.lg,
     backgroundColor: colors.page,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     marginTop: -16,
   },
-  title: { fontFamily: font.uiBold, fontSize: 20, lineHeight: 27, color: colors.text.strong },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  ratingCount: { fontFamily: font.body, fontSize: 13, color: colors.brand.accent },
-  short: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: colors.text.body },
   assurance: {
     backgroundColor: colors.white,
     marginHorizontal: space.lg,
@@ -549,31 +521,6 @@ const styles = StyleSheet.create({
   assureHead: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.text.strong },
   assureText: { fontFamily: font.body, fontSize: 12.5, lineHeight: 17, color: colors.text.body },
   section: { paddingTop: space.lg, gap: space.md },
-  specs: {
-    backgroundColor: colors.white,
-    marginHorizontal: space.lg,
-    borderRadius: radii.tile,
-    borderWidth: 1,
-    borderColor: colors.card.border,
-    padding: space.lg,
-    gap: space.sm,
-  },
-  specsTitle: {
-    fontFamily: font.uiSemibold,
-    fontSize: 15,
-    color: colors.text.strong,
-    marginBottom: 2,
-  },
-  specRow: { flexDirection: 'row', justifyContent: 'space-between', gap: space.lg },
-  specLabel: { fontFamily: font.body, fontSize: 13, color: colors.text.body, flex: 1 },
-  specValue: {
-    fontFamily: font.uiMedium,
-    fontSize: 13,
-    color: colors.text.strong,
-    flex: 1,
-    textAlign: 'right',
-  },
-  desc: { fontFamily: font.body, fontSize: 14, lineHeight: 22, color: colors.text.body },
   rail: { marginTop: space.lg },
   sectionHeading: {
     fontFamily: font.uiBold,

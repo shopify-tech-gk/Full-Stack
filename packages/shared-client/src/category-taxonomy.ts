@@ -57,7 +57,7 @@ export interface TaxonomySub extends TaxonomyLeaf {
 
 export interface TaxonomyMain extends TaxonomyNode {
   image: CategoryImageSet;
-  /** Alphabetical. */
+  /** Alphabetical (LAST_SUBS at the end). */
   subcategories: TaxonomySub[];
 }
 
@@ -110,6 +110,13 @@ function indexRoot(root: StoreCategory): CatalogIndex {
 
 const byName = (a: { name: string }, b: { name: string }) =>
   a.name.localeCompare(b.name, 'en', { sensitivity: 'base' });
+
+/** Subcategories shown last in their main instead of A-Z (catch-all groups, e.g. sewing supplies). */
+const LAST_SUBS = new Set(['clothing/clothing-accessories']);
+const subOrder =
+  (mainSlug: string) => (a: { slug: string; name: string }, b: { slug: string; name: string }) =>
+    Number(LAST_SUBS.has(`${mainSlug}/${a.slug}`)) -
+      Number(LAST_SUBS.has(`${mainSlug}/${b.slug}`)) || byName(a, b);
 
 const searchHref = (name: string) => `${ROUTES.search}?q=${encodeURIComponent(name)}`;
 
@@ -166,7 +173,7 @@ export function buildCategoryTaxonomy(
                 }),
             };
           })
-          .sort(byName),
+          .sort(subOrder(slug)),
       };
     })
     .sort(byName);

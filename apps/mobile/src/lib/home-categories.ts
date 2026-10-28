@@ -1,4 +1,8 @@
-import { buildCategoryTaxonomy, type TaxonomyMain } from '@youmart/shared-client';
+import {
+  buildCategoryTaxonomy,
+  type CatalogMatch,
+  type TaxonomyMain,
+} from '@youmart/shared-client';
 import {
   CATEGORY_IMAGE_PATHS,
   CATEGORY_TAXONOMY_SOURCE,
@@ -63,6 +67,9 @@ export interface TaxNode {
   imageKey: string;
   /** True when it has its own sub-to-sub list (a sub whose only item is itself does not). */
   hasChildren: boolean;
+  /** 'parent': the catalog has no category for it yet - its href is an ancestor's page, so its
+   * listing stays empty (an ancestor's products aren't this node's). */
+  match: CatalogMatch;
 }
 
 export function taxNode(path: string[]): TaxNode | null {
@@ -74,6 +81,7 @@ export function taxNode(path: string[]): TaxNode | null {
       slug: main.slug,
       name: main.name,
       href: main.href,
+      match: main.match,
       path: [main.slug],
       imageKey: `mobile/${main.slug}`,
       hasChildren: main.subcategories.length > 0,
@@ -86,6 +94,7 @@ export function taxNode(path: string[]): TaxNode | null {
       slug: sub.slug,
       name: sub.name,
       href: sub.href,
+      match: sub.match,
       path: [main.slug, sub.slug],
       imageKey: `${main.slug}/${sub.slug}`,
       hasChildren: subHasChildren(sub.children, sub.name),
@@ -97,6 +106,7 @@ export function taxNode(path: string[]): TaxNode | null {
     slug: leaf.slug,
     name: leaf.name,
     href: leaf.href,
+    match: leaf.match,
     path: [main.slug, sub.slug, leaf.slug],
     imageKey: `${main.slug}/${sub.slug}/${leaf.slug}`,
     hasChildren: false,

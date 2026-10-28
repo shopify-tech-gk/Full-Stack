@@ -261,7 +261,83 @@ export interface ProductDetailData {
   categories: readonly { name: string; href: string }[];
   /** Labelled attribute rows (labels/units from the category's filter definition). */
   specifications: readonly { label: string; value: string }[];
+  /** v1.17 Sellable options when there is more than one, cheapest first; the page lets the
+   * shopper pick one (it sets price, Add and Buy). Empty = a single option (no picker). */
+  variants: readonly ProductVariant[];
+  /** v1.17 The option kinds the variants differ by, in picker order (Style, then Weight...). */
+  variantDims: readonly { key: string; name: string }[];
+  /** v1.17 Option combinations the product lists but can't sell yet (no price): shown greyed out
+   * as "Currently unavailable". */
+  unavailableVariants: readonly { label: string; options: Readonly<Record<string, string>> }[];
+  /** v1.17 "About this item": the description as short points (its sentences, up to 5). */
+  highlights: readonly string[];
   related: readonly ProductCardData[];
+}
+
+/** The description's sentences as short "About this item" points. */
+function toHighlights(text: string): string[] {
+  return (text.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g) ?? [])
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 25)
+    .slice(0, 5)
+    .map((s) => (s.length > 240 ? `${s.slice(0, 237).trimEnd()}…` : s));
+}
+
+/** v1.17 One sellable option of a product (a SKU) - see ProductDetailData.variants. */
+export interface ProductVariant {
+  skuId: string;
+  /** Its option values joined: "Set of 5 · 1 kg". */
+  label: string;
+  /** Option key -> value ({style_name: 'Set of 5', weight: '1 kg'}). */
+  options: Readonly<Record<string, string>>;
+  sellingPrice: Money;
+  mrp: Money;
+  /** The variant's own title / picture, shown when it's picked; null = the product's. */
+  title: string | null;
+  image: string | null;
+}
+
+/** A SKU's option values (string attributes; `_title` / `_image` are its own title and picture). */
+function variantOptions(attributes: Record<string, unknown> | null | undefined) {
+  return Object.fromEntries(
+    Object.entries(attributes ?? {}).filter(
+      (e): e is [string, string] => !e[0].startsWith('_') && typeof e[1] === 'string' && !!e[1],
+    ),
+  );
+}
+
+const optionsLabel = (options: Record<string, string>, index: number) =>
+  Object.values(options).join(' · ') || `Option ${index + 1}`;
+
+/** Picker title for an option key: style_name -> "Style", weight -> "Weight", pack_size -> "Pack Size". */
+function dimName(key: string): string {
+  if (key === 'style_name') return 'Style';
+  return key
+    .split('_')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+/** Option combinations without a price: `unavailable_variants` (objects), or the older
+ * `unavailable_packs` (pack-size labels). */
+function unavailableOf(attributes: Record<string, unknown> | null) {
+  const objects = attributes?.unavailable_variants;
+  if (Array.isArray(objects)) {
+    return objects
+      .filter((o): o is Record<string, unknown> => !!o && typeof o === 'object')
+      .map((o, i) => {
+        const options = variantOptions(o);
+        return { label: optionsLabel(options, i), options };
+      })
+      .filter((u) => Object.keys(u.options).length > 0);
+  }
+  const packs = attributes?.unavailable_packs;
+  return Array.isArray(packs)
+    ? packs
+        .filter((v): v is string => typeof v === 'string')
+        .map((weight) => ({ label: weight, options: { weight } }))
+    : [];
 }
 
 /** First sentence of the description, for the short summary under the rating. */
@@ -277,6 +353,30 @@ export function toProductDetailData(
 ): ProductDetailData {
   const sku = [...detail.skus].sort((a, b) => Number(a.sellingPrice) - Number(b.sellingPrice))[0];
   const description = detail.description ?? '';
+  const unavailable = unavailableOf(detail.attributes as Record<string, unknown> | null);
+  const variants: ProductVariant[] =
+    detail.skus.length > 1 || unavailable.length > 0
+      ? [...detail.skus]
+          .sort((a, b) => Number(a.sellingPrice) - Number(b.sellingPrice))
+          .map((s, i) => {
+            const options = variantOptions(s.attributes);
+            const own = (k: string) =>
+              typeof s.attributes?.[k] === 'string' ? (s.attributes[k] as string) : null;
+            return {
+              skuId: s.id,
+              label: optionsLabel(options, i),
+              options,
+              sellingPrice: s.sellingPrice,
+              mrp: s.mrp,
+              title: own('_title'),
+              image: own('_image'),
+            };
+          })
+      : [];
+  // Picker order: the kinds as they appear, weight last (style -> weight, like the import).
+  const dimKeys = [
+    ...new Set([...variants, ...unavailable].flatMap((v) => Object.keys(v.options))),
+  ].sort((a, b) => Number(a === 'weight') - Number(b === 'weight'));
   return {
     id: detail.id,
     slug: detail.slug,
@@ -297,6 +397,10 @@ export function toProductDetailData(
       label: row.label,
       value: row.unit ? `${row.value} ${row.unit}` : row.value,
     })),
+    variants,
+    variantDims: dimKeys.map((key) => ({ key, name: dimName(key) })),
+    unavailableVariants: unavailable,
+    highlights: toHighlights(description),
     related,
   };
 }
