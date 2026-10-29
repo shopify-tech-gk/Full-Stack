@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   changeBtn: {
     borderWidth: 1,
     borderColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },

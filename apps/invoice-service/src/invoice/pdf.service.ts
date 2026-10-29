@@ -30,6 +30,8 @@ export interface InvoicePdfData {
   buyerAddress: string;
   buyerState: string;
   buyerGstin: string | null;
+  /** v1.17 the delivery address when it differs from the billing one (null = same). */
+  shipTo?: { name: string; address: string; state: string } | null;
   lines: InvoicePdfLine[];
   subtotalTaxable: Money;
   totalCgst: Money;
@@ -137,6 +139,14 @@ export async function renderInvoicePdf(invoiceId: string, data: InvoicePdfData):
     doc.text(data.buyerAddress);
     doc.text(`State: ${data.buyerState}`);
     doc.text(`GSTIN: ${data.buyerGstin ?? 'N/A (B2C)'}`);
+    if (data.shipTo) {
+      doc.moveDown(0.5);
+      doc.font('Helvetica-Bold').fontSize(9).text('Ship To:');
+      doc.font('Helvetica').fontSize(9);
+      doc.text(data.shipTo.name);
+      doc.text(data.shipTo.address);
+      doc.text(`State: ${data.shipTo.state}`);
+    }
     doc.moveDown(0.5);
 
     let y = doc.y + 5;

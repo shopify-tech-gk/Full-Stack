@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    borderRadius: 999,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#dbe4f3',
     backgroundColor: colors.white,
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
   shopBtn: {
     marginTop: space.md,
     backgroundColor: BRAND,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 26,
     paddingVertical: 12,
   },

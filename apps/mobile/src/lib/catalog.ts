@@ -307,3 +307,42 @@ export async function searchFiltered(
 export function emptyListingQuery(): ListingQuery {
   return { sort: 'default', minPrice: null, maxPrice: null, minRating: 0, page: 1, filters: {} };
 }
+
+/** The category and its ancestors, nearest first: ["vermicompost", "fertilizer", "lawn-and-gardening"]. */
+export async function categoryLineage(slug: string): Promise<string[]> {
+  try {
+    const { path } = await api.catalog.getCategoryFilters(slug);
+    return path.map((c) => c.slug).reverse();
+  } catch {
+    return [slug];
+  }
+}
+
+/**
+ * One page of a product-page rail: a category's products (a parent's include its subcategories),
+ * optionally leaving out one category's own products (so "Complete your choice" shows the
+ * neighbouring categories). `exhausted` once the category has no more pages.
+ */
+export async function railPage(
+  category: string,
+  page: number,
+  opts: { limit: number; sort?: CatalogSort; skipCategory?: string },
+): Promise<{ products: ProductCardData[]; exhausted: boolean }> {
+  try {
+    const res = await api.catalog.listProducts({
+      category,
+      page,
+      limit: opts.limit,
+      ...(opts.sort ? { sort: opts.sort } : {}),
+    });
+    return {
+      products: res.items
+        .filter((i) => !opts.skipCategory || i.category.slug !== opts.skipCategory)
+        .map(toCardData),
+      exhausted: res.items.length < opts.limit || page * opts.limit >= res.total,
+    };
+  } catch (err) {
+    if (isNotFound(err)) return { products: [], exhausted: true };
+    throw err;
+  }
+}

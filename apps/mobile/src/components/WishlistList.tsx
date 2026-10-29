@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   shopBtn: {
     marginTop: space.sm,
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 24,
     paddingVertical: 11,
   },

@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: colors.white,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 18,
     paddingVertical: 9,
   },

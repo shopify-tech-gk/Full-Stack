@@ -35,6 +35,9 @@ export interface InternalOrderView {
   /** Lets fulfillment/logistics access the real ship-to address for a real
    * shipping label without a separate address-lookup endpoint (Ch6.1). */
   shippingAddress: InternalOrderShippingAddress | null;
+  /** v1.17 a separate billing address (the invoice's "Bill To"); null/absent = billed to the
+   * delivery address. */
+  billingAddress?: InternalOrderShippingAddress | null;
   /** Order lines (Ch6.4 addition) - needed by invoice-service to build
    * per-line invoice entries (product/sku, quantity, GST-inclusive line
    * total) without a separate per-order-item fetch loop. */

@@ -720,6 +720,18 @@ model Order {
   shipState         String?            @map("ship_state")
   shipPincode       String?            @map("ship_pincode")
   shipCountry       String?            @map("ship_country")
+  /// v1.17 the billing address (Amazon / Flipkart style), snapshotted like ship_*: the invoice's
+  /// "Bill To". All null = billed to the delivery address (and every order before v1.17).
+  billingAddressId  String?            @map("billing_address_id")
+  billFullName      String?            @map("bill_full_name")
+  billPhone         String?            @map("bill_phone")
+  billLine1         String?            @map("bill_line1")
+  billLine2         String?            @map("bill_line2")
+  billLandmark      String?            @map("bill_landmark")
+  billCity          String?            @map("bill_city")
+  billState         String?            @map("bill_state")
+  billPincode       String?            @map("bill_pincode")
+  billCountry       String?            @map("bill_country")
   /// How the customer pays: ONLINE (Razorpay and/or wallet, paid before confirming) or COD (cash
   /// collected at delivery; the order is confirmed without payment). Set when it is confirmed.
   paymentMethod     OrderPaymentMethod @default(ONLINE) @map("payment_method")

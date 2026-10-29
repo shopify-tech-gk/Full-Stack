@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 2,
     borderColor: colors.brand.accent,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingLeft: space.lg,
     paddingRight: 4,
     height: 42,

@@ -80,6 +80,9 @@ export interface OrderView {
   /** v1.12: COD = Cash on Delivery (pay in cash at delivery); ONLINE = paid before confirming. */
   paymentMethod: 'ONLINE' | 'COD';
   shippingAddress: ShippingAddressView | null;
+  /** v1.17 the invoice's "Bill To" (the delivery address unless another was chosen). */
+  billingAddress: ShippingAddressView | null;
+  billingSameAsShipping: boolean;
   /** W6 (v1.6) */
   createdAt: string;
   /** W6 (v1.6): the order's status history, oldest first (same data guest tracking shows). */
@@ -155,6 +158,42 @@ function toShippingAddressView(order: OrderWithItems): ShippingAddressView | nul
   };
 }
 
+/** v1.17 the separate billing snapshot, or null when the order is billed to its delivery address. */
+function toBillingAddressView(order: OrderWithItems): ShippingAddressView | null {
+  if (
+    !order.billFullName ||
+    !order.billPhone ||
+    !order.billLine1 ||
+    !order.billCity ||
+    !order.billState ||
+    !order.billPincode ||
+    !order.billCountry
+  ) {
+    return null;
+  }
+  return {
+    addressId: order.billingAddressId,
+    fullName: order.billFullName,
+    phone: order.billPhone,
+    line1: order.billLine1,
+    line2: order.billLine2,
+    landmark: order.billLandmark,
+    city: order.billCity,
+    state: order.billState,
+    pincode: order.billPincode,
+    country: order.billCountry,
+  };
+}
+
+/** Where the order is billed: its own billing snapshot, else the delivery address. */
+function billingOf(order: OrderWithItems) {
+  const own = toBillingAddressView(order);
+  return {
+    billingAddress: own ?? toShippingAddressView(order),
+    billingSameAsShipping: own === null,
+  };
+}
+
 export function toOrderView(order: OrderWithItems): OrderView {
   return {
     orderId: order.id,
@@ -179,6 +218,7 @@ export function toOrderView(order: OrderWithItems): OrderView {
     couponCode: order.couponCode,
     paymentMethod: order.paymentMethod,
     shippingAddress: toShippingAddressView(order),
+    ...billingOf(order),
     createdAt: order.createdAt.toISOString(),
     timeline: order.statusHistory.map((h) => ({
       status: h.toStatus,
@@ -288,6 +328,8 @@ export async function checkout(
   cartItemIds?: string[],
   /** v1.13: a coupon to apply - validated and reserved here, never trusted from the client. */
   couponCode?: string,
+  /** v1.17: bill to another of the caller's saved addresses (default: the delivery address). */
+  billingAddressId?: string,
 ): Promise<OrderView> {
   if (!addressId) {
     throw new AppError('VALIDATION_ERROR', 400, 'a shipping address is required');
@@ -298,6 +340,12 @@ export async function checkout(
   // exist or isn't `userId`'s own. The service token authenticates the
   // CALLER (order-service); `userId` identifies the SUBJECT (Ch6.5).
   const address = await addressClient.getAddressForOrder(userId, addressId);
+  // v1.17: the billing address goes through the same ownership check; the delivery address
+  // itself (or none) means "same as delivery" and stores no bill_* snapshot.
+  const billing =
+    billingAddressId && billingAddressId !== addressId
+      ? await addressClient.getAddressForOrder(userId, billingAddressId)
+      : null;
 
   // Double-tap guard: a PENDING_PAYMENT order from moments ago is the same checkout when it is for
   // exactly these items, or when those items already left the cart (the first tap converted them) -
@@ -416,6 +464,20 @@ export async function checkout(
           shipState: address.state,
           shipPincode: address.pincode,
           shipCountry: address.country,
+          ...(billing
+            ? {
+                billingAddressId: billing.addressId,
+                billFullName: billing.fullName,
+                billPhone: billing.phone,
+                billLine1: billing.line1,
+                billLine2: billing.line2,
+                billLandmark: billing.landmark,
+                billCity: billing.city,
+                billState: billing.state,
+                billPincode: billing.pincode,
+                billCountry: billing.country,
+              }
+            : {}),
         },
       });
 
@@ -545,6 +607,9 @@ export interface InternalOrderView {
    * real ship-to address for a real shipping label without order-service
    * needing to expose a separate address endpoint. */
   shippingAddress: ShippingAddressView | null;
+  /** v1.17 a separate billing address (the invoice's "Bill To"); null = billed to the delivery
+   * address. */
+  billingAddress: ShippingAddressView | null;
   /** Order lines (Ch6.4 addition) - lets invoice-service build per-line
    * invoice entries without a separate per-order-item fetch loop. */
   items: OrderItemView[];
@@ -574,6 +639,7 @@ export async function getInternalOrder(orderId: string): Promise<InternalOrderVi
     shippingTotal: decimalToMoney(order.shippingTotal),
     paymentMethod: order.paymentMethod,
     shippingAddress: toShippingAddressView(order),
+    billingAddress: toBillingAddressView(order),
     items: order.items.map((item) => ({
       orderItemId: item.id,
       skuId: item.skuId,

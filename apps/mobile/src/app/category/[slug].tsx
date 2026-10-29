@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.brandPopup.border,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 11,
     paddingVertical: 6,
   },
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   emptyBtn: {
     marginTop: space.sm,
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 18,
     paddingVertical: 9,
   },

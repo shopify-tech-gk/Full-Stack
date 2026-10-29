@@ -250,14 +250,10 @@ export async function generateInvoice(orderId: string): Promise<InvoiceView> {
   const invoiceNumber = await generateInvoiceNumber(invoiceDate);
   const invoiceId = uuidv7();
 
-  const buyerName = order.shippingAddress.fullName;
-  const buyerAddress = [
-    order.shippingAddress.line1,
-    order.shippingAddress.line2,
-    order.shippingAddress.landmark,
-    order.shippingAddress.city,
-    order.shippingAddress.pincode,
-  ]
+  // v1.17 "Bill To" is the billing address; GST place of supply stays the delivery state.
+  const billTo = order.billingAddress ?? order.shippingAddress;
+  const buyerName = billTo.fullName;
+  const buyerAddress = [billTo.line1, billTo.line2, billTo.landmark, billTo.city, billTo.pincode]
     .filter(Boolean)
     .join(', ');
 
@@ -272,7 +268,23 @@ export async function generateInvoice(orderId: string): Promise<InvoiceView> {
     businessState: config.businessState,
     buyerName,
     buyerAddress,
-    buyerState,
+    buyerState: billTo.state,
+    shipTo:
+      order.billingAddress
+        ? {
+            name: order.shippingAddress.fullName,
+            address: [
+              order.shippingAddress.line1,
+              order.shippingAddress.line2,
+              order.shippingAddress.landmark,
+              order.shippingAddress.city,
+              order.shippingAddress.pincode,
+            ]
+              .filter(Boolean)
+              .join(', '),
+            state: order.shippingAddress.state,
+          }
+        : null,
     buyerGstin: null, // B2C storefront - no buyer GSTIN capture exists yet
     lines: lineInputs,
     subtotalTaxable,

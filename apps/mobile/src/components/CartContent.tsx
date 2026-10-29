@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   emptyTitle: { fontFamily: font.uiBold, fontSize: 20, color: colors.text.strong },
   shopBtn: {
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 28,
     paddingVertical: 12,
   },

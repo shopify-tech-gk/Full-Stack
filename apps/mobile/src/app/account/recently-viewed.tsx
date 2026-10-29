@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   empty: { fontFamily: font.body, fontSize: 14, color: colors.text.body, textAlign: 'center' },
   btn: {
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 24,
     paddingVertical: 11,
   },

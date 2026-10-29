@@ -1,17 +1,12 @@
-import { Image } from 'expo-image';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { BUSINESS } from '@youmart/shared-client';
 import { colors, font, space } from '@/theme';
 
-/* eslint-disable @typescript-eslint/no-require-imports */
-const LOGO = require('../../assets/images/logo.png');
-/* eslint-enable @typescript-eslint/no-require-imports */
-
-// v1.17 Home footer: the YouMart logo on a white card (the logo is blue + yellow, so it needs a
-// light ground) over a deep navy panel, our promises, quick links as icon tiles, tappable contact
-// rows (mail, call, WhatsApp, map) and the copyright line.
+// v1.17 Home footer, kept compact: the YouMart wordmark on a navy-to-blue panel, our promises in
+// one row, quick links as small chips, tappable contact rows (mail, call, WhatsApp, map) and the
+// copyright line.
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -34,43 +29,28 @@ const QUICK_LINKS: { label: string; to: string; icon: IconName }[] = [
 
 export function Footer() {
   const router = useRouter();
-  const contacts: { icon: IconName; label: string; value: string; href: string }[] = [
-    { icon: 'mail', label: 'Email us', value: BUSINESS.email, href: `mailto:${BUSINESS.email}` },
-    { icon: 'call', label: 'Call us', value: BUSINESS.phone, href: BUSINESS.phoneHref },
-    {
-      icon: 'logo-whatsapp',
-      label: 'WhatsApp',
-      value: BUSINESS.whatsapp,
-      href: BUSINESS.whatsappHref,
-    },
-    { icon: 'location', label: 'Visit us', value: BUSINESS.address, href: BUSINESS.mapsHref },
+  const contacts: { icon: IconName; value: string; href: string }[] = [
+    { icon: 'mail', value: BUSINESS.email, href: `mailto:${BUSINESS.email}` },
+    { icon: 'call', value: BUSINESS.phone, href: BUSINESS.phoneHref },
+    { icon: 'logo-whatsapp', value: BUSINESS.whatsapp, href: BUSINESS.whatsappHref },
+    { icon: 'location', value: BUSINESS.address, href: BUSINESS.mapsHref },
   ];
 
   return (
     <View style={styles.wrap}>
-      {/* Decorative glows */}
-      <View style={[styles.glow, styles.glowA]} pointerEvents="none" />
-      <View style={[styles.glow, styles.glowB]} pointerEvents="none" />
+      <View pointerEvents="none" style={styles.glow} />
 
-      <View style={styles.logoCard}>
-        <Image
-          source={LOGO}
-          style={styles.logo}
-          contentFit="contain"
-          accessibilityLabel="YouMart"
-        />
-      </View>
-      <Text style={styles.tagline}>Shop easy, live better</Text>
+      <Text style={styles.brand}>
+        You<Text style={styles.brandAccent}>Mart</Text>
+      </Text>
       <Text style={styles.about}>
-        Your one-stop online shopping destination - everything you need, delivered to your door.
+        Shop easy, live better - everything you need, delivered to your door.
       </Text>
 
       <View style={styles.promises}>
         {PROMISES.map((p) => (
           <View key={p.label} style={styles.promise}>
-            <View style={styles.promiseIcon}>
-              <Ionicons name={p.icon} size={18} color={YELLOW} />
-            </View>
+            <Ionicons name={p.icon} size={15} color={YELLOW} />
             <Text style={styles.promiseText}>{p.label}</Text>
           </View>
         ))}
@@ -84,42 +64,31 @@ export function Footer() {
             onPress={() => router.push(l.to)}
             style={({ pressed }) => [styles.link, pressed && styles.pressed]}
           >
-            <Ionicons name={l.icon} size={17} color={colors.white} />
-            <Text style={styles.linkText} numberOfLines={1}>
-              {l.label}
-            </Text>
+            <Ionicons name={l.icon} size={14} color={colors.white} />
+            <Text style={styles.linkText}>{l.label}</Text>
           </Pressable>
         ))}
       </View>
 
       <Text style={styles.heading}>Get in touch</Text>
       <View style={styles.contacts}>
-        {contacts.map((c, i) => (
+        {contacts.map((c) => (
           <Pressable
-            key={c.label}
+            key={c.icon}
             onPress={() => void Linking.openURL(c.href)}
-            style={({ pressed }) => [
-              styles.contact,
-              i < contacts.length - 1 && styles.contactRule,
-              pressed && styles.pressed,
-            ]}
+            style={({ pressed }) => [styles.contact, pressed && styles.pressed]}
           >
             <View style={styles.contactIcon}>
-              <Ionicons name={c.icon} size={16} color={NAVY} />
+              <Ionicons name={c.icon} size={13} color={NAVY} />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.contactLabel}>{c.label}</Text>
-              <Text style={styles.contactValue}>{c.value}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.5)" />
+            <Text style={styles.contactValue} numberOfLines={2}>
+              {c.value}
+            </Text>
           </Pressable>
         ))}
       </View>
 
-      <View style={styles.bottom}>
-        <Text style={styles.copy}>© 2026 YouMart · youmart.in</Text>
-        <Text style={styles.made}>Made in India 🇮🇳</Text>
-      </View>
+      <Text style={styles.copy}>© 2026 YouMart · youmart.in · Made in India 🇮🇳</Text>
     </View>
   );
 }
@@ -129,127 +98,90 @@ const YELLOW = '#ffd23f';
 
 const styles = StyleSheet.create({
   wrap: {
-    marginTop: space.xxl,
-    paddingHorizontal: space.xl,
-    paddingTop: space.xxl,
-    paddingBottom: space.xl,
-    gap: space.sm,
+    marginTop: space.xl,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+    paddingBottom: space.md,
+    gap: 6,
     overflow: 'hidden',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     backgroundColor: NAVY,
     experimental_backgroundImage: 'linear-gradient(170deg, #0b1f4d 0%, #0a2a6e 55%, #0142aa 100%)',
   },
-  glow: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)' },
-  glowA: { width: 260, height: 260, top: -120, right: -90 },
-  glowB: { width: 200, height: 200, bottom: 120, left: -110 },
-  logoCard: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.white,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+  glow: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    top: -100,
+    right: -70,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  logo: { width: 168, height: 64 },
-  tagline: {
-    fontFamily: font.uiBold,
-    fontSize: 17,
-    color: YELLOW,
-    marginTop: space.md,
-  },
-  about: { fontFamily: font.body, fontSize: 13, lineHeight: 20, color: 'rgba(255,255,255,0.78)' },
-  promises: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: space.lg,
-  },
+  brand: { fontFamily: font.uiBold, fontSize: 24, color: colors.white },
+  brandAccent: { color: YELLOW },
+  about: { fontFamily: font.body, fontSize: 12.5, lineHeight: 18, color: 'rgba(255,255,255,0.78)' },
+  promises: { flexDirection: 'row', gap: 6, marginTop: space.sm },
   promise: {
     flex: 1,
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  promiseIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255,210,63,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 3,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   promiseText: {
     fontFamily: font.uiSemibold,
-    fontSize: 10.5,
-    lineHeight: 13,
+    fontSize: 10,
+    lineHeight: 12,
     color: colors.white,
     textAlign: 'center',
   },
   heading: {
     fontFamily: font.uiBold,
-    fontSize: 12,
+    fontSize: 11,
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: 'rgba(255,255,255,0.6)',
-    marginTop: space.xl,
-    marginBottom: 2,
+    marginTop: space.md,
   },
-  links: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  links: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   link: {
-    width: '48.5%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  linkText: { flex: 1, fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.white },
+  linkText: { fontFamily: font.uiSemibold, fontSize: 12.5, color: colors.white },
   pressed: { opacity: 0.7 },
-  contacts: {
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 12,
-  },
-  contact: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-  contactRule: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.15)',
-  },
+  contacts: { gap: 8 },
+  contact: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   contactIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: YELLOW,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  contactLabel: { fontFamily: font.uiMedium, fontSize: 11, color: 'rgba(255,255,255,0.6)' },
   contactValue: {
-    fontFamily: font.uiSemibold,
-    fontSize: 13.5,
-    lineHeight: 19,
+    flex: 1,
+    fontFamily: font.uiMedium,
+    fontSize: 12.5,
+    lineHeight: 17,
     color: colors.white,
   },
-  bottom: {
-    marginTop: space.xl,
-    paddingTop: space.lg,
+  copy: {
+    marginTop: space.md,
+    paddingTop: space.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    gap: 4,
+    textAlign: 'center',
+    fontFamily: font.uiMedium,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.6)',
   },
-  copy: { fontFamily: font.uiMedium, fontSize: 12, color: 'rgba(255,255,255,0.7)' },
-  made: { fontFamily: font.uiMedium, fontSize: 11.5, color: 'rgba(255,255,255,0.55)' },
 });

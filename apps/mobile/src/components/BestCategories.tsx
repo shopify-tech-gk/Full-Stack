@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 16,
     paddingVertical: 10,
     flexShrink: 1,
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   chip: {
     height: 34,
     justifyContent: 'center',
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     borderWidth: 1,
     borderColor: colors.cart.line,
     backgroundColor: colors.white,

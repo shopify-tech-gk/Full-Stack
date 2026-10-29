@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: colors.white,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 14,
     paddingVertical: 9,
     shadowColor: '#000',

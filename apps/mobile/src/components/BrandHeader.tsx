@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     gap: 8,
     borderWidth: 2,
     borderColor: colors.brand.accent,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingLeft: space.md,
     paddingRight: 3,
     height: 38,

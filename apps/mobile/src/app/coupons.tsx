@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: space.md,
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 24,
     paddingVertical: 11,
   },

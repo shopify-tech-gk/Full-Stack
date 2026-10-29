@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   heading: { fontFamily: font.uiBold, fontSize: 17, color: colors.heading, flexShrink: 1 },
   badge: {
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: 999,
+    borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },

@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     backgroundColor: BRAND,
-    borderRadius: 999,
+    borderRadius: 10,
     paddingHorizontal: 28,
     paddingVertical: 11,
     marginTop: 4,
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     gap: 6,
     alignSelf: 'center',
     backgroundColor: '#fff1f2',
-    borderRadius: 999,
+    borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },

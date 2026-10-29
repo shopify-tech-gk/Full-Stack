@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   btn: {
     marginTop: space.sm,
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 22,
     paddingVertical: 10,
   },

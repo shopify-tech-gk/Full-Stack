@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   permNote: { fontFamily: font.uiMedium, fontSize: 12, color: colors.brand.DEFAULT, marginTop: 2 },
   allow: {
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 16,
     paddingVertical: 8,
     minWidth: 70,

@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: GOLD,
-    borderRadius: 999,
+    borderRadius: 6,
     paddingHorizontal: 9,
     paddingVertical: 3,
   },

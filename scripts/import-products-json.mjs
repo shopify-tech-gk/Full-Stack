@@ -148,7 +148,7 @@ const seenSku = new Set();
 
 for (const [index, p] of items.entries()) {
   const where = `#${index + 1} (${p.Youmart_Product_ID ?? 'no id'})`;
-  const target = TARGETS[p['Target Name']];
+  const target = TARGETS[String(p['Target Name'] ?? '').trim()];
   if (!target) {
     problems.push(
       `${where}: no import target for "${p['Target Name']}" (add it to scripts/data/import-targets.mjs)`,

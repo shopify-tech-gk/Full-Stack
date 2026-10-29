@@ -74,7 +74,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'lawn-and-gardening',
     'Agri and Gardening',
-    'fertilizer=Fertilizer;grow-bags=Grow Bags;nets-and-fence=Nets and Fence;seeds=Seeds',
+    'fertilizer=Fertilizer;garden-decor=Garden Decor;grow-bags=Grow Bags;nets-and-fence=Nets and Fence;seeds=Seeds',
   ],
   [
     'arts-and-crafts',
@@ -220,7 +220,8 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
 const THIRD_LEVEL: Readonly<Record<string, string>> = {
   // v1.17 catalog import: Compost (products imported from the data delivery).
   'lawn-and-gardening/fertilizer':
-    'compost=Compost;organic-manure=Organic Manure;organic-fertilizers=Organic Fertilizers',
+    'compost=Compost;organic-manure=Organic Manure;organic-fertilizers=Organic Fertilizers;vermicompost=Vermicompost;npk-fertilizers=NPK Fertilizers;liquid-fertilizers=Liquid Fertilizers;chemical-fertilizers=Chemical Fertilizers',
+  'lawn-and-gardening/garden-decor': 'garden-statues=Garden Statues;bird-baths=Bird Baths',
   'bath-fittings/taps-bath-fittings':
     'flexo-ebony-series=Flexo-Ebony Series;flexo-series=Flexo Series;plastic-taps=Plastic Taps',
   'cleaning-products/brooms': 'floor-brooms=Floor Brooms',

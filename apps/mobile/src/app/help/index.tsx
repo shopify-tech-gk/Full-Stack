@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: colors.white,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 16,
     paddingVertical: 9,
   },
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   ticketMsg: { fontFamily: font.body, fontSize: 13, color: colors.text.body },
   pill: {
     backgroundColor: colors.brandPopup.bg,
-    borderRadius: radii.pill,
+    borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 3,
   },

@@ -15,7 +15,6 @@ import {
   deliveryFee,
   fromPaise,
   toPaise,
-  addressLines,
   cartTotals,
   codAvailable,
   COD_MAX_AMOUNT,
@@ -30,6 +29,7 @@ import {
   type WalletSummary,
 } from '@youmart/shared-client';
 import { api } from '@/lib/api';
+import { AddressCard } from '@/components/AddressCard';
 import { useCart } from '@/stores/cart';
 import { CouponSheet } from '@/components/CouponSheet';
 import { ProductImage } from '@/components/ui';
@@ -89,6 +89,9 @@ export default function CheckoutScreen() {
 
   const [addresses, setAddresses] = useState<Address[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // v1.17 billing address (Amazon / Flipkart style): the delivery address unless unticked.
+  const [billSame, setBillSame] = useState(true);
+  const [billingId, setBillingId] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
@@ -203,6 +206,10 @@ export default function CheckoutScreen() {
       setError('Please choose a delivery address.');
       return;
     }
+    if (!billSame && !billingId) {
+      setError('Please choose a billing address.');
+      return;
+    }
     setPlacing(true);
     setError(null);
     try {
@@ -213,6 +220,7 @@ export default function CheckoutScreen() {
             selectedId,
             buyIds ? cart.items.map((line) => line.cartItemId) : undefined,
             coupon?.coupon.code,
+            billSame ? undefined : (billingId ?? undefined),
           );
           // Cash on Delivery: confirmed straight away - nothing to pay now.
           if (cod) await api.payments.pay(placed.orderId, false, 'COD');
@@ -255,26 +263,12 @@ export default function CheckoutScreen() {
         ) : (
           <>
             {addresses.map((a) => (
-              <Pressable key={a.id} style={styles.addrCard} onPress={() => setSelectedId(a.id)}>
-                <Ionicons
-                  name={selectedId === a.id ? 'radio-button-on' : 'radio-button-off'}
-                  size={20}
-                  color={colors.brand.DEFAULT}
-                />
-                <View style={styles.addrBody}>
-                  <Text style={styles.addrType}>
-                    {a.addressType}
-                    {a.isDefault ? ' · Default' : ''}
-                  </Text>
-                  {addressLines(a)
-                    .slice(0, 4)
-                    .map((line, i) => (
-                      <Text key={i} style={styles.addrLine}>
-                        {line}
-                      </Text>
-                    ))}
-                </View>
-              </Pressable>
+              <AddressCard
+                key={a.id}
+                address={a}
+                selected={selectedId === a.id}
+                onPress={() => setSelectedId(a.id)}
+              />
             ))}
             <Pressable style={styles.addAddress} onPress={() => router.push('/addresses/form')}>
               <Ionicons name="add" size={18} color={colors.brand.DEFAULT} />
@@ -282,6 +276,57 @@ export default function CheckoutScreen() {
             </Pressable>
           </>
         )}
+
+        {addresses && addresses.length > 0 ? (
+          <>
+            <Text style={styles.sectionTitle}>Billing address</Text>
+            <Pressable
+              style={styles.sameRow}
+              onPress={() => {
+                const next = !billSame;
+                setBillSame(next);
+                // Unticked: start from another saved address (the delivery one if it's the only).
+                if (!next && !billingId) {
+                  setBillingId(addresses.find((a) => a.id !== selectedId)?.id ?? selectedId);
+                }
+              }}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: billSame }}
+            >
+              <Ionicons
+                name={billSame ? 'checkbox' : 'square-outline'}
+                size={22}
+                color={billSame ? colors.brand.DEFAULT : colors.text.muted}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sameText}>Same as delivery address</Text>
+                <Text style={styles.sameSub} numberOfLines={1}>
+                  {billSame
+                    ? selected
+                      ? `Invoice billed to ${selected.fullName}, ${selected.city}`
+                      : 'Your invoice uses the delivery address'
+                    : 'Choose the name and address for your invoice'}
+                </Text>
+              </View>
+            </Pressable>
+            {!billSame ? (
+              <>
+                {addresses.map((a) => (
+                  <AddressCard
+                    key={a.id}
+                    address={a}
+                    selected={billingId === a.id}
+                    onPress={() => setBillingId(a.id)}
+                  />
+                ))}
+                <Pressable style={styles.addAddress} onPress={() => router.push('/addresses/form')}>
+                  <Ionicons name="add" size={18} color={colors.brand.DEFAULT} />
+                  <Text style={styles.addAddressText}>Add a billing address</Text>
+                </Pressable>
+              </>
+            ) : null}
+          </>
+        ) : null}
 
         <Text style={styles.sectionTitle}>Order summary</Text>
         {buyIds && fullCart.items.length > cart.items.length ? (
@@ -566,18 +611,6 @@ const styles = StyleSheet.create({
     color: colors.heading,
     marginTop: space.sm,
   },
-  addrCard: {
-    flexDirection: 'row',
-    gap: space.md,
-    backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1,
-    borderColor: colors.card.border,
-    padding: space.md,
-  },
-  addrBody: { flex: 1, gap: 2 },
-  addrType: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.brand.DEFAULT },
-  addrLine: { fontFamily: font.body, fontSize: 13, color: colors.text.body },
   addAddress: {
     flexDirection: 'row',
     gap: 8,
@@ -586,6 +619,19 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
   },
   addAddressText: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.brand.DEFAULT },
+  sameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.white,
+    borderRadius: radii.tile,
+    borderWidth: 1,
+    borderColor: colors.card.border,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+  },
+  sameText: { fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
+  sameSub: { fontFamily: font.body, fontSize: 12.5, color: colors.text.muted, marginTop: 2 },
   summaryCard: {
     backgroundColor: colors.white,
     borderRadius: radii.tile,

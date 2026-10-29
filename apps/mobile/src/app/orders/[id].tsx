@@ -620,6 +620,36 @@ export default function OrderDetailScreen() {
           </View>
         </View>
 
+        {/* v1.17 billing address: its own card when the invoice goes elsewhere. */}
+        <Text style={styles.section}>Billing address</Text>
+        {order.billingAddress && order.billingSameAsShipping === false ? (
+          <View style={[styles.card, styles.addrCard]}>
+            <View style={styles.addrIcon}>
+              <Ionicons name="receipt-outline" size={18} color={colors.brand.DEFAULT} />
+            </View>
+            <View style={{ flex: 1, gap: 3 }}>
+              {addressLines(order.billingAddress)
+                .filter((line) => !line.startsWith('Phone:'))
+                .map((line, i) => (
+                  <Text key={i} style={i === 0 ? styles.addrName : styles.addrLine}>
+                    {line}
+                  </Text>
+                ))}
+              <View style={styles.addrPhone}>
+                <Ionicons name="call-outline" size={13} color={colors.text.muted} />
+                <Text style={styles.addrLine}>{order.billingAddress.phone}</Text>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.card, styles.addrCard, { alignItems: 'center' }]}>
+            <View style={styles.addrIcon}>
+              <Ionicons name="receipt-outline" size={18} color={colors.brand.DEFAULT} />
+            </View>
+            <Text style={[styles.addrLine, { flex: 1 }]}>Same as delivery address</Text>
+          </View>
+        )}
+
         <View style={styles.actions}>
           {confirmed ? (
             <Pressable style={styles.actionRow} onPress={openInvoice} disabled={invoiceBusy}>
@@ -875,7 +905,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    borderRadius: 999,
+    borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
@@ -889,7 +919,7 @@ const styles = StyleSheet.create({
     gap: 5,
     borderWidth: 1,
     borderColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
@@ -901,7 +931,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginLeft: 84,
     backgroundColor: colors.brandPopup.bg,
-    borderRadius: radii.pill,
+    borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },

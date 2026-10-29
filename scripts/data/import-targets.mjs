@@ -82,6 +82,23 @@ function deriveFertilizer(_product, text) {
       ['Cocopeat', ['cocopeat', 'coco peat', 'coir']],
       ['Potting Mix', ['potting mix', 'potting soil', 'soil mix', 'garden soil', 'perlite']],
       ['Mustard Cake', ['mustard cake']],
+      ['Urea', ['urea']],
+      ['DAP', ['dap ', 'diammonium', 'di-ammonium']],
+      ['Potash', ['potash', 'mop ', 'potassium chloride']],
+      [
+        'Micronutrients',
+        [
+          'micronutrient',
+          'micro nutrient',
+          'zinc',
+          'boron',
+          'magnesium sulphate',
+          'epsom',
+          'calcium nitrate',
+          'ferrous',
+        ],
+      ],
+      ['NPK Fertilizer', ['npk', '19:19:19', '19-19-19', '20:20:20', 'n:p:k']],
       ['Plant Booster', ['booster', 'growth promoter', 'humic', 'fulvic']],
       ['Organic Compost', ['compost']],
       ['Organic Manure', ['manure']],
@@ -101,6 +118,194 @@ function deriveFertilizer(_product, text) {
             : 'Solid';
   }
   if (/organic|natural/.test(text)) out.organic = true;
+  return out;
+}
+
+/** Filters for garden decor categories (Garden Statues...): what the piece is and what it's made of. */
+const DECOR_FILTERS = [
+  { key: 'brand', label: 'Brand', type: 'multi_select', order: 1 },
+  { key: 'product_type', label: 'Statue Type', type: 'multi_select', order: 2 },
+  { key: 'material', label: 'Material', type: 'multi_select', order: 3 },
+  { key: 'color', label: 'Colour', type: 'multi_select', order: 4 },
+  { key: 'solar', label: 'Solar Light', type: 'boolean', order: 5 },
+  { key: 'hanging', label: 'Hanging', type: 'boolean', order: 6 },
+  { key: 'discount_band', label: 'Discount', type: 'multi_select', order: 7 },
+];
+
+/** product_type / material / solar / hanging for garden decor, from the title + description. */
+function deriveDecor(_product, text) {
+  const title = text.slice(0, 160);
+  const out = {
+    weight_band: null,
+    product_type: firstMatch(
+      title,
+      [
+        ['Solar Lights', ['solar pathway', 'landscape light', 'lantern']],
+        ['Planters & Stands', ['planter', 'pot hugger', 'plant stand', 'flower pot']],
+        ['Buddha & Monks', ['buddha', 'monks']],
+        ['God Idols', ['ganesh', 'ganpati', 'idol', 'murti']],
+        ['Angels & Fairies', ['angel', 'fairy', 'fairies']],
+        ['Gnomes', ['gnome']],
+        ['Garden Stakes', ['stake', 'fence decoration']],
+        [
+          'Birds',
+          [
+            'bird',
+            'parrot',
+            'sparrow',
+            'owl',
+            'flamingo',
+            'duck',
+            'swan',
+            'hen',
+            'rooster',
+            'pigeon',
+            'heron',
+            'crane',
+          ],
+        ],
+        [
+          'Animals',
+          [
+            'rabbit',
+            'bunny',
+            'frog',
+            'turtle',
+            'tortoise',
+            'monkey',
+            'squirrel',
+            'deer',
+            'fawn',
+            'sheep',
+            'puppy',
+            'dog',
+            'beagle',
+            'cat',
+            'elephant',
+            'lion',
+            'panda',
+            'koala',
+            'mushroom',
+          ],
+        ],
+        ['Human Figures', ['girl', 'lady', 'couple', 'fisherman', 'yoga']],
+        ['Miniatures', ['miniature', 'cottage', 'bench']],
+      ],
+      'Garden Ornaments',
+    ),
+  };
+  out.material = firstMatch(
+    title,
+    [
+      ['Brass', ['brass']],
+      ['Fiberglass', ['fiberglass', 'fibreglass']],
+      ['Stainless Steel', ['stainless']],
+      ['Metal', ['metal', 'iron']],
+      ['Stone', ['stone', 'rock']],
+      ['Glass', ['glass']],
+      ['Acrylic', ['acrylic']],
+      ['PVC / Plastic', ['pvc', 'plastic']],
+      ['Ceramic', ['ceramic', 'porcelain']],
+      ['Resin', ['resin', 'polyresin', 'poly resin']],
+    ],
+    /resin/.test(text) ? 'Resin' : null,
+  );
+  if (/solar/.test(text)) out.solar = true;
+  if (/hanging|on rope|swing|hammock|climbing/.test(title)) out.hanging = true;
+  return out;
+}
+
+/** Filters for bird baths & feeders: what it is, what it's made of, solar or not. */
+const BIRD_BATH_FILTERS = [
+  { key: 'brand', label: 'Brand', type: 'multi_select', order: 1 },
+  { key: 'product_type', label: 'Type', type: 'multi_select', order: 2 },
+  { key: 'material', label: 'Material', type: 'multi_select', order: 3 },
+  { key: 'color', label: 'Colour', type: 'multi_select', order: 4 },
+  { key: 'solar', label: 'Solar Powered', type: 'boolean', order: 5 },
+  { key: 'discount_band', label: 'Discount', type: 'multi_select', order: 6 },
+];
+
+/** product_type / material / solar for bird baths, feeders, nests and fountains. */
+function deriveBirdBath(_product, text) {
+  const title = text.slice(0, 160);
+  const out = {
+    weight_band: null,
+    product_type: firstMatch(
+      title,
+      [
+        [
+          'Bird Care & Supplements',
+          [
+            'supplement',
+            'vitamin',
+            'tonic',
+            'amino',
+            'cuttle',
+            'anti-tick',
+            'waterless',
+            'dry bath',
+          ],
+        ],
+        ['Solar Fountains', ['solar', 'fountain pump', 'water fountain']],
+        ['Bird Nests & Houses', ['nest', 'bird house', 'birdhouse']],
+        [
+          'Garden Bird Baths',
+          [
+            'outdoor bird bath',
+            'polyresin',
+            'pedestal',
+            'deck mounted',
+            'statue',
+            'support stand',
+            '28-inch',
+            '30-inch',
+          ],
+        ],
+        [
+          'Cage Bird Baths',
+          [
+            'cage',
+            'bath box',
+            'bath tub',
+            'bathtub',
+            'bathing box',
+            'parrot shower',
+            'bath fountain for small',
+            'parakeet',
+            'budgie',
+          ],
+        ],
+        [
+          'Feeder & Bath Sets',
+          [
+            'feeder and',
+            'feeder &',
+            'bath set',
+            'water feeder',
+            'feeding station',
+            'bath tray',
+            'water bowl',
+            'waterer',
+          ],
+        ],
+        ['Bird Feeders & Bowls', ['feeder', 'bowl', 'cup']],
+        ['Planters', ['planter']],
+      ],
+      'Bird Baths',
+    ),
+  };
+  const materials = [
+    ['Clay / Terracotta', ['terracotta', 'clay', 'earthen']],
+    ['Stainless Steel', ['stainless']],
+    ['Metal', ['metal', 'iron']],
+    ['Wood', ['wood', 'bamboo']],
+    ['Coir', ['coir', 'coconut shell']],
+    ['Polyresin', ['resin']],
+    ['Acrylic', ['acrylic', 'transparent', 'clear']],
+    ['Plastic', ['plastic']],
+  ];
+  out.material = firstMatch(title, materials) ?? firstMatch(text, materials);
+  if (/solar/.test(text)) out.solar = true;
   return out;
 }
 
@@ -131,5 +336,59 @@ export const TARGETS = {
     ],
     filters: FERTILIZER_FILTERS,
     derive: deriveFertilizer,
+  },
+  Vermicompost: {
+    chain: [
+      ['lawn-and-gardening', 'Agri and Gardening'],
+      ['fertilizer', 'Fertilizer'],
+      ['vermicompost', 'Vermicompost'],
+    ],
+    filters: FERTILIZER_FILTERS,
+    derive: deriveFertilizer,
+  },
+  'Garden Statues': {
+    chain: [
+      ['lawn-and-gardening', 'Agri and Gardening'],
+      ['garden-decor', 'Garden Decor'],
+      ['garden-statues', 'Garden Statues'],
+    ],
+    filters: DECOR_FILTERS,
+    derive: deriveDecor,
+  },
+  'NPK Fertilizers': {
+    chain: [
+      ['lawn-and-gardening', 'Agri and Gardening'],
+      ['fertilizer', 'Fertilizer'],
+      ['npk-fertilizers', 'NPK Fertilizers'],
+    ],
+    filters: FERTILIZER_FILTERS,
+    derive: deriveFertilizer,
+  },
+  'Liquid Fertilizers': {
+    chain: [
+      ['lawn-and-gardening', 'Agri and Gardening'],
+      ['fertilizer', 'Fertilizer'],
+      ['liquid-fertilizers', 'Liquid Fertilizers'],
+    ],
+    filters: FERTILIZER_FILTERS,
+    derive: deriveFertilizer,
+  },
+  'Chemical Fertilizers': {
+    chain: [
+      ['lawn-and-gardening', 'Agri and Gardening'],
+      ['fertilizer', 'Fertilizer'],
+      ['chemical-fertilizers', 'Chemical Fertilizers'],
+    ],
+    filters: FERTILIZER_FILTERS,
+    derive: deriveFertilizer,
+  },
+  'Bird Baths': {
+    chain: [
+      ['lawn-and-gardening', 'Agri and Gardening'],
+      ['garden-decor', 'Garden Decor'],
+      ['bird-baths', 'Bird Baths'],
+    ],
+    filters: BIRD_BATH_FILTERS,
+    derive: deriveBirdBath,
   },
 };

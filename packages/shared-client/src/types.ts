@@ -368,6 +368,9 @@ export interface OrderView {
   discountTotal?: Money;
   couponCode?: string | null;
   shippingAddress: ShippingAddressSnapshot;
+  /** v1.17 the invoice's "Bill To": the delivery address unless another one was chosen. */
+  billingAddress?: ShippingAddressSnapshot | null;
+  billingSameAsShipping?: boolean;
   /** v1.6 */
   createdAt: IsoDateTime;
   /** v1.6: order status history, oldest first. */

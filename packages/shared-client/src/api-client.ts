@@ -345,12 +345,19 @@ export function createApiClient(options: ApiClientOptions) {
       referralRewards: () => json<MyReferralRewards>('GET', '/orders/me/referral-rewards'),
       /** `cartItemIds` (v1.11, "Buy this now"): order only these cart lines; omit for the whole cart. */
       /** v1.13: `couponCode` is validated and reserved by the server (never a client discount). */
-      checkout: (addressId: Uuid, cartItemIds?: readonly Uuid[], couponCode?: string) =>
+      /** v1.17: `billingAddressId` bills to another saved address (omit = the delivery address). */
+      checkout: (
+        addressId: Uuid,
+        cartItemIds?: readonly Uuid[],
+        couponCode?: string,
+        billingAddressId?: Uuid,
+      ) =>
         json<OrderView>('POST', '/orders/checkout', {
           body: {
             addressId,
             ...(cartItemIds?.length ? { cartItemIds } : {}),
             ...(couponCode ? { couponCode } : {}),
+            ...(billingAddressId && billingAddressId !== addressId ? { billingAddressId } : {}),
           },
         }),
       /** v1.13: public offers; with `subtotal`, each says whether it fits and what it saves. */

@@ -99,6 +99,7 @@ orderRouter.post('/checkout', requireAuth, checkoutRateLimiter, async (req, res)
     parsed.data.addressId,
     parsed.data.cartItemIds,
     parsed.data.couponCode,
+    parsed.data.billingAddressId,
   );
   res.status(201).json(order);
 });

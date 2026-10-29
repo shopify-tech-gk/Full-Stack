@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   empty: { fontFamily: font.body, fontSize: 14, color: colors.text.body },
   retry: {
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.pill,
+    borderRadius: radii.tile,
     paddingHorizontal: 22,
     paddingVertical: 10,
   },

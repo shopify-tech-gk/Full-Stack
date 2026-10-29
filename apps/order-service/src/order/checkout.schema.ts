@@ -12,5 +12,8 @@ export const CheckoutBody = z.object({
   cartItemIds: z.array(z.string().uuid()).min(1).max(100).optional(),
   // v1.13: a coupon code - validated and reserved server-side (the discount is never sent in).
   couponCode: z.string().trim().min(1).max(40).optional(),
+  // v1.17: a different saved address to bill to (invoice "Bill To"); omitted = the delivery
+  // address. Ownership is checked server-side exactly like `addressId`.
+  billingAddressId: z.string().uuid().optional(),
 });
 export type CheckoutBody = z.infer<typeof CheckoutBody>;

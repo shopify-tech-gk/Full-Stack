@@ -12,13 +12,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { addressLines, type Address } from '@youmart/shared-client';
+import type { Address } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { AddAddressOptions, useAddAddress } from '@/components/AddAddressOptions';
+import { AddressAction, AddressCard } from '@/components/AddressCard';
 import { colors, font, radii, space } from '@/theme';
 
 // Address book: list + add/edit/delete/set-default via /api/addresses. `select=1` -> picking one
-// for checkout (tapping returns the chosen id).
+// for checkout (tapping returns the chosen id). v1.17: icon cards (components/AddressCard.tsx),
+// the default address first, a count header and a friendlier empty state.
 export default function AddressesScreen() {
   const router = useRouter();
   const { select } = useLocalSearchParams<{ select?: string }>();
@@ -58,6 +60,9 @@ export default function AddressesScreen() {
 
   const onDefault = (a: Address) => void api.addresses.setDefault(a.id).then(load);
 
+  // The default address first, then the rest as saved.
+  const sorted = list ? [...list].sort((x, y) => Number(y.isDefault) - Number(x.isDefault)) : [];
+
   if (!list) {
     return (
       <View style={styles.center}>
@@ -69,58 +74,70 @@ export default function AddressesScreen() {
   return (
     <View style={styles.screen}>
       <FlatList
-        data={list}
+        data={sorted}
         keyExtractor={(a) => a.id}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          list.length > 0 ? (
+            <Text style={styles.count}>
+              {list.length} saved address{list.length === 1 ? '' : 'es'}
+              {selecting ? ' · tap one to deliver there' : ''}
+            </Text>
+          ) : undefined
+        }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="location-outline" size={48} color={colors.card.border} />
-            <Text style={styles.emptyText}>No addresses saved yet.</Text>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="location" size={34} color={colors.brand.DEFAULT} />
+            </View>
+            <Text style={styles.emptyTitle}>No addresses saved yet</Text>
+            <Text style={styles.emptyText}>
+              Add your home, work or any other address for faster checkout.
+            </Text>
           </View>
         }
         renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => onPick(item)} disabled={!selecting}>
-            <View style={styles.cardHead}>
-              <View style={styles.typeBadge}>
-                <Text style={styles.typeText}>{item.addressType}</Text>
-              </View>
-              {item.isDefault ? <Text style={styles.default}>Default</Text> : null}
-              {selecting ? (
-                <Ionicons name="chevron-forward" size={18} color={colors.text.chevron} />
-              ) : null}
-            </View>
-            {addressLines(item).map((line, i) => (
-              <Text key={i} style={i === 0 ? styles.name : styles.line}>
-                {line}
-              </Text>
-            ))}
-            {!selecting ? (
-              <View style={styles.cardActions}>
-                {!item.isDefault ? (
-                  <Pressable onPress={() => onDefault(item)} hitSlop={6}>
-                    <Text style={styles.action}>Set default</Text>
-                  </Pressable>
-                ) : null}
-                <Pressable
-                  onPress={() =>
-                    router.push({ pathname: '/addresses/form', params: { id: item.id } })
-                  }
-                  hitSlop={6}
-                >
-                  <Text style={styles.action}>Edit</Text>
-                </Pressable>
-                <Pressable onPress={() => onDelete(item)} hitSlop={6}>
-                  <Text style={[styles.action, styles.danger]}>Delete</Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </Pressable>
+          <AddressCard
+            address={item}
+            onPress={selecting ? () => onPick(item) : undefined}
+            actions={
+              selecting ? undefined : (
+                <>
+                  {!item.isDefault ? (
+                    <AddressAction
+                      icon="star-outline"
+                      label="Set default"
+                      onPress={() => onDefault(item)}
+                    />
+                  ) : null}
+                  <AddressAction
+                    icon="create-outline"
+                    label="Edit"
+                    onPress={() =>
+                      router.push({ pathname: '/addresses/form', params: { id: item.id } })
+                    }
+                  />
+                  <AddressAction
+                    icon="trash-outline"
+                    label="Delete"
+                    danger
+                    onPress={() => onDelete(item)}
+                  />
+                </>
+              )
+            }
+          />
         )}
       />
-      <Pressable style={styles.addBtn} onPress={() => setAdding(true)}>
-        <Ionicons name="add" size={20} color={colors.white} />
-        <Text style={styles.addText}>Add a new address</Text>
-      </Pressable>
+      <View style={[styles.addBar, { paddingBottom: space.lg }]}>
+        <Pressable
+          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.9 }]}
+          onPress={() => setAdding(true)}
+        >
+          <Ionicons name="add-circle" size={20} color={colors.white} />
+          <Text style={styles.addText}>Add a new address</Text>
+        </Pressable>
+      </View>
 
       <Modal
         visible={adding}
@@ -147,31 +164,38 @@ export default function AddressesScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { padding: space.lg, gap: space.md },
-  empty: { alignItems: 'center', gap: space.md, paddingVertical: space.xxxl },
-  emptyText: { fontFamily: font.body, fontSize: 14, color: colors.text.body },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1,
-    borderColor: colors.card.border,
-    padding: space.lg,
-    gap: 3,
+  list: { padding: space.lg, gap: space.md, flexGrow: 1 },
+  count: {
+    fontFamily: font.uiSemibold,
+    fontSize: 12.5,
+    color: colors.text.muted,
+    marginBottom: -2,
   },
-  cardHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: 4 },
-  typeBadge: {
+  empty: { alignItems: 'center', gap: space.sm, paddingVertical: space.xxxl },
+  emptyIcon: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: colors.brandPopup.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: space.sm,
+  },
+  emptyTitle: { fontFamily: font.uiBold, fontSize: 17, color: colors.heading },
+  emptyText: {
+    fontFamily: font.body,
+    fontSize: 13.5,
+    color: colors.text.body,
+    textAlign: 'center',
+    paddingHorizontal: space.xl,
+  },
+  addBar: {
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
     backgroundColor: colors.page,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#dfe5ee',
   },
-  typeText: { fontFamily: font.uiSemibold, fontSize: 11, color: colors.brand.DEFAULT },
-  default: { fontFamily: font.uiSemibold, fontSize: 11, color: colors.feature.guarantee },
-  name: { fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
-  line: { fontFamily: font.body, fontSize: 13, color: colors.text.body },
-  cardActions: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
-  action: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.brand.DEFAULT },
-  danger: { color: colors.cart.danger },
   addBtn: {
     flexDirection: 'row',
     gap: 8,
@@ -179,7 +203,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.brand.DEFAULT,
     borderRadius: radii.button,
-    margin: space.lg,
     paddingVertical: 14,
   },
   addText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.white },

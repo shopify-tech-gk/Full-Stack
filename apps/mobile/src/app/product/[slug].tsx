@@ -19,7 +19,7 @@ import type {
   ProductDetailData,
   WishlistProduct,
 } from '@youmart/shared-client';
-import { emptyListingQuery, getProduct, listMoreProducts } from '@/lib/catalog';
+import { categoryLineage, emptyListingQuery, getProduct, listMoreProducts } from '@/lib/catalog';
 import { recordView } from '@/stores/recently-viewed';
 import { useCart } from '@/stores/cart';
 import { useWishlist } from '@/stores/wishlist';
@@ -28,6 +28,7 @@ import { useSession } from '@/stores/session';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductAbout, ProductHeading, ProductPricing } from '@/components/ProductDetails';
 import { ProductCard } from '@/components/ProductCard';
+import { InfiniteRail } from '@/components/InfiniteRail';
 import { ProductReviews } from '@/components/ProductReviews';
 import { shareProduct } from '@/lib/share';
 import * as Haptics from 'expo-haptics';
@@ -101,6 +102,19 @@ export default function ProductScreen() {
       active = false;
     };
   }, [slug]);
+
+  // The category's parent chain: the rails move on to related categories when one runs out.
+  const [lineage, setLineage] = useState<string[]>([]);
+  useEffect(() => {
+    if (!categorySlug) return;
+    let active = true;
+    categoryLineage(categorySlug).then((l) => active && setLineage(l));
+    return () => {
+      active = false;
+    };
+  }, [categorySlug]);
+  const railExclude = useMemo(() => new Set(prod ? [prod.id] : []), [prod]);
+  const pairSources = useMemo(() => (lineage.length > 1 ? lineage.slice(1) : lineage), [lineage]);
 
   // Category feed powering the "Similar products" rail + the infinite "More to Explore" grid.
   useEffect(() => {
@@ -217,9 +231,8 @@ export default function ProductScreen() {
   const lineTitle = variant
     ? (variant.title ?? `${prod.title}${variant.label ? ` (${variant.label})` : ''}`)
     : prod.title;
-  const similar = more ? more.products.slice(0, 12) : [];
-  const gridData = more ? more.products.slice(12) : [];
-  const hasExplore = prod.related.length > 0 || similar.length > 0 || gridData.length > 0;
+  const gridData = more ? more.products : [];
+  const hasExplore = Boolean(categorySlug) || gridData.length > 0;
 
   const cartProduct = (): CartProduct => ({
     skuId: skuId!,
@@ -237,22 +250,6 @@ export default function ProductScreen() {
     price,
     mrp,
   });
-
-  const renderRail = (title: string, items: readonly ProductCardData[]) =>
-    items.length > 0 ? (
-      <View style={styles.rail}>
-        <Text style={styles.sectionHeading}>{title}</Text>
-        <FlatList
-          horizontal
-          data={items as ProductCardData[]}
-          keyExtractor={(p) => p.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: space.lg }}
-          ItemSeparatorComponent={() => <View style={{ width: space.md }} />}
-          renderItem={({ item }) => <ProductCard product={item} width={160} />}
-        />
-      </View>
-    ) : null;
 
   const header = (
     <View>
@@ -333,8 +330,16 @@ export default function ProductScreen() {
             sections.current.explore = e.nativeEvent.layout.y;
           }}
         >
-          {renderRail('Complete your choice', prod.related)}
-          {renderRail('Similar products', similar)}
+          {/* Pairs well: the neighbouring categories (Compost next to Vermicompost...). */}
+          <InfiniteRail
+            title="Complete your choice"
+            sources={pairSources}
+            skipCategory={lineage.length > 1 ? categorySlug : undefined}
+            exclude={railExclude}
+            sort="rating"
+          />
+          {/* Same category first, then its parent / related categories. */}
+          <InfiniteRail title="Similar products" sources={lineage} exclude={railExclude} />
           {gridData.length > 0 ? (
             <Text style={[styles.sectionHeading, styles.exploreHeading]}>More to Explore</Text>
           ) : null}
