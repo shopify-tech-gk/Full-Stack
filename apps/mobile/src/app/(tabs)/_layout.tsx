@@ -12,7 +12,7 @@ import { useOnboarding } from '@/stores/onboarding';
 import { SwipeTabBar } from '@/components/SwipeTabBar';
 import { emitHomeLogoTap } from '@/lib/home-tap';
 import { AiNavButton } from '@/components/AiNavButton';
-import { BAR_HEIGHT, BAR_SPACE } from '@/components/GlobalTabBar';
+import { BAR_HEIGHT, BAR_SPACE, CART_BADGE_GLOW, CART_BADGE_RED } from '@/components/GlobalTabBar';
 
 export default function TabsLayout() {
   const { itemCount } = useCart();
@@ -87,14 +87,16 @@ export default function TabsLayout() {
           tabBarBadge: itemCount > 0 ? (itemCount > 99 ? '99+' : itemCount) : undefined,
           // Red count with a white ring so it stands out against the cart icon.
           tabBarBadgeStyle: {
-            backgroundColor: colors.price.discount,
+            backgroundColor: CART_BADGE_RED,
             fontSize: 10,
+            fontFamily: font.uiBold,
+            ...CART_BADGE_GLOW,
             borderWidth: 1.5,
             borderColor: colors.white,
-            minWidth: 19,
-            height: 19,
-            borderRadius: 10,
-            lineHeight: 16,
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+            lineHeight: 15,
           },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cart" size={size} color={color as string} />

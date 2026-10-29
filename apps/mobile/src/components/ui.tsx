@@ -88,7 +88,7 @@ export function Stars({
           key={n}
           name={bold || n <= full ? 'star' : 'star-outline'}
           size={size}
-          color={bold ? (n <= full ? '#f5a524' : '#d5dbe5') : colors.star.filled}
+          color={bold ? (n <= full ? '#f5a524' : '#c2cad6') : colors.star.filled}
         />
       ))}
     </View>

@@ -93,7 +93,7 @@ function ProductCardBase({ product, width, accent, compact, stacked }: Props) {
         <Text numberOfLines={2} style={[styles.title, compact && styles.titleCompact]}>
           {product.title}
         </Text>
-        <Stars rating={product.rating} size={compact ? 10 : 13} />
+        <Stars rating={product.rating} size={compact ? 12 : 15} bold />
         <Price mrp={product.mrp} price={product.sellingPrice} size={compact ? 'xs' : 'sm'} />
         {/* v1.17: Add + Buy side by side (Buy = straight to checkout with just this product);
             stacked on very narrow cards. */}

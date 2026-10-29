@@ -188,6 +188,19 @@ export function GlobalTabBar() {
   );
 }
 
+/** The cart count badge: a brighter red than the theme's discount red, so it pops on the bar. */
+export const CART_BADGE_RED = '#ff1744';
+/** A soft red glow around the badge - iOS only (Android's elevation shadow spreads too far). */
+export const CART_BADGE_GLOW =
+  Platform.OS === 'ios'
+    ? {
+        shadowColor: CART_BADGE_RED,
+        shadowOpacity: 0.6,
+        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 0 },
+      }
+    : {};
+
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   // Laid over the screens (they keep room for it via the Stack's contentStyle), never squeezing
@@ -210,15 +223,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -12,
-    minWidth: 19,
-    height: 19,
+    minWidth: 18,
+    height: 18,
     paddingHorizontal: 4,
-    borderRadius: 10,
-    backgroundColor: colors.price.discount,
+    borderRadius: 9,
+    backgroundColor: CART_BADGE_RED,
     borderWidth: 1.5,
     borderColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
+    // iOS only: on Android a coloured elevation shadow bleeds out around the dot.
+    ...CART_BADGE_GLOW,
   },
   badgeText: { fontFamily: font.uiBold, fontSize: 10, lineHeight: 13, color: colors.white },
 });

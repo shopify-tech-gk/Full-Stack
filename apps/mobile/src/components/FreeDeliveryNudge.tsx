@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeOutDown,
   FadeInDown,
@@ -20,16 +21,22 @@ import { colors, font, space } from '@/theme';
 
 const SHOW_MS = 5000;
 
+/** The product page's Add to Cart / Buy Now bar (app/product/[slug].tsx buyBar), without its
+ * bottom inset: the popup sits above it there, so it never covers those buttons. */
+const PRODUCT_BUY_BAR = 68;
+
 /**
  * Instamart-style popup just above the bottom bar after something goes into the cart: how much
  * more unlocks FREE delivery (with a progress bar), or a "you unlocked FREE delivery" cheer once
  * the cart reaches ₹2,000 - plus a Checkout button either way. Disappears by itself after a few
- * seconds (or on the ×); every new add brings it back with the updated amount.
+ * seconds (or on the ×); every new add brings it back with the updated amount. It is also the
+ * one "Added to cart" confirmation, so no second toast stacks up behind it.
  */
 export function FreeDeliveryNudge() {
   const pathname = usePathname() ?? '/';
   const router = useRouter();
   const session = useSession();
+  const insets = useSafeAreaInsets();
   const { cart } = useCart();
   const [visible, setVisible] = useState(false);
   const [bump, setBump] = useState(0);
@@ -93,20 +100,32 @@ export function FreeDeliveryNudge() {
       entering={FadeInDown.duration(220)}
       exiting={FadeOutDown.duration(180)}
       pointerEvents="box-none"
-      style={[styles.wrap, { bottom: BAR_SPACE + 10 }]}
+      style={[
+        styles.wrap,
+        {
+          bottom:
+            BAR_SPACE +
+            10 +
+            (pathname.startsWith('/product/') ? PRODUCT_BUY_BAR + insets.bottom : 0),
+        },
+      ]}
     >
       <Animated.View
         style={[styles.card, progress.unlocked && styles.cardUnlocked, popStyle]}
         accessibilityLiveRegion="polite"
       >
         <View style={styles.body}>
-          {progress.unlocked ? (
-            <Text style={styles.cheer}>🎉 Congratulations!</Text>
-          ) : (
-            <Text style={styles.cheerMuted}>
-              {cart.itemCount} item{cart.itemCount === 1 ? '' : 's'} · {formatMoney(cart.subtotal)}
+          <View style={styles.added}>
+            <View style={styles.addedIcon}>
+              <Ionicons name="checkmark" size={11} color={colors.white} />
+            </View>
+            <Text style={styles.addedText}>Added to cart</Text>
+            <Text style={styles.cheerMuted} numberOfLines={1}>
+              · {cart.itemCount} item{cart.itemCount === 1 ? '' : 's'} ·{' '}
+              {formatMoney(cart.subtotal)}
             </Text>
-          )}
+          </View>
+          {progress.unlocked ? <Text style={styles.cheer}>🎉 Congratulations!</Text> : null}
           <FreeDeliveryBar subtotal={cart.subtotal} tone="dark" />
         </View>
         <View style={styles.side}>
@@ -154,6 +173,16 @@ const styles = StyleSheet.create({
   cardUnlocked: { borderColor: 'rgba(255,255,255,0.6)' },
   body: { flex: 1, gap: 4 },
   cheer: { fontFamily: font.uiBold, fontSize: 14, color: colors.white },
+  added: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  addedIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.feature.guarantee,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addedText: { fontFamily: font.uiBold, fontSize: 12.5, color: colors.white },
   cheerMuted: { fontFamily: font.uiMedium, fontSize: 11.5, color: 'rgba(255,255,255,0.85)' },
   side: { alignItems: 'flex-end', gap: 8 },
   close: {

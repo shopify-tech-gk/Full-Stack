@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -22,6 +23,7 @@ import {
   type OrderView,
   type ReturnStatus,
   type ReturnView,
+  type SellerItemStatus,
   type ShipmentTracking,
 } from '@youmart/shared-client';
 import { API_URL, api } from '@/lib/api';
@@ -55,6 +57,56 @@ const RETURN_LABEL: Record<ReturnStatus, string> = {
 /** Lines that have left the warehouse - the order can no longer be cancelled. */
 const DISPATCHED = ['SHIPPED', 'DELIVERED', 'RETURNED'];
 
+type Card = { image: string | null; slug: string };
+
+// v1.17 order page: a coloured status hero (headline, order number, date) with the connected
+// Order placed -> Packed -> Shipped -> Delivered tracker, item rows with product photos, a price
+// summary, payment and delivery-address cards with icons, and the help / invoice / cancel actions.
+
+type Tone = { fg: string; bg: string; icon: keyof typeof Ionicons.glyphMap };
+const TONES = {
+  green: { fg: '#15803d', bg: '#e8f7ee', icon: 'checkmark-circle' },
+  blue: { fg: '#1d4ed8', bg: '#e9f0ff', icon: 'cube' },
+  violet: { fg: '#6d28d9', bg: '#f1ebff', icon: 'car' },
+  orange: { fg: '#c2410c', bg: '#fff1e6', icon: 'time' },
+  red: { fg: '#b91c1c', bg: '#fdecec', icon: 'close-circle' },
+} satisfies Record<string, Tone>;
+
+const STEP_TONE: Tone[] = [TONES.orange, TONES.blue, TONES.violet, TONES.green];
+const STEP_TEXT = [
+  'We have received your order',
+  'Your order is packed and ready to ship',
+  'Your order is on the way',
+  'Your order has been delivered',
+];
+const LINE_TONE: Record<SellerItemStatus, Tone> = {
+  PENDING: TONES.orange,
+  CONFIRMED: TONES.orange,
+  PACKED: TONES.blue,
+  SHIPPED: TONES.violet,
+  DELIVERED: TONES.green,
+  CANCELLED: TONES.red,
+  RETURNED: TONES.orange,
+};
+const LINE_LABEL: Record<SellerItemStatus, string> = {
+  PENDING: 'Processing',
+  CONFIRMED: 'Processing',
+  PACKED: 'Packed',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+  RETURNED: 'Returned',
+};
+
+const placedOn = (iso: string) =>
+  new Intl.DateTimeFormat('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(iso));
+
 function errorText(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
 }
@@ -76,8 +128,9 @@ export default function OrderDetailScreen() {
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [invoiceBusy, setInvoiceBusy] = useState(false);
-  // productId -> slug, so a delivered line can open "Rate this product" (order lines carry no slug).
-  const [slugs, setSlugs] = useState<Record<string, string>>({});
+  // productId -> photo + slug from the catalog (order lines carry neither): the item photos, the
+  // product link and "Rate product" on delivered lines.
+  const [cards, setCards] = useState<Record<string, Card>>({});
 
   const load = useCallback(async () => {
     try {
@@ -88,13 +141,14 @@ export default function OrderDetailScreen() {
         api.returns.list({ limit: 50 }).catch(() => null),
       ]);
       setPayment(p);
-      const delivered = o.items.filter((i) => i.sellerStatus === 'DELIVERED');
-      if (delivered.length > 0) {
-        api.catalog
-          .productCards([...new Set(delivered.map((i) => i.productId))])
-          .then(({ items }) => setSlugs(Object.fromEntries(items.map((c) => [c.id, c.slug]))))
-          .catch(() => undefined);
-      }
+      api.catalog
+        .productCards([...new Set(o.items.map((i) => i.productId))].slice(0, 50))
+        .then(({ items }) =>
+          setCards(
+            Object.fromEntries(items.map((c) => [c.id, { image: c.imageUrl, slug: c.slug }])),
+          ),
+        )
+        .catch(() => undefined);
       const lineIds = new Set(o.items.map((i) => i.orderItemId));
       setReturns((r?.items ?? []).filter((ret) => lineIds.has(ret.orderItemId)));
     } catch {
@@ -129,6 +183,19 @@ export default function OrderDetailScreen() {
   const dispatched = order.items.some((i) => DISPATCHED.includes(i.sellerStatus));
   const cancelRequested = order.cancelRequest?.status === 'REQUESTED';
   const canCancel = pending || (confirmed && !dispatched && !cancelRequested);
+  const cod = order.paymentMethod === 'COD';
+  const units = order.items.reduce((n, i) => n + i.quantity, 0);
+  const tone: Tone = cancelled
+    ? TONES.red
+    : pending
+      ? TONES.orange
+      : (STEP_TONE[step] ?? TONES.orange);
+  const headline = pending ? 'Payment pending' : orderStatusLabel(order);
+  const heroSub = cancelled
+    ? 'This order has been cancelled'
+    : pending
+      ? 'Complete the payment to confirm your order'
+      : (STEP_TEXT[step] ?? STEP_TEXT[0]);
   const returnFor = (orderItemId: string) =>
     returns.find((r) => r.orderItemId === orderItemId && r.status !== 'REJECTED') ??
     returns.find((r) => r.orderItemId === orderItemId);
@@ -211,9 +278,63 @@ export default function OrderDetailScreen() {
   return (
     <>
       <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
-        <View style={styles.head}>
-          <Text style={styles.orderNo}>#{order.orderNumber}</Text>
-          <Text style={styles.status}>{orderStatusLabel(order)}</Text>
+        <View style={styles.hero}>
+          <View style={[styles.heroTop, { backgroundColor: tone.bg }]}>
+            <View style={[styles.heroIcon, { backgroundColor: tone.fg }]}>
+              <Ionicons name={tone.icon} size={20} color={colors.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.heroTitle, { color: tone.fg }]}>{headline}</Text>
+              <Text style={styles.heroSub}>{heroSub}</Text>
+            </View>
+          </View>
+          <View style={styles.heroMeta}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.metaLabel}>Order ID</Text>
+              <Text style={styles.metaValue} selectable numberOfLines={1}>
+                #{order.orderNumber}
+              </Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.metaLabel}>Placed on</Text>
+              <Text style={styles.metaValue}>{placedOn(order.createdAt)}</Text>
+            </View>
+          </View>
+          {!cancelled ? (
+            <View style={styles.tracker}>
+              {TRACKING_STEPS.map((label, i) => (
+                <View key={label} style={styles.step}>
+                  <View style={styles.stepRail}>
+                    <View
+                      style={[
+                        styles.rail,
+                        i === 0 && styles.railHidden,
+                        i <= step && styles.railDone,
+                      ]}
+                    />
+                    <View style={[styles.dot, i <= step && styles.dotDone]}>
+                      {i <= step ? (
+                        <Ionicons name="checkmark" size={13} color={colors.white} />
+                      ) : null}
+                    </View>
+                    <View
+                      style={[
+                        styles.rail,
+                        i === TRACKING_STEPS.length - 1 && styles.railHidden,
+                        i < step && styles.railDone,
+                      ]}
+                    />
+                  </View>
+                  <Text
+                    style={[styles.stepLabel, i <= step && styles.stepLabelDone]}
+                    numberOfLines={1}
+                  >
+                    {label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </View>
 
         {notice ? (
@@ -261,40 +382,61 @@ export default function OrderDetailScreen() {
           </View>
         ) : null}
 
-        {!cancelled ? (
-          <View style={styles.tracker}>
-            {TRACKING_STEPS.map((label, i) => (
-              <View key={label} style={styles.step}>
-                <View style={[styles.dot, i <= step && styles.dotDone]}>
-                  {i <= step ? <Ionicons name="checkmark" size={12} color={colors.white} /> : null}
-                </View>
-                <Text style={[styles.stepLabel, i <= step && styles.stepLabelDone]}>{label}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        <Text style={styles.section}>Items</Text>
+        <Text style={styles.section}>
+          Items <Text style={styles.sectionCount}>({units})</Text>
+        </Text>
         <View style={styles.card}>
           {order.items.map((item, idx) => {
             const ret = returnFor(item.orderItemId);
             const track = tracking[item.orderItemId];
+            const card = cards[item.productId];
             const canReturn =
               item.sellerStatus === 'DELIVERED' && (!ret || ret.status === 'REJECTED');
             const canTrack = item.sellerStatus === 'SHIPPED' || item.sellerStatus === 'DELIVERED';
             // Rate after delivery (Flipkart-style).
-            const rateSlug = item.sellerStatus === 'DELIVERED' ? slugs[item.productId] : undefined;
+            const rateSlug = item.sellerStatus === 'DELIVERED' ? card?.slug : undefined;
+            const lineTone = LINE_TONE[item.sellerStatus];
             return (
               <View
                 key={item.orderItemId}
                 style={[styles.itemBlock, idx > 0 && styles.itemDivider]}
               >
-                <View style={styles.item}>
-                  <Text numberOfLines={2} style={styles.itemTitle}>
-                    {item.quantity} × {item.title}
-                  </Text>
-                  <Text style={styles.itemPrice}>{formatMoney(item.lineTotal)}</Text>
-                </View>
+                <Pressable
+                  style={styles.item}
+                  disabled={!card?.slug}
+                  onPress={() => card && router.push(`/product/${card.slug}`)}
+                >
+                  <View style={styles.thumb}>
+                    {card?.image ? (
+                      <Image
+                        source={{ uri: card.image }}
+                        style={styles.thumbImg}
+                        contentFit="contain"
+                        transition={150}
+                      />
+                    ) : (
+                      <Ionicons name="image-outline" size={22} color={colors.card.border} />
+                    )}
+                  </View>
+                  <View style={styles.itemBody}>
+                    <Text numberOfLines={2} style={styles.itemTitle}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.itemMeta}>
+                      Qty {item.quantity}
+                      {item.quantity > 1 ? ` · ${formatMoney(item.unitPrice)} each` : ''}
+                    </Text>
+                    <View style={styles.itemFoot}>
+                      <View style={[styles.linePill, { backgroundColor: lineTone.bg }]}>
+                        <View style={[styles.linePillDot, { backgroundColor: lineTone.fg }]} />
+                        <Text style={[styles.linePillText, { color: lineTone.fg }]}>
+                          {LINE_LABEL[item.sellerStatus]}
+                        </Text>
+                      </View>
+                      <Text style={styles.itemPrice}>{formatMoney(item.lineTotal)}</Text>
+                    </View>
+                  </View>
+                </Pressable>
                 {ret && ret.status !== 'REJECTED' ? (
                   <View style={styles.returnPill}>
                     <Ionicons name="return-down-back" size={13} color={colors.brand.DEFAULT} />
@@ -379,75 +521,111 @@ export default function OrderDetailScreen() {
               </View>
             );
           })}
-          <View style={styles.divider} />
+        </View>
+
+        <Text style={styles.section}>Price details</Text>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.payLabel}>
+              Items total ({units} item{units === 1 ? '' : 's'})
+            </Text>
+            <Text style={styles.payValue}>{formatMoney(order.subtotal)}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.payLabel}>Delivery</Text>
+            {Number(order.shippingTotal) > 0 ? (
+              <Text style={styles.payValue}>{formatMoney(order.shippingTotal)}</Text>
+            ) : (
+              <Text style={[styles.payValue, styles.free]}>FREE</Text>
+            )}
+          </View>
           {order.discountTotal && order.discountTotal !== '0.00' ? (
-            <View style={styles.item}>
+            <View style={styles.row}>
               <Text style={styles.payLabel}>Coupon {order.couponCode ?? ''}</Text>
-              <Text style={[styles.payValue, { color: colors.feature.guarantee }]}>
+              <Text style={[styles.payValue, styles.free]}>
                 − {formatMoney(order.discountTotal)}
               </Text>
             </View>
           ) : null}
-          <View style={styles.item}>
-            <Text style={styles.totalLabel}>{pending ? 'Total' : 'Total paid'}</Text>
+          <View style={styles.dashed} />
+          <View style={styles.row}>
+            <Text style={styles.totalLabel}>{pending || cod ? 'Order total' : 'Total paid'}</Text>
             <Text style={styles.totalValue}>{formatMoney(order.grandTotal)}</Text>
           </View>
         </View>
 
         {payment &&
-        (payment.walletAmount !== '0.00' || payment.refunds.length > 0 || payment.cod) ? (
+        (payment.walletAmount !== '0.00' ||
+          payment.onlineAmount !== '0.00' ||
+          payment.refunds.length > 0 ||
+          payment.cod) ? (
           <>
             <Text style={styles.section}>Payment</Text>
             <View style={styles.card}>
               {payment.walletAmount !== '0.00' ? (
-                <View style={styles.item}>
-                  <Text style={styles.payLabel}>
-                    {pending ? 'Reserved from wallet' : 'Paid from wallet'}
-                  </Text>
-                  <Text style={styles.payValue}>{formatMoney(payment.walletAmount)}</Text>
-                </View>
+                <PayRow
+                  icon="wallet-outline"
+                  label={pending ? 'Reserved from wallet' : 'Paid from wallet'}
+                  value={formatMoney(payment.walletAmount)}
+                />
               ) : null}
               {payment.cod ? (
-                <View style={styles.item}>
-                  <Text style={styles.payLabel}>
-                    {payment.cod.collected
-                      ? 'Paid on delivery (cash)'
-                      : 'Cash on Delivery - pay on arrival'}
-                  </Text>
-                  <Text style={styles.payValue}>{formatMoney(payment.cod.amount)}</Text>
-                </View>
+                <PayRow
+                  icon="cash-outline"
+                  label={payment.cod.collected ? 'Paid on delivery (cash)' : 'Cash on Delivery'}
+                  sub={payment.cod.collected ? undefined : 'Pay when your order arrives'}
+                  value={formatMoney(payment.cod.amount)}
+                  warm={!payment.cod.collected}
+                />
               ) : null}
               {payment.onlineAmount !== '0.00' ? (
-                <View style={styles.item}>
-                  <Text style={styles.payLabel}>Paid online</Text>
-                  <Text style={styles.payValue}>{formatMoney(payment.onlineAmount)}</Text>
-                </View>
+                <PayRow
+                  icon="card-outline"
+                  label="Paid online"
+                  value={formatMoney(payment.onlineAmount)}
+                />
               ) : null}
               {payment.refunds.map((r) => (
-                <View key={r.refundId} style={styles.item}>
-                  <Text style={styles.refundLabel}>
-                    {r.method === 'WALLET' ? 'Refunded to wallet' : 'Refunded to original payment'}
-                  </Text>
-                  <Text style={styles.refundValue}>+ {formatMoney(r.amount)}</Text>
-                </View>
+                <PayRow
+                  key={r.refundId}
+                  icon="arrow-undo-outline"
+                  label={
+                    r.method === 'WALLET' ? 'Refunded to wallet' : 'Refunded to original payment'
+                  }
+                  value={`+ ${formatMoney(r.amount)}`}
+                  refund
+                />
               ))}
             </View>
           </>
         ) : null}
 
         <Text style={styles.section}>Delivery address</Text>
-        <View style={styles.card}>
-          {addressLines(order.shippingAddress).map((line, i) => (
-            <Text key={i} style={i === 0 ? styles.addrName : styles.addrLine}>
-              {line}
-            </Text>
-          ))}
+        <View style={[styles.card, styles.addrCard]}>
+          <View style={styles.addrIcon}>
+            <Ionicons name="location" size={18} color={colors.brand.DEFAULT} />
+          </View>
+          <View style={{ flex: 1, gap: 3 }}>
+            {addressLines(order.shippingAddress)
+              .filter((line) => !line.startsWith('Phone:'))
+              .map((line, i) => (
+                <Text key={i} style={i === 0 ? styles.addrName : styles.addrLine}>
+                  {line}
+                </Text>
+              ))}
+            <View style={styles.addrPhone}>
+              <Ionicons name="call-outline" size={13} color={colors.text.muted} />
+              <Text style={styles.addrLine}>{order.shippingAddress.phone}</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.actions}>
           {confirmed ? (
             <Pressable style={styles.actionRow} onPress={openInvoice} disabled={invoiceBusy}>
-              <Ionicons name="document-text-outline" size={20} color={colors.brand.DEFAULT} />
+              <View style={styles.actionIcon}>
+                <Ionicons name="document-text-outline" size={18} color={colors.brand.DEFAULT} />
+              </View>
               <Text style={styles.actionText}>Download invoice</Text>
               {invoiceBusy ? (
                 <ActivityIndicator color={colors.brand.DEFAULT} />
@@ -462,7 +640,9 @@ export default function OrderDetailScreen() {
               router.push({ pathname: '/help/new', params: { orderId: order.orderId } })
             }
           >
-            <Ionicons name="help-buoy-outline" size={20} color={colors.brand.DEFAULT} />
+            <View style={styles.actionIcon}>
+              <Ionicons name="help-buoy-outline" size={18} color={colors.brand.DEFAULT} />
+            </View>
             <Text style={styles.actionText}>Need help with this order?</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.text.muted} />
           </Pressable>
@@ -474,7 +654,9 @@ export default function OrderDetailScreen() {
                 setCancelOpen(true);
               }}
             >
-              <Ionicons name="close-circle-outline" size={20} color={colors.price.discount} />
+              <View style={[styles.actionIcon, styles.actionIconDanger]}>
+                <Ionicons name="close-circle-outline" size={18} color={colors.price.discount} />
+              </View>
               <Text style={[styles.actionText, styles.danger]}>Cancel order</Text>
               <Ionicons name="chevron-forward" size={18} color={colors.text.muted} />
             </Pressable>
@@ -512,14 +694,109 @@ export default function OrderDetailScreen() {
   );
 }
 
+/** One payment line: an icon chip, the label (and a hint) and the amount. */
+function PayRow({
+  icon,
+  label,
+  sub,
+  value,
+  warm,
+  refund,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  sub?: string;
+  value: string;
+  warm?: boolean;
+  refund?: boolean;
+}) {
+  const fg = refund ? colors.feature.guarantee : warm ? '#92400e' : colors.brand.DEFAULT;
+  return (
+    <View style={styles.payRow}>
+      <View
+        style={[
+          styles.payIcon,
+          { backgroundColor: refund ? '#e8f7ee' : warm ? '#fef3c7' : colors.brandPopup.bg },
+        ]}
+      >
+        <Ionicons name={icon} size={17} color={fg} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.payRowLabel, refund && { color: fg }]}>{label}</Text>
+        {sub ? <Text style={styles.payRowSub}>{sub}</Text> : null}
+      </View>
+      <Text style={[styles.payRowValue, refund && { color: fg }]}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.page },
   err: { fontFamily: font.uiSemibold, fontSize: 16, color: colors.text.strong },
   body: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
-  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  orderNo: { fontFamily: font.uiBold, fontSize: 18, color: colors.heading },
-  status: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.brand.DEFAULT },
+  hero: {
+    backgroundColor: colors.white,
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: space.lg,
+    paddingVertical: 14,
+  },
+  heroIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitle: { fontFamily: font.uiBold, fontSize: 18 },
+  heroSub: { fontFamily: font.uiMedium, fontSize: 12.5, color: colors.text.body, marginTop: 1 },
+  heroMeta: {
+    flexDirection: 'row',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingTop: 12,
+  },
+  metaLabel: {
+    fontFamily: font.uiMedium,
+    fontSize: 10.5,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: colors.text.muted,
+  },
+  metaValue: { fontFamily: font.uiBold, fontSize: 13, color: colors.text.strong, marginTop: 2 },
+  tracker: {
+    flexDirection: 'row',
+    paddingHorizontal: space.sm,
+    paddingTop: space.lg,
+    paddingBottom: space.lg,
+  },
+  step: { flex: 1, alignItems: 'center', gap: 6 },
+  stepRail: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
+  rail: { flex: 1, height: 3, backgroundColor: colors.steps.idle },
+  railDone: { backgroundColor: colors.feature.guarantee },
+  railHidden: { opacity: 0 },
+  dot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.steps.idle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotDone: { backgroundColor: colors.feature.guarantee },
+  stepLabel: { fontFamily: font.ui, fontSize: 11, color: colors.text.muted },
+  stepLabelDone: { color: colors.text.strong, fontFamily: font.uiSemibold },
   notice: {
     flexDirection: 'row',
     gap: 8,
@@ -558,42 +835,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.white },
-  tracker: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1,
-    borderColor: colors.card.border,
-    padding: space.lg,
-  },
-  step: { alignItems: 'center', gap: 6, flex: 1 },
-  dot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.steps.idle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dotDone: { backgroundColor: colors.feature.guarantee },
-  stepLabel: { fontFamily: font.ui, fontSize: 11, color: colors.text.muted, textAlign: 'center' },
-  stepLabelDone: { color: colors.text.strong, fontFamily: font.uiSemibold },
   section: { fontFamily: font.uiBold, fontSize: 15, color: colors.heading, marginTop: space.sm },
+  sectionCount: { fontFamily: font.uiMedium, color: colors.text.muted },
   card: {
     backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1,
-    borderColor: colors.card.border,
+    borderRadius: 18,
     padding: space.lg,
     gap: space.sm,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
-  itemBlock: { gap: 8 },
-  itemDivider: { borderTopWidth: 1, borderTopColor: colors.cart.line, paddingTop: space.sm },
-  item: { flexDirection: 'row', justifyContent: 'space-between', gap: space.md },
-  itemTitle: { flex: 1, fontFamily: font.body, fontSize: 13.5, color: colors.text.body },
-  itemPrice: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.text.strong },
-  itemActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  itemBlock: { gap: 10 },
+  itemDivider: { borderTopWidth: 1, borderTopColor: colors.cart.line, paddingTop: space.md },
+  item: { flexDirection: 'row', gap: 12 },
+  thumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    backgroundColor: '#f6f8fb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  thumbImg: { width: '88%', height: '88%' },
+  itemBody: { flex: 1, gap: 3 },
+  itemTitle: { fontFamily: font.uiMedium, fontSize: 13.5, lineHeight: 19, color: colors.heading },
+  itemMeta: { fontFamily: font.uiMedium, fontSize: 12, color: colors.text.muted },
+  itemFoot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 2,
+  },
+  linePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  linePillDot: { width: 6, height: 6, borderRadius: 3 },
+  linePillText: { fontFamily: font.uiBold, fontSize: 11 },
+  itemPrice: { fontFamily: font.uiBold, fontSize: 15, color: colors.heading },
+  itemActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginLeft: 84 },
   smallBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -610,6 +899,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     alignSelf: 'flex-start',
+    marginLeft: 84,
     backgroundColor: colors.brandPopup.bg,
     borderRadius: radii.pill,
     paddingHorizontal: 10,
@@ -640,33 +930,72 @@ const styles = StyleSheet.create({
   },
   trackMeta: { fontFamily: font.body, fontSize: 11.5, color: colors.text.muted },
   trackEmpty: { fontFamily: font.body, fontSize: 12, color: colors.text.muted },
-  divider: { height: 1, backgroundColor: colors.cart.line },
-  totalLabel: { fontFamily: font.uiBold, fontSize: 14, color: colors.text.strong },
-  totalValue: { fontFamily: font.uiBold, fontSize: 15, color: colors.brand.DEFAULT },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  dashed: {
+    borderTopWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#d5dce7',
+    marginVertical: 2,
+  },
+  totalLabel: { fontFamily: font.uiBold, fontSize: 15, color: colors.text.strong },
+  totalValue: { fontFamily: font.uiBold, fontSize: 17, color: colors.brand.DEFAULT },
   rateBtn: { borderColor: '#f5c451' },
   payLabel: { fontFamily: font.body, fontSize: 13.5, color: colors.text.body },
   payValue: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.text.strong },
-  refundLabel: { fontFamily: font.uiMedium, fontSize: 13.5, color: colors.feature.guarantee },
-  refundValue: { fontFamily: font.uiBold, fontSize: 13.5, color: colors.feature.guarantee },
-  addrName: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.text.strong },
-  addrLine: { fontFamily: font.body, fontSize: 13, color: colors.text.body },
+  free: { color: colors.feature.guarantee, fontFamily: font.uiBold },
+  payRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 2 },
+  payIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payRowLabel: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.text.strong },
+  payRowSub: { fontFamily: font.uiMedium, fontSize: 11.5, color: colors.text.muted, marginTop: 1 },
+  payRowValue: { fontFamily: font.uiBold, fontSize: 14, color: colors.text.strong },
+  addrCard: { flexDirection: 'row', gap: 12 },
+  addrIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.brandPopup.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addrName: { fontFamily: font.uiBold, fontSize: 14.5, color: colors.text.strong },
+  addrLine: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: colors.text.body },
+  addrPhone: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   actions: {
     backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1,
-    borderColor: colors.card.border,
+    borderRadius: 18,
     marginTop: space.sm,
+    overflow: 'hidden',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     paddingHorizontal: space.lg,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.cart.line,
   },
   actionLast: { borderBottomWidth: 0 },
+  actionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.brandPopup.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionIconDanger: { backgroundColor: '#fdecec' },
   actionText: { flex: 1, fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
   danger: { color: colors.price.discount },
 });

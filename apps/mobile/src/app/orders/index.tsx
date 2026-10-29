@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import {
   formatMoney,
   orderListStatusLabel,
+  TRACKING_STEPS,
   type OrderListItem,
   type OrderListLine,
   type SellerItemStatus,
@@ -24,13 +25,13 @@ import {
 import { api } from '@/lib/api';
 import { colors, font, radii, space } from '@/theme';
 
-// v1.17 My Orders: each order as a card with its products (photo, title, qty), a coloured status
-// line with its date, a 4-step progress bar while it's on the way, and quick actions - rate a
-// delivered product, buy it again, track or view the order. Search by product / order number,
-// filter chips with counts, and orders grouped by month.
+// v1.17 My Orders: each order as a compact card - a coloured status line with its date, the order
+// page's Order placed -> Packed -> Shipped -> Delivered tracker, its products (photo, title, qty)
+// and quick actions - rate a delivered product, buy it again; tap the card to track / view it.
+// Search by product / order number, filter chips with counts, and orders grouped by month.
 
 const BRAND = colors.brand.DEFAULT;
-const PREVIEW_LINES = 2;
+const PREVIEW_LINES = 1;
 const CARD_BATCH = 50; // catalog product-cards takes up to 50 ids per call
 
 type Filter = 'all' | 'active' | 'delivered' | 'cancelled' | 'returned';
@@ -346,6 +347,8 @@ function OrderCard({ order, cards }: { order: OrderListItem; cards: Record<strin
   const units = ls.reduce((n, l) => n + l.quantity, 0);
   const step = Math.max(...ls.map((l) => STEP[l.sellerStatus]), 0);
   const open = () => router.push(`/orders/${order.orderId}`);
+  const tracking = b === 'active' && order.status !== 'PENDING_PAYMENT';
+  const showSteps = tracking || b === 'delivered';
 
   return (
     <Pressable
@@ -354,20 +357,36 @@ function OrderCard({ order, cards }: { order: OrderListItem; cards: Record<strin
       accessibilityLabel={`Order ${order.orderNumber}, ${h.text}`}
     >
       <View style={[styles.status, { backgroundColor: h.tone.bg }]}>
-        <Ionicons name={h.tone.icon} size={18} color={h.tone.fg} />
-        <View style={{ flex: 1 }}>
+        <Ionicons name={h.tone.icon} size={16} color={h.tone.fg} />
+        <Text style={styles.statusLine} numberOfLines={1}>
           <Text style={[styles.statusText, { color: h.tone.fg }]}>{h.text}</Text>
-          {h.sub ? <Text style={styles.statusSub}>{h.sub}</Text> : null}
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={h.tone.fg} />
+          {h.sub ? <Text style={styles.statusSub}>{`  ·  ${h.sub}`}</Text> : null}
+        </Text>
+        <Text style={[styles.statusCta, { color: h.tone.fg }]}>{tracking ? 'Track' : 'View'}</Text>
+        <Ionicons name="chevron-forward" size={15} color={h.tone.fg} />
       </View>
 
-      {b === 'active' && order.status !== 'PENDING_PAYMENT' ? (
-        <View style={styles.progress}>
-          {['Placed', 'Packed', 'Shipped', 'Delivered'].map((label, i) => (
-            <View key={label} style={styles.progressStep}>
-              <View style={[styles.progressBar, i <= step && styles.progressBarOn]} />
-              <Text style={[styles.progressLabel, i <= step && styles.progressLabelOn]}>
+      {showSteps ? (
+        // Same steps and look as the order page's tracker (app/orders/[id].tsx).
+        <View style={styles.tracker}>
+          {TRACKING_STEPS.map((label, i) => (
+            <View key={label} style={styles.step}>
+              <View style={styles.stepRail}>
+                <View
+                  style={[styles.rail, i === 0 && styles.railHidden, i <= step && styles.railDone]}
+                />
+                <View style={[styles.dot, i <= step && styles.dotDone]}>
+                  {i <= step ? <Ionicons name="checkmark" size={11} color={colors.white} /> : null}
+                </View>
+                <View
+                  style={[
+                    styles.rail,
+                    i === TRACKING_STEPS.length - 1 && styles.railHidden,
+                    i < step && styles.railDone,
+                  ]}
+                />
+              </View>
+              <Text style={[styles.stepLabel, i <= step && styles.stepLabelDone]} numberOfLines={1}>
                 {label}
               </Text>
             </View>
@@ -390,7 +409,7 @@ function OrderCard({ order, cards }: { order: OrderListItem; cards: Record<strin
                   transition={150}
                 />
               ) : (
-                <Ionicons name="image-outline" size={24} color={colors.card.border} />
+                <Ionicons name="image-outline" size={20} color={colors.card.border} />
               )}
               {l.quantity > 1 ? (
                 <View style={styles.qtyBadge}>
@@ -411,7 +430,7 @@ function OrderCard({ order, cards }: { order: OrderListItem; cards: Record<strin
                     hitSlop={4}
                   >
                     {[1, 2, 3, 4, 5].map((n) => (
-                      <Ionicons key={n} name="star" size={14} color="#d5dbe5" />
+                      <Ionicons key={n} name="star" size={13} color="#c2cad6" />
                     ))}
                     <Text style={styles.rateText}>Rate</Text>
                   </Pressable>
@@ -440,37 +459,28 @@ function OrderCard({ order, cards }: { order: OrderListItem; cards: Record<strin
       ) : null}
 
       <View style={styles.foot}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.orderNo}>Order #{order.orderNumber}</Text>
-          <Text style={styles.meta}>
+        <View style={styles.footInfo}>
+          <Text style={styles.orderNo} numberOfLines={1}>
+            #{order.orderNumber}
+          </Text>
+          <Text style={styles.meta} numberOfLines={1}>
             {fullDate(order.createdAt)} · {units} item{units === 1 ? '' : 's'}
           </Text>
         </View>
-        <View style={{ alignItems: 'flex-end', gap: 4 }}>
-          <Text style={styles.total}>{formatMoney(order.grandTotal)}</Text>
-          {order.paymentMethod ? (
-            <View style={[styles.pay, order.paymentMethod === 'COD' && styles.payCod]}>
-              <Ionicons
-                name={order.paymentMethod === 'COD' ? 'cash-outline' : 'card-outline'}
-                size={11}
-                color={order.paymentMethod === 'COD' ? '#92400e' : '#15803d'}
-              />
-              <Text style={[styles.payText, order.paymentMethod === 'COD' && styles.payTextCod]}>
-                {order.paymentMethod === 'COD' ? 'Cash on delivery' : 'Paid online'}
-              </Text>
-            </View>
-          ) : null}
-        </View>
+        {order.paymentMethod ? (
+          <View style={[styles.pay, order.paymentMethod === 'COD' && styles.payCod]}>
+            <Ionicons
+              name={order.paymentMethod === 'COD' ? 'cash-outline' : 'card-outline'}
+              size={11}
+              color={order.paymentMethod === 'COD' ? '#92400e' : '#15803d'}
+            />
+            <Text style={[styles.payText, order.paymentMethod === 'COD' && styles.payTextCod]}>
+              {order.paymentMethod === 'COD' ? 'COD' : 'Paid'}
+            </Text>
+          </View>
+        ) : null}
+        <Text style={styles.total}>{formatMoney(order.grandTotal)}</Text>
       </View>
-
-      {b === 'active' ? (
-        <Pressable onPress={open} style={styles.track}>
-          <Ionicons name="navigate-circle-outline" size={17} color={BRAND} />
-          <Text style={styles.trackText}>
-            {order.status === 'PENDING_PAYMENT' ? 'View order' : 'Track order'}
-          </Text>
-        </Pressable>
-      ) : null}
     </Pressable>
   );
 }
@@ -571,46 +581,55 @@ const styles = StyleSheet.create({
   },
   card: {
     marginHorizontal: space.lg,
-    marginBottom: space.md,
+    marginBottom: 10,
     backgroundColor: colors.white,
-    borderRadius: 18,
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#0f172a',
     shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   status: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     paddingHorizontal: space.md,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
-  statusText: { fontFamily: font.uiBold, fontSize: 14 },
-  statusSub: { fontFamily: font.uiMedium, fontSize: 11.5, color: colors.text.body, marginTop: 1 },
-  progress: {
+  statusLine: { flex: 1 },
+  statusText: { fontFamily: font.uiBold, fontSize: 13.5 },
+  statusSub: { fontFamily: font.uiMedium, fontSize: 11.5, color: colors.text.body },
+  statusCta: { fontFamily: font.uiBold, fontSize: 12 },
+  tracker: { flexDirection: 'row', paddingHorizontal: space.sm, paddingTop: 10 },
+  step: { flex: 1, alignItems: 'center', gap: 4 },
+  stepRail: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
+  rail: { flex: 1, height: 2, backgroundColor: colors.steps.idle },
+  railDone: { backgroundColor: colors.feature.guarantee },
+  railHidden: { opacity: 0 },
+  dot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.steps.idle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotDone: { backgroundColor: colors.feature.guarantee },
+  stepLabel: { fontFamily: font.ui, fontSize: 10.5, color: colors.text.muted },
+  stepLabelDone: { color: colors.text.strong, fontFamily: font.uiSemibold },
+  line: {
     flexDirection: 'row',
-    gap: 4,
+    alignItems: 'center',
+    gap: 10,
     paddingHorizontal: space.md,
     paddingTop: 10,
   },
-  progressStep: { flex: 1, gap: 4 },
-  progressBar: { height: 4, borderRadius: 2, backgroundColor: '#e5eaf2' },
-  progressBarOn: { backgroundColor: BRAND },
-  progressLabel: { fontFamily: font.uiMedium, fontSize: 10, color: colors.text.muted },
-  progressLabelOn: { color: BRAND, fontFamily: font.uiBold },
-  line: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: space.md,
-    paddingTop: space.md,
-  },
   thumb: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 10,
     backgroundColor: '#f6f8fb',
     alignItems: 'center',
     justifyContent: 'center',
@@ -619,18 +638,17 @@ const styles = StyleSheet.create({
   thumbImg: { width: '88%', height: '88%' },
   qtyBadge: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
+    bottom: 2,
+    right: 2,
     backgroundColor: 'rgba(17,24,39,0.75)',
-    borderRadius: 6,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
+    borderRadius: 5,
+    paddingHorizontal: 4,
   },
-  qtyText: { fontFamily: font.uiBold, fontSize: 10.5, color: colors.white },
-  lineBody: { flex: 1, gap: 4, justifyContent: 'center' },
-  lineTitle: { fontFamily: font.uiMedium, fontSize: 13.5, lineHeight: 19, color: colors.heading },
+  qtyText: { fontFamily: font.uiBold, fontSize: 9.5, color: colors.white },
+  lineBody: { flex: 1, gap: 2, justifyContent: 'center' },
+  lineTitle: { fontFamily: font.uiMedium, fontSize: 13, lineHeight: 17, color: colors.heading },
   lineStatus: { fontFamily: font.uiSemibold, fontSize: 11.5, color: colors.text.muted },
-  lineActions: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 2 },
+  lineActions: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 1 },
   rate: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   rateText: { fontFamily: font.uiBold, fontSize: 12, color: BRAND, marginLeft: 4 },
   again: { flexDirection: 'row', alignItems: 'center', gap: 3 },
@@ -640,23 +658,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     alignSelf: 'flex-start',
-    marginLeft: space.md + 84,
-    marginTop: 8,
+    marginLeft: space.md + 62,
+    marginTop: 6,
   },
-  moreText: { fontFamily: font.uiBold, fontSize: 12.5, color: BRAND },
+  moreText: { fontFamily: font.uiBold, fontSize: 12, color: BRAND },
   foot: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: space.md,
+    gap: 8,
+    marginTop: 10,
     marginHorizontal: space.md,
-    paddingVertical: space.md,
+    paddingVertical: 9,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#dfe5ee',
   },
-  orderNo: { fontFamily: font.uiBold, fontSize: 13, color: colors.text.strong },
-  meta: { fontFamily: font.uiMedium, fontSize: 11.5, color: colors.text.muted, marginTop: 2 },
-  total: { fontFamily: font.uiBold, fontSize: 16, color: colors.heading },
+  orderNo: { fontFamily: font.uiBold, fontSize: 12, color: colors.text.strong },
+  footInfo: { flex: 1, minWidth: 0 },
+  meta: { fontFamily: font.uiMedium, fontSize: 11, color: colors.text.muted, marginTop: 1 },
+  total: { flexShrink: 0, fontFamily: font.uiBold, fontSize: 14.5, color: colors.heading },
   pay: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
@@ -668,16 +689,6 @@ const styles = StyleSheet.create({
   payCod: { backgroundColor: '#fef3c7' },
   payText: { fontFamily: font.uiSemibold, fontSize: 10.5, color: '#15803d' },
   payTextCod: { color: '#92400e' },
-  track: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#dfe5ee',
-    paddingVertical: 11,
-  },
-  trackText: { fontFamily: font.uiBold, fontSize: 13.5, color: BRAND },
   emptyIcon: {
     width: 80,
     height: 80,

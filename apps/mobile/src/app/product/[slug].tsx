@@ -10,7 +10,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type {
@@ -31,7 +31,6 @@ import { ProductCard } from '@/components/ProductCard';
 import { ProductReviews } from '@/components/ProductReviews';
 import { shareProduct } from '@/lib/share';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { colors, font, radii, space } from '@/theme';
 
 const TABBAR_H = 46;
@@ -66,14 +65,6 @@ export default function ProductScreen() {
   const cart = useCart();
   const session = useSession();
   const [adding, setAdding] = useState(false);
-  const [toast, setToast] = useState(false);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    },
-    [],
-  );
   const wishlist = useWishlist();
   const [product, setProduct] = useState<ProductDetailData | null | 'error'>(null);
   const [more, setMore] = useState<MoreState | null>(null);
@@ -213,9 +204,7 @@ export default function ProductScreen() {
     } finally {
       setAdding(false);
     }
-    setToast(true);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(false), 2400);
+    // "Added to cart" + the free-delivery progress pop up from components/FreeDeliveryNudge.tsx.
   };
   const saved = skuId ? wishlist.has(skuId) : false;
   // A picked variant with its own photo / title leads with them (the product's otherwise).
@@ -395,31 +384,13 @@ export default function ProductScreen() {
         </View>
       ) : null}
 
-      {toast && inCart ? (
-        <Animated.View
-          entering={FadeInDown.springify().damping(14)}
-          exiting={FadeOutDown.duration(220)}
-          style={[styles.toast, { bottom: insets.bottom + 92 }]}
-        >
-          <View style={styles.toastIcon}>
-            <Ionicons name="checkmark" size={15} color={colors.white} />
-          </View>
-          <Text style={styles.toastText}>
-            Added to cart{inCart.quantity > 1 ? ` · ${inCart.quantity} in cart` : ''}
-          </Text>
-          <Pressable onPress={() => router.push('/my-cart')} hitSlop={10}>
-            <Text style={styles.toastLink}>VIEW</Text>
-          </Pressable>
-        </Animated.View>
-      ) : null}
-
       <View style={[styles.buyBar, { paddingBottom: insets.bottom + space.sm }]}>
         {inCart ? (
           <Pressable
             style={({ pressed }) => [styles.addBtn, styles.addedBtn, pressed && { opacity: 0.85 }]}
             onPress={() => router.push('/my-cart')}
           >
-            <Ionicons name="checkmark-circle" size={18} color={colors.heading} />
+            <Ionicons name="checkmark-circle" size={18} color={colors.white} />
             <Text style={styles.addedText}>Go to Cart</Text>
           </Pressable>
         ) : (
@@ -429,10 +400,10 @@ export default function ProductScreen() {
             onPress={() => void addToCart()}
           >
             {adding ? (
-              <ActivityIndicator color={colors.brand.DEFAULT} />
+              <ActivityIndicator color={colors.white} />
             ) : (
               <>
-                <Ionicons name="cart-outline" size={18} color={colors.brand.DEFAULT} />
+                <MaterialCommunityIcons name="cart-plus" size={19} color={colors.white} />
                 <Text style={styles.addText}>Add to Cart</Text>
               </>
             )}
@@ -455,12 +426,17 @@ export default function ProductScreen() {
             router.push('/my-cart');
           }}
         >
+          <Ionicons name="bag-check" size={18} color={BUY_INK} />
           <Text style={styles.buyText}>Buy Now</Text>
         </Pressable>
       </View>
     </View>
   );
 }
+
+// The cards' Buy button colours (components/BuyNowButton.tsx).
+const BUY_YELLOW = '#ffd60a';
+const BUY_INK = '#1f1300';
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.white },
@@ -571,50 +547,24 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.brand.DEFAULT,
-    borderRadius: radii.button,
-    paddingVertical: 14,
-  },
-  addText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.brand.DEFAULT },
-  // Yellow (Flipkart-style) "Go to Cart"; dark text - white on yellow is hard to read.
-  addedBtn: { backgroundColor: '#ffc200', borderColor: '#ffc200' },
-  addedText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.heading },
-  toast: {
-    position: 'absolute',
-    left: space.lg,
-    right: space.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#1d2433',
-    borderRadius: 14,
-    paddingHorizontal: space.md,
-    paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-  },
-  toastIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.feature.guarantee,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toastText: { flex: 1, fontFamily: font.uiMedium, fontSize: 14, color: colors.white },
-  toastLink: { fontFamily: font.uiBold, fontSize: 13.5, letterSpacing: 0.6, color: '#7cc4ff' },
-  buyBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: colors.brand.DEFAULT,
     borderRadius: radii.button,
     paddingVertical: 14,
   },
-  buyText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.white },
+  // Same colours as the product cards' Add (blue) and Buy (yellow) - components/ProductCard.tsx.
+  addText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.white },
+  addedBtn: { backgroundColor: colors.brand.DEFAULT },
+  addedText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.white },
+  buyBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: BUY_YELLOW,
+    borderRadius: radii.button,
+    paddingVertical: 14,
+  },
+  buyText: { fontFamily: font.uiBold, fontSize: 15, color: BUY_INK },
   disabled: { opacity: 0.4 },
 });

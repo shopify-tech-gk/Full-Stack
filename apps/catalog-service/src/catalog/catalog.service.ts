@@ -442,6 +442,17 @@ export interface SkuDetail {
   gstRatePercent: string | null;
 }
 
+/** A variant's title: its own `_title` (imported per variant), else the product title with its
+ * option values - "Organic Manure (500 g)". Same rule as the product page's variant title. */
+function skuTitle(productTitle: string, attributes: Record<string, unknown> | null): string {
+  const own = attributes?._title;
+  if (typeof own === 'string' && own.trim()) return own.trim();
+  const options = Object.entries(attributes ?? {})
+    .filter(([k, v]) => !k.startsWith('_') && typeof v === 'string' && v.trim())
+    .map(([, v]) => v as string);
+  return options.length ? `${productTitle} (${options.join(' · ')})` : productTitle;
+}
+
 /**
  * Internal-ish lookup used by other services (cart/checkout) via
  * @youmart/service-client's getSku - unlike getProductBySlug, a SKU whose
@@ -457,7 +468,9 @@ export interface SkuDetail {
 export async function getSkuById(skuId: string): Promise<SkuDetail> {
   const sku = await prisma.sku.findFirst({
     where: { id: skuId, deletedAt: null },
-    include: { product: true },
+    include: {
+      product: { include: { _count: { select: { skus: { where: { deletedAt: null } } } } } },
+    },
   });
 
   if (!sku) {
@@ -468,7 +481,12 @@ export async function getSkuById(skuId: string): Promise<SkuDetail> {
     skuId: sku.id,
     productId: sku.productId,
     productSlug: sku.product.slug,
-    title: sku.product.title,
+    // A product sold in several variants: this variant's own title, so the cart / checkout /
+    // order lines of two variants (450 g and 500 g) don't both show the same name.
+    title:
+      sku.product._count.skus > 1
+        ? skuTitle(sku.product.title, sku.attributes as Record<string, unknown> | null)
+        : sku.product.title,
     sellerId: sku.product.sellerId,
     sellingPrice: decimalToMoney(sku.sellingPrice),
     mrp: decimalToMoney(sku.mrp),

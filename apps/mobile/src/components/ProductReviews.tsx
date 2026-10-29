@@ -147,7 +147,7 @@ export function ProductReviews({ slug }: { slug: string }) {
       {page.items.map((review) => (
         <View key={review.id} style={styles.review}>
           <View style={styles.reviewHead}>
-            <Stars rating={review.rating} size={14} />
+            <Stars rating={review.rating} size={15} bold />
             {review.verifiedPurchase ? (
               <View style={styles.verified}>
                 <Ionicons name="checkmark-circle" size={12} color={colors.feature.guarantee} />
