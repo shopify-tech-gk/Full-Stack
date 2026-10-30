@@ -19,6 +19,7 @@ import {
   orderListStatusLabel,
   TRACKING_STEPS,
   type OrderListItem,
+  type Money,
   type OrderListLine,
   type SellerItemStatus,
 } from '@youmart/shared-client';
@@ -74,6 +75,11 @@ const monthKey = (iso: string) =>
   new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric' }).format(new Date(iso));
 
 const lines = (o: OrderListItem): OrderListLine[] => o.lines ?? [];
+/** What a card lists: cancelled lines drop off, unless the whole order was cancelled. */
+const shownLines = (o: OrderListItem): OrderListLine[] => {
+  const live = lines(o).filter((l) => l.sellerStatus !== 'CANCELLED');
+  return live.length > 0 ? live : lines(o);
+};
 const latest = (ls: OrderListLine[], s: SellerItemStatus) =>
   ls
     .filter((l) => l.sellerStatus === s)
@@ -339,7 +345,17 @@ export default function OrdersScreen() {
 function OrderCard({ order, cards }: { order: OrderListItem; cards: Record<string, Card> }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
-  const ls = lines(order);
+  const ls = shownLines(order);
+  const cancelledCount = lines(order).length - ls.length;
+  // Cancelled lines come off the total, as on the order page.
+  const total = (
+    Number(order.grandTotal) -
+    (cancelledCount > 0
+      ? lines(order)
+          .filter((l) => l.sellerStatus === 'CANCELLED')
+          .reduce((n, l) => n + Number(l.paid ?? 0), 0)
+      : 0)
+  ).toFixed(2) as Money;
   const h = headline(order);
   const b = bucket(order);
   const shown = expanded ? ls : ls.slice(0, PREVIEW_LINES);
@@ -465,6 +481,7 @@ function OrderCard({ order, cards }: { order: OrderListItem; cards: Record<strin
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
             {fullDate(order.createdAt)} · {units} item{units === 1 ? '' : 's'}
+            {cancelledCount > 0 ? ` · ${cancelledCount} cancelled` : ''}
           </Text>
         </View>
         {order.paymentMethod ? (
@@ -479,7 +496,7 @@ function OrderCard({ order, cards }: { order: OrderListItem; cards: Record<strin
             </Text>
           </View>
         ) : null}
-        <Text style={styles.total}>{formatMoney(order.grandTotal)}</Text>
+        <Text style={styles.total}>{formatMoney(total)}</Text>
       </View>
     </Pressable>
   );

@@ -44,8 +44,8 @@ export function AdminCancellations() {
       toast.ok(
         action === 'approve'
           ? r.paymentMethod === 'COD'
-            ? `${r.orderNumber} cancelled`
-            : `${r.orderNumber} cancelled · refund sent to the customer's wallet`
+            ? `${r.item ? 'Item' : r.orderNumber} cancelled`
+            : `${r.item ? 'Item' : r.orderNumber} cancelled · refund sent to the customer's wallet`
           : 'Request declined · the order goes ahead',
       );
       await list.reload();
@@ -97,6 +97,11 @@ export function AdminCancellations() {
                     {r.status === 'REQUESTED' ? 'Waiting' : r.status === 'APPROVED' ? 'Cancelled' : 'Declined'}
                   </Badge>
                 </div>
+                <p className="mt-[10px] text-[13.5px] font-semibold text-[#b42318]">
+                  {r.item
+                    ? `Only this item: ${r.item.title} (Qty ${r.item.quantity}) · refund ${formatMoney(r.item.amount)}`
+                    : 'Whole order'}
+                </p>
                 <div className="mt-[12px] rounded-[10px] bg-[#f6f8fc] px-[14px] py-[10px]">
                   <p className="text-[14px] font-semibold text-[#0b1b3f]">{r.reason}</p>
                   {r.comment && <p className="mt-[2px] text-[13.5px] text-[#5d6b85]">&ldquo;{r.comment}&rdquo;</p>}
@@ -126,7 +131,7 @@ export function AdminCancellations() {
                         title={r.paymentMethod === 'ONLINE' && !can(session, 'refunds.manage') ? 'Needs refund permission' : undefined}
                         onClick={() => void resolve(r, 'approve')}
                       >
-                        {r.paymentMethod === 'COD' ? 'Cancel order' : 'Cancel & refund'}
+                        {r.item ? 'Cancel item & refund' : r.paymentMethod === 'COD' ? 'Cancel order' : 'Cancel & refund'}
                       </Button>
                     </div>
                   </>

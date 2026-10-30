@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatMoney, orderOverview, type OrderView } from '@youmart/shared-client';
 import { api } from '@/lib/api';
+import { useCart } from '@/stores/cart';
 import { colors, font, radii, space } from '@/theme';
 
 export default function OrderSuccessScreen() {
@@ -12,6 +13,13 @@ export default function OrderSuccessScreen() {
   const insets = useSafeAreaInsets();
   const { orderId } = useLocalSearchParams<{ orderId: string }>();
   const [order, setOrder] = useState<OrderView | null>(null);
+  const { refresh } = useCart();
+
+  // The paid items have just left the cart on the server.
+  useEffect(() => {
+    void refresh();
+    // Once, on arrival.
+  }, []);
 
   useEffect(() => {
     api.orders

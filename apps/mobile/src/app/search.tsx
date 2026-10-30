@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -34,13 +34,11 @@ import { SearchFilterSheet } from '@/components/SearchFilterSheet';
 import { getJSON, setJSON } from '@/lib/storage';
 import { ProductCard } from '@/components/ProductCard';
 import { VoiceSearchSheet } from '@/components/VoiceSearchSheet';
-import { CategoryCard } from '@/components/CategoryCard';
 import { BrandLogo } from '@/components/BrandLogo';
-import { searchCategories, type CategoryMatch } from '@/lib/home-categories';
 import { colors, font, radii, space } from '@/theme';
 
-// v1.17 Search, Amazon / Flipkart style. Empty box: recent + popular searches. While typing: a
-// suggestion panel - matching categories, word completions ("vermi" -> vermicompost), brands (logo
+// v1.17 Search, Amazon / Flipkart style. Empty box: recent searches. While typing: a
+// suggestion panel - word completions ("vermi" -> vermicompost), brands (logo
 // + product count) and the best products - from /search/suggest. Submitting (keyboard, a
 // completion, "See all") shows the results grid with sort chips and an optional brand filter.
 // Matching is whole-word + semantic on the server, so "car" never brings up carpets.
@@ -49,16 +47,6 @@ const PER_PAGE = 40;
 const RECENT_KEY = 'ym_recent_searches';
 const MAX_RECENT = 8;
 const BRAND = colors.brand.DEFAULT;
-const POPULAR = [
-  'Vermicompost',
-  'iPhone',
-  'Potting mix',
-  'Diapers',
-  'Earbuds',
-  'Cow dung manure',
-  'Chargers',
-  'Neem cake',
-];
 const SORTS: { key: SearchSort; label: string }[] = [
   { key: 'relevance', label: 'Relevance' },
   { key: 'price_asc', label: 'Price: Low to High' },
@@ -184,45 +172,9 @@ export default function SearchScreen() {
     }
   }, [submitted, results, loadingMore]);
 
-  const categories = useMemo(() => searchCategories(term, 8), [term]);
-  const openCategory = useCallback(
-    (c: CategoryMatch) =>
-      router.push(`/category/${c.path[c.path.length - 1]}?taxo=${c.path.join('~')}`),
-    [router],
-  );
   const tap = () => void Haptics.selectionAsync().catch(() => undefined);
 
-  const categoryStrip =
-    categories.length > 0 ? (
-      <View style={styles.catBlock}>
-        <Text style={styles.blockTitle}>Categories</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.catRow}
-        >
-          {categories.map((c) => (
-            <View key={c.path.join('/')} style={styles.catItem}>
-              <CategoryCard
-                name={c.name}
-                imageKey={c.imageKey}
-                compact
-                style={styles.catCard}
-                onPress={() => openCategory(c)}
-              />
-              {c.trail ? (
-                <Text style={styles.catTrail} numberOfLines={1}>
-                  in {c.trail}
-                </Text>
-              ) : null}
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    ) : null;
-
-  /** Recent + popular, shown with an empty box. */
+  /** Recent searches, shown with an empty box. */
   const start = (
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.panel}>
       {recent.length > 0 ? (
@@ -259,17 +211,6 @@ export default function SearchScreen() {
           ))}
         </View>
       ) : null}
-      <View style={styles.block}>
-        <Text style={styles.blockTitle}>Popular on YouMart</Text>
-        <View style={styles.chips}>
-          {POPULAR.map((p) => (
-            <Pressable key={p} style={styles.chip} onPress={() => submit(p)}>
-              <Ionicons name="trending-up" size={14} color={BRAND} />
-              <Text style={styles.chipText}>{p}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
     </ScrollView>
   );
 
@@ -280,7 +221,6 @@ export default function SearchScreen() {
       keyboardDismissMode="on-drag"
       contentContainerStyle={styles.panel}
     >
-      {categoryStrip}
       {suggest?.completions.length ? (
         <View style={styles.block}>
           {suggest.completions.map((c) => (
@@ -373,7 +313,7 @@ export default function SearchScreen() {
           <Ionicons name="arrow-forward" size={16} color={BRAND} />
         </Pressable>
       ) : null}
-      {suggest && !suggest.items.length && !suggest.brands.length && !categories.length ? (
+      {suggest && !suggest.items.length && !suggest.brands.length ? (
         <Text style={styles.noSuggest}>No matches for “{term}” yet - try another word.</Text>
       ) : null}
     </ScrollView>
@@ -382,7 +322,6 @@ export default function SearchScreen() {
   const activeFilters = submitted ? countSearchFilters(submitted.filters) : 0;
   const resultsHeader = submitted ? (
     <View>
-      {categoryStrip}
       <View style={styles.resultsHead}>
         <Text style={styles.count}>
           {results ? `${results.total} result${results.total === 1 ? '' : 's'}` : 'Searching'} for “
@@ -450,15 +389,9 @@ export default function SearchScreen() {
       <View style={styles.flex}>
         {resultsHeader}
         <View style={styles.hint}>
-          <Ionicons
-            name={categories.length ? 'grid-outline' : 'search-outline'}
-            size={44}
-            color={colors.card.border}
-          />
+          <Ionicons name="search-outline" size={44} color={colors.card.border} />
           <Text style={styles.hintText}>
-            {categories.length
-              ? `No products for “${submitted!.term}”${activeFilters ? ' with these filters' : ' yet - browse the categories above'}.`
-              : `No products found for “${submitted!.term}”. Try a different or more general word.`}
+            {`No products found for “${submitted!.term}”${activeFilters ? ' with these filters' : '. Try a different or more general word'}.`}
           </Text>
           {activeFilters > 0 ? (
             <Pressable
@@ -676,19 +609,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingTop: space.lg,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: space.lg },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#dbe4f3',
-    backgroundColor: colors.white,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  chipText: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.text.strong },
   hint: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md },
   hintText: {
     fontFamily: font.body,
@@ -736,14 +656,4 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   clearFiltersText: { fontFamily: font.uiBold, fontSize: 14, color: colors.white },
-  catBlock: { paddingTop: space.xs, paddingBottom: space.md, gap: space.sm },
-  catRow: { paddingHorizontal: space.lg, gap: space.sm },
-  catItem: { width: 104, gap: 4 },
-  catCard: { flex: 0 },
-  catTrail: {
-    fontFamily: font.body,
-    fontSize: 10.5,
-    color: colors.text.muted,
-    textAlign: 'center',
-  },
 });

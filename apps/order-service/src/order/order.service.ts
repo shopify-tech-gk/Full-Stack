@@ -46,6 +46,12 @@ export interface OrderItemView {
   /** v1.13: this line's share of the coupon discount - what was paid is lineTotal - discount. */
   discount: Money;
   sellerStatus: OrderItemStatusValue;
+  /** v1.17 this line's latest own cancel request (customer order view only). */
+  cancelRequest?: {
+    status: 'REQUESTED' | 'APPROVED' | 'REJECTED';
+    reason: string;
+    note: string | null;
+  } | null;
 }
 
 /** A SNAPSHOT of the address chosen at checkout time (Ch6.1) - preserved
@@ -120,12 +126,15 @@ export interface OrderListLine {
   quantity: number;
   sellerStatus: OrderItemStatusValue;
   updatedAt: string;
+  /** v1.17 what was paid for the line (price less its coupon share). */
+  paid: Money;
 }
 
 export const ORDER_WITH_ITEMS_INCLUDE = {
   items: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' as const } },
   statusHistory: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' as const } },
-  cancelRequests: { where: { deletedAt: null }, orderBy: { createdAt: 'desc' as const }, take: 1 },
+  // Newest first: whole-order requests and (v1.17) one-item requests.
+  cancelRequests: { where: { deletedAt: null }, orderBy: { createdAt: 'desc' as const } },
 } satisfies Prisma.OrderInclude;
 
 type OrderWithItems = Prisma.OrderGetPayload<{ include: typeof ORDER_WITH_ITEMS_INCLUDE }>;
@@ -156,6 +165,12 @@ function toShippingAddressView(order: OrderWithItems): ShippingAddressView | nul
     pincode: order.shipPincode,
     country: order.shipCountry,
   };
+}
+
+/** v1.17 this line's latest own cancel request (null = never asked). */
+function itemCancelView(order: OrderWithItems, orderItemId: string) {
+  const row = order.cancelRequests.find((r) => r.orderItemId === orderItemId);
+  return row ? { status: row.status, reason: row.reason, note: row.resolutionNote } : null;
 }
 
 /** v1.17 the separate billing snapshot, or null when the order is billed to its delivery address. */
@@ -195,6 +210,7 @@ function billingOf(order: OrderWithItems) {
 }
 
 export function toOrderView(order: OrderWithItems): OrderView {
+  const wholeCancel = order.cancelRequests.find((r) => !r.orderItemId);
   return {
     orderId: order.id,
     orderNumber: order.orderNumber,
@@ -210,6 +226,7 @@ export function toOrderView(order: OrderWithItems): OrderView {
       lineTotal: decimalToMoney(item.lineTotal),
       discount: decimalToMoney(item.discount),
       sellerStatus: item.sellerStatus,
+      cancelRequest: itemCancelView(order, item.id),
     })),
     subtotal: decimalToMoney(order.subtotal),
     shippingTotal: decimalToMoney(order.shippingTotal),
@@ -224,11 +241,11 @@ export function toOrderView(order: OrderWithItems): OrderView {
       status: h.toStatus,
       at: h.createdAt.toISOString(),
     })),
-    cancelRequest: order.cancelRequests[0]
+    cancelRequest: wholeCancel
       ? {
-          status: order.cancelRequests[0].status,
-          reason: order.cancelRequests[0].reason,
-          createdAt: order.cancelRequests[0].createdAt.toISOString(),
+          status: wholeCancel.status,
+          reason: wholeCancel.reason,
+          createdAt: wholeCancel.createdAt.toISOString(),
         }
       : null,
   };
@@ -291,6 +308,70 @@ interface RepricedLine {
 // A more robust mechanism (client-supplied idempotency key) is deferred -
 // documented as a known limitation, not implemented here.
 const DOUBLE_CHECKOUT_WINDOW_MS = 30 * 1000;
+
+/**
+ * v1.17: cancels this customer's unpaid orders holding any of these SKUs (they are checking those
+ * items out again). Conditional on still being unpaid, so a payment confirming right now wins; a
+ * capture arriving later is refunded to the wallet by payment-service's webhook.
+ */
+async function releaseUnpaidOverlaps(userId: string, skuIds: string[]): Promise<void> {
+  const stale = await prisma.order.findMany({
+    where: {
+      userId,
+      status: 'PENDING_PAYMENT',
+      deletedAt: null,
+      items: { some: { skuId: { in: skuIds }, deletedAt: null } },
+    },
+    select: { id: true },
+  });
+  for (const { id } of stale) {
+    const claimed = await prisma.$transaction(async (tx) => {
+      const flip = await tx.order.updateMany({
+        where: { id, status: 'PENDING_PAYMENT', deletedAt: null },
+        data: { status: 'CANCELLED' },
+      });
+      if (flip.count === 0) return false;
+      await tx.orderItem.updateMany({
+        where: { orderId: id, deletedAt: null },
+        data: { sellerStatus: 'CANCELLED' },
+      });
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          fromStatus: 'PENDING_PAYMENT',
+          toStatus: 'CANCELLED',
+          note: 'Replaced by a newer checkout of the same items',
+        },
+      });
+      return true;
+    });
+    if (!claimed) continue;
+    await inventoryClient.releaseByOrder(id);
+    await releaseWalletHold(id);
+    await releaseCouponForOrder(id);
+  }
+}
+
+/**
+ * v1.17: a confirmed order's lines leave the customer's cart (matched by SKU; whatever else is in
+ * the cart stays). Best-effort: a cart-service problem must never undo a real payment, and the
+ * worst case is an item left in the cart.
+ */
+async function removeOrderedFromCart(userId: string, orderId: string): Promise<void> {
+  try {
+    const items = await prisma.orderItem.findMany({
+      where: { orderId, deletedAt: null },
+      select: { skuId: true },
+    });
+    const skus = new Set(items.map((i) => i.skuId));
+    const cart = await cartClient.getMyCart(userId);
+    const ids = cart.items.filter((i) => skus.has(i.skuId)).map((i) => i.cartItemId);
+    if (ids.length > 0) await cartClient.removeItems(userId, ids);
+  } catch (err: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('failed to remove ordered items from the cart', { orderId, err });
+  }
+}
 
 async function cancelOrder(orderId: string, note: string): Promise<void> {
   await prisma.$transaction([
@@ -372,7 +453,17 @@ export async function checkout(
       .map((item) => `${item.skuId}x${item.quantity}`)
       .sort()
       .join(',');
-  if (recentOrder && (missing || signature(recentOrder.items) === signature(selected))) {
+  // v1.17: the cart now stays until payment, so "same items" also means coming back to pay: only
+  // the same choices reuse the order - a new address or coupon makes a fresh one (see below).
+  const sameChoices =
+    recentOrder !== null &&
+    recentOrder.shippingAddressId === address.addressId &&
+    (recentOrder.billingAddressId ?? null) === (billing?.addressId ?? null) &&
+    (recentOrder.couponCode ?? null) === (couponCode?.trim().toUpperCase() ?? null);
+  if (
+    recentOrder &&
+    (missing || (sameChoices && signature(recentOrder.items) === signature(selected)))
+  ) {
     return loadOrderView(recentOrder.id, userId);
   }
 
@@ -386,7 +477,13 @@ export async function checkout(
       'Some of these items are no longer in your cart. Please refresh your cart.',
     );
   }
-  const wholeCart = selected.length === cart.items.length;
+
+  // v1.17: an earlier unpaid try for any of these items gives way to this one, so its stock,
+  // wallet money and coupon aren't held twice (and don't block this order).
+  await releaseUnpaidOverlaps(
+    userId,
+    selected.map((item) => item.skuId),
+  );
 
   const lines: RepricedLine[] = [];
   for (const cartItem of selected) {
@@ -565,26 +662,8 @@ export async function checkout(
     throw err;
   }
 
-  // Best-effort / non-fatal: the order + its stock reservations are valid
-  // regardless of whether the source cart got marked CONVERTED. A cart
-  // stuck ACTIVE after a successful checkout is a minor cleanup issue, not
-  // a checkout failure - so a cart-service outage here must not undo an
-  // otherwise-successful order.
-  try {
-    if (wholeCart) {
-      await cartClient.convertCart(userId);
-    } else {
-      // "Buy this now": only the bought lines leave the cart; the rest stay for later.
-      await cartClient.removeItems(
-        userId,
-        selected.map((item) => item.cartItemId),
-      );
-    }
-  } catch (convertErr: unknown) {
-    // eslint-disable-next-line no-console
-    console.error('failed to mark cart CONVERTED after successful checkout', convertErr);
-  }
-
+  // v1.17: the cart is NOT touched here - abandoning the payment must leave it as it was. The
+  // ordered lines leave it when the order is confirmed (confirmOrder).
   return loadOrderView(orderId, userId);
 }
 
@@ -711,6 +790,8 @@ export async function confirmOrder(
       },
     });
   });
+
+  await removeOrderedFromCart(order.userId, orderId);
 
   // Order-placed notification (Ch6.2, template names aligned Ch6.2c) -
   // BEST-EFFORT, NEVER blocks or fails order confirmation itself: a
@@ -918,6 +999,8 @@ export async function getMyOrders(
           productId: true,
           skuId: true,
           titleSnapshot: true,
+          lineTotal: true,
+          discount: true,
           quantity: true,
           sellerStatus: true,
           updatedAt: true,
@@ -949,6 +1032,7 @@ export async function getMyOrders(
         quantity: item.quantity,
         sellerStatus: item.sellerStatus,
         updatedAt: item.updatedAt.toISOString(),
+        paid: decimalToMoney(item.lineTotal.minus(item.discount)),
       })),
     })),
     nextCursor,

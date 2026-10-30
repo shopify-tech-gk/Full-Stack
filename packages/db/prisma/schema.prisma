@@ -849,6 +849,8 @@ model OrderCancelRequest {
   orderId        String              @map("order_id")
   order          Order               @relation(fields: [orderId], references: [id])
   userId         String              @map("user_id")
+  /// v1.17 one line of the order (soft reference); null = the whole order.
+  orderItemId    String?             @map("order_item_id")
   reason         String
   comment        String?
   status         CancelRequestStatus @default(REQUESTED)
@@ -861,6 +863,7 @@ model OrderCancelRequest {
   @@index([orderId])
   @@index([userId])
   @@index([status])
+  @@index([orderItemId])
   @@map("order_cancel_request")
   @@schema("orders")
 }

@@ -308,7 +308,7 @@ export function CheckoutView() {
       return;
     }
     rememberPendingOrder(userId, order.orderId);
-    // The order consumed the server cart; the header count follows.
+    // The cart stays until payment; refresh in case the server changed it.
     reloadCart();
     if (useCod) {
       // Cash on Delivery: confirmed straight away - nothing to pay now.

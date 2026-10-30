@@ -15,7 +15,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TARGETS } from './data/import-targets.mjs';
+import { TARGETS, TARGET_OVERRIDES } from './data/import-targets.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 process.loadEnvFile(path.join(root, '.env'));
@@ -148,7 +148,8 @@ const seenSku = new Set();
 
 for (const [index, p] of items.entries()) {
   const where = `#${index + 1} (${p.Youmart_Product_ID ?? 'no id'})`;
-  const target = TARGETS[String(p['Target Name'] ?? '').trim()];
+  const target =
+    TARGETS[TARGET_OVERRIDES[p.Youmart_Product_ID] ?? String(p['Target Name'] ?? '').trim()];
   if (!target) {
     problems.push(
       `${where}: no import target for "${p['Target Name']}" (add it to scripts/data/import-targets.mjs)`,
@@ -162,7 +163,7 @@ for (const [index, p] of items.entries()) {
     problems.push(`${where}: missing title / id / price - skipped`);
     continue;
   }
-  categoriesNeeded.set(p['Target Name'], target);
+  categoriesNeeded.set(target.chain.at(-1)[0], target);
   const discount = Number(p['Discount (%)']) || 0;
   const mrp = Math.max(Number(p['MRP (INR)']) || price, price);
 

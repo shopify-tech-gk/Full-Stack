@@ -378,6 +378,9 @@ export function createApiClient(options: ApiClientOptions) {
         json<GuestTrackingView>('POST', '/orders/track', { body: { orderNumber, phone } }),
       cancel: (orderId: Uuid, body: { reason: string; comment?: string }) =>
         json<CancelOrderResult>('POST', `/orders/${orderId}/cancel`, { body }),
+      /** v1.17: cancel one line (Cash on Delivery: at once; paid: a request for approval). */
+      cancelItem: (orderId: Uuid, orderItemId: Uuid, body: { reason: string; comment?: string }) =>
+        json<CancelOrderResult>('POST', `/orders/${orderId}/items/${orderItemId}/cancel`, { body }),
       getNotify: (orderId: Uuid) => json<NotifyPreference>('GET', `/orders/${orderId}/notify`),
       setNotify: (orderId: Uuid, body: { whatsapp: boolean; sms: boolean }) =>
         json<NotifyPreference>('PUT', `/orders/${orderId}/notify`, { body }),

@@ -6,14 +6,17 @@ import { colors, font, space } from '@/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-/** Each address type's icon, colours and name (Home / Work / Other). */
+const BLUE = colors.brand.DEFAULT;
+const BLUE_BG = colors.brandPopup.bg;
+
+/** Each address type's icon and name (Home / Work / Other), all in the brand blue. */
 export const ADDRESS_TYPE: Record<
   string,
   { icon: IconName; fg: string; bg: string; label: string }
 > = {
-  HOME: { icon: 'home', fg: '#1d4ed8', bg: '#e9f0ff', label: 'Home' },
-  WORK: { icon: 'briefcase', fg: '#6d28d9', bg: '#f1ebff', label: 'Work' },
-  OTHER: { icon: 'location', fg: '#0f766e', bg: '#e6f6f4', label: 'Other' },
+  HOME: { icon: 'home', fg: BLUE, bg: BLUE_BG, label: 'Home' },
+  WORK: { icon: 'briefcase', fg: BLUE, bg: BLUE_BG, label: 'Work' },
+  OTHER: { icon: 'location', fg: BLUE, bg: BLUE_BG, label: 'Other' },
 };
 
 export const addressTypeOf = (type: string) => ADDRESS_TYPE[type] ?? ADDRESS_TYPE.OTHER!;
@@ -57,7 +60,7 @@ export function AddressCard({
     >
       <View style={styles.row}>
         <View style={[styles.icon, { backgroundColor: type.bg }]}>
-          <Ionicons name={type.icon} size={20} color={type.fg} />
+          <Ionicons name={type.icon} size={17} color={type.fg} />
         </View>
         <View style={styles.body}>
           <View style={styles.tags}>
@@ -123,10 +126,11 @@ export function AddressAction({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1.5,
     borderColor: 'transparent',
-    padding: space.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     shadowColor: '#0f172a',
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -134,15 +138,15 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardOn: { borderColor: colors.brand.DEFAULT, backgroundColor: '#f7faff' },
-  row: { flexDirection: 'row', gap: 12 },
+  row: { flexDirection: 'row', gap: 10 },
   icon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  body: { flex: 1, gap: 3 },
+  body: { flex: 1, gap: 1 },
   tags: { flexDirection: 'row', gap: 6, marginBottom: 1 },
   tag: {
     flexDirection: 'row',
@@ -154,16 +158,16 @@ const styles = StyleSheet.create({
   },
   defaultTag: { backgroundColor: '#e8f7ee' },
   tagText: { fontFamily: font.uiBold, fontSize: 10.5, letterSpacing: 0.3 },
-  name: { fontFamily: font.uiBold, fontSize: 15, color: colors.text.strong },
-  place: { fontFamily: font.body, fontSize: 13, lineHeight: 19, color: colors.text.body },
+  name: { fontFamily: font.uiBold, fontSize: 14, color: colors.text.strong },
+  place: { fontFamily: font.body, fontSize: 12.5, lineHeight: 17, color: colors.text.body },
   phone: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 },
-  phoneText: { fontFamily: font.uiMedium, fontSize: 12.5, color: colors.text.strong },
+  phoneText: { fontFamily: font.uiMedium, fontSize: 12, color: colors.text.strong },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: space.sm,
-    marginTop: space.md,
-    paddingTop: space.md,
+    gap: 6,
+    marginTop: space.sm,
+    paddingTop: space.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#dfe5ee',
   },
@@ -173,9 +177,9 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: 10,
     backgroundColor: colors.brandPopup.bg,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   actionDanger: { backgroundColor: '#fdecec', marginLeft: 'auto' },
-  actionText: { fontFamily: font.uiSemibold, fontSize: 12.5 },
+  actionText: { fontFamily: font.uiSemibold, fontSize: 12 },
 });

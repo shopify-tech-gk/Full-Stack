@@ -300,6 +300,15 @@ export async function voidCod(orderId: string): Promise<{ voided: boolean }> {
   return { voided: updated.count > 0 };
 }
 
+/** Service-only (v1.17): one line of a COD order cancelled - that much less cash to collect. */
+export async function reduceCod(orderId: string, amount: string): Promise<{ reduced: boolean }> {
+  const updated = await prisma.payment.updateMany({
+    where: { orderId, method: 'COD', status: 'CREATED', deletedAt: null },
+    data: { amount: { decrement: amount } },
+  });
+  return { reduced: updated.count > 0 };
+}
+
 export type RefundStatusValue = 'PENDING' | 'PROCESSED' | 'FAILED';
 
 export interface RefundResult {

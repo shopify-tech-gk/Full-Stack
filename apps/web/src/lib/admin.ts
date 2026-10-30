@@ -194,6 +194,8 @@ export interface AdminReturn {
 
 export interface AdminCancelRequest {
   cancelRequestId: string;
+  /** v1.17 a one-item request (null = the whole order). */
+  item?: { title: string; quantity: number; amount: Money } | null;
   orderId: string;
   orderNumber: string;
   grandTotal: Money;

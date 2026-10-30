@@ -49,6 +49,8 @@ export interface PaymentClient {
   markCodCollected(orderId: string): Promise<void>;
   /** Cash on Delivery: cancelled before delivery - nothing to collect. Idempotent. */
   voidCod(orderId: string): Promise<void>;
+  /** v1.17: one line of a COD order cancelled - that much less cash to collect. */
+  reduceCod(orderId: string, amount: Money): Promise<void>;
   /** W9: the customer's wallet balance (account deletion shows it first). */
   getWallet(userId: string): Promise<WalletSummary>;
   /** W9: account deletion - the customer agreed to give up the balance. */
@@ -106,6 +108,16 @@ export function createPaymentClient({
       });
     },
 
+    async reduceCod(orderId, amount) {
+      await request<unknown>({
+        baseUrl,
+        path: '/payments/internal/cod-reduce',
+        method: 'POST',
+        body: { orderId, amount },
+        authToken: authToken(),
+        timeoutMs,
+      });
+    },
     async voidCod(orderId) {
       await request<unknown>({
         baseUrl,

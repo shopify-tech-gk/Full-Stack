@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { formatMoney, type PayOrderResult } from '@youmart/shared-client';
 import { api } from '@/lib/api';
+import { useCart } from '@/stores/cart';
 import {
   parseRazorpayMessage,
   razorpayCheckoutHtml,
@@ -18,7 +19,9 @@ import { colors, font, radii, space } from '@/theme';
 // rest. When the wallet covers the whole order the backend confirms it at once - no Razorpay step.
 // Otherwise CONFIRMATION is authoritative via the server WEBHOOK: after the widget closes we POLL
 // GET /api/orders/:id until CONFIRMED (we never trust the client callback alone).
-type Phase = 'creating' | 'paying' | 'verifying' | 'failed';
+// Not paying (widget closed, payment failed) changes nothing: the items stay in the cart until an
+// order is confirmed, so the customer can try again or go back to the cart.
+type Phase = 'creating' | 'paying' | 'verifying' | 'failed' | 'notPaid';
 
 export default function PaymentScreen() {
   const router = useRouter();
@@ -33,6 +36,9 @@ export default function PaymentScreen() {
   const [pay, setPay] = useState<PayOrderResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const polling = useRef(false);
+  const [attempt, setAttempt] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  const { refresh } = useCart();
 
   const done = useCallback(
     () => router.replace({ pathname: '/order-success', params: { orderId: id } }),
@@ -42,6 +48,7 @@ export default function PaymentScreen() {
   // 1. Pay: wallet first (optional), then a Razorpay order for whatever is left.
   useEffect(() => {
     let active = true;
+    setPhase('creating');
     api.payments
       .pay(id, withWallet)
       .then((result) => {
@@ -71,7 +78,15 @@ export default function PaymentScreen() {
     return () => {
       active = false;
     };
-  }, [id, withWallet, done, user]);
+  }, [id, withWallet, done, user, attempt]);
+
+  // Back to the cart: this unpaid order is dropped (stock and wallet money go back at once).
+  const backToCart = async () => {
+    setLeaving(true);
+    await api.orders.cancel(id, { reason: 'Payment not completed' }).catch(() => undefined);
+    await refresh().catch(() => undefined);
+    router.replace('/my-cart');
+  };
 
   // 3. Poll the order until the WEBHOOK confirms it (server-authoritative).
   const pollConfirmation = useCallback(
@@ -115,11 +130,11 @@ export default function PaymentScreen() {
     const msg = parseRazorpayMessage(e.nativeEvent.data);
     if (msg?.type === 'success') void pollConfirmation(msg.payment);
     else if (msg?.type === 'failed') {
-      setError('The payment failed. Your order is saved - you can retry from My Orders.');
-      setPhase('failed');
+      setError('The payment failed and no money was taken.');
+      setPhase('notPaid');
     } else if (msg?.type === 'dismiss') {
-      setError('Payment cancelled. Your order is saved - you can retry from My Orders.');
-      setPhase('failed');
+      setError('You left the payment before it was completed.');
+      setPhase('notPaid');
     }
   };
 
@@ -143,6 +158,40 @@ export default function PaymentScreen() {
           startInLoadingState
           style={styles.web}
         />
+      </View>
+    );
+  }
+
+  if (phase === 'notPaid') {
+    return (
+      <View style={styles.center}>
+        <View style={styles.notPaidIcon}>
+          <Ionicons name="card-outline" size={34} color={colors.brand.DEFAULT} />
+        </View>
+        <Text style={styles.notPaidTitle}>Payment not completed</Text>
+        <Text style={styles.msg}>{error}</Text>
+        <View style={styles.cartNote}>
+          <Ionicons name="cart-outline" size={18} color={colors.feature.guarantee} />
+          <Text style={styles.cartNoteText}>Your items are safe in your cart.</Text>
+        </View>
+        <Pressable
+          style={[styles.btn, styles.wide]}
+          disabled={leaving}
+          onPress={() => setAttempt((n) => n + 1)}
+        >
+          <Text style={styles.btnText}>Try payment again</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.outlineBtn, styles.wide]}
+          disabled={leaving}
+          onPress={() => void backToCart()}
+        >
+          {leaving ? (
+            <ActivityIndicator color={colors.brand.DEFAULT} />
+          ) : (
+            <Text style={styles.outlineText}>Back to cart</Text>
+          )}
+        </Pressable>
       </View>
     );
   }
@@ -177,6 +226,33 @@ export default function PaymentScreen() {
 
 const styles = StyleSheet.create({
   web: { flex: 1, backgroundColor: colors.page },
+  notPaidIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.brandPopup.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notPaidTitle: { fontFamily: font.uiBold, fontSize: 19, color: colors.heading },
+  cartNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#e8f7ee',
+    borderRadius: radii.tile,
+    paddingHorizontal: space.md,
+    paddingVertical: 10,
+  },
+  cartNoteText: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.feature.guarantee },
+  wide: { alignSelf: 'stretch', alignItems: 'center' },
+  outlineBtn: {
+    borderWidth: 1.5,
+    borderColor: colors.brand.DEFAULT,
+    borderRadius: radii.button,
+    paddingVertical: 12,
+  },
+  outlineText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.brand.DEFAULT },
   splitBar: {
     flexDirection: 'row',
     alignItems: 'center',

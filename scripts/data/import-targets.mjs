@@ -309,6 +309,196 @@ function deriveBirdBath(_product, text) {
   return out;
 }
 
+/** Filters for garden fountains: what kind it is, what it's made of, solar / LED or not. */
+const FOUNTAIN_FILTERS = [
+  { key: 'brand', label: 'Brand', type: 'multi_select', order: 1 },
+  { key: 'product_type', label: 'Type', type: 'multi_select', order: 2 },
+  { key: 'material', label: 'Material', type: 'multi_select', order: 3 },
+  { key: 'color', label: 'Colour', type: 'multi_select', order: 4 },
+  { key: 'solar', label: 'Solar Powered', type: 'boolean', order: 5 },
+  { key: 'led', label: 'LED Lights', type: 'boolean', order: 6 },
+  { key: 'discount_band', label: 'Discount', type: 'multi_select', order: 7 },
+];
+
+/** product_type / material / solar / led for fountains, pumps and their parts. */
+function deriveFountain(product, text) {
+  const title = String(product.Title ?? '').toLowerCase();
+  const out = {
+    weight_band: null,
+    product_type: firstMatch(
+      title,
+      [
+        [
+          'Other Garden Items',
+          [
+            'penomatic',
+            'alocasia',
+            'gear drive sprinkler',
+            'oscillating garden sprinkler',
+            'spray bottle',
+            'micro meal',
+            'flora diet',
+            'growth booster',
+            'doctor series',
+            'plant food',
+            'pathway light',
+            'disco ball',
+            'fancy pebbles',
+            'frog garden planter',
+            'figurine',
+            'cottage',
+            'village house',
+            'bird feeder',
+          ],
+        ],
+        ['Solar Fountains', ['solar']],
+        [
+          'Wall Spouts & Cascades',
+          [
+            'cascade blade',
+            'spillway',
+            'wall-mount',
+            'wall mount',
+            'spout',
+            'waterfall fountain with 5-inch',
+          ],
+        ],
+        ['Buddha Fountains', ['buddha']],
+        ['God Idol Fountains', ['ganesh', 'ganpati', 'radha', 'krishna']],
+        [
+          'Pumps & Nozzles',
+          [
+            'fountain pump',
+            'water pump',
+            'submersible fountain',
+            'mini submersible',
+            'w submersible pump',
+            'nozzle',
+            'mist maker',
+            'mushroom',
+            'balloon fountain',
+            'shower set',
+            'pool',
+          ],
+        ],
+        ['Tabletop Fountains', ['tabletop', 'table top', 'table water', 'table décor']],
+      ],
+      'Indoor & Outdoor Fountains',
+    ),
+  };
+  const materials = [
+    ['Stainless Steel', ['stainless', 'ss304']],
+    ['Brass', ['brass']],
+    ['Fiberglass', ['fiberglass', 'fibreglass', 'fibre ', 'fiber ']],
+    ['Polyresin', ['resin']],
+    ['Stone', ['stone', 'rock', 'slate']],
+    ['Bamboo', ['bamboo']],
+    ['Plastic', ['plastic', 'abs ']],
+    ['Metal', ['metal', 'iron']],
+  ];
+  out.material = firstMatch(title, materials) ?? firstMatch(text, materials);
+  if (/solar/.test(text)) out.solar = true;
+  if (/\bled\b|\brgb\b/.test(text)) out.led = true;
+  return out;
+}
+
+/** For small categories that only need the basics. */
+const BASIC_FILTERS = [
+  { key: 'brand', label: 'Brand', type: 'multi_select', order: 1 },
+  { key: 'color', label: 'Colour', type: 'multi_select', order: 2 },
+  { key: 'discount_band', label: 'Discount', type: 'multi_select', order: 3 },
+];
+const deriveBasic = () => ({ weight_band: null });
+const AGRI = ['lawn-and-gardening', 'Agri and Gardening'];
+const basicTarget = (...chain) => ({ chain, filters: BASIC_FILTERS, derive: deriveBasic });
+
+/**
+ * Products a delivery filed under the wrong "Target Name" (a pen in Garden Fountains, because of
+ * the word "fountain"), keyed by Youmart_Product_ID: where they really belong. Re-importing the
+ * delivery keeps them there.
+ */
+export const TARGET_OVERRIDES = {
+  B0OB4726M9: 'Organic Fertilizers',
+  B0DCSMM1JA: 'Organic Fertilizers',
+  B0BXS9BY4H: 'Liquid Fertilizers',
+  B0FRP29KXR: 'Liquid Fertilizers',
+  B0L1CSSEY9: 'Chemical Fertilizers',
+  B0IL99TJ8B: 'Garden Statues',
+  B0L8E0767U: 'Garden Ornaments',
+  B03QDU5VW4: 'Garden Ornaments',
+  B06F2473ER: 'Garden Ornaments',
+  B0U2CM8CV5: 'Garden Ornaments',
+  B0M5M8ZMFT: 'Garden Lights',
+  B08Y0DH304: 'Pots & Planters',
+  B06LXVL4P9: 'Hanging Planters',
+  B0N1RNN2X4: 'Sprinklers',
+  B0YWYLXJRP: 'Sprinklers',
+  B0G56TDMTO: 'Sprayers',
+  B0JAR46EP7: 'Indoor Plants',
+  B0KM1WBK5M: 'Fountain Pens',
+};
+
+/** Filters for garden lights: the kind of light, its power, light colour and motion sensor. */
+const LIGHT_FILTERS = [
+  { key: 'brand', label: 'Brand', type: 'multi_select', order: 1 },
+  { key: 'product_type', label: 'Light Type', type: 'multi_select', order: 2 },
+  { key: 'power_source', label: 'Power Source', type: 'multi_select', order: 3 },
+  { key: 'light_color', label: 'Light Colour', type: 'multi_select', order: 4 },
+  { key: 'motion_sensor', label: 'Motion Sensor', type: 'boolean', order: 5 },
+  { key: 'color', label: 'Body Colour', type: 'multi_select', order: 6 },
+  { key: 'discount_band', label: 'Discount', type: 'multi_select', order: 7 },
+];
+
+/** product_type / power_source / light_color / motion_sensor for garden lights. */
+function deriveLight(product, text) {
+  const title = String(product.Title ?? '').toLowerCase();
+  const colors = [
+    [
+      'Multicolour',
+      ['multicolor', 'multicolour', 'rgb', 'color-chang', 'color chang', 'colour chang'],
+    ],
+    ['Warm White', ['warm white', 'warm yellow', 'warm led', 'warm light', '3000k']],
+    ['Cool White', ['cool white', 'cool daylight', '6500k']],
+  ];
+  const out = {
+    weight_band: null,
+    product_type: firstMatch(
+      title,
+      [
+        [
+          'String & Fairy Lights',
+          [
+            'string light',
+            'fairy light',
+            'fairy string',
+            'curtain',
+            'rope light',
+            'strip',
+            'meteor',
+            'icicle',
+          ],
+        ],
+        ['Flood & Street Lights', ['flood', 'street']],
+        ['Bollard Lights', ['bollard']],
+        ['Gate & Pillar Lights', ['gate', 'pillar', 'pole mount']],
+        ['Spike & Spot Lights', ['spike', 'spotlight', 'spot light']],
+        ['Wall Lights', ['wall', 'sconce', 'bulkhead']],
+        ['Step & Deck Lights', ['step light', 'deck', 'stair', 'fence']],
+        [
+          'Pathway & Stake Lights',
+          ['pathway', 'stake', 'firefly', 'torch', 'ground', 'landscape', 'mushroom', 'stick'],
+        ],
+        ['Pendants & Lanterns', ['pendant', 'lantern']],
+      ],
+      'Decorative Garden Lights',
+    ),
+    power_source: /solar/.test(text) ? 'Solar' : 'Electric',
+    light_color: firstMatch(title, colors) ?? firstMatch(text, colors),
+  };
+  if (/motion|pir sensor/.test(title)) out.motion_sensor = true;
+  return out;
+}
+
 export const TARGETS = {
   Compost: {
     chain: [
@@ -391,4 +581,49 @@ export const TARGETS = {
     filters: BIRD_BATH_FILTERS,
     derive: deriveBirdBath,
   },
+  'Garden Fountains': {
+    chain: [
+      ['lawn-and-gardening', 'Agri and Gardening'],
+      ['garden-decor', 'Garden Decor'],
+      ['garden-fountains', 'Garden Fountains'],
+    ],
+    filters: FOUNTAIN_FILTERS,
+    derive: deriveFountain,
+  },
+  'Garden Ornaments': basicTarget(
+    AGRI,
+    ['garden-decor', 'Garden Decor'],
+    ['garden-ornaments', 'Garden Ornaments'],
+  ),
+  'Garden Lights': {
+    chain: [AGRI, ['garden-decor', 'Garden Decor'], ['garden-lights', 'Garden Lights']],
+    filters: LIGHT_FILTERS,
+    derive: deriveLight,
+  },
+  'Pots & Planters': basicTarget(AGRI, ['pots-and-planters', 'Pots & Planters']),
+  'Hanging Planters': basicTarget(
+    AGRI,
+    ['pots-and-planters', 'Pots & Planters'],
+    ['hanging-planters', 'Hanging Planters'],
+  ),
+  Sprinklers: basicTarget(
+    AGRI,
+    ['irrigation-equipment', 'Irrigation Equipment'],
+    ['sprinklers', 'Sprinklers'],
+  ),
+  Sprayers: basicTarget(
+    AGRI,
+    ['agri-gardening-tools', 'Gardening Tools'],
+    ['sprayers', 'Sprayers'],
+  ),
+  'Indoor Plants': basicTarget(
+    AGRI,
+    ['plant-saplings', 'Plant Saplings'],
+    ['indoor-plants', 'Indoor Plants'],
+  ),
+  'Fountain Pens': basicTarget(
+    ['stationary', 'Stationary'],
+    ['pen', 'Pen'],
+    ['fountain-pens', 'Fountain Pens'],
+  ),
 };

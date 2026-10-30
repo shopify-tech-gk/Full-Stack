@@ -33,6 +33,7 @@ import {
 import {
   approveCancelRequest,
   cancelOrderAsCustomer,
+  cancelOrderItemAsCustomer,
   listCancelRequests,
   rejectCancelRequest,
 } from '../order/cancel.service';
@@ -291,6 +292,16 @@ orderRouter.post(
     res.status(200).json({ cancelRequest: await rejectCancelRequest(id, body.note) });
   },
 );
+
+// v1.17: cancel ONE line of an order (COD -> cancelled now; paid -> cancel request).
+orderRouter.post('/:id/items/:itemId/cancel', requireAuth, async (req, res) => {
+  const userId = requireUserId(req);
+  const id = z.string().uuid().parse(req.params.id);
+  const itemId = z.string().uuid().parse(req.params.itemId);
+  const body = CancelOrderBody.parse(req.body);
+  const result = await cancelOrderItemAsCustomer(userId, id, itemId, body);
+  res.status(result.outcome === 'CANCEL_REQUESTED' ? 202 : 200).json(result);
+});
 
 // W1: customer cancel (unpaid -> cancelled now; paid -> cancel request) - see cancel.service.ts.
 orderRouter.post('/:id/cancel', requireAuth, async (req, res) => {

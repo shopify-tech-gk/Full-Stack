@@ -3,6 +3,7 @@ import { AppError } from '@youmart/errors';
 import {
   CreateRazorpayOrderBody,
   CodOrderBody,
+  CodReduceBody,
   CreateRefundBody,
   PayOrderBody,
   VerifyPaymentBody,
@@ -14,6 +15,7 @@ import {
   handleWebhook,
   markCodCollected,
   payOrder,
+  reduceCod,
   voidCod,
   verifyClientPayment,
 } from '../payment/payment.service';
@@ -67,6 +69,11 @@ paymentRouter.post('/internal/cod-collected', requireServiceAuth, async (req, re
 paymentRouter.post('/internal/cod-void', requireServiceAuth, async (req, res) => {
   const body = CodOrderBody.parse(req.body);
   res.status(200).json(await voidCod(body.orderId));
+});
+
+paymentRouter.post('/internal/cod-reduce', requireServiceAuth, async (req, res) => {
+  const body = CodReduceBody.parse(req.body);
+  res.status(200).json(await reduceCod(body.orderId, body.amount));
 });
 
 // NO requireAuth - Razorpay calls this directly. The HMAC signature (over

@@ -27,6 +27,7 @@ import { BrandStrip } from '@/components/BrandStrip';
 import { BrandBanners } from '@/components/BrandBanners';
 import { ReferBanner } from '@/components/ReferBanner';
 import { BestCategories } from '@/components/BestCategories';
+import { BrandGrid } from '@/components/BrandGrid';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
 import { SwipeTabs, HScrollZone } from '@/components/SwipeTabs';
@@ -170,6 +171,7 @@ export default function HomeScreen() {
             </HScrollZone>
             <HScrollZone>
               <BestCategories />
+              <BrandGrid />
             </HScrollZone>
             <FeatureStrip />
             <Footer />

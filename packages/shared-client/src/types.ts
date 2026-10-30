@@ -341,6 +341,8 @@ export interface OrderItem {
   /** v1.13: this line's share of the coupon discount (paid = lineTotal - discount). */
   discount?: Money;
   sellerStatus: SellerItemStatus;
+  /** v1.17 this line's latest own cancel request (null = never asked). */
+  cancelRequest?: { status: CancelRequestStatus; reason: string; note: string | null } | null;
 }
 export interface ShippingAddressSnapshot {
   addressId: Uuid;
@@ -405,6 +407,8 @@ export interface OrderListLine {
   sellerStatus: SellerItemStatus;
   /** When this line last changed - "Delivered on" / "Shipped on" date. */
   updatedAt: IsoDateTime;
+  /** v1.17 what was paid for the line (price less its coupon share). */
+  paid?: Money;
 }
 
 /** POST /api/orders/track (public): deliberately no ids, prices or full address. */
@@ -432,6 +436,8 @@ export type CancelRequestStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED';
 export interface CancelRequestView {
   cancelRequestId: Uuid;
   orderId: Uuid;
+  /** v1.17 the one line this request is about (null = the whole order). */
+  orderItemId?: Uuid | null;
   status: CancelRequestStatus;
   reason: string;
   comment: string | null;

@@ -34,6 +34,11 @@ export type CreateRefundBody = z.infer<typeof CreateRefundBody>;
 
 /** Service-only COD bookkeeping (order-service): delivered = cash collected; cancelled = void. */
 export const CodOrderBody = z.object({ orderId: z.string().uuid() });
+/** v1.17 one line of a COD order cancelled: this much less cash to collect. */
+export const CodReduceBody = z.object({
+  orderId: z.string().uuid(),
+  amount: z.string().regex(/^\d+\.\d{2}$/),
+});
 
 // Only the fields this service actually reads from Razorpay's webhook
 // payload - Razorpay's real payload has many more fields, all ignored.

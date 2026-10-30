@@ -164,7 +164,7 @@ export default function AddressesScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { padding: space.lg, gap: space.md, flexGrow: 1 },
+  list: { paddingHorizontal: space.md, paddingVertical: space.sm, gap: space.sm, flexGrow: 1 },
   count: {
     fontFamily: font.uiSemibold,
     fontSize: 12.5,
@@ -190,8 +190,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
   },
   addBar: {
-    paddingHorizontal: space.lg,
-    paddingTop: space.md,
+    paddingHorizontal: space.md,
+    paddingTop: space.sm,
     backgroundColor: colors.page,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#dfe5ee',
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.brand.DEFAULT,
     borderRadius: radii.button,
-    paddingVertical: 14,
+    paddingVertical: 11,
   },
   addText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.white },
   backdrop: {

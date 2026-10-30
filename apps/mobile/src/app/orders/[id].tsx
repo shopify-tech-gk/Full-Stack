@@ -23,6 +23,7 @@ import {
   type OrderView,
   type ReturnStatus,
   type ReturnView,
+  type Money,
   type SellerItemStatus,
   type ShipmentTracking,
 } from '@youmart/shared-client';
@@ -123,6 +124,8 @@ export default function OrderDetailScreen() {
   );
 
   const [cancelOpen, setCancelOpen] = useState(false);
+  // v1.17 the one line being cancelled (null = none).
+  const [cancelItem, setCancelItem] = useState<OrderView['items'][number] | null>(null);
   const [returnItem, setReturnItem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
@@ -185,6 +188,11 @@ export default function OrderDetailScreen() {
   const canCancel = pending || (confirmed && !dispatched && !cancelRequested);
   const cod = order.paymentMethod === 'COD';
   const units = order.items.reduce((n, i) => n + i.quantity, 0);
+  const liveLines = order.items.filter((i) => i.sellerStatus !== 'CANCELLED').length;
+  const paidForLine = (i: OrderView['items'][number]) =>
+    (Number(i.lineTotal) - Number(i.discount ?? 0)).toFixed(2) as Money;
+  const cancelledLines = order.items.filter((i) => i.sellerStatus === 'CANCELLED');
+  const cancelledAmount = cancelledLines.reduce((n, i) => n + Number(paidForLine(i)), 0);
   const tone: Tone = cancelled
     ? TONES.red
     : pending
@@ -217,6 +225,29 @@ export default function OrderDetailScreen() {
       await load();
     } catch (err) {
       setSheetError(errorText(err, 'Could not cancel the order. Please try again.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitCancelItem = async (reason: string, comment: string) => {
+    if (!cancelItem) return;
+    setBusy(true);
+    setSheetError(null);
+    try {
+      const result = await api.orders.cancelItem(order.orderId, cancelItem.orderItemId, {
+        reason,
+        ...(comment ? { comment } : {}),
+      });
+      setCancelItem(null);
+      setNotice(
+        result.outcome === 'CANCELLED'
+          ? 'Item cancelled. The rest of your order carries on as usual.'
+          : 'Cancellation requested for this item. Once approved, what you paid for it is added to your YouMart Wallet.',
+      );
+      await load();
+    } catch (err) {
+      setSheetError(errorText(err, 'Could not cancel this item. Please try again.'));
     } finally {
       setBusy(false);
     }
@@ -396,13 +427,23 @@ export default function OrderDetailScreen() {
             // Rate after delivery (Flipkart-style).
             const rateSlug = item.sellerStatus === 'DELIVERED' ? card?.slug : undefined;
             const lineTone = LINE_TONE[item.sellerStatus];
+            const lineCancelled = item.sellerStatus === 'CANCELLED';
+            const lineRequest = item.cancelRequest;
+            // Not while unpaid, and the only line left is the whole order (Cancel order below).
+            const canCancelLine =
+              confirmed &&
+              liveLines > 1 &&
+              !cancelRequested &&
+              lineRequest?.status !== 'REQUESTED' &&
+              !lineCancelled &&
+              !DISPATCHED.includes(item.sellerStatus);
             return (
               <View
                 key={item.orderItemId}
                 style={[styles.itemBlock, idx > 0 && styles.itemDivider]}
               >
                 <Pressable
-                  style={styles.item}
+                  style={[styles.item, lineCancelled && styles.itemCancelled]}
                   disabled={!card?.slug}
                   onPress={() => card && router.push(`/product/${card.slug}`)}
                 >
@@ -419,7 +460,10 @@ export default function OrderDetailScreen() {
                     )}
                   </View>
                   <View style={styles.itemBody}>
-                    <Text numberOfLines={2} style={styles.itemTitle}>
+                    <Text
+                      numberOfLines={2}
+                      style={[styles.itemTitle, lineCancelled && styles.struck]}
+                    >
                       {item.title}
                     </Text>
                     <Text style={styles.itemMeta}>
@@ -433,7 +477,9 @@ export default function OrderDetailScreen() {
                           {LINE_LABEL[item.sellerStatus]}
                         </Text>
                       </View>
-                      <Text style={styles.itemPrice}>{formatMoney(item.lineTotal)}</Text>
+                      <Text style={[styles.itemPrice, lineCancelled && styles.struck]}>
+                        {formatMoney(item.lineTotal)}
+                      </Text>
                     </View>
                   </View>
                 </Pressable>
@@ -448,8 +494,40 @@ export default function OrderDetailScreen() {
                     </Text>
                   </View>
                 ) : null}
-                {canTrack || canReturn || rateSlug ? (
+                {lineRequest?.status === 'REQUESTED' && !lineCancelled ? (
+                  <View style={styles.lineNote}>
+                    <Ionicons name="time-outline" size={13} color={colors.brand.DEFAULT} />
+                    <Text style={styles.lineNoteText}>
+                      Cancellation requested · {formatMoney(paidForLine(item))} to your wallet once
+                      approved
+                    </Text>
+                  </View>
+                ) : lineRequest?.status === 'REJECTED' && !lineCancelled ? (
+                  <View style={[styles.lineNote, styles.lineNoteWarn]}>
+                    <Ionicons name="alert-circle-outline" size={13} color="#92400e" />
+                    <Text style={[styles.lineNoteText, { color: '#92400e' }]}>
+                      {lineRequest.note ?? "Cancellation couldn't be approved for this item"}
+                    </Text>
+                  </View>
+                ) : null}
+                {canTrack || canReturn || rateSlug || canCancelLine ? (
                   <View style={styles.itemActions}>
+                    {canCancelLine ? (
+                      <Pressable
+                        style={[styles.smallBtn, styles.cancelBtn]}
+                        onPress={() => {
+                          setSheetError(null);
+                          setCancelItem(item);
+                        }}
+                      >
+                        <Ionicons
+                          name="close-circle-outline"
+                          size={14}
+                          color={colors.price.discount}
+                        />
+                        <Text style={[styles.smallBtnText, styles.danger]}>Cancel item</Text>
+                      </Pressable>
+                    ) : null}
                     {rateSlug ? (
                       <Pressable
                         style={[styles.smallBtn, styles.rateBtn]}
@@ -552,6 +630,27 @@ export default function OrderDetailScreen() {
             <Text style={styles.totalLabel}>{pending || cod ? 'Order total' : 'Total paid'}</Text>
             <Text style={styles.totalValue}>{formatMoney(order.grandTotal)}</Text>
           </View>
+          {/* v1.17 some lines cancelled: what's left of the order. */}
+          {cancelledLines.length > 0 && !cancelled ? (
+            <>
+              <View style={styles.row}>
+                <Text style={styles.payLabel}>
+                  Cancelled ({cancelledLines.length} item{cancelledLines.length === 1 ? '' : 's'})
+                </Text>
+                <Text style={[styles.payValue, styles.danger]}>
+                  − {formatMoney(cancelledAmount.toFixed(2) as Money)}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.totalLabel}>
+                  {cod ? 'To pay on delivery' : 'Order value now'}
+                </Text>
+                <Text style={styles.totalValue}>
+                  {formatMoney((Number(order.grandTotal) - cancelledAmount).toFixed(2) as Money)}
+                </Text>
+              </View>
+            </>
+          ) : null}
         </View>
 
         {payment &&
@@ -687,7 +786,9 @@ export default function OrderDetailScreen() {
               <View style={[styles.actionIcon, styles.actionIconDanger]}>
                 <Ionicons name="close-circle-outline" size={18} color={colors.price.discount} />
               </View>
-              <Text style={[styles.actionText, styles.danger]}>Cancel order</Text>
+              <Text style={[styles.actionText, styles.danger]}>
+                {liveLines > 1 ? 'Cancel entire order' : 'Cancel order'}
+              </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.text.muted} />
             </Pressable>
           ) : null}
@@ -708,6 +809,25 @@ export default function OrderDetailScreen() {
         error={sheetError}
         onClose={() => setCancelOpen(false)}
         onConfirm={submitCancel}
+      />
+      <ReasonSheet
+        visible={cancelItem !== null}
+        title="Cancel this item"
+        subtitle={
+          cancelItem
+            ? `${cancelItem.title}\n\n${
+                cod
+                  ? `You won't pay ${formatMoney(paidForLine(cancelItem))} for it on delivery.`
+                  : `Cancelled after a quick check. ${formatMoney(paidForLine(cancelItem))} is added to your YouMart Wallet.`
+              } The rest of your order carries on.`
+            : ''
+        }
+        reasons={CANCEL_REASONS}
+        confirmLabel={cod ? 'Cancel item' : 'Request cancellation'}
+        busy={busy}
+        error={sheetError}
+        onClose={() => setCancelItem(null)}
+        onConfirm={submitCancelItem}
       />
       <ReasonSheet
         visible={returnItem !== null}
@@ -764,7 +884,12 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.page },
   err: { fontFamily: font.uiSemibold, fontSize: 16, color: colors.text.strong },
-  body: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
+  body: {
+    paddingHorizontal: space.md,
+    paddingTop: space.sm,
+    gap: space.sm,
+    paddingBottom: space.lg,
+  },
   hero: {
     backgroundColor: colors.white,
     borderRadius: 18,
@@ -778,24 +903,24 @@ const styles = StyleSheet.create({
   heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: space.lg,
-    paddingVertical: 14,
+    gap: 10,
+    paddingHorizontal: space.md,
+    paddingVertical: 10,
   },
   heroIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroTitle: { fontFamily: font.uiBold, fontSize: 18 },
+  heroTitle: { fontFamily: font.uiBold, fontSize: 16 },
   heroSub: { fontFamily: font.uiMedium, fontSize: 12.5, color: colors.text.body, marginTop: 1 },
   heroMeta: {
     flexDirection: 'row',
     gap: space.md,
-    paddingHorizontal: space.lg,
-    paddingTop: 12,
+    paddingHorizontal: space.md,
+    paddingTop: space.sm,
   },
   metaLabel: {
     fontFamily: font.uiMedium,
@@ -807,19 +932,19 @@ const styles = StyleSheet.create({
   metaValue: { fontFamily: font.uiBold, fontSize: 13, color: colors.text.strong, marginTop: 2 },
   tracker: {
     flexDirection: 'row',
-    paddingHorizontal: space.sm,
-    paddingTop: space.lg,
-    paddingBottom: space.lg,
+    paddingHorizontal: space.xs,
+    paddingTop: space.md,
+    paddingBottom: space.md,
   },
-  step: { flex: 1, alignItems: 'center', gap: 6 },
+  step: { flex: 1, alignItems: 'center', gap: 4 },
   stepRail: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
   rail: { flex: 1, height: 3, backgroundColor: colors.steps.idle },
   railDone: { backgroundColor: colors.feature.guarantee },
   railHidden: { opacity: 0 },
   dot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: colors.steps.idle,
     alignItems: 'center',
     justifyContent: 'center',
@@ -865,25 +990,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryText: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.white },
-  section: { fontFamily: font.uiBold, fontSize: 15, color: colors.heading, marginTop: space.sm },
+  section: { fontFamily: font.uiBold, fontSize: 14.5, color: colors.heading, marginTop: space.xs },
   sectionCount: { fontFamily: font.uiMedium, color: colors.text.muted },
   card: {
     backgroundColor: colors.white,
-    borderRadius: 18,
-    padding: space.lg,
-    gap: space.sm,
+    borderRadius: 14,
+    padding: space.md,
+    gap: 6,
     shadowColor: '#0f172a',
     shadowOpacity: 0.05,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  itemBlock: { gap: 10 },
-  itemDivider: { borderTopWidth: 1, borderTopColor: colors.cart.line, paddingTop: space.md },
-  item: { flexDirection: 'row', gap: 12 },
+  itemBlock: { gap: space.sm },
+  itemCancelled: { opacity: 0.55 },
+  struck: { textDecorationLine: 'line-through' },
+  cancelBtn: { borderColor: colors.price.discount },
+  lineNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginLeft: 68,
+    backgroundColor: colors.brandPopup.bg,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  lineNoteWarn: { backgroundColor: '#fef3c7' },
+  lineNoteText: { flex: 1, fontFamily: font.uiMedium, fontSize: 11.5, color: colors.brand.DEFAULT },
+  itemDivider: { borderTopWidth: 1, borderTopColor: colors.cart.line, paddingTop: space.sm },
+  item: { flexDirection: 'row', gap: 10 },
   thumb: {
-    width: 72,
-    height: 72,
+    width: 58,
+    height: 58,
     borderRadius: 12,
     backgroundColor: '#f6f8fb',
     alignItems: 'center',
@@ -891,7 +1031,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   thumbImg: { width: '88%', height: '88%' },
-  itemBody: { flex: 1, gap: 3 },
+  itemBody: { flex: 1, gap: 2 },
   itemTitle: { fontFamily: font.uiMedium, fontSize: 13.5, lineHeight: 19, color: colors.heading },
   itemMeta: { fontFamily: font.uiMedium, fontSize: 12, color: colors.text.muted },
   itemFoot: {
@@ -912,7 +1052,7 @@ const styles = StyleSheet.create({
   linePillDot: { width: 6, height: 6, borderRadius: 3 },
   linePillText: { fontFamily: font.uiBold, fontSize: 11 },
   itemPrice: { fontFamily: font.uiBold, fontSize: 15, color: colors.heading },
-  itemActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginLeft: 84 },
+  itemActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginLeft: 68 },
   smallBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -929,7 +1069,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     alignSelf: 'flex-start',
-    marginLeft: 84,
+    marginLeft: 68,
     backgroundColor: colors.brandPopup.bg,
     borderRadius: 6,
     paddingHorizontal: 10,
@@ -973,33 +1113,33 @@ const styles = StyleSheet.create({
   payLabel: { fontFamily: font.body, fontSize: 13.5, color: colors.text.body },
   payValue: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.text.strong },
   free: { color: colors.feature.guarantee, fontFamily: font.uiBold },
-  payRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 2 },
+  payRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 1 },
   payIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
   payRowLabel: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.text.strong },
   payRowSub: { fontFamily: font.uiMedium, fontSize: 11.5, color: colors.text.muted, marginTop: 1 },
   payRowValue: { fontFamily: font.uiBold, fontSize: 14, color: colors.text.strong },
-  addrCard: { flexDirection: 'row', gap: 12 },
+  addrCard: { flexDirection: 'row', gap: 10 },
   addrIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: colors.brandPopup.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addrName: { fontFamily: font.uiBold, fontSize: 14.5, color: colors.text.strong },
-  addrLine: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: colors.text.body },
+  addrLine: { fontFamily: font.body, fontSize: 12.5, lineHeight: 17, color: colors.text.body },
   addrPhone: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   actions: {
     backgroundColor: colors.white,
-    borderRadius: 18,
-    marginTop: space.sm,
+    borderRadius: 14,
+    marginTop: space.xs,
     overflow: 'hidden',
     shadowColor: '#0f172a',
     shadowOpacity: 0.05,
@@ -1010,22 +1150,22 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    paddingHorizontal: space.lg,
-    paddingVertical: 12,
+    gap: 10,
+    paddingHorizontal: space.md,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.cart.line,
   },
   actionLast: { borderBottomWidth: 0 },
   actionIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: colors.brandPopup.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionIconDanger: { backgroundColor: '#fdecec' },
-  actionText: { flex: 1, fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
+  actionText: { flex: 1, fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.text.strong },
   danger: { color: colors.price.discount },
 });

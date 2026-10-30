@@ -67,10 +67,18 @@ const TEMPLATES: Record<string, (d: Record<string, unknown>) => InboxContent> = 
         ? `Order ${str(d.orderNumber)} was cancelled. ${rupees(d.refundAmount)} is being refunded to your YouMart Wallet.`
         : `Order ${str(d.orderNumber)} was cancelled.${str(d.note) ? ` ${str(d.note)}` : ''}`,
   }),
+  ORDER_ITEM_CANCELLED: (d) => ({
+    kind: 'ORDER',
+    title: 'Item cancelled',
+    body:
+      d.refundAmount && Number(d.refundAmount) > 0
+        ? `${what(d)} from order ${str(d.orderNumber)} was cancelled. ${rupees(d.refundAmount)} is being refunded to your YouMart Wallet.`
+        : `${what(d)} from order ${str(d.orderNumber)} was cancelled.${str(d.note) ? ` ${str(d.note)}` : ''}`,
+  }),
   CANCEL_REQUEST_DECLINED: (d) => ({
     kind: 'ORDER',
     title: 'Cancellation not possible',
-    body: `We couldn't cancel order ${str(d.orderNumber)}${
+    body: `We couldn't cancel ${str(d.itemTitle) ? `${what(d)} from ` : ''}order ${str(d.orderNumber)}${
       str(d.note) ? `: ${str(d.note)}` : ' - it has already moved too far along.'
     } You can return it after delivery.`,
   }),

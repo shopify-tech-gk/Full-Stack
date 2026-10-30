@@ -74,7 +74,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'lawn-and-gardening',
     'Agri and Gardening',
-    'fertilizer=Fertilizer;garden-decor=Garden Decor;grow-bags=Grow Bags;nets-and-fence=Nets and Fence;seeds=Seeds',
+    'fertilizer=Fertilizer;garden-decor=Garden Decor;agri-gardening-tools=Gardening Tools;grow-bags=Grow Bags;irrigation-equipment=Irrigation Equipment;nets-and-fence=Nets and Fence;plant-saplings=Plant Saplings;pots-and-planters=Pots & Planters;seeds=Seeds',
   ],
   [
     'arts-and-crafts',
@@ -221,7 +221,8 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   // v1.17 catalog import: Compost (products imported from the data delivery).
   'lawn-and-gardening/fertilizer':
     'compost=Compost;organic-manure=Organic Manure;organic-fertilizers=Organic Fertilizers;vermicompost=Vermicompost;npk-fertilizers=NPK Fertilizers;liquid-fertilizers=Liquid Fertilizers;chemical-fertilizers=Chemical Fertilizers',
-  'lawn-and-gardening/garden-decor': 'garden-statues=Garden Statues;bird-baths=Bird Baths',
+  'lawn-and-gardening/garden-decor':
+    'garden-statues=Garden Statues;bird-baths=Bird Baths;garden-fountains=Garden Fountains;garden-ornaments=Garden Ornaments;garden-lights=Garden Lights',
   'bath-fittings/taps-bath-fittings':
     'flexo-ebony-series=Flexo-Ebony Series;flexo-series=Flexo Series;plastic-taps=Plastic Taps',
   'cleaning-products/brooms': 'floor-brooms=Floor Brooms',
@@ -262,7 +263,11 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
     'fish-food=Fish Food;aquarium-accessories=Aquarium Accessories;aquarium-pumps-filters=Aquarium Pumps & Filters;aquarium-water-testing-treatment=Aquarium Water Testing & Treatment',
   'pet-products/cat':
     'cat-food=Cat Food;cat-health-supplies=Cat Health Supplies;cat-shampoo=Cat Shampoo',
-  'stationary/pen': 'hero-pen=Hero Pen',
+  'stationary/pen': 'hero-pen=Hero Pen;fountain-pens=Fountain Pens',
+  'lawn-and-gardening/pots-and-planters': 'hanging-planters=Hanging Planters',
+  'lawn-and-gardening/irrigation-equipment': 'sprinklers=Sprinklers',
+  'lawn-and-gardening/agri-gardening-tools': 'sprayers=Sprayers',
+  'lawn-and-gardening/plant-saplings': 'indoor-plants=Indoor Plants',
   'stationary/eraser':
     'fancy-eraser=Fancy Eraser;ink-eraser=Ink Eraser;electric-and-pen-eraser=Electric and Pen Eraser',
   'stationary/taps':

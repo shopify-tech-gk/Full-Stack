@@ -57,7 +57,11 @@ export async function listOrdersForAssistant(
     take: Math.min(Math.max(limit, 1), 15),
     include: {
       items: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
-      cancelRequests: { where: { deletedAt: null }, orderBy: { createdAt: 'desc' }, take: 1 },
+      cancelRequests: {
+        where: { deletedAt: null, orderItemId: null },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
     },
   });
 
