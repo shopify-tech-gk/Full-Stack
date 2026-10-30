@@ -180,25 +180,6 @@ export default function InboxScreen() {
         options={{
           headerShown: true,
           title: 'Alerts',
-          headerRight: () =>
-            items && items.length > 0 ? (
-              <View style={styles.headerActions}>
-                {unread > 0 ? (
-                  <Pressable onPress={() => void readAll()} hitSlop={8}>
-                    <Text style={styles.readAll}>Read all</Text>
-                  </Pressable>
-                ) : null}
-                <Pressable
-                  onPress={removeAll}
-                  hitSlop={8}
-                  style={styles.deleteAll}
-                  accessibilityLabel="Delete all notifications"
-                >
-                  <Ionicons name="trash-outline" size={15} color={colors.cart.danger} />
-                  <Text style={styles.deleteAllText}>Delete all</Text>
-                </Pressable>
-              </View>
-            ) : null,
         }}
       />
       <View style={styles.filters}>
@@ -218,6 +199,35 @@ export default function InboxScreen() {
           );
         })}
       </View>
+
+      {/* Read all / Delete all live here (not in the header, where iOS draws them as capsules). */}
+      {items && items.length > 0 ? (
+        <View style={styles.headerActions}>
+          {unread > 0 ? (
+            <Pressable
+              onPress={() => void readAll()}
+              hitSlop={6}
+              style={({ pressed }) => [
+                styles.actionBtn,
+                styles.readAllBtn,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons name="checkmark-done" size={15} color={colors.brand.DEFAULT} />
+              <Text style={styles.readAll}>Read all</Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            onPress={removeAll}
+            hitSlop={6}
+            style={({ pressed }) => [styles.actionBtn, styles.deleteAll, pressed && styles.pressed]}
+            accessibilityLabel="Delete all notifications"
+          >
+            <Ionicons name="trash-outline" size={15} color={colors.cart.danger} />
+            <Text style={styles.deleteAllText}>Delete all</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {items === null ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={colors.brand.DEFAULT} />
@@ -347,8 +357,25 @@ function DeleteAction({ progress }: { progress: SharedValue<number> }) {
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  deleteAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.sm,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  readAllBtn: { borderColor: colors.brand.DEFAULT, backgroundColor: colors.brandPopup.bg },
+  deleteAll: { borderColor: colors.cart.danger, backgroundColor: '#fdecec' },
+  pressed: { opacity: 0.7 },
   deleteAllText: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.cart.danger },
   swipeDelete: {
     width: 96,
