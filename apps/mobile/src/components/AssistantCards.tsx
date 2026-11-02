@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInRight, ReduceMotion } from 'react-native-reanimated';
 import {

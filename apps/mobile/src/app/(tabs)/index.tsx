@@ -10,7 +10,8 @@ import {
   type ScrollViewInstance,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { FEATURE_CARDS, type FeatureCard } from '@youmart/shared-client';
 import { AppHeader } from '@/components/AppHeader';
 import { PromoCarousel } from '@/components/PromoCarousel';
@@ -161,6 +162,8 @@ export default function HomeScreen() {
 
             <HScrollZone>
               <BrandStrip />
+              {/* "Shop by Brand" grid, right under Top Brands, Big Offers. */}
+              <BrandGrid />
             </HScrollZone>
             {/* v1.17: "500000+ Products" / "8000+ Brands" banner slider. */}
             <HScrollZone>
@@ -171,7 +174,6 @@ export default function HomeScreen() {
             </HScrollZone>
             <HScrollZone>
               <BestCategories />
-              <BrandGrid />
             </HScrollZone>
             <FeatureStrip />
             <Footer />

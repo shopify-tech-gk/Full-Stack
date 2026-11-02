@@ -9,7 +9,8 @@ export type TemplateKey =
   | 'REFUND_PROCESSED'
   | 'SUPPORT_MESSAGE'
   | 'SUPPORT_TICKET'
-  | 'RESTOCK_AVAILABLE';
+  | 'RESTOCK_AVAILABLE'
+  | 'BUY_REMINDER';
 
 /** W9: the template exists, but this channel can't be sent right now (e.g. its MSG91 template
  * isn't approved/configured yet) - the job is logged SKIPPED, not FAILED or retried. */
@@ -238,6 +239,51 @@ const templates: Record<TemplateKey, Partial<Record<RenderableChannel, ChannelRe
         )}" style="display:inline-block;background:#0142aa;color:#ffffff;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:600">Open in the YouMart app</a></p><p><a href="${escapeHtml(
           webLink,
         )}">View it on the website</a></p><p>Thanks for telling us what you need!</p>`,
+      };
+    },
+  },
+
+  // v1.18 "Remind me to buy". WhatsApp: MSG91 template MSG91_WHATSAPP_BUY_REMINDER_TEMPLATE
+  // (e.g. "youmart_buy_reminder"): "Hi {{1}}, here is the reminder you set on YouMart for {{2}}.
+  // {{3}} Open the YouMart app to buy it now." - {{1}}=customerName, {{2}}=title,
+  // {{3}}=priceLine (e.g. "It is now Rs 499, Rs 50 less than when you set the reminder.").
+  // Until it is set the WhatsApp leg is SKIPPED (the in-app Alert and email still go).
+  BUY_REMINDER: {
+    WHATSAPP: (data) => {
+      if (!config.msg91WhatsappBuyReminderTemplate) {
+        throw new TemplateUnavailableError(
+          'no buy-reminder WhatsApp template configured (MSG91_WHATSAPP_BUY_REMINDER_TEMPLATE)',
+        );
+      }
+      return {
+        channel: 'WHATSAPP',
+        templateName: config.msg91WhatsappBuyReminderTemplate,
+        namespace: config.msg91WhatsappNamespace,
+        category: 'MARKETING',
+        components: {
+          bodyParams: [
+            String(data.customerName ?? 'there'),
+            singleLine(data.title, 60),
+            singleLine(data.priceLineWa ?? data.priceLine, 120) || 'It is waiting for you.',
+          ],
+        },
+      };
+    },
+    EMAIL: (data) => {
+      const appLink = typeof data.link === 'string' ? `youmart:/${data.link}` : 'youmart://';
+      const webLink = `${config.storefrontUrl}${typeof data.webLink === 'string' ? data.webLink : ''}`;
+      return {
+        channel: 'EMAIL',
+        subject: `Reminder: ${singleLine(data.title)}`,
+        html: `<p>Hi ${escapeHtml(data.customerName ?? 'there')},</p><p>Here is the reminder you set on YouMart for <strong>${escapeHtml(
+          data.title,
+        )}</strong>${data.note ? ` - <em>${escapeHtml(data.note)}</em>` : ''}.</p>${
+          data.priceLine ? `<p>${escapeHtml(data.priceLine)}</p>` : ''
+        }<p><a href="${escapeHtml(
+          appLink,
+        )}" style="display:inline-block;background:#0142aa;color:#ffffff;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:600">Buy it in the YouMart app</a></p><p><a href="${escapeHtml(
+          webLink,
+        )}">View it on the website</a></p>`,
       };
     },
   },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import type { CartProduct, WishlistItem } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { useWishlist } from '@/stores/wishlist';

@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import * as WebBrowser from 'expo-web-browser';
 import {
   ApiError,

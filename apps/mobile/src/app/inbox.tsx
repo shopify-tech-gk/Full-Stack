@@ -10,7 +10,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useFocusEffect, useRouter, type Href } from 'expo-router';
+import { Stack, useFocusEffect, type Href } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import Animated, {
   FadeInDown,
   FadeOut,

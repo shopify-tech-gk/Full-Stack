@@ -9,7 +9,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { ApiError, formatMoney, type AccountDeletionCheck } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { logout } from '@/stores/session';

@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { BRAND_OFFERS } from '@youmart/shared-client';
 import { StarburstBadge } from './StarburstBadge';
 import { colors, font, space } from '@/theme';

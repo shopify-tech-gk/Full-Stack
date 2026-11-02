@@ -8,7 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import * as Haptics from 'expo-haptics';
 import type { CartProduct } from '@youmart/shared-client';
 import { useCart } from '@/stores/cart';

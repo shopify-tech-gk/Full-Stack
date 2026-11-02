@@ -1,7 +1,8 @@
 import { Fragment } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { usePathname, useRouter, type Href } from 'expo-router';
+import { usePathname, type Href } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import {
   SafeAreaInsetsContext,
   initialWindowMetrics,

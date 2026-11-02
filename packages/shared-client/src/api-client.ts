@@ -23,6 +23,9 @@ import type {
   AssistantTurn,
   InboxKind,
   InboxPage,
+  BuyReminder,
+  IsoDateTime,
+  ReminderRepeat,
   HelpTopic,
   NotificationSettings,
   OrderPaymentSummary,
@@ -404,6 +407,27 @@ export function createApiClient(options: ApiClientOptions) {
         await send('DELETE', `/notifications/${id}`);
       },
       removeAll: () => json<{ deleted: number }>('DELETE', '/notifications'),
+    },
+    /** v1.18 "Remind me to buy". */
+    reminders: {
+      list: (when: 'upcoming' | 'past' = 'upcoming') =>
+        json<{ items: BuyReminder[] }>('GET', '/notifications/reminders', { query: { when } }),
+      forProduct: (productId: Uuid) =>
+        json<{ items: BuyReminder[] }>('GET', `/notifications/reminders/product/${productId}`),
+      create: (body: {
+        skuId: Uuid;
+        imageUrl?: string;
+        remindAt: IsoDateTime;
+        repeat: ReminderRepeat;
+        note?: string;
+      }) => json<BuyReminder>('POST', '/notifications/reminders', { body }),
+      update: (
+        id: Uuid,
+        body: { remindAt?: IsoDateTime; repeat?: ReminderRepeat; note?: string | null },
+      ) => json<BuyReminder>('PATCH', `/notifications/reminders/${id}`, { body }),
+      remove: async (id: Uuid): Promise<void> => {
+        await send('DELETE', `/notifications/reminders/${id}`);
+      },
     },
     support: {
       /** v1.17 AI help: is it switched on? */

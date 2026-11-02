@@ -725,6 +725,26 @@ export interface InboxPage {
   unread: number;
 }
 
+/** v1.18 "Remind me to buy": a WhatsApp (+ Alert + email) at the time the customer chose. */
+export type ReminderRepeat = 'NONE' | 'WEEKLY' | 'MONTHLY';
+export interface BuyReminder {
+  reminderId: Uuid;
+  productId: Uuid;
+  skuId: Uuid | null;
+  title: string;
+  slug: string;
+  imageUrl: string | null;
+  /** The price when it was set (the reminder says how much it dropped since). */
+  priceAtSet: Money | null;
+  note: string | null;
+  remindAt: IsoDateTime;
+  repeat: ReminderRepeat;
+  status: 'SCHEDULED' | 'SENT' | 'CANCELLED';
+  sentCount: number;
+  lastSentAt: IsoDateTime | null;
+  createdAt: IsoDateTime;
+}
+
 /** v1.17 AI help. */
 export interface AssistantTurn {
   role: 'user' | 'assistant';

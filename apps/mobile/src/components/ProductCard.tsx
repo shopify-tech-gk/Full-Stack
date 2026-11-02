@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import type { ProductCardData } from '@youmart/shared-client';
 import { colors, font, radii, space } from '@/theme';
 import { useWishlist } from '@/stores/wishlist';

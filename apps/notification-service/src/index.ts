@@ -7,11 +7,15 @@ import {
   closeNotificationWorker,
 } from './notification/notification.queue';
 import { closeConnection } from '@youmart/queue';
+import { startReminderScheduler, stopReminderScheduler } from './reminders/reminder.service';
 
 const app = createApp();
 
 startNotificationWorker();
 logger.info({ queue: 'notifications' }, 'notifications worker registered');
+
+// v1.18 "Remind me to buy": sends reminders as they fall due.
+startReminderScheduler();
 
 const server = app.listen(config.port, () => {
   logger.info(
@@ -27,6 +31,7 @@ function shutdown(signal: string): void {
     return;
   }
   shuttingDown = true;
+  stopReminderScheduler();
 
   logger.info({ signal }, 'shutdown signal received');
 

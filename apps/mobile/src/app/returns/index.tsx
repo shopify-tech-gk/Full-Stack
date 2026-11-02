@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { formatMoney, type ReturnStatus, type ReturnView } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { colors, font, radii, space } from '@/theme';

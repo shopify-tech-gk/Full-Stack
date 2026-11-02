@@ -9,7 +9,8 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { BrandLogo } from '@/components/BrandLogo';
 import { colors, font, space } from '@/theme';
 

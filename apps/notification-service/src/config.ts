@@ -61,6 +61,8 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
   MSG91_WHATSAPP_WALLET_REFUND_TEMPLATE: z.string().optional(),
   /** v1.17 "back in stock" WhatsApp - an approved MSG91 template; unset = WhatsApp leg skipped. */
   MSG91_WHATSAPP_RESTOCK_TEMPLATE: z.string().optional(),
+  /** v1.18 "Remind me to buy" WhatsApp - an approved MSG91 template; unset = WhatsApp leg skipped. */
+  MSG91_WHATSAPP_BUY_REMINDER_TEMPLATE: z.string().optional(),
   /** v1.17 the storefront's public address, for links in emails ("View on website"). */
   STOREFRONT_URL: z.string().url().default('http://localhost:3000'),
   // Sender id for MSG91's legacy plain-text SMS API - SMS is DROPPED as an
@@ -100,6 +102,8 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
   AUTH_SERVICE_URL: z.string().url(),
   /** v1.17 YouMart AI: product search for shopping questions. */
   SEARCH_SERVICE_URL: z.string().url().default('http://localhost:4013'),
+  /** v1.18 buy reminders: the product's name and price now. */
+  CATALOG_SERVICE_URL: z.string().url().default('http://localhost:4002'),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
@@ -132,6 +136,7 @@ export interface NotificationServiceConfig {
   msg91WhatsappRefundTemplate: string;
   msg91WhatsappWalletRefundTemplate: string | undefined;
   msg91WhatsappRestockTemplate: string | undefined;
+  msg91WhatsappBuyReminderTemplate: string | undefined;
   storefrontUrl: string;
   msg91SenderId: string;
   msg91OtpTemplateId: string | undefined;
@@ -148,6 +153,7 @@ export interface NotificationServiceConfig {
   orderServiceUrl: string;
   authServiceUrl: string;
   searchServiceUrl: string;
+  catalogServiceUrl: string;
   serviceHttpTimeoutMs: number;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
@@ -176,6 +182,7 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   msg91WhatsappRefundTemplate: parsed.MSG91_WHATSAPP_REFUND_TEMPLATE,
   msg91WhatsappWalletRefundTemplate: parsed.MSG91_WHATSAPP_WALLET_REFUND_TEMPLATE || undefined,
   msg91WhatsappRestockTemplate: parsed.MSG91_WHATSAPP_RESTOCK_TEMPLATE || undefined,
+  msg91WhatsappBuyReminderTemplate: parsed.MSG91_WHATSAPP_BUY_REMINDER_TEMPLATE || undefined,
   storefrontUrl: parsed.STOREFRONT_URL.replace(/\/+$/, ''),
   msg91SenderId: parsed.MSG91_SENDER_ID,
   msg91OtpTemplateId: parsed.MSG91_OTP_TEMPLATE_ID,
@@ -192,6 +199,7 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   orderServiceUrl: parsed.ORDER_SERVICE_URL,
   authServiceUrl: parsed.AUTH_SERVICE_URL,
   searchServiceUrl: parsed.SEARCH_SERVICE_URL,
+  catalogServiceUrl: parsed.CATALOG_SERVICE_URL,
   serviceHttpTimeoutMs: parsed.SERVICE_HTTP_TIMEOUT_MS,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,

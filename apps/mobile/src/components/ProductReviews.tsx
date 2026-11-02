@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import type { MyReview, ReviewPage } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { useSession } from '@/stores/session';

@@ -11,9 +11,11 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type {
+  BuyReminder,
   CartProduct,
   ProductCardData,
   ProductDetailData,
@@ -31,6 +33,9 @@ import { ProductCard } from '@/components/ProductCard';
 import { InfiniteRail } from '@/components/InfiniteRail';
 import { ProductReviews } from '@/components/ProductReviews';
 import { shareProduct } from '@/lib/share';
+import { api } from '@/lib/api';
+import { RemindSheet } from '@/components/RemindSheet';
+import { RemindCard } from '@/components/RemindCard';
 import * as Haptics from 'expo-haptics';
 import { colors, font, radii, space } from '@/theme';
 
@@ -74,6 +79,10 @@ export default function ProductScreen() {
   const [activeTab, setActiveTab] = useState<TabKey>('info');
   // Chosen pack size / option (null = the product's default SKU).
   const [pickedSku, setPickedSku] = useState<string | null>(null);
+  // v1.18 "Remind me to buy": this product's upcoming reminders, one per variant (signed in only).
+  const [reminders, setReminders] = useState<BuyReminder[]>([]);
+  const [remindOpen, setRemindOpen] = useState(false);
+  const [remindPick, setRemindPick] = useState<string | undefined>();
 
   const listRef = useRef<FlatList<ProductCardData>>(null);
   const sections = useRef({ info: 0, reviews: 0, explore: 0 });
@@ -113,6 +122,20 @@ export default function ProductScreen() {
       active = false;
     };
   }, [categorySlug]);
+  const signedIn = session.status === 'authenticated';
+  useEffect(() => {
+    setReminders([]);
+    if (!prod || !signedIn) return;
+    let active = true;
+    api.reminders
+      .forProduct(prod.id)
+      .then((r) => active && setReminders(r.items))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [prod, signedIn]);
+
   const railExclude = useMemo(() => new Set(prod ? [prod.id] : []), [prod]);
   const pairSources = useMemo(() => (lineage.length > 1 ? lineage.slice(1) : lineage), [lineage]);
 
@@ -205,6 +228,8 @@ export default function ProductScreen() {
   // The selected option drives the price and what Add / Buy / Save act on.
   const variant = prod.variants.find((v) => v.skuId === (pickedSku ?? prod.skuId));
   const skuId = variant?.skuId ?? prod.skuId;
+  // Each pack size / option has its own reminder.
+  const reminder = reminders.find((r) => r.skuId === skuId) ?? null;
   const price = variant?.sellingPrice ?? prod.sellingPrice;
   const mrp = variant?.mrp ?? prod.mrp;
   const canBuy = Boolean(skuId);
@@ -292,6 +317,20 @@ export default function ProductScreen() {
         />
       </View>
 
+      {canBuy ? (
+        <RemindCard
+          reminder={reminder}
+          onOpen={(pick) => {
+            if (!signedIn) {
+              router.push('/auth/login');
+              return;
+            }
+            setRemindPick(pick);
+            setRemindOpen(true);
+          }}
+        />
+      ) : null}
+
       <View style={styles.assurance}>
         <Text style={styles.assuranceTitle}>Shop with Assurance</Text>
         {ASSURANCE.map((a) => (
@@ -367,7 +406,8 @@ export default function ProductScreen() {
         onEndReached={loadMoreExplore}
         onEndReachedThreshold={1.2}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 110 }}
+        // The buy bar sits below the list (not over it), so no room is reserved for it here.
+        contentContainerStyle={{ paddingBottom: space.xs }}
         ListFooterComponent={
           loadingMore ? (
             <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
@@ -435,6 +475,28 @@ export default function ProductScreen() {
           <Text style={styles.buyText}>Buy Now</Text>
         </Pressable>
       </View>
+
+      {canBuy ? (
+        <RemindSheet
+          visible={remindOpen}
+          product={{
+            skuId: skuId!,
+            title: lineTitle,
+            imageUrl: images[0] || undefined,
+            price,
+          }}
+          existing={reminder}
+          initialPick={remindPick}
+          onClose={() => setRemindOpen(false)}
+          onSaved={(r) => {
+            setReminders((cur) => [
+              ...cur.filter((x) => x.skuId !== skuId && x.reminderId !== reminder?.reminderId),
+              ...(r ? [r] : []),
+            ]);
+            setRemindOpen(false);
+          }}
+        />
+      ) : null}
     </View>
   );
 }

@@ -9,7 +9,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import {
   PROMO_BANNER_SLIDES,
   PROMO_SLIDER_INTERVAL_MS,

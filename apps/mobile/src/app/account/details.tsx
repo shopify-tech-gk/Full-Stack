@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { Ionicons } from '@expo/vector-icons';
 import { ContactChangeSheet } from '@/components/ContactChangeSheet';
 import { authUserLabel, formatPhone } from '@youmart/shared-client';

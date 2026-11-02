@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { formatMoney, type PayOrderResult } from '@youmart/shared-client';
 import { api } from '@/lib/api';

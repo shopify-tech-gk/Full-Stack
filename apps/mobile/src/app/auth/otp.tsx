@@ -10,7 +10,8 @@ import {
   View,
   type TextInputInstance,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import {
   OTP_LENGTH,
   OTP_RESEND_SECONDS,

@@ -1488,6 +1488,53 @@ model ProductRequest {
   @@schema("notifications")
 }
 
+enum BuyReminderStatus {
+  SCHEDULED
+  SENT
+  CANCELLED
+
+  @@schema("notifications")
+}
+
+enum BuyReminderRepeat {
+  NONE
+  WEEKLY
+  MONTHLY
+
+  @@schema("notifications")
+}
+
+/// v1.18 "Remind me to buy": the customer picks a product and a date/time; at that time they get a
+/// WhatsApp (+ email + in-app Alert) with the product and its price then. Repeating reminders (refills)
+/// move on to the next week / month instead of finishing.
+model BuyReminder {
+  id         String            @id @default(uuid(7))
+  userId     String            @map("user_id")
+  productId  String            @map("product_id")
+  /// The exact variant when one was chosen (its price is the one quoted).
+  skuId      String?           @map("sku_id")
+  /// Snapshot shown in the list and the message (the product may be renamed later).
+  title      String
+  slug       String
+  imageUrl   String?           @map("image_url")
+  /// The price when the reminder was set, so the reminder can say "now Rs X - Rs Y less".
+  priceAtSet Decimal?          @map("price_at_set") @db.Decimal(12, 2)
+  note       String?
+  remindAt   DateTime          @map("remind_at")
+  repeat     BuyReminderRepeat @default(NONE)
+  status     BuyReminderStatus @default(SCHEDULED)
+  /// How many times it has gone off (repeating reminders keep counting).
+  sentCount  Int               @default(0) @map("sent_count")
+  lastSentAt DateTime?         @map("last_sent_at")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  @@index([status, remindAt])
+  @@index([userId, status])
+  @@map("buy_reminder")
+  @@schema("notifications")
+}
+
 // ---------------------------------------------------------------------------
 // promotions schema - coupons. DATA LAYER ONLY: no discount-application
 // logic here.

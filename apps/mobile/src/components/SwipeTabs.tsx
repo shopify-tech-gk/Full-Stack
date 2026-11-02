@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
-import { useRouter, type Href } from 'expo-router';
+import { type Href } from 'expo-router';
+import { useRouter } from '@/lib/router';
 
 /** Bottom-tab order — index here matches each tab's `index` prop. */
 const TAB_ROUTES: string[] = ['/', '/buy-again', '/cart', '/account'];

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, font, radii, space } from '@/theme';
 import { VoiceSearchSheet } from '@/components/VoiceSearchSheet';

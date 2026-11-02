@@ -115,6 +115,14 @@ const TEMPLATES: Record<string, (d: Record<string, unknown>) => InboxContent> = 
     title: 'Back in stock for you',
     body: `${str(d.label, str(d.item, 'What you asked for'))} is now available on YouMart. Tap to have a look.`,
   }),
+  // v1.18 "Remind me to buy" went off.
+  BUY_REMINDER: (d) => ({
+    kind: 'OFFER',
+    title: 'Your reminder: time to buy',
+    body: `${str(d.title, 'A product you saved')}${str(d.note) ? ` (${str(d.note)})` : ''}. ${str(
+      d.priceLine,
+    )} Tap to buy it now.`.replace(/\s+/g, ' '),
+  }),
   SUPPORT_REPLY: (d) => ({
     kind: 'SUPPORT',
     title: 'YouMart Support replied',

@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { detectIdentifier, identifierKind, otpErrorMessage } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { colors, font, radii, space } from '@/theme';

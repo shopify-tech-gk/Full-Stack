@@ -9,7 +9,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
@@ -51,6 +52,8 @@ const ACTIVITY: Item[] = [
   { icon: 'cart', label: 'My cart', tint: 'amber', to: '/cart' },
   // v1.15: the inbox (also the bell in the header).
   { icon: 'notifications', label: 'Alerts', tint: 'blue', to: '/inbox', auth: true },
+  // v1.18: "Remind me to buy" reminders.
+  { icon: 'alarm', label: 'Buy reminders', tint: 'amber', to: '/reminders', auth: true },
   {
     icon: 'return-down-back',
     label: 'Returns & refunds',

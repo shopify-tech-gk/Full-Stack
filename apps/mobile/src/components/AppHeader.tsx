@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { usePathname, useRouter } from 'expo-router';
+import { usePathname } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import * as Haptics from 'expo-haptics';
 import Animated, {
   ReduceMotion,

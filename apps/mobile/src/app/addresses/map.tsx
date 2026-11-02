@@ -13,7 +13,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSession } from '@/stores/session';
 import { YOUMART_MAP_STYLE } from '@/lib/map-style';

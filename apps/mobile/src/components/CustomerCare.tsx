@@ -1,6 +1,7 @@
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, type Href } from 'expo-router';
+import { type Href } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { BUSINESS, CUSTOMER_CARE_PAGE } from '@youmart/shared-client';

@@ -20,6 +20,8 @@ const SETTING_FOR_TEMPLATE: Record<string, 'orderUpdates' | 'offers'> = {
   // follows their order-update choices (offers default to off, which would drop what they asked
   // for). The in-app Alert always arrives.
   RESTOCK_AVAILABLE: 'orderUpdates',
+  // v1.18: a reminder the customer set themselves - same reasoning as above.
+  BUY_REMINDER: 'orderUpdates',
 };
 
 /**

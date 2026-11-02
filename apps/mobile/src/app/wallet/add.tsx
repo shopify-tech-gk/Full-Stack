@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { formatMoney, type WalletSummary } from '@youmart/shared-client';
 import { ApiError } from '@youmart/shared-client';

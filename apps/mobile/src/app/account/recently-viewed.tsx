@@ -9,7 +9,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import type { ProductCardData } from '@youmart/shared-client';
 import { clearRecentlyViewed, getRecentlyViewed } from '@/lib/catalog';
 import { ProductCard } from '@/components/ProductCard';

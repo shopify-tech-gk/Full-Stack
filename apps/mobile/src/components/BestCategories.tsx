@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import { lookupCategoryImage } from '@/lib/category-images';
 import { bestCategorySlides, catalogSlugOf } from '@/lib/home-categories';
 import { colors, font, radii, space } from '@/theme';

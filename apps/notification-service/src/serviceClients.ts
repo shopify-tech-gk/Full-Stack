@@ -1,5 +1,6 @@
 import {
   createAuthClient,
+  createCatalogClient,
   createOrderClient,
   createSearchClient,
   type ServiceAuthOptions,
@@ -25,6 +26,12 @@ export const authClient = createAuthClient({
   baseUrl: config.authServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
   serviceAuth,
+});
+
+/** v1.18 buy reminders: the product's name and price (public endpoints - no service token). */
+export const catalogClient = createCatalogClient({
+  baseUrl: config.catalogServiceUrl,
+  timeoutMs: config.serviceHttpTimeoutMs,
 });
 
 /** v1.17 YouMart AI: finds real products for shopping questions ("what do I need for a trip?"). */
