@@ -20,6 +20,7 @@ import {
   formatMoney,
   orderStatusLabel,
   trackingProgress,
+  CUSTOMER_CANCELLATION_ENABLED,
   type OrderPaymentSummary,
   type OrderView,
   type ReturnStatus,
@@ -186,7 +187,9 @@ export default function OrderDetailScreen() {
   const confirmed = order.status === 'CONFIRMED';
   const dispatched = order.items.some((i) => DISPATCHED.includes(i.sellerStatus));
   const cancelRequested = order.cancelRequest?.status === 'REQUESTED';
-  const canCancel = pending || (confirmed && !dispatched && !cancelRequested);
+  // v1.18 policy: a placed order can't be cancelled (only returned) - see CUSTOMER_CANCELLATION_ENABLED.
+  const canCancel =
+    pending || (CUSTOMER_CANCELLATION_ENABLED && confirmed && !dispatched && !cancelRequested);
   const cod = order.paymentMethod === 'COD';
   const units = order.items.reduce((n, i) => n + i.quantity, 0);
   const liveLines = order.items.filter((i) => i.sellerStatus !== 'CANCELLED').length;
@@ -432,6 +435,7 @@ export default function OrderDetailScreen() {
             const lineRequest = item.cancelRequest;
             // Not while unpaid, and the only line left is the whole order (Cancel order below).
             const canCancelLine =
+              CUSTOMER_CANCELLATION_ENABLED &&
               confirmed &&
               liveLines > 1 &&
               !cancelRequested &&

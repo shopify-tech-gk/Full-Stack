@@ -408,6 +408,13 @@ export function createApiClient(options: ApiClientOptions) {
       },
       removeAll: () => json<{ deleted: number }>('DELETE', '/notifications'),
     },
+    /** v1.18 "Still in your cart": a signed-in customer opened checkout. */
+    checkoutStarted: async (body: {
+      source: 'CART' | 'BUY_NOW';
+      skuIds: Uuid[];
+    }): Promise<void> => {
+      await send('POST', '/notifications/checkout-nudge/started', { body });
+    },
     /** v1.18 "Remind me to buy". */
     reminders: {
       list: (when: 'upcoming' | 'past' = 'upcoming') =>

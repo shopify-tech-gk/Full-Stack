@@ -70,33 +70,51 @@ export function ProductPricing({
   mrp,
   selectedSkuId,
   onSelect,
+  showOptions,
 }: {
   prod: ProductDetailData;
   price: Money;
   mrp: Money;
   selectedSkuId: string | null;
   onSelect: (skuId: string) => void;
+  /** v1.18 the option kinds shown here (the page shows Colour under the photo). */
+  showOptions?: (key: string) => boolean;
 }) {
   const off = discountPercent(mrp, price);
   return (
     <View style={styles.pricing}>
+      {/* v1.18 "-48%  ₹259" then "M.R.P. ₹499" and the saving, Amazon-style. */}
       <View style={styles.priceRow}>
-        {off > 0 ? (
-          <View style={styles.offBadge}>
-            <Ionicons name="arrow-down" size={13} color="#15803d" />
-            <Text style={styles.offText}>{off}%</Text>
-          </View>
-        ) : null}
-        <Text style={styles.price}>{money(price)}</Text>
-        {off > 0 ? <Text style={styles.mrp}>{money(mrp)}</Text> : null}
+        {off > 0 ? <Text style={styles.offText}>-{off}%</Text> : null}
+        <Text style={styles.price}>
+          <Text style={styles.rupee}>₹</Text>
+          {money(price).replace(/^₹\s*/, '')}
+        </Text>
       </View>
-      <Text style={styles.taxNote}>
-        Inclusive of all taxes
-        {off > 0 ? ` · You save ${money((Number(mrp) - Number(price)).toFixed(2))}` : ''}
-      </Text>
+      <View style={styles.mrpRow}>
+        {off > 0 ? (
+          <Text style={styles.mrpLabel}>
+            M.R.P. <Text style={styles.mrp}>{money(mrp)}</Text>
+          </Text>
+        ) : null}
+        <Text style={styles.taxNote}>Inclusive of all taxes</Text>
+      </View>
+      {off > 0 ? (
+        <View style={styles.savePill}>
+          <Ionicons name="pricetag" size={12} color={colors.price.discount} />
+          <Text style={styles.saveText}>
+            You save {money((Number(mrp) - Number(price)).toFixed(2))}
+          </Text>
+        </View>
+      ) : null}
 
       {prod.variants.length > 0 ? (
-        <VariantPicker prod={prod} selectedSkuId={selectedSkuId} onSelect={onSelect} />
+        <VariantPicker
+          prod={prod}
+          selectedSkuId={selectedSkuId}
+          onSelect={onSelect}
+          show={showOptions}
+        />
       ) : null}
     </View>
   );
@@ -190,7 +208,7 @@ export function ProductAbout({ prod }: { prod: ProductDetailData }) {
 }
 
 const styles = StyleSheet.create({
-  heading: { paddingHorizontal: space.lg, paddingTop: space.lg, gap: 7 },
+  heading: { paddingHorizontal: space.lg, paddingTop: space.lg, gap: 8 },
   brandTag: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -202,29 +220,41 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   brandText: { fontFamily: font.uiBold, fontSize: 12, color: BRAND, letterSpacing: 0.3 },
-  title: { fontFamily: font.uiSemibold, fontSize: 18, lineHeight: 25, color: colors.heading },
+  title: { fontFamily: font.uiMedium, fontSize: 17, lineHeight: 24, color: colors.heading },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ratingText: { fontFamily: font.uiMedium, fontSize: 12.5, color: colors.text.muted },
-  pricing: { paddingHorizontal: space.lg, paddingTop: space.md, gap: 4 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  offBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    backgroundColor: '#dcfce7',
-    borderRadius: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+  pricing: { paddingHorizontal: space.lg, paddingTop: space.md, gap: 5 },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' },
+  // Same red as the product cards' discount.
+  offText: {
+    fontFamily: font.uiMedium,
+    fontSize: 24,
+    color: colors.price.discount,
+    letterSpacing: -0.3,
   },
-  offText: { fontFamily: font.uiBold, fontSize: 14, color: '#15803d' },
-  price: { fontFamily: font.uiBold, fontSize: 28, color: colors.heading, letterSpacing: -0.3 },
+  price: { fontFamily: font.uiBold, fontSize: 30, color: colors.heading, letterSpacing: -0.5 },
+  rupee: { fontFamily: font.uiSemibold, fontSize: 18, color: colors.heading },
+  mrpRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  mrpLabel: { fontFamily: font.uiMedium, fontSize: 13, color: colors.text.muted },
   mrp: {
-    fontFamily: font.body,
-    fontSize: 15,
+    fontFamily: font.uiMedium,
+    fontSize: 13,
     color: colors.text.muted,
     textDecorationLine: 'line-through',
   },
   taxNote: { fontFamily: font.uiMedium, fontSize: 12, color: colors.text.muted },
+  savePill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 3,
+    backgroundColor: '#fff1f1',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  saveText: { fontFamily: font.uiBold, fontSize: 12, color: colors.price.discount },
   chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',

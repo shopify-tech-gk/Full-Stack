@@ -15,7 +15,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TARGETS, TARGET_OVERRIDES } from './data/import-targets.mjs';
+import { TARGETS, TARGET_OVERRIDES, cleanColor, sizeRank } from './data/import-targets.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 process.loadEnvFile(path.join(root, '.env'));
@@ -41,7 +41,12 @@ const VARIANT_META = new Set([
   'Youmart_Product_ID',
   'Title',
   'Image URL',
+  // v1.18 per-variant stock text and photo list: never an option to pick.
+  'Availability',
+  'Gallery Image URLs',
 ]);
+/** v1.18 a size the delivery left as its placeholder: not a real option. */
+const PLACEHOLDER_OPTION = /^select\b/i;
 /** Option values that don't tell variants apart ("(Pack of 1)", a bare "2"): not a real option. */
 const NOISE_OPTION = /^\(?\s*pack\s+of\s+\d+\s*\)?$|^\d+(\.\d+)?$/i;
 const snake = (s) =>
@@ -110,7 +115,10 @@ function optionDims(optionsList) {
   for (const key of keys) {
     const values = optionsList.map((o) => o[key]).filter(Boolean);
     if (new Set(values.map(norm)).size < 2) continue;
-    if (key !== 'weight' && values.every((v) => NOISE_OPTION.test(v.trim()))) continue;
+    // v1.18 bare numbers are pack counts, except sizes (waist 28, 30, 32 are real sizes).
+    if (key !== 'weight' && key !== 'size' && values.every((v) => NOISE_OPTION.test(v.trim()))) {
+      continue;
+    }
     if (dims.length) {
       const groups = new Map();
       for (const o of optionsList) {
@@ -158,14 +166,28 @@ for (const [index, p] of items.entries()) {
   }
   const title = clean(p.Title);
   const id = clean(p.Youmart_Product_ID);
-  const price = Number(p['Selling Price (INR)']);
+  // v1.18 no product-level price (its own size is unavailable): the cheapest sellable variant's.
+  const variantPrices = Object.entries(p)
+    .filter(([key, list]) => /variants$/i.test(key) && Array.isArray(list))
+    .flatMap(([, list]) => list)
+    .filter((v) => v && Number(v['Selling Price (INR)']) > 0)
+    .sort((a, b) => Number(a['Selling Price (INR)']) - Number(b['Selling Price (INR)']));
+  const priceSource = Number(p['Selling Price (INR)']) > 0 ? p : (variantPrices[0] ?? p);
+  const price = Number(priceSource['Selling Price (INR)']);
   if (!title || !id || !(price > 0)) {
     problems.push(`${where}: missing title / id / price - skipped`);
     continue;
   }
   categoriesNeeded.set(target.chain.at(-1)[0], target);
-  const discount = Number(p['Discount (%)']) || 0;
-  const mrp = Math.max(Number(p['MRP (INR)']) || price, price);
+  // v1.18 `also`: other targets this product is listed under too (their categories must exist).
+  const also = (target.also ?? []).map((name) => {
+    const other = TARGETS[name];
+    if (!other) throw new Error(`import-targets: "also" names unknown target "${name}"`);
+    categoriesNeeded.set(other.chain.at(-1)[0], other);
+    return other.chain.at(-1)[0];
+  });
+  const discount = Number(priceSource['Discount (%)']) || 0;
+  const mrp = Math.max(Number(priceSource['MRP (INR)']) || price, price);
 
   // Variants -> SKUs. Any "<Option> Variants" list counts: each entry is one sellable option of
   // this ONE product. Its option fields ("Style Name", "Weight", "Size"...) are kept only where they
@@ -178,23 +200,71 @@ for (const [index, p] of items.entries()) {
     .filter((v) => v && typeof v === 'object' && v.Youmart_Product_ID)
     .map((v) => {
       const options = {};
+      // v1.18 the variant's own details ("Fit Type", "Jeans width (inches)"...): shown in the
+      // specifications when it's picked, so nothing in the delivery is dropped.
+      const specs = [];
       for (const [k, raw] of Object.entries(v)) {
         if (VARIANT_META.has(k) || raw == null || typeof raw === 'object') continue;
         const key = snake(k);
+        // v1.18 a target can name its only real options (clothing: size and colour); its other
+        // fields describe the variant.
+        if (target.variantOptions && !target.variantOptions.includes(key)) {
+          const value = attrValue(String(raw));
+          if (value) specs.push({ label: clean(k), value });
+          continue;
+        }
+        if (PLACEHOLDER_OPTION.test(String(raw))) continue;
         const label =
-          key === 'weight' ? variantLabel(String(raw)) : clean(String(raw))?.slice(0, 100);
+          key === 'weight'
+            ? variantLabel(String(raw))
+            : key === 'color'
+              ? cleanColor(raw)
+              : clean(String(raw))?.slice(0, 100);
         if (label) options[key] = label;
       }
-      return { v, options, title: clean(v.Title), image: httpsUrl(v['Image URL']) };
+      const gallery = String(v['Gallery Image URLs'] ?? '')
+        .split('|')
+        .map((u) => httpsUrl(u.trim()));
+      return {
+        v,
+        options,
+        specs,
+        title: clean(v.Title),
+        image: httpsUrl(v['Image URL']),
+        images: [...new Set([httpsUrl(v['Image URL']), ...gallery].filter(Boolean))].slice(0, 8),
+      };
     });
   const dims = optionDims(allVariants.map((x) => x.options));
-  const sellable = allVariants.filter(({ v }) => Number(v['Selling Price (INR)']) > 0);
+  const comboOf = (options) =>
+    dims.map((d) => (options[d] ?? '').toLowerCase().replace(/\s+/g, '')).join('|');
+  let sellable = allVariants.filter(({ v }) => Number(v['Selling Price (INR)']) > 0);
+  if (target.variantOptions && dims.length) {
+    // v1.18 a "Select Size / Select Color" placeholder entry (no option values while the others
+    // have them) is the listing's default page, not something to buy; the same size + colour
+    // listed twice keeps its cheapest offer.
+    const best = new Map();
+    for (const x of sellable) {
+      if (dims.every((d) => !x.options[d])) continue;
+      const key = comboOf(x.options);
+      const had = best.get(key);
+      if (!had || Number(x.v['Selling Price (INR)']) < Number(had.v['Selling Price (INR)'])) {
+        best.set(key, x);
+      }
+    }
+    if (best.size) sellable = sellable.filter((x) => [...best.values()].includes(x));
+  }
+  const sellableCombos = new Set(sellable.map((x) => comboOf(x.options)));
   // A variant the delivery gives no price for can't be sold, but it's still kept: the product page
   // lists it as "Currently unavailable" (like Amazon) until a re-import prices it.
-  const unavailable = allVariants
-    .filter(({ v }) => !(Number(v['Selling Price (INR)']) > 0))
-    .map(({ options }) => pick(options, dims))
-    .filter((o) => Object.keys(o).length > 0);
+  const unavailable = [
+    ...new Map(
+      allVariants
+        .filter(({ v }) => !(Number(v['Selling Price (INR)']) > 0))
+        .map(({ options }) => pick(options, dims))
+        .filter((o) => Object.keys(o).length > 0 && !sellableCombos.has(comboOf(o)))
+        .map((o) => [comboOf(o), o]),
+    ).values(),
+  ];
   // No variants: the product is its own single SKU (no option picker on the page).
   const single = {
     v: { 'Selling Price (INR)': price, Youmart_Product_ID: id },
@@ -203,7 +273,7 @@ for (const [index, p] of items.entries()) {
     image: null,
   };
   const skus = (sellable.length ? sellable : [single])
-    .map(({ v, options, title: vTitle, image }) => {
+    .map(({ v, options, title: vTitle, image, images: vImages = [], specs: vSpecs = [] }) => {
       const sp = Number(v['Selling Price (INR)']);
       const ownMrp = Number(v['MRP (INR)']);
       const vMrp =
@@ -219,11 +289,14 @@ for (const [index, p] of items.entries()) {
         code: clean(v.Youmart_Product_ID),
         price: money(sp),
         mrp: money(vMrp),
-        // `_title` / `_image`: the variant's own title and picture (not options).
+        // `_title` / `_image`: the variant's own title and picture (not options). v1.18 `_images`
+        // its own photo set and `_specs` its own details (a colour's photos, a size's length).
         attributes: {
           ...shown,
           ...(sellable.length > 1 && vTitle ? { _title: vTitle.slice(0, 300) } : {}),
           ...(sellable.length > 1 && image ? { _image: image } : {}),
+          ...(sellable.length > 1 && vImages.length > 1 ? { _images: vImages } : {}),
+          ...(vSpecs.length ? { _specs: vSpecs } : {}),
         },
         kg: kilograms(options.weight),
       };
@@ -237,6 +310,10 @@ for (const [index, p] of items.entries()) {
       return true;
     });
   if (skus.length === 0) continue;
+  // v1.18 sizes in wearing order (S, M, L, XL / 28, 30, 32), not the delivery's.
+  if (dims.includes('size')) {
+    skus.sort((a, b) => sizeRank(a.attributes.size) - sizeRank(b.attributes.size));
+  }
 
   const description = clean(p.Description);
   const text = `${title} ${(description ?? '').slice(0, 400)}`.toLowerCase();
@@ -281,6 +358,7 @@ for (const [index, p] of items.entries()) {
     title: title.slice(0, 300),
     description: description?.slice(0, 5000) ?? null,
     category: target.chain[target.chain.length - 1][0],
+    also,
     attributes,
     skus,
     images,
@@ -290,7 +368,9 @@ for (const [index, p] of items.entries()) {
 console.log(`read ${items.length} products -> ${products.length} to import, ${seenSku.size} SKUs`);
 if (problems.length) console.log(`notes:\n  ${problems.join('\n  ')}`);
 if (dryRun) {
-  console.log(JSON.stringify(products.slice(0, 2), null, 2));
+  console.log(
+    JSON.stringify(process.argv.includes('--all') ? products : products.slice(0, 2), null, 2),
+  );
   process.exit(0);
 }
 
@@ -333,6 +413,18 @@ products.forEach((p, i) => {
         attributes = ${jsonb(s.attributes)}, updated_at = now()
       WHERE sku_code = ${lit(s.code)} AND deleted_at IS NULL;`);
   }
+  // v1.18 a variant this delivery no longer sells (a placeholder, a duplicate size + colour) is
+  // retired, so the page never shows a blank or doubled option.
+  sql.push(`UPDATE catalog.sku SET deleted_at = now(), updated_at = now()
+    WHERE product_id = ${pid} AND deleted_at IS NULL
+      AND sku_code NOT IN (${p.skus.map((s) => lit(s.code)).join(', ')});`);
+  // v1.18 the other categories it is also listed under: replaced to match the rules each import.
+  sql.push(`DELETE FROM catalog.product_extra_category WHERE product_id = ${pid};`);
+  for (const slug of p.also) {
+    sql.push(`INSERT INTO catalog.product_extra_category (product_id, category_id)
+      SELECT ${pid}, (SELECT id FROM catalog.category WHERE slug = ${lit(slug)} AND deleted_at IS NULL)
+      ON CONFLICT DO NOTHING;`);
+  }
   // Images are replaced per product (IMPORT-SPEC §6).
   sql.push(`UPDATE catalog.product_image SET deleted_at = now()
     WHERE product_id = ${pid} AND deleted_at IS NULL;`);
@@ -348,8 +440,10 @@ sql.push(`SELECT 'STOCK', s.id, s.sku_code FROM catalog.sku s
     AND NOT EXISTS (SELECT 1 FROM inventory.stock_level l WHERE l.sku_id = s.id::text AND l.deleted_at IS NULL);`);
 for (const target of categoriesNeeded.values()) {
   const leaf = target.chain[target.chain.length - 1][0];
-  sql.push(`SELECT 'COUNT', ${lit(leaf)}, count(*) FROM catalog.product p JOIN catalog.category c ON c.id = p.category_id
-    WHERE c.slug = ${lit(leaf)} AND p.deleted_at IS NULL AND p.status = 'ACTIVE';`);
+  sql.push(`SELECT 'COUNT', ${lit(leaf)}, count(*) FROM catalog.product p JOIN catalog.category c ON c.slug = ${lit(leaf)}
+    WHERE (p.category_id = c.id OR EXISTS (SELECT 1 FROM catalog.product_extra_category x
+        WHERE x.product_id = p.id AND x.category_id = c.id))
+      AND c.deleted_at IS NULL AND p.deleted_at IS NULL AND p.status = 'ACTIVE';`);
 }
 
 const out = execFileSync(

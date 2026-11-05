@@ -50,9 +50,19 @@ export class Msg91WhatsappProvider implements NotificationProvider {
     if (components.headerDocumentUrl) {
       componentsPayload.header_1 = { type: 'document', value: components.headerDocumentUrl };
     }
+    if (components.headerImageUrl) {
+      componentsPayload.header_1 = { type: 'image', value: components.headerImageUrl };
+    }
     components.bodyParams.forEach((value, index) => {
       componentsPayload[`body_${index + 1}`] = { type: 'text', value };
     });
+    if (components.urlButtonSuffix !== undefined) {
+      componentsPayload.button_1 = {
+        subtype: 'url',
+        type: 'text',
+        value: components.urlButtonSuffix,
+      };
+    }
     if (components.authButtonCode !== undefined) {
       componentsPayload.button_1 = {
         subtype: 'url',

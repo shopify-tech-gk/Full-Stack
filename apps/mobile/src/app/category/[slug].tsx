@@ -16,6 +16,7 @@ import type { ListingQuery, ProductCardData } from '@youmart/shared-client';
 import {
   emptyListingQuery,
   getListing,
+  groupProductsPage,
   listMoreProducts,
   searchProductsPage,
   type Listing,
@@ -81,9 +82,22 @@ export default function CategoryScreen() {
   // catalog doesn't hold yet. Off-taxonomy links fall back to the route's catalog slug.
   const searchTerm = node && node.href.startsWith('/search') ? node.name : null;
   const catalogSlug = node ? catalogSlugOf(node.href) : routeSlug;
-  // Not in the catalog yet: its link is an ancestor's page, but the ancestor's products (e.g.
-  // Compost under Fertilizer) aren't this node's - it shows "coming soon" instead.
-  const comingSoon = node?.match === 'parent';
+  // Not one catalog category: its link is an ancestor's page, but the ancestor's products (e.g.
+  // Compost under Fertilizer) aren't this node's. v1.18 a group whose sub-categories ARE in the
+  // catalog ("Garden Netting": Bird / Insect / Shade...) shows all their products, mixed; with
+  // none stocked yet it shows "coming soon".
+  const groupSlugs = useMemo(
+    () =>
+      node?.match === 'parent'
+        ? taxChildren(node.path)
+            .filter((child) => child.match === 'catalog')
+            .map((child) => catalogSlugOf(child.href))
+            .filter(Boolean)
+        : [],
+    [node],
+  );
+  const group = groupSlugs.length > 0;
+  const comingSoon = node?.match === 'parent' && !group;
   // A searched node only shows products filed under it or its parents (never a sibling's).
   const searchCategories = useMemo(
     () =>
@@ -127,12 +141,18 @@ export default function CategoryScreen() {
       return;
     }
     setLoading(true);
-    const load: Promise<Results> = searchTerm
-      ? searchProductsPage(searchTerm, 1, 100, brand || undefined, searchCategories).then((r) => ({
-          ...r,
-          filters: null,
-        }))
-      : getListing(catalogSlug, { ...query, page: 1 });
+    const load: Promise<Results> = group
+      ? groupProductsPage(groupSlugs, 1, { brand: brand || undefined, sort: query.sort }).then(
+          (r) => ({ ...r, filters: null }),
+        )
+      : searchTerm
+        ? searchProductsPage(searchTerm, 1, 100, brand || undefined, searchCategories).then(
+            (r) => ({
+              ...r,
+              filters: null,
+            }),
+          )
+        : getListing(catalogSlug, { ...query, page: 1 });
     load
       .then((res) => {
         if (!active) return;
@@ -147,6 +167,8 @@ export default function CategoryScreen() {
   }, [
     catalogSlug,
     comingSoon,
+    group,
+    groupSlugs,
     searchTerm,
     searchCategories,
     brand,
@@ -162,9 +184,20 @@ export default function CategoryScreen() {
     setLoadingMore(true);
     const nextPage = query.page + 1;
     try {
-      const res = searchTerm
-        ? await searchProductsPage(searchTerm, nextPage, 100, brand || undefined, searchCategories)
-        : await listMoreProducts(catalogSlug, { ...query, page: nextPage });
+      const res = group
+        ? await groupProductsPage(groupSlugs, nextPage, {
+            brand: brand || undefined,
+            sort: query.sort,
+          })
+        : searchTerm
+          ? await searchProductsPage(
+              searchTerm,
+              nextPage,
+              100,
+              brand || undefined,
+              searchCategories,
+            )
+          : await listMoreProducts(catalogSlug, { ...query, page: nextPage });
       setData((prev) =>
         prev ? { ...prev, products: [...prev.products, ...res.products], total: res.total } : prev,
       );
@@ -174,7 +207,18 @@ export default function CategoryScreen() {
     } finally {
       setLoadingMore(false);
     }
-  }, [data, loadingMore, loading, query, catalogSlug, searchTerm, searchCategories, brand]);
+  }, [
+    data,
+    loadingMore,
+    loading,
+    query,
+    catalogSlug,
+    searchTerm,
+    searchCategories,
+    brand,
+    group,
+    groupSlugs,
+  ]);
 
   // Brands: the ones with products here first (most products first), then the rest of the
   // category sheet's brands for this node.

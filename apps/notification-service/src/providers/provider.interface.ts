@@ -10,6 +10,10 @@ export type NotificationChannelValue = 'EMAIL' | 'SMS' | 'WHATSAPP' | 'PUSH';
  * Meta requires to carry the SAME value as the code body param. */
 export interface WhatsappComponents {
   headerDocumentUrl?: string;
+  /** v1.18 an IMAGE header (e.g. the product photo). */
+  headerImageUrl?: string;
+  /** v1.18 the end of a dynamic URL button's link ("https://youmart.in/{{1}}" -> this). */
+  urlButtonSuffix?: string;
   bodyParams: string[];
   authButtonCode?: string;
 }

@@ -8,6 +8,7 @@ import {
 } from './notification/notification.queue';
 import { closeConnection } from '@youmart/queue';
 import { startReminderScheduler, stopReminderScheduler } from './reminders/reminder.service';
+import { startCartNudgeScheduler, stopCartNudgeScheduler } from './nudges/cart-nudge.service';
 
 const app = createApp();
 
@@ -16,6 +17,8 @@ logger.info({ queue: 'notifications' }, 'notifications worker registered');
 
 // v1.18 "Remind me to buy": sends reminders as they fall due.
 startReminderScheduler();
+// v1.18 "Still in your cart": nudges customers who left checkout without ordering.
+startCartNudgeScheduler();
 
 const server = app.listen(config.port, () => {
   logger.info(
@@ -32,6 +35,7 @@ function shutdown(signal: string): void {
   }
   shuttingDown = true;
   stopReminderScheduler();
+  stopCartNudgeScheduler();
 
   logger.info({ signal }, 'shutdown signal received');
 

@@ -42,6 +42,13 @@ const orderServiceEnvSchema = baseEnvSchema.extend({
   // W9: an order still unpaid this long after checkout is cancelled automatically - its held stock
   // and any reserved wallet money are released. 0 disables the sweep.
   UNPAID_ORDER_TTL_MINUTES: z.coerce.number().int().min(0).default(30),
+  // v1.18 policy: a placed order (Cash on Delivery or paid) can't be cancelled by the customer -
+  // only returned after delivery. "true" brings customer cancellation back. Unpaid orders can
+  // always be dropped (leaving the payment screen).
+  CUSTOMER_CANCELLATION_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 const parsed = loadConfigWith(orderServiceEnvSchema);
@@ -73,6 +80,7 @@ export interface OrderServiceConfig {
   unpaidOrderTtlMinutes: number;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
+  customerCancellationEnabled: boolean;
 }
 
 export const config: Readonly<OrderServiceConfig> = Object.freeze({
@@ -98,4 +106,5 @@ export const config: Readonly<OrderServiceConfig> = Object.freeze({
   unpaidOrderTtlMinutes: parsed.UNPAID_ORDER_TTL_MINUTES,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
+  customerCancellationEnabled: parsed.CUSTOMER_CANCELLATION_ENABLED,
 });

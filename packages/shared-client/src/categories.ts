@@ -104,7 +104,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'cleaning-products',
     'Cleaning Products',
-    'brooms=Brooms;brush=Brush;detergents-cleaners=Detergents & Cleaners;dishwash=Dishwash;duster=Duster;dust-pan=Dust Pan;mops=Mops;scrubbers-sponges=Scrubbers & Sponges;rope=Rope',
+    'brooms=Brooms;brush=Brush;detergents-cleaners=Detergents & Cleaners;dishwash=Dishwash;duster=Duster;dust-pan=Dust Pan;mops=Mops;scrubbers-sponges=Scrubbers & Sponges;rope=Rope;air-fresheners=Air Fresheners',
   ],
   [
     'cosmetics',
@@ -125,7 +125,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'electrical-and-lights',
     'Electrical and Lights',
-    'cables-wiring=Cables & Wiring;door-chimes-bells=Door Bells;lights=Lights;electrical-accessories=Electrical Accessories;mosquito-killer-racket=Mosquito Killer Racket',
+    'cables-wiring=Cables & Wiring;door-chimes-bells=Door Bells;lights=Lights;electrical-accessories=Electrical Accessories;mosquito-killer-racket=Mosquito Killer Racket;insect-killers=Insect Killers & Pest Control',
   ],
   [
     'furniture',
@@ -137,6 +137,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
     'Fashion Jewellery',
     'anklet=Anklet;bracelet=Bracelet;bangle=Bangle;brooch=Brooch;earrings=Earrings;head-jewellery=Head Jewellery;jewellery-set=Jewellery Set;mangalsutra=Mangalsutra;necklace-and-chains=Necklace and Chains;nosepin=Nosepin;pendant=Pendant;ring=Ring;saree-accessories=Saree Accessories',
   ],
+  ['clothing', 'Clothing', 'bottomwear=Bottomwear'],
   ['footwear', 'Footwear', 'kids-footwear=Kids Footwear;men=Men;women=Women'],
   [
     'gifts',
@@ -146,7 +147,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'hardwares',
     'Hardware',
-    'bearings=Bearings;cabinet-hardware=Cabinet Hardware;fasteners-fittings=Fasteners & Screws;latches-bolts=Latches & Bolts;locks-security-hardware=Locks & Security Hardware;angles-brackets-fasteners=Angles and Brackets;paints=Paints',
+    'bearings=Bearings;cabinet-hardware=Cabinet Hardware;fasteners-fittings=Fasteners & Screws;latches-bolts=Latches & Bolts;locks-security-hardware=Locks & Security Hardware;angles-brackets-fasteners=Angles and Brackets;paints=Paints;cement-mortar=Cement & Mortar',
   ],
   [
     'home-appliances',
@@ -156,7 +157,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'home-furnishing',
     'Home Furnishing',
-    'bath-linen=Bath Linen;bedsheets=Bedsheets;curtain-accessories=Curtain & Accessories;cushion-covers=Cushion Covers;carpets=Carpets;door-mats=Door Mats;fabric=Fabric;heavy-bed=Mattress;pillow-covers=Pillow Covers;quilts=Quilts;ready-made-curtains=Ready Made Curtains;rugs=Rugs;sheer-curtains=Sheer Curtains;sofa-covers=Sofa Covers;sofa-headrests=Sofa Headrests;string-curtains=String Curtains;table-linen=Table Linen;table-mat=Table Mat;towel=Towel',
+    'bath-linen=Bath Linen;bedsheets=Bedsheets;curtain-accessories=Curtain & Accessories;cushion-covers=Cushion Covers;carpets=Carpets;door-mats=Door Mats;fabric=Fabric;heavy-bed=Mattress;pillow-covers=Pillow Covers;quilts=Quilts;ready-made-curtains=Ready Made Curtains;rugs=Rugs;sheer-curtains=Sheer Curtains;sofa-covers=Sofa Covers;sofa-headrests=Sofa Headrests;string-curtains=String Curtains;table-linen=Table Linen;table-mat=Table Mat;towel=Towel;mosquito-nets=Mosquito Nets',
   ],
   [
     'stainless-steel-vessels',
@@ -220,7 +221,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
 const THIRD_LEVEL: Readonly<Record<string, string>> = {
   // v1.17 catalog import: Compost (products imported from the data delivery).
   'lawn-and-gardening/fertilizer':
-    'compost=Compost;organic-manure=Organic Manure;organic-fertilizers=Organic Fertilizers;vermicompost=Vermicompost;npk-fertilizers=NPK Fertilizers;liquid-fertilizers=Liquid Fertilizers;chemical-fertilizers=Chemical Fertilizers',
+    'compost=Compost;organic-manure=Organic Manure;organic-fertilizers=Organic Fertilizers;vermicompost=Vermicompost;npk-fertilizers=NPK Fertilizers;liquid-fertilizers=Liquid Fertilizers;chemical-fertilizers=Chemical Fertilizers;potting-mix=Potting Mix;vermiculite=Vermiculite;soil-amendments=Soil Amendments',
   'lawn-and-gardening/garden-decor':
     'garden-statues=Garden Statues;bird-baths=Bird Baths;garden-fountains=Garden Fountains;garden-ornaments=Garden Ornaments;garden-lights=Garden Lights',
   'bath-fittings/taps-bath-fittings':
@@ -249,6 +250,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
     'adaptor-plug=Adaptor Plug;extension-cords=Extension Cords;lamp-holder=Lamp Holder;light-socket=Light Socket;breakers-fuses=Breakers & Fuses;electrical-hardware=Electrical Hardware;regulators=Regulators;enclosure-metal=Enclosure Metal;socket=Socket;switch=Switch',
   'footwear/men':
     'mens-bounceez=Bounceez;mens-flip-flops=Flip-Flops;slippers-footwear=Men\u2019s Slippers;mens-sandals-clogs=Sandals & Clogs;mens-sneakers=Sneakers',
+  'clothing/bottomwear': 'cargos=Cargos',
   'footwear/women':
     'bounceez=Bounceez;flip-flops=Flip-Flops;sandals-and-clogs=Sandals and Clogs;sneakers=Sneakers;slippers=Women\u2019s Slippers',
   'gifts/metal-wall-decor':
@@ -256,7 +258,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'party-decorations/ribbon':
     'gross-grain-ribbon=Gross Grain Ribbon;organza-ribbon=Organza Ribbon;plastic-ribbon=Plastic Ribbon;satin-ribbon-ribbon=Satin Ribbon;ribbon-bow-ribbon=Ribbon Bow;velvet-ribbon=Velvet Ribbon',
   'pet-products/birds':
-    'bird-feeders=Bird Feeders;birds-health-supplies=Birds Health Supplies;bird-foods=Bird Foods;nests=Nests',
+    'bird-feeders=Bird Feeders;birds-health-supplies=Birds Health Supplies;bird-foods=Bird Foods;nests=Nests;bird-cages=Bird Cages & Covers',
   'pet-products/dogs':
     'dry-bath=Dry Bath;hair-oil=Hair Oil;shampoo-pet-products=Shampoo;pet-perfumes=Pet Perfumes',
   'pet-products/fish':
@@ -265,6 +267,10 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
     'cat-food=Cat Food;cat-health-supplies=Cat Health Supplies;cat-shampoo=Cat Shampoo',
   'stationary/pen': 'hero-pen=Hero Pen;fountain-pens=Fountain Pens',
   'lawn-and-gardening/pots-and-planters': 'hanging-planters=Hanging Planters',
+  'home-furnishing/mosquito-nets':
+    'bed-mosquito-nets=Bed Mosquito Nets;window-door-mosquito-nets=Window & Door Mosquito Nets',
+  'lawn-and-gardening/nets-and-fence':
+    'bird-netting=Bird Netting;insect-netting=Insect Netting;shade-netting=Shade Netting;plant-support-netting=Plant Support Netting;garden-fencing=Garden Fencing',
   'lawn-and-gardening/irrigation-equipment': 'sprinklers=Sprinklers',
   'lawn-and-gardening/agri-gardening-tools': 'sprayers=Sprayers',
   'lawn-and-gardening/plant-saplings': 'indoor-plants=Indoor Plants',

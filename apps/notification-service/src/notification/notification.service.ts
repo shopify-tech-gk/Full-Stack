@@ -8,6 +8,7 @@ import { resolveProvider } from '../providers/registry';
 import { redactJobDataForLog } from './log-redaction.util';
 import { authClient } from '../serviceClients';
 import { addInboxMessage } from '../inbox/inbox.service';
+import { orderPlaced } from '../nudges/cart-nudge.service';
 
 /** W9: which customer setting governs each template. Unlisted templates (login OTP, support
  * inbox) are always sent - they are security / internal messages, not preferences. */
@@ -22,6 +23,8 @@ const SETTING_FOR_TEMPLATE: Record<string, 'orderUpdates' | 'offers'> = {
   RESTOCK_AVAILABLE: 'orderUpdates',
   // v1.18: a reminder the customer set themselves - same reasoning as above.
   BUY_REMINDER: 'orderUpdates',
+  // v1.18 "still in your cart" - about the customer's own cart, so it follows the same choice.
+  CART_NUDGE: 'orderUpdates',
 };
 
 /**
@@ -90,6 +93,13 @@ export async function processNotificationJob(
   job: JobAttemptInfo,
 ): Promise<void> {
   const redactedData = redactJobDataForLog(payload.templateKey, payload.data);
+
+  // v1.18 an order went through: no "still in your cart" nudge for this customer.
+  if (payload.templateKey === 'ORDER_PLACED' && payload.userId) {
+    await orderPlaced(payload.userId).catch((err: unknown) =>
+      logger.warn({ err }, 'cart nudge: could not record the order'),
+    );
+  }
 
   const logRow = await prisma.notificationLog.create({
     data: {

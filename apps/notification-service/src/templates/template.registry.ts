@@ -10,7 +10,8 @@ export type TemplateKey =
   | 'SUPPORT_MESSAGE'
   | 'SUPPORT_TICKET'
   | 'RESTOCK_AVAILABLE'
-  | 'BUY_REMINDER';
+  | 'BUY_REMINDER'
+  | 'CART_NUDGE';
 
 /** W9: the template exists, but this channel can't be sent right now (e.g. its MSG91 template
  * isn't approved/configured yet) - the job is logged SKIPPED, not FAILED or retried. */
@@ -283,6 +284,67 @@ const templates: Record<TemplateKey, Partial<Record<RenderableChannel, ChannelRe
           appLink,
         )}" style="display:inline-block;background:#0142aa;color:#ffffff;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:600">Buy it in the YouMart app</a></p><p><a href="${escapeHtml(
           webLink,
+        )}">View it on the website</a></p>`,
+      };
+    },
+  },
+
+  // v1.18 "Still in your cart" (like Shapermen's). WhatsApp: MSG91 template
+  // MSG91_WHATSAPP_CART_NUDGE_TEMPLATE (e.g. "youmart_cart_reminder", MARKETING) with an IMAGE
+  // header (the product photo) and a dynamic "Shop now" URL button https://youmart.in/{{1}} (the
+  // cart, or the product for a Buy Now): "Hey {{1}}, your favourite pick is waiting for you! {{2}}
+  // is just a tap away at Rs {{3}}. Complete your order on YouMart before it sells out." -
+  // {{1}}=customerName, {{2}}=title, {{3}}=price. Unset = WhatsApp leg SKIPPED.
+  CART_NUDGE: {
+    WHATSAPP: (data) => {
+      if (!config.msg91WhatsappCartNudgeTemplate) {
+        throw new TemplateUnavailableError(
+          'no cart-nudge WhatsApp template configured (MSG91_WHATSAPP_CART_NUDGE_TEMPLATE)',
+        );
+      }
+      return {
+        channel: 'WHATSAPP',
+        templateName: config.msg91WhatsappCartNudgeTemplate,
+        namespace: config.msg91WhatsappNamespace,
+        category: 'MARKETING',
+        components: {
+          ...(typeof data.photoUrl === 'string' && data.photoUrl
+            ? { headerImageUrl: data.photoUrl }
+            : {}),
+          bodyParams: [
+            singleLine(data.customerName ?? 'there', 40) || 'there',
+            singleLine(data.title, 60),
+            String(data.price),
+          ],
+          urlButtonSuffix: typeof data.urlPath === 'string' ? data.urlPath : 'cart',
+        },
+      };
+    },
+    EMAIL: (data) => {
+      const more = Number(data.moreItems ?? 0);
+      const buyNow = data.buyNow === true;
+      const path = typeof data.link === 'string' ? data.link : '/my-cart';
+      const photo =
+        typeof data.photoUrl === 'string' && data.photoUrl
+          ? `<p><img src="${escapeHtml(data.photoUrl)}" alt="" width="220" style="border-radius:12px"></p>`
+          : '';
+      return {
+        channel: 'EMAIL',
+        subject: buyNow
+          ? `${singleLine(data.title, 50)} is waiting for you`
+          : `${singleLine(data.title, 50)} is still in your cart`,
+        html: `${photo}<p>Hey ${escapeHtml(
+          data.customerName ?? 'there',
+        )},</p><p>Your favourite pick is waiting for you! <strong>${escapeHtml(data.title)}</strong>${
+          more > 0 ? ` and ${more} more` : ''
+        } ${
+          buyNow ? 'is just a tap away' : `${more > 0 ? 'are' : 'is'} still in your YouMart cart`
+        } at Rs ${escapeHtml(
+          data.price,
+        )}. Complete your order before it sells out.</p><p><a href="${escapeHtml(
+          `youmart:/${path}`,
+        )}" style="display:inline-block;background:#0142aa;color:#ffffff;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:600">Shop now in the app</a></p><p><a href="${escapeHtml(
+          `${config.storefrontUrl}${typeof data.webLink === 'string' ? data.webLink : '/cart'}`,
         )}">View it on the website</a></p>`,
       };
     },

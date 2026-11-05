@@ -4,6 +4,7 @@ import { AppError } from '@youmart/errors';
 import { enqueueNotification, notifyInbox } from '@youmart/notifications-client';
 import type { RefundResult } from '@youmart/service-client';
 import { prisma } from '../db';
+import { config } from '../config';
 import { inventoryClient, paymentClient } from '../serviceClients';
 import { releaseCouponForOrder } from '../coupon/coupon.service';
 import {
@@ -97,6 +98,17 @@ function totalLeft(
  * - CANCELLED: idempotent - re-runs the (idempotent) stock release and returns the order, so a
  *   release that failed after the status flip is completed by simply asking again.
  */
+/** v1.18 policy: once placed, an order can't be cancelled by the customer - only returned. */
+function assertCancellationOpen(): void {
+  if (!config.customerCancellationEnabled) {
+    throw new AppError(
+      'CONFLICT',
+      409,
+      "Orders can't be cancelled once placed. You can return items after delivery.",
+    );
+  }
+}
+
 export async function cancelOrderAsCustomer(
   userId: string,
   orderId: string,
@@ -116,6 +128,7 @@ export async function cancelOrderAsCustomer(
     await releaseCouponForOrder(orderId);
     return { outcome: 'CANCELLED', order: await getOrder(userId, orderId), cancelRequest: null };
   }
+  if (order.status !== 'PENDING_PAYMENT') assertCancellationOpen();
 
   if (order.status === 'PENDING_PAYMENT') {
     const note = `Cancelled by customer: ${input.reason}`;
@@ -229,6 +242,7 @@ export async function cancelOrderItemAsCustomer(
   if (item.sellerStatus === 'CANCELLED' || order.status === 'CANCELLED') {
     return { outcome: 'CANCELLED', order: await getOrder(userId, orderId), cancelRequest: null };
   }
+  if (order.status !== 'PENDING_PAYMENT') assertCancellationOpen();
   if (order.status === 'PENDING_PAYMENT') {
     throw new AppError(
       'CONFLICT',

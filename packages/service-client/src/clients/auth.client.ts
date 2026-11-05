@@ -7,6 +7,8 @@ export interface UserContactView {
   /** Null for email-only accounts (API v1.2). */
   phone: string | null;
   email: string | null;
+  /** v1.18 for greetings; null when the customer hasn't given one. */
+  name?: string | null;
 }
 
 /** W9: which channels the customer wants for each kind of message (`GET

@@ -30,17 +30,43 @@ import {
   type WalletSummary,
 } from '@youmart/shared-client';
 import { api } from '@/lib/api';
-import { AddressCard } from '@/components/AddressCard';
+import { AddressPickerSheet, AddressSummary } from '@/components/AddressPickerSheet';
 import { useCart } from '@/stores/cart';
 import { CouponSheet } from '@/components/CouponSheet';
 import { ProductImage } from '@/components/ui';
 import { PlacingOrderOverlay, atLeast } from '@/components/PlacingOrderOverlay';
-import { colors, font, radii, space } from '@/theme';
+import { colors, font, space } from '@/theme';
 
 // Checkout: pick a real saved address + order summary (server cart) -> create a PENDING_PAYMENT
 // order -> go to the payment screen. Server owns prices (anti-tampering). W9: the YouMart Wallet
 // balance can pay for the order on its own or together with Razorpay.
 const PLACING_STEP_MS = 850;
+
+/** v1.18 one checkout part: a white card with an icon header. */
+function Section({
+  icon,
+  title,
+  right,
+  children,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  right?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHead}>
+        <View style={styles.sectionIcon}>
+          <Ionicons name={icon} size={15} color={colors.brand.DEFAULT} />
+        </View>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {right ? <Text style={styles.sectionRight}>{right}</Text> : null}
+      </View>
+      {children}
+    </View>
+  );
+}
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -60,6 +86,17 @@ export default function CheckoutScreen() {
         fullCart.items.filter((line) => buyIds.includes(line.cartItemId)),
       )
     : fullCart;
+
+  // v1.18 "Still in your cart": if they leave without ordering, a WhatsApp nudge follows later.
+  // Buy Now (`temp=1`) is about that product, which leaves the cart again if they back out.
+  const nudgeSource = temp === '1' && buyIds ? 'BUY_NOW' : 'CART';
+  const nudgeSkus = cart.items.map((line) => line.skuId).join(',');
+  useEffect(() => {
+    if (!nudgeSkus) return;
+    void api
+      .checkoutStarted({ source: nudgeSource, skuIds: nudgeSkus.split(',') })
+      .catch(() => undefined);
+  }, [nudgeSource, nudgeSkus]);
 
   // `temp=1`: a product card's / product page's "Buy" put this line into the cart only so it could
   // be checked out. Leaving checkout without ordering takes it back out - the shopper never added it.
@@ -93,6 +130,8 @@ export default function CheckoutScreen() {
   // v1.17 billing address (Amazon / Flipkart style): the delivery address unless unticked.
   const [billSame, setBillSame] = useState(true);
   const [billingId, setBillingId] = useState<string | null>(null);
+  // v1.18 which address list is open (one compact address shows; "Change" opens the list).
+  const [picker, setPicker] = useState<'delivery' | 'billing' | null>(null);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
@@ -196,6 +235,7 @@ export default function CheckoutScreen() {
   }, [pickedId]);
 
   const selected = addresses?.find((a) => a.id === selectedId) ?? null;
+  const billing = addresses?.find((a) => a.id === billingId) ?? null;
   const placingSteps = [
     'Checking prices & stock',
     ...(coupon ? [`Applying ${coupon.coupon.code}`] : []),
@@ -253,93 +293,21 @@ export default function CheckoutScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.body}>
-        <Text style={styles.sectionTitle}>Delivery address</Text>
-        {!addresses ? (
-          <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.lg }} />
-        ) : addresses.length === 0 ? (
-          <Pressable style={styles.addAddress} onPress={() => router.push('/addresses/form')}>
-            <Ionicons name="add-circle-outline" size={20} color={colors.brand.DEFAULT} />
-            <Text style={styles.addAddressText}>Add a delivery address</Text>
-          </Pressable>
-        ) : (
-          <>
-            {addresses.map((a) => (
-              <AddressCard
-                key={a.id}
-                address={a}
-                selected={selectedId === a.id}
-                onPress={() => setSelectedId(a.id)}
-              />
-            ))}
-            <Pressable style={styles.addAddress} onPress={() => router.push('/addresses/form')}>
-              <Ionicons name="add" size={18} color={colors.brand.DEFAULT} />
-              <Text style={styles.addAddressText}>Add another address</Text>
-            </Pressable>
-          </>
-        )}
-
-        {addresses && addresses.length > 0 ? (
-          <>
-            <Text style={styles.sectionTitle}>Billing address</Text>
-            <Pressable
-              style={styles.sameRow}
-              onPress={() => {
-                const next = !billSame;
-                setBillSame(next);
-                // Unticked: start from another saved address (the delivery one if it's the only).
-                if (!next && !billingId) {
-                  setBillingId(addresses.find((a) => a.id !== selectedId)?.id ?? selectedId);
-                }
-              }}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: billSame }}
-            >
-              <Ionicons
-                name={billSame ? 'checkbox' : 'square-outline'}
-                size={22}
-                color={billSame ? colors.brand.DEFAULT : colors.text.muted}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sameText}>Same as delivery address</Text>
-                <Text style={styles.sameSub} numberOfLines={1}>
-                  {billSame
-                    ? selected
-                      ? `Invoice billed to ${selected.fullName}, ${selected.city}`
-                      : 'Your invoice uses the delivery address'
-                    : 'Choose the name and address for your invoice'}
-                </Text>
-              </View>
-            </Pressable>
-            {!billSame ? (
-              <>
-                {addresses.map((a) => (
-                  <AddressCard
-                    key={a.id}
-                    address={a}
-                    selected={billingId === a.id}
-                    onPress={() => setBillingId(a.id)}
-                  />
-                ))}
-                <Pressable style={styles.addAddress} onPress={() => router.push('/addresses/form')}>
-                  <Ionicons name="add" size={18} color={colors.brand.DEFAULT} />
-                  <Text style={styles.addAddressText}>Add a billing address</Text>
-                </Pressable>
-              </>
-            ) : null}
-          </>
-        ) : null}
-
-        <Text style={styles.sectionTitle}>Order summary</Text>
-        {buyIds && fullCart.items.length > cart.items.length ? (
-          <View style={styles.buyNote}>
-            <Ionicons name="flash" size={16} color={colors.brand.DEFAULT} />
-            <Text style={styles.buyNoteText}>
-              Buying {cart.items.length === 1 ? 'this item' : `${cart.items.length} items`} only -
-              the rest stay in your cart.
-            </Text>
-          </View>
-        ) : null}
-        <View style={styles.summaryCard}>
+        {/* v1.18 products first, then where they go - each part in its own card. */}
+        <Section
+          icon="bag-handle"
+          title="Order summary"
+          right={`${cart.items.length} item${cart.items.length === 1 ? '' : 's'}`}
+        >
+          {buyIds && fullCart.items.length > cart.items.length ? (
+            <View style={styles.buyNote}>
+              <Ionicons name="flash" size={15} color={colors.brand.DEFAULT} />
+              <Text style={styles.buyNoteText}>
+                Buying {cart.items.length === 1 ? 'this item' : `${cart.items.length} items`} only -
+                the rest stay in your cart.
+              </Text>
+            </View>
+          ) : null}
           {cart.items.map((line, index) => {
             const busy = qtyBusy === line.cartItemId;
             return (
@@ -403,54 +371,74 @@ export default function CheckoutScreen() {
               </View>
             );
           })}
-          <View style={styles.divider} />
-          <View style={styles.sumLine}>
-            <Text style={styles.sumLabel}>Subtotal</Text>
-            <Text style={styles.sumValue}>{formatMoney(totals.subtotal)}</Text>
-          </View>
-          <View style={styles.sumLine}>
-            <Text style={styles.sumLabel}>Delivery</Text>
-            {toPaise(shipping) === 0 ? (
-              <Text style={styles.free}>Free</Text>
-            ) : (
-              <Text style={styles.sumValue}>{formatMoney(shipping)}</Text>
-            )}
-          </View>
-          {coupon ? (
-            <View style={styles.sumLine}>
-              <Text style={styles.sumLabel}>Coupon ({coupon.coupon.code})</Text>
-              <Text style={styles.discountValue}>− {formatMoney(coupon.discount)}</Text>
-            </View>
-          ) : null}
-          <View style={[styles.sumLine, styles.totalRow]}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>{formatMoney(payable)}</Text>
-          </View>
-        </View>
+        </Section>
 
-        <Text style={styles.sectionTitle}>Coupons</Text>
-        {couponNote ? <Text style={styles.couponNote}>{couponNote}</Text> : null}
-        {coupon ? (
-          <View style={[styles.couponCard, styles.couponOn]}>
-            <Ionicons name="pricetag" size={20} color={colors.feature.guarantee} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.couponTitle}>{coupon.coupon.code} applied</Text>
-              <Text style={styles.couponSave}>You save {formatMoney(coupon.discount)}</Text>
-            </View>
-            <Pressable onPress={() => setCoupon(null)} hitSlop={8}>
-              <Text style={styles.couponRemove}>Remove</Text>
+        <Section icon="location" title="Deliver to">
+          {!addresses ? (
+            <ActivityIndicator color={colors.brand.DEFAULT} style={{ margin: space.md }} />
+          ) : !selected ? (
+            <Pressable style={styles.addAddress} onPress={() => router.push('/addresses/form')}>
+              <Ionicons name="add-circle" size={20} color={colors.brand.DEFAULT} />
+              <Text style={styles.addAddressText}>Add a delivery address</Text>
             </Pressable>
-          </View>
-        ) : (
-          <Pressable style={styles.couponCard} onPress={() => setCouponOpen(true)}>
-            <Ionicons name="pricetag-outline" size={20} color={colors.brand.DEFAULT} />
-            <Text style={[styles.couponTitle, { flex: 1 }]}>Apply coupon</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.text.muted} />
-          </Pressable>
-        )}
+          ) : (
+            <>
+              <AddressSummary address={selected} onChange={() => setPicker('delivery')} />
+              <View style={styles.cardDivider} />
+              <Pressable
+                style={styles.sameRow}
+                onPress={() => {
+                  const next = !billSame;
+                  setBillSame(next);
+                  // Unticked: start from another saved address (the delivery one if it's the only).
+                  if (!next && !billingId) {
+                    setBillingId(addresses.find((a) => a.id !== selectedId)?.id ?? selectedId);
+                  }
+                }}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: billSame }}
+              >
+                <Ionicons
+                  name={billSame ? 'checkbox' : 'square-outline'}
+                  size={20}
+                  color={billSame ? colors.brand.DEFAULT : colors.text.muted}
+                />
+                <Text style={styles.sameText}>Billing address same as delivery</Text>
+              </Pressable>
+              {!billSame && billing ? (
+                <View style={styles.billingBox}>
+                  <Text style={styles.billingLabel}>BILL TO</Text>
+                  <AddressSummary address={billing} onChange={() => setPicker('billing')} />
+                </View>
+              ) : null}
+            </>
+          )}
+        </Section>
 
-        <Text style={styles.sectionTitle}>Payment method</Text>
-        <View style={styles.methods}>
+        <Section icon="pricetag" title="Offers & coupons">
+          {couponNote ? <Text style={styles.couponNote}>{couponNote}</Text> : null}
+          {coupon ? (
+            <View style={[styles.couponRow, styles.couponOn]}>
+              <Ionicons name="checkmark-circle" size={20} color={colors.feature.guarantee} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.couponTitle}>{coupon.coupon.code} applied</Text>
+                <Text style={styles.couponSave}>You save {formatMoney(coupon.discount)}</Text>
+              </View>
+              <Pressable onPress={() => setCoupon(null)} hitSlop={8}>
+                <Text style={styles.couponRemove}>Remove</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.couponRow} onPress={() => setCouponOpen(true)}>
+              <Ionicons name="ticket-outline" size={20} color={colors.brand.DEFAULT} />
+              <Text style={[styles.couponTitle, { flex: 1 }]}>Apply a coupon</Text>
+              <Text style={styles.couponView}>View all</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.brand.DEFAULT} />
+            </Pressable>
+          )}
+        </Section>
+
+        <Section icon="card" title="Payment method">
           <Pressable
             style={[styles.method, method === 'ONLINE' && styles.methodOn]}
             onPress={() => setMethod('ONLINE')}
@@ -464,7 +452,9 @@ export default function CheckoutScreen() {
               <Text style={styles.methodTitle}>Pay online</Text>
               <Text style={styles.methodSub}>UPI, GPay, PhonePe, cards, net banking</Text>
             </View>
-            <Ionicons name="card-outline" size={22} color={colors.brand.DEFAULT} />
+            <View style={styles.methodIcon}>
+              <Ionicons name="phone-portrait-outline" size={18} color={colors.brand.DEFAULT} />
+            </View>
           </Pressable>
           <Pressable
             style={[styles.method, cod && styles.methodOn, !codOk && styles.methodDisabled]}
@@ -484,20 +474,20 @@ export default function CheckoutScreen() {
                   : `Available for orders up to ${formatMoney(COD_MAX_AMOUNT)}`}
               </Text>
             </View>
-            <Ionicons
-              name="cash-outline"
-              size={22}
-              color={codOk ? colors.feature.guarantee : colors.text.muted}
-            />
+            <View style={[styles.methodIcon, { backgroundColor: '#e8f7ee' }]}>
+              <Ionicons
+                name="cash-outline"
+                size={18}
+                color={codOk ? colors.feature.guarantee : colors.text.muted}
+              />
+            </View>
           </Pressable>
-        </View>
 
-        {hasWallet ? (
-          <>
-            <View style={styles.walletCard}>
+          {hasWallet ? (
+            <View style={styles.walletBox}>
               <View style={styles.walletRow}>
                 <View style={styles.walletIcon}>
-                  <Ionicons name="wallet" size={18} color={colors.white} />
+                  <Ionicons name="wallet" size={17} color={colors.white} />
                 </View>
                 <View style={styles.walletBody}>
                   <Text style={styles.walletTitle}>Use YouMart Wallet</Text>
@@ -525,12 +515,78 @@ export default function CheckoutScreen() {
                 </View>
               ) : null}
             </View>
-          </>
-        ) : null}
+          ) : null}
+        </Section>
+
+        <Section icon="receipt" title="Price details">
+          <View style={styles.sumLine}>
+            <Text style={styles.sumLabel}>
+              Price ({cart.itemCount} item{cart.itemCount === 1 ? '' : 's'})
+            </Text>
+            <Text style={styles.sumValue}>{formatMoney(totals.subtotal)}</Text>
+          </View>
+          <View style={styles.sumLine}>
+            <Text style={styles.sumLabel}>Delivery</Text>
+            {toPaise(shipping) === 0 ? (
+              <Text style={styles.free}>FREE</Text>
+            ) : (
+              <Text style={styles.sumValue}>{formatMoney(shipping)}</Text>
+            )}
+          </View>
+          {coupon ? (
+            <View style={styles.sumLine}>
+              <Text style={styles.sumLabel}>Coupon ({coupon.coupon.code})</Text>
+              <Text style={styles.discountValue}>− {formatMoney(coupon.discount)}</Text>
+            </View>
+          ) : null}
+          <View style={[styles.sumLine, styles.totalRow]}>
+            <Text style={styles.totalLabel}>Total amount</Text>
+            <Text style={styles.totalValue}>{formatMoney(payable)}</Text>
+          </View>
+          {coupon ? (
+            <View style={styles.saveBanner}>
+              <Ionicons name="sparkles" size={14} color={colors.feature.guarantee} />
+              <Text style={styles.saveText}>
+                You save {formatMoney(coupon.discount)} on this order
+              </Text>
+            </View>
+          ) : null}
+        </Section>
+
+        <View style={styles.trust}>
+          {(
+            [
+              ['shield-checkmark', 'Secure payments'],
+              ['refresh-circle', 'Easy returns'],
+              ['ribbon', '100% genuine'],
+            ] as const
+          ).map(([icon, label]) => (
+            <View key={label} style={styles.trustItem}>
+              <Ionicons name={icon} size={18} color={colors.brand.DEFAULT} />
+              <Text style={styles.trustText}>{label}</Text>
+            </View>
+          ))}
+        </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
 
+      <AddressPickerSheet
+        visible={picker !== null}
+        title={picker === 'billing' ? 'Billing address' : 'Deliver to'}
+        addresses={addresses ?? []}
+        selectedId={picker === 'billing' ? billingId : selectedId}
+        onPick={(id) => {
+          if (picker === 'billing') setBillingId(id);
+          else setSelectedId(id);
+          setPicker(null);
+        }}
+        onAdd={() => {
+          setPicker(null);
+          router.push('/addresses/form');
+        }}
+        onClose={() => setPicker(null)}
+      />
       <PlacingOrderOverlay visible={placing} steps={placingSteps} stepMs={PLACING_STEP_MS} />
       <CouponSheet
         visible={couponOpen}
@@ -545,10 +601,10 @@ export default function CheckoutScreen() {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>
         <View>
-          <Text style={styles.footerLabel}>
-            {cod ? 'Pay on delivery' : split ? 'To pay now' : 'Total'}
-          </Text>
           <Text style={styles.footerTotal}>{formatMoney(payNow)}</Text>
+          <Text style={styles.footerLabel}>
+            {cod ? 'Pay on delivery' : split ? 'To pay now' : 'Total amount'}
+          </Text>
         </View>
         <Pressable
           style={[styles.payBtn, (!selected || placing) && styles.disabled]}
@@ -558,13 +614,16 @@ export default function CheckoutScreen() {
           {placing ? (
             <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.payText}>
-              {cod
-                ? 'Place COD order'
-                : split && split.online === '0.00'
-                  ? 'Pay with wallet'
-                  : 'Place order'}
-            </Text>
+            <View style={styles.payInner}>
+              <Ionicons name="lock-closed" size={15} color={colors.white} />
+              <Text style={styles.payText}>
+                {cod
+                  ? 'Place COD order'
+                  : split && split.online === '0.00'
+                    ? 'Pay with wallet'
+                    : 'Place order'}
+              </Text>
+            </View>
           )}
         </Pressable>
       </View>
@@ -573,37 +632,109 @@ export default function CheckoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.page },
+  screen: { flex: 1, backgroundColor: '#eef5fb' },
   body: {
     paddingHorizontal: space.md,
-    paddingTop: space.sm,
-    gap: space.sm,
-    paddingBottom: space.md,
+    paddingTop: space.md,
+    gap: space.md,
+    paddingBottom: space.lg,
   },
-  discountValue: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.feature.guarantee },
-  couponCard: {
+  section: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: space.md,
+    gap: 10,
+    shadowColor: '#0f2a5c',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: colors.brandPopup.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionRight: { fontFamily: font.uiMedium, fontSize: 12.5, color: colors.text.muted },
+  cardDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.card.border },
+  billingBox: {
+    backgroundColor: '#f6f9fd',
+    borderRadius: 12,
+    padding: 10,
+    gap: 6,
+  },
+  billingLabel: {
+    fontFamily: font.uiBold,
+    fontSize: 10.5,
+    letterSpacing: 1,
+    color: colors.text.muted,
+  },
+  couponRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1.5,
-    borderColor: colors.card.border,
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.brand.DEFAULT,
+    backgroundColor: '#f6f9fd',
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  couponOn: { borderColor: colors.feature.guarantee, backgroundColor: '#eefaf2' },
+  couponView: { fontFamily: font.uiBold, fontSize: 12.5, color: colors.brand.DEFAULT },
+  methodIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: colors.brandPopup.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.card.border,
+    padding: 10,
+    gap: space.sm,
+  },
+  saveBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#e8f7ee',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  saveText: { fontFamily: font.uiSemibold, fontSize: 12.5, color: colors.feature.guarantee },
+  trust: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: space.sm,
+  },
+  trustItem: { alignItems: 'center', gap: 4 },
+  trustText: { fontFamily: font.uiMedium, fontSize: 11.5, color: colors.text.body },
+  payInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  discountValue: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.feature.guarantee },
+  couponOn: {
+    borderStyle: 'solid',
+    borderColor: colors.feature.guarantee,
+    backgroundColor: '#eefaf2',
+  },
   couponTitle: { fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
   couponSave: { fontFamily: font.uiMedium, fontSize: 12.5, color: colors.feature.guarantee },
   couponRemove: { fontFamily: font.uiBold, fontSize: 13.5, color: colors.price.discount },
-  methods: { gap: 6 },
   method: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1.5,
+    borderRadius: 12,
+    borderWidth: 1.2,
     borderColor: colors.card.border,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -613,12 +744,7 @@ const styles = StyleSheet.create({
   methodBody: { flex: 1, gap: 2 },
   methodTitle: { fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
   methodSub: { fontFamily: font.body, fontSize: 12.5, color: colors.text.body },
-  sectionTitle: {
-    fontFamily: font.uiBold,
-    fontSize: 15,
-    color: colors.heading,
-    marginTop: space.xs,
-  },
+  sectionTitle: { flex: 1, fontFamily: font.uiBold, fontSize: 15, color: colors.heading },
   addAddress: {
     flexDirection: 'row',
     gap: 8,
@@ -627,27 +753,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   addAddressText: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.brand.DEFAULT },
-  sameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1,
-    borderColor: colors.card.border,
-    paddingHorizontal: 12,
-    paddingVertical: space.sm,
-  },
-  sameText: { fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
-  sameSub: { fontFamily: font.body, fontSize: 12.5, color: colors.text.muted, marginTop: 2 },
-  summaryCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1,
-    borderColor: colors.card.border,
-    padding: space.md,
-    gap: 6,
-  },
+  sameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sameText: { fontFamily: font.uiMedium, fontSize: 13.5, color: colors.text.strong },
   sumLine: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -696,7 +803,6 @@ const styles = StyleSheet.create({
     color: colors.price.discount,
     marginBottom: space.sm,
   },
-  sumTitle: { flex: 1, fontFamily: font.body, fontSize: 13, color: colors.text.body },
   sumLabel: { fontFamily: font.body, fontSize: 14, color: colors.text.body },
   sumValue: { fontFamily: font.uiSemibold, fontSize: 13.5, color: colors.text.strong },
   free: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.feature.guarantee },
@@ -710,7 +816,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   buyNoteText: { flex: 1, fontFamily: font.uiMedium, fontSize: 13, color: colors.brand.DEFAULT },
-  divider: { height: 1, backgroundColor: colors.cart.line, marginVertical: 2 },
   totalRow: {
     borderTopWidth: 1,
     borderTopColor: colors.cart.line,
@@ -719,15 +824,6 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontFamily: font.uiBold, fontSize: 15, color: colors.text.strong },
   totalValue: { fontFamily: font.uiBold, fontSize: 17, color: colors.brand.DEFAULT },
-  walletCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.tile,
-    borderWidth: 1.5,
-    borderColor: colors.brand.DEFAULT,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: space.sm,
-  },
   walletRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   walletIcon: {
     width: 36,
@@ -758,19 +854,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.border.menu,
-    paddingHorizontal: space.md,
-    paddingTop: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    shadowColor: '#0f2a5c',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -3 },
+    elevation: 12,
   },
-  footerLabel: { fontFamily: font.body, fontSize: 12, color: colors.text.muted },
-  footerTotal: { fontFamily: font.uiBold, fontSize: 18, color: colors.text.strong },
+  footerLabel: { fontFamily: font.uiMedium, fontSize: 12, color: colors.text.muted },
+  footerTotal: { fontFamily: font.uiBold, fontSize: 20, color: colors.text.strong },
   payBtn: {
     backgroundColor: colors.brand.DEFAULT,
-    borderRadius: radii.button,
-    paddingHorizontal: 28,
-    paddingVertical: 11,
-    minWidth: 150,
+    borderRadius: 12,
+    paddingHorizontal: 26,
+    paddingVertical: 13,
+    minWidth: 170,
     alignItems: 'center',
   },
   disabled: { opacity: 0.5 },

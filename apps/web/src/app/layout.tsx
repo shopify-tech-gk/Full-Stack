@@ -29,8 +29,12 @@ const arimo = localFont({
 });
 
 export const metadata: Metadata = {
+  // v1.18 absolute addresses for link previews (WhatsApp, Facebook, X...). NEXT_PUBLIC_SITE_URL
+  // is the live site; youmart.in by default.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://youmart.in'),
   title: 'YouMart - Online Shopping India | Fast Delivery in Coimbatore, Chennai, Bangalore',
   description: 'Shop easy, live better with YouMart.',
+  openGraph: { siteName: 'YouMart', type: 'website', locale: 'en_IN' },
 };
 
 export const viewport: Viewport = {

@@ -81,7 +81,14 @@ function rangeClause(field: string, min?: number, max?: number): string | null {
   return null;
 }
 
-function sortBy(sort: BrowseRequestBody['sort'], hasText: boolean): string | undefined {
+/** Changes once a day: the default mix when the caller sends no seed of its own. */
+const dailySeed = () => (Math.floor(Date.now() / 86_400_000) % 2_147_483_646) + 1;
+
+function sortBy(
+  sort: BrowseRequestBody['sort'],
+  hasText: boolean,
+  seed: number | undefined,
+): string | undefined {
   switch (sort) {
     case 'newest':
       return 'createdAt:desc';
@@ -94,8 +101,9 @@ function sortBy(sort: BrowseRequestBody['sort'], hasText: boolean): string | und
     case 'discount':
       return 'discountPct:desc,createdAt:desc';
     default:
-      // Text relevance when searching; otherwise the collection default (newest first).
-      return hasText ? undefined : 'createdAt:desc';
+      // Text relevance when searching. v1.18 plain browsing: a random mix (a parent category's
+      // products from all its sub-categories interleaved, not one sub after another).
+      return hasText ? undefined : `_rand(${seed ?? dailySeed()}):asc`;
   }
 }
 
@@ -133,6 +141,9 @@ export async function browse(
   // One clause per filter key, so each facet can be recomputed without its own clause.
   const clauses = new Map<string, string>();
   if (body.categoryId) clauses.set('__category', `categoryIds:=${quote(body.categoryId)}`);
+  else if (body.categoryIdsAny?.length) {
+    clauses.set('__category', `categoryIds:=[${body.categoryIdsAny.map(quote).join(',')}]`);
+  }
   const price = rangeClause(
     PRICE_FIELD,
     body.minPrice !== undefined ? moneyToPaise(body.minPrice.toFixed(2)) : undefined,
@@ -197,7 +208,7 @@ export async function browse(
   const common = hasText
     ? { q: body.q!.trim(), ...TEXT_PARAMS }
     : { q: '*', query_by: 'title', exclude_fields: 'embedding' };
-  const sort = sortBy(body.sort, hasText);
+  const sort = sortBy(body.sort, hasText, body.seed);
   const searches: Record<string, unknown>[] = [
     {
       collection: PRODUCTS_ALIAS,

@@ -71,7 +71,8 @@
           "imageWidth": 200
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": false,

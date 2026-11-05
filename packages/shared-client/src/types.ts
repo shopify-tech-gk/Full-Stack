@@ -96,6 +96,8 @@ export interface ProductListQuery {
   sort?: CatalogSort;
   page?: number;
   limit?: number;
+  /** v1.18 the random-mix seed for browsing (same seed = same order across pages). */
+  seed?: number;
   [attributeFilter: string]: string | number | undefined;
 }
 export interface ProductListPage {
@@ -178,6 +180,10 @@ export type SearchSort = 'relevance' | 'price_asc' | 'price_desc' | 'newest';
 export interface SearchQuery {
   q?: string;
   category?: Uuid;
+  /** v1.18 comma-separated category ids: products in any of them (a storefront group). */
+  categoryIn?: string;
+  /** v1.18 the random-mix seed for browsing. */
+  seed?: number;
   minPrice?: number;
   maxPrice?: number;
   /** One brand, or several comma-separated (v1.17). */

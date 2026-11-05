@@ -63,6 +63,11 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
   MSG91_WHATSAPP_RESTOCK_TEMPLATE: z.string().optional(),
   /** v1.18 "Remind me to buy" WhatsApp - an approved MSG91 template; unset = WhatsApp leg skipped. */
   MSG91_WHATSAPP_BUY_REMINDER_TEMPLATE: z.string().optional(),
+  /** v1.18 "Still in your cart" WhatsApp (IMAGE header) - unset = WhatsApp leg skipped. */
+  MSG91_WHATSAPP_CART_NUDGE_TEMPLATE: z.string().optional(),
+  /** v1.18 how long after leaving checkout the nudge goes, and at most one per this many hours. */
+  CART_NUDGE_DELAY_MINUTES: z.coerce.number().int().min(1).default(60),
+  CART_NUDGE_COOLDOWN_HOURS: z.coerce.number().int().min(1).default(24),
   /** v1.17 the storefront's public address, for links in emails ("View on website"). */
   STOREFRONT_URL: z.string().url().default('http://localhost:3000'),
   // Sender id for MSG91's legacy plain-text SMS API - SMS is DROPPED as an
@@ -104,6 +109,8 @@ const notificationServiceEnvSchema = baseEnvSchema.extend({
   SEARCH_SERVICE_URL: z.string().url().default('http://localhost:4013'),
   /** v1.18 buy reminders: the product's name and price now. */
   CATALOG_SERVICE_URL: z.string().url().default('http://localhost:4002'),
+  /** v1.18 cart nudge: what's still in the cart. */
+  CART_SERVICE_URL: z.string().url().default('http://localhost:4004'),
   SERVICE_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
@@ -137,6 +144,10 @@ export interface NotificationServiceConfig {
   msg91WhatsappWalletRefundTemplate: string | undefined;
   msg91WhatsappRestockTemplate: string | undefined;
   msg91WhatsappBuyReminderTemplate: string | undefined;
+  msg91WhatsappCartNudgeTemplate: string | undefined;
+  cartNudgeDelayMinutes: number;
+  cartNudgeCooldownHours: number;
+  cartServiceUrl: string;
   storefrontUrl: string;
   msg91SenderId: string;
   msg91OtpTemplateId: string | undefined;
@@ -183,6 +194,10 @@ export const config: Readonly<NotificationServiceConfig> = Object.freeze({
   msg91WhatsappWalletRefundTemplate: parsed.MSG91_WHATSAPP_WALLET_REFUND_TEMPLATE || undefined,
   msg91WhatsappRestockTemplate: parsed.MSG91_WHATSAPP_RESTOCK_TEMPLATE || undefined,
   msg91WhatsappBuyReminderTemplate: parsed.MSG91_WHATSAPP_BUY_REMINDER_TEMPLATE || undefined,
+  msg91WhatsappCartNudgeTemplate: parsed.MSG91_WHATSAPP_CART_NUDGE_TEMPLATE || undefined,
+  cartNudgeDelayMinutes: parsed.CART_NUDGE_DELAY_MINUTES,
+  cartNudgeCooldownHours: parsed.CART_NUDGE_COOLDOWN_HOURS,
+  cartServiceUrl: parsed.CART_SERVICE_URL,
   storefrontUrl: parsed.STOREFRONT_URL.replace(/\/+$/, ''),
   msg91SenderId: parsed.MSG91_SENDER_ID,
   msg91OtpTemplateId: parsed.MSG91_OTP_TEMPLATE_ID,

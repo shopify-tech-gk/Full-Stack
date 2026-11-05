@@ -29,6 +29,7 @@ import { BrandBanners } from '@/components/BrandBanners';
 import { ReferBanner } from '@/components/ReferBanner';
 import { BestCategories } from '@/components/BestCategories';
 import { BrandGrid } from '@/components/BrandGrid';
+import { BrandVideoPip } from '@/components/BrandVideoPip';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
 import { SwipeTabs, HScrollZone } from '@/components/SwipeTabs';
@@ -180,6 +181,8 @@ export default function HomeScreen() {
           </ScrollView>
         </Animated.View>
       )}
+      {/* v1.18 today's brand video, floating in the corner. */}
+      {state.status === 'ready' ? <BrandVideoPip /> : null}
     </SwipeTabs>
   );
 }

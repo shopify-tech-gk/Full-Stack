@@ -22,6 +22,8 @@ export const BrowseQuery = z.object({
   minPrice: z.coerce.number().nonnegative().optional(),
   maxPrice: z.coerce.number().nonnegative().optional(),
   rating: z.coerce.number().min(0).max(5).optional(),
+  /** v1.18 the random-mix seed for browsing (passed to search). */
+  seed: z.coerce.number().int().min(1).max(2147483647).optional(),
   sort: z.enum(['relevance', 'newest', 'price_asc', 'price_desc', 'rating', 'discount']).optional(),
   page: z.coerce.number().int().min(1).max(500).optional(),
   // Opaque page token since v1.3 (was a product id).
@@ -157,6 +159,7 @@ function baseRequest(query: BrowseQuery, category: ResolvedCategory | null, raw:
     minPrice: query.min_price ?? query.minPrice,
     maxPrice: query.max_price ?? query.maxPrice,
     minRating: query.rating || undefined,
+    ...(query.seed ? { seed: query.seed } : {}),
   };
 }
 

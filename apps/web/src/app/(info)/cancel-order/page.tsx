@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { REFUND_POLICY, ROUTES, loginHref } from '@youmart/shared-client';
+import {
+  CUSTOMER_CANCELLATION_ENABLED,
+  REFUND_POLICY,
+  ROUTES,
+  loginHref,
+} from '@youmart/shared-client';
 import { SignedInOnly } from '@/components/account/SignedInOnly';
 import { BODY_TEXT, TEXT_LINK } from '@/components/account/formStyles';
 import { OrderCancelForm } from '@/components/info/OrderCancelForm';
@@ -39,19 +44,30 @@ export default function OrderCancelPage({
           </Link>
           .
         </p>
-        <SignedInOnly
-          fallback={
-            <p className={BODY_TEXT}>
-              Please{' '}
-              <Link href={loginHref(ROUTES.cancelOrder)} className={TEXT_LINK}>
-                log in
-              </Link>{' '}
-              to cancel one of your orders.
-            </p>
-          }
-        >
-          <OrderCancelForm orderNumber={orderNumber} />
-        </SignedInOnly>
+        {/* v1.18 policy: placed orders can't be cancelled - the form returns with the switch. */}
+        {CUSTOMER_CANCELLATION_ENABLED ? (
+          <SignedInOnly
+            fallback={
+              <p className={BODY_TEXT}>
+                Please{' '}
+                <Link href={loginHref(ROUTES.cancelOrder)} className={TEXT_LINK}>
+                  log in
+                </Link>{' '}
+                to cancel one of your orders.
+              </p>
+            }
+          >
+            <OrderCancelForm orderNumber={orderNumber} />
+          </SignedInOnly>
+        ) : (
+          <p className={BODY_TEXT}>
+            To send back something you no longer need, open the order in{' '}
+            <Link href={ROUTES.orders} className={TEXT_LINK}>
+              My Orders
+            </Link>{' '}
+            after delivery and choose Return.
+          </p>
+        )}
       </div>
     </div>
   );

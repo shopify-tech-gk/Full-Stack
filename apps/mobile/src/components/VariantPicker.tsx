@@ -1,10 +1,19 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {
   discountPercent,
   formatMoney,
+  sizeRank,
   type Money,
   type ProductDetailData,
   type ProductVariant,
@@ -36,14 +45,23 @@ interface Choice {
   on: boolean;
 }
 
+/** v1.18 clothing: Colour is a strip of photo swatches, Size one row of compact chips. */
+const isColour = (key: string) => key === 'color' || key === 'colour';
+
 export function VariantPicker({
   prod,
   selectedSkuId,
   onSelect,
+  show,
+  style,
 }: {
   prod: ProductDetailData;
   selectedSkuId: string | null;
   onSelect: (skuId: string) => void;
+  /** v1.18 only these option kinds render here (the page splits Colour and Size); the picks
+   * still follow every kind's order. */
+  show?: (key: string) => boolean;
+  style?: StyleProp<ViewStyle>;
 }) {
   const sel = prod.variants.find((v) => v.skuId === selectedSkuId) ?? prod.variants[0];
   if (!sel) return null;
@@ -64,8 +82,9 @@ export function VariantPicker({
   };
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, style]}>
       {dims.map((dim, d) => {
+        if (show && !show(dim.key)) return null;
         const earlier = dims.slice(0, d);
         const fits = (options: Readonly<Record<string, string>>) =>
           earlier.every((e) => same(options[e.key], sel.options[e.key]));
@@ -86,8 +105,41 @@ export function VariantPicker({
           if (fits(u.options)) add(valueOf(u.options, u.label, dim.key), null);
         }
         if (dim.key === 'weight') choices.sort((a, b) => amount(a.value) - amount(b.value));
+        // v1.18 sizes in wearing order (S, M, L, XL / 28, 30, 32), as tiles with their price.
+        if (dim.key === 'size') choices.sort((a, b) => sizeRank(a.value) - sizeRank(b.value));
         const current = choices.find((c) => c.on)?.value ?? '';
-        const visual = dim.key !== 'weight' && choices.some((c) => c.variants[0]?.image);
+        const visual =
+          dim.key !== 'weight' && dim.key !== 'size' && choices.some((c) => c.variants[0]?.image);
+
+        if (dim.key === 'size' || (isColour(dim.key) && visual)) {
+          const colour = isColour(dim.key);
+          return (
+            <View key={dim.key} style={styles.group}>
+              <View style={styles.groupHead}>
+                <Text style={styles.groupName}>{colour ? 'Colour' : 'Size'}</Text>
+                <Text style={styles.groupValue} numberOfLines={1}>
+                  {current}
+                </Text>
+                <Text style={styles.groupCount}>
+                  {choices.filter((c) => c.variants.length > 0).length} available
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={colour ? styles.swatchRow : styles.chipRow}
+              >
+                {choices.map((c) =>
+                  colour ? (
+                    <Swatch key={c.value} choice={c} onPress={() => pick(c, d)} />
+                  ) : (
+                    <SizeChip key={c.value} choice={c} onPress={() => pick(c, d)} />
+                  ),
+                )}
+              </ScrollView>
+            </View>
+          );
+        }
 
         return (
           <View key={dim.key || 'option'} style={styles.group}>
@@ -119,6 +171,76 @@ export function VariantPicker({
         );
       })}
     </View>
+  );
+}
+
+/** v1.18 a colour: its photo, the name under it. */
+function Swatch({ choice: c, onPress }: { choice: Choice; onPress: () => void }) {
+  const na = c.variants.length === 0;
+  const image = c.variants.find((v) => v.image)?.image;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={na}
+      style={({ pressed }) => [styles.swatch, pressed && { transform: [{ scale: 0.96 }] }]}
+      accessibilityRole="button"
+      accessibilityLabel={`Colour ${c.value}${na ? ', unavailable' : ''}`}
+      accessibilityState={{ selected: c.on, disabled: na }}
+    >
+      <View style={[styles.swatchImg, c.on && styles.swatchImgOn, na && styles.na]}>
+        {image ? (
+          <Image
+            source={{ uri: image }}
+            style={[styles.fill, na && { opacity: 0.35 }]}
+            contentFit="cover"
+            contentPosition="top"
+          />
+        ) : (
+          <Ionicons name="shirt-outline" size={22} color={colors.card.border} />
+        )}
+      </View>
+      <Text
+        style={[styles.swatchName, c.on && styles.textOn, na && styles.textNa]}
+        numberOfLines={1}
+      >
+        {c.value}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** v1.18 a size: the size, its price under it (sizes can cost different amounts). */
+function SizeChip({ choice: c, onPress }: { choice: Choice; onPress: () => void }) {
+  const na = c.variants.length === 0;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={na}
+      style={({ pressed }) => [
+        styles.chip,
+        c.on && styles.chipOn,
+        na && styles.na,
+        pressed && { transform: [{ scale: 0.95 }] },
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={`Size ${c.value}${na ? ', unavailable' : ''}`}
+      accessibilityState={{ selected: c.on, disabled: na }}
+    >
+      <Text
+        style={[styles.chipSize, c.on && styles.chipSizeOn, na && styles.textNa]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.2}
+      >
+        {c.value}
+      </Text>
+      <Text
+        style={[styles.chipPrice, c.on && styles.chipPriceOn]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.2}
+      >
+        {na ? 'Sold out' : money(c.variants[0]!.sellingPrice)}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -281,8 +403,46 @@ const styles = StyleSheet.create({
   tileName: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.text.strong },
   tilePriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' },
   tilePrice: { fontFamily: font.uiBold, fontSize: 13.5, color: colors.heading },
-  tileOff: { fontFamily: font.uiSemibold, fontSize: 11, color: '#15803d' },
+  tileOff: { fontFamily: font.uiSemibold, fontSize: 11, color: colors.price.discount },
   textOn: { color: BRAND },
+  swatchRow: { gap: 10, paddingRight: 8, paddingVertical: 2 },
+  swatch: { width: 64, alignItems: 'center', gap: 5 },
+  swatchImg: {
+    width: 64,
+    height: 78,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#e3e8f1',
+    backgroundColor: '#f6f8fb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  swatchImgOn: { borderColor: BRAND, borderWidth: 2.5 },
+  swatchName: {
+    fontFamily: font.uiMedium,
+    fontSize: 11,
+    color: colors.text.strong,
+    maxWidth: 64,
+  },
+  chipRow: { gap: 8, paddingRight: 8, paddingVertical: 2 },
+  chip: {
+    minWidth: 58,
+    height: 52,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#d9e0eb',
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+  },
+  chipOn: { borderColor: BRAND, backgroundColor: BRAND },
+  chipSize: { fontFamily: font.uiBold, fontSize: 15, color: colors.heading },
+  chipSizeOn: { color: colors.white },
+  chipPrice: { fontFamily: font.uiMedium, fontSize: 10.5, color: colors.text.muted },
+  chipPriceOn: { color: '#dbe8ff' },
   na: { borderStyle: 'dashed', borderColor: '#d5dbe5', backgroundColor: '#f7f8fa' },
   textNa: { color: colors.text.muted, textDecorationLine: 'line-through' },
   naText: { fontFamily: font.uiMedium, fontSize: 11, color: colors.text.muted },

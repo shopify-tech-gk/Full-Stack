@@ -12,7 +12,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, font } from '@/theme';
 
-// v1.17 Product image gallery: swipe between full (uncropped) images, a "2 / 5" counter, dots that
+// v1.17 Product image gallery: swipe between edge-to-edge images (v1.18: the frame takes the first
+// photo's shape - tall for clothing, square for packs - so there's no white box around them), a "2 / 5" counter, dots that
 // follow the finger while swiping, and a thumbnail strip to jump straight to any image. `children`
 // are overlays on the image (save / share buttons).
 
@@ -35,7 +36,17 @@ export function ProductGallery({
     scrollX.value = e.contentOffset.x;
   });
   const many = images.length > 1;
-  const height = Math.round(width * 0.92);
+  // v1.18 photo shapes (height / width) as they load: the frame follows the first one.
+  const [ratios, setRatios] = useState<Record<string, number>>({});
+  // At most square: a tall clothing photo would otherwise fill the whole screen.
+  const frame = Math.min(1, Math.max(0.85, ratios[images[0] ?? ''] ?? 1));
+  const height = Math.round(width * frame);
+  const fitOf = (src: string) => {
+    const r = ratios[src];
+    // Close to the frame's shape: fill it (trims only the photo's own white edge); a very
+    // different shape stays whole.
+    return r == null || Math.abs(r - frame) / frame < 0.18 ? 'cover' : 'contain';
+  };
 
   const jump = (i: number) => {
     void Haptics.selectionAsync().catch(() => undefined);
@@ -59,12 +70,28 @@ export function ProductGallery({
         >
           {images.map((src, i) => (
             <View key={`${src}-${i}`} style={[styles.slide, { width, height }]}>
+              {src && fitOf(src) === 'contain' ? (
+                // A tall / wide photo shown whole: the sides are a soft blur of itself, not
+                // a white box.
+                <Image
+                  source={{ uri: src }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  blurRadius={28}
+                />
+              ) : null}
               {src ? (
                 <Image
                   source={{ uri: src }}
                   style={styles.img}
-                  contentFit="contain"
+                  contentFit={fitOf(src)}
                   transition={180}
+                  onLoad={(e) => {
+                    const { width: w, height: h } = e.source;
+                    if (w > 0 && h > 0 && ratios[src] == null) {
+                      setRatios((prev) => ({ ...prev, [src]: h / w }));
+                    }
+                  }}
                 />
               ) : (
                 <Ionicons name="image-outline" size={56} color={colors.card.border} />
@@ -110,8 +137,8 @@ export function ProductGallery({
                 {src ? (
                   <Image
                     source={{ uri: src }}
-                    style={[styles.thumbImg, !on && { opacity: 0.55 }]}
-                    contentFit="contain"
+                    style={[styles.thumbImg, !on && { opacity: 0.6 }]}
+                    contentFit="cover"
                   />
                 ) : null}
               </Pressable>
@@ -135,8 +162,13 @@ function Dot({ i, width, scrollX }: { i: number; width: number; scrollX: SharedV
 const styles = StyleSheet.create({
   // The info panel below overlaps 16px (rounded top): the strip's bottom padding keeps it clear.
   wrap: { backgroundColor: colors.white, paddingBottom: 22 },
-  slide: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
-  img: { width: '88%', height: '92%' },
+  slide: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
+    overflow: 'hidden',
+  },
+  img: { width: '100%', height: '100%' },
   counter: {
     position: 'absolute',
     top: 14,
@@ -176,7 +208,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#e3e8f1',
     backgroundColor: colors.white,
-    padding: 4,
     overflow: 'hidden',
   },
   thumbOn: { borderColor: BRAND, borderWidth: 2 },

@@ -152,7 +152,7 @@ export interface Listing {
 
 /** One generic listing for every category (attribute-driven filters, W3) via shared-client. */
 export async function getListing(category: string, query: ListingQuery): Promise<Listing> {
-  const params = catalogQuery(query, { category });
+  const params = catalogQuery(query, { category, seed: BROWSE_SEED });
   try {
     const [page, filters] = await Promise.all([
       api.catalog.listProducts(params),
@@ -171,7 +171,9 @@ export async function listMoreProducts(
   query: ListingQuery,
 ): Promise<{ products: ProductCardData[]; total: number }> {
   try {
-    const page = await api.catalog.listProducts(catalogQuery(query, { category }));
+    const page = await api.catalog.listProducts(
+      catalogQuery(query, { category, seed: BROWSE_SEED }),
+    );
     return { products: page.items.map(toCardData), total: page.total };
   } catch (err) {
     if (isNotFound(err)) return { products: [], total: 0 };
@@ -198,6 +200,50 @@ export async function getProduct(slug: string): Promise<ProductDetailData | null
     throw err;
   }
 }
+
+/** v1.18 a new random mix of each category's products every time the app opens (stable while
+ * it's open, so paging never repeats a product). */
+export const BROWSE_SEED = Math.floor(Math.random() * 2_000_000_000) + 1;
+
+let categoryIds: Promise<Map<string, string>> | null = null;
+
+/** Catalog category slug -> id (fetched once). */
+function categoryIdBySlug(): Promise<Map<string, string>> {
+  categoryIds ??= api.catalog
+    .listCategories()
+    .then(({ items }) => new Map(items.map((c) => [c.slug, c.id])))
+    .catch((err: unknown) => {
+      categoryIds = null;
+      throw err;
+    });
+  return categoryIds;
+}
+
+/**
+ * v1.18 a storefront group that isn't one catalog category ("Garden Netting" = Bird + Insect +
+ * Shade + Plant Support Netting): one page of the products in any of those categories, mixed.
+ */
+export async function groupProductsPage(
+  slugs: readonly string[],
+  page: number,
+  opts: { brand?: string; sort?: string; perPage?: number } = {},
+): Promise<{ products: ProductCardData[]; total: number }> {
+  const bySlug = await categoryIdBySlug();
+  const ids = [...new Set(slugs.map((s) => bySlug.get(s)).filter((id): id is string => !!id))];
+  if (ids.length === 0) return { products: [], total: 0 };
+  const result = await api.search.products({
+    categoryIn: ids.join(','),
+    seed: BROWSE_SEED,
+    page,
+    perPage: opts.perPage ?? 50,
+    ...(opts.brand ? { brand: opts.brand } : {}),
+    // Search orders by price or newest; the category-only sorts (rating, discount) use relevance.
+    ...(opts.sort && GROUP_SORTS.has(opts.sort) ? { sort: opts.sort as SearchSort } : {}),
+  });
+  return { products: result.results.map(searchResultToCardData), total: result.found };
+}
+
+const GROUP_SORTS = new Set(['price_asc', 'price_desc', 'newest']);
 
 /** Search a page of products (infinite scroll). `found` is the total match count. */
 export async function searchProductsPage(

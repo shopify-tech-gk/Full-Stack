@@ -406,10 +406,10 @@ export const REFUND_POLICY: PolicyPage = {
       heading: '6. Cancellation Policy',
       blocks: [
         p(
-          'Orders can be canceled within a limited time after placement. If the order has already been shipped, cancellations may not be possible, and you will need to initiate a return after receiving the product.',
+          '**Orders cannot be cancelled once they are placed** - whether you chose Cash on Delivery or paid online. If you no longer want an item, you can return it after delivery as per our Return Policy, and the refund is credited to your YouMart Wallet.',
         ),
         p(
-          'When a paid order is cancelled, the amount paid is credited to your YouMart Wallet. An unpaid order is simply cancelled, and any wallet balance reserved for it is released.',
+          'An order whose online payment was not completed is not placed: you can leave the payment and go back to your cart, and an unpaid order is cancelled automatically after 30 minutes, releasing any wallet balance reserved for it.',
         ),
       ],
     },
@@ -733,7 +733,7 @@ export const FAQ_PAGE: { title: string; subtitle: string; heading: string; items
     {
       question: 'Is Cash on Delivery (COD) available?',
       answer: [
-        'Yes. Choose Cash on Delivery at checkout for orders up to ₹50,000 and pay in cash or UPI when your order arrives. A COD order that has not shipped yet can be cancelled instantly from My Orders. If you return a delivered COD order, the refund is credited to your YouMart Wallet.',
+        'Yes. Choose Cash on Delivery at checkout for orders up to ₹50,000 and pay in cash or UPI when your order arrives. Like every order, a COD order cannot be cancelled once placed. If you return a delivered COD order, the refund is credited to your YouMart Wallet.',
       ],
     },
     {
@@ -751,7 +751,7 @@ export const FAQ_PAGE: { title: string; subtitle: string; heading: string; items
     {
       question: 'Can I cancel my order?',
       answer: [
-        'Yes. Orders can be cancelled before they are shipped. Once shipped, cancellation may not be possible. Visit “[Orders Cancel](/cancel-order)” to check cancellation eligibility.',
+        'No. Orders cannot be cancelled once they are placed (Cash on Delivery or paid online). If you no longer need an item, you can return it after delivery - see our [Return Policy](/refund-policy). The refund is credited to your YouMart Wallet.',
       ],
     },
     {

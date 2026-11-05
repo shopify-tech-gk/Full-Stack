@@ -1,5 +1,6 @@
 import {
   createAuthClient,
+  createCartClient,
   createCatalogClient,
   createOrderClient,
   createSearchClient,
@@ -24,6 +25,13 @@ export const orderClient = createOrderClient({
 /** Notification settings: which channels the customer wants for order updates / offers. */
 export const authClient = createAuthClient({
   baseUrl: config.authServiceUrl,
+  timeoutMs: config.serviceHttpTimeoutMs,
+  serviceAuth,
+});
+
+/** v1.18 cart nudge: what's still in the customer's cart. */
+export const cartClient = createCartClient({
+  baseUrl: config.cartServiceUrl,
   timeoutMs: config.serviceHttpTimeoutMs,
   serviceAuth,
 });

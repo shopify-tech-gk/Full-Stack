@@ -35,6 +35,12 @@ export const BrowseSortEnum = z.enum([
 export const BrowseRequestBody = z.object({
   q: z.string().max(200).optional(),
   categoryId: z.string().uuid().optional(),
+  /** v1.18 products in ANY of these categories (or their sub-categories) - a storefront group
+   * that bundles several catalog categories ("Garden Netting" = Bird + Insect + Shade + ...). */
+  categoryIdsAny: z.array(z.string().uuid()).min(1).max(30).optional(),
+  /** v1.18 browsing order (no search text, default sort) is a random mix of the category's
+   * products; the same seed gives the same order, so paging never repeats or skips one. */
+  seed: z.number().int().min(1).max(2147483647).optional(),
   filters: z.array(BrowseFilter).max(30).default([]),
   minPrice: z.number().nonnegative().optional(),
   maxPrice: z.number().nonnegative().optional(),

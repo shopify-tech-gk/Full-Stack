@@ -5,8 +5,16 @@ export const SearchSortEnum = z.enum(['relevance', 'price_asc', 'price_desc', 'n
 export const SearchProductsQuery = z.object({
   q: z.string().max(200).optional(),
   category: z.string().uuid().optional(),
+  /** v1.18 comma-separated category ids: products in any of them (a storefront group). */
+  categoryIn: z
+    .string()
+    .max(2000)
+    .regex(/^[0-9a-f-]+(,[0-9a-f-]+)*$/i)
+    .optional(),
   minPrice: z.coerce.number().nonnegative().optional(),
   maxPrice: z.coerce.number().nonnegative().optional(),
+  /** v1.18 the random-mix seed for browsing (see browse.schema). */
+  seed: z.coerce.number().int().min(1).max(2147483647).optional(),
   /** One brand, or several comma-separated (v1.17). */
   brand: z.string().max(1000).optional(),
   /** v1.17 filters: category names (comma-separated), min stars, min % off. */

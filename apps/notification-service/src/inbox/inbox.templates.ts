@@ -115,6 +115,20 @@ const TEMPLATES: Record<string, (d: Record<string, unknown>) => InboxContent> = 
     title: 'Back in stock for you',
     body: `${str(d.label, str(d.item, 'What you asked for'))} is now available on YouMart. Tap to have a look.`,
   }),
+  // v1.18 the customer left checkout with items still in the cart.
+  CART_NUDGE: (d) => {
+    const more = Number(d.moreItems ?? 0);
+    return {
+      kind: 'OFFER',
+      title: 'Your favourite pick is waiting for you',
+      body:
+        d.buyNow === true
+          ? `${str(d.title, 'Your pick')} is just a tap away. Complete your order before it sells out.`
+          : `${str(d.title, 'Your pick')}${more > 0 ? ` and ${more} more` : ''} ${
+              more > 0 ? 'are' : 'is'
+            } still in your cart. Complete your order before it sells out.`,
+    };
+  },
   // v1.18 "Remind me to buy" went off.
   BUY_REMINDER: (d) => ({
     kind: 'OFFER',

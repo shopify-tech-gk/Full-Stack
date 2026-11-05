@@ -104,11 +104,14 @@ export async function searchProducts(query: SearchProductsQuery): Promise<Search
       .slice(0, 20);
   const brands = list(query.brand);
   const categories = list(query.categories);
+  const categoryIn = (query.categoryIn ?? '').split(',').filter(Boolean).slice(0, 30);
   const withFilters = Boolean(query.withFilters);
   const result = await browse(
     {
       q: query.q,
       categoryId: query.category,
+      ...(!query.category && categoryIn.length ? { categoryIdsAny: categoryIn } : {}),
+      ...(query.seed ? { seed: query.seed } : {}),
       filters: [
         ...(brands.length ? [{ key: 'brand', kind: 'values' as const, values: brands }] : []),
         ...Object.entries(query.attributes ?? {}).map(([key, values]) => ({

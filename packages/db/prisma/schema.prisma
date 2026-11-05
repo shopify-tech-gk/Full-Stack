@@ -422,7 +422,9 @@ model Category {
   /// Null = inherit the nearest ancestor's definition. Adding a filter never needs code.
   filterDefinition Json?      @map("filter_definition")
 
-  products Product[]
+  products      Product[]
+  /// v1.18 products listed here as well as under their own category.
+  extraProducts ProductExtraCategory[]
 
   @@index([slug])
   @@index([parentId])
@@ -463,8 +465,10 @@ model Product {
   updatedAt      DateTime      @updatedAt @map("updated_at")
   deletedAt      DateTime?     @map("deleted_at")
 
-  skus   Sku[]
-  images ProductImage[]
+  skus            Sku[]
+  images          ProductImage[]
+  /// v1.18 other categories it is also listed under (Amazon-style: one product, several shelves).
+  extraCategories ProductExtraCategory[]
 
   @@index([sellerId])
   @@index([categoryId])
@@ -1430,22 +1434,22 @@ enum SupportTicketStatus {
 /// are SOFT references (auth.user / orders.order); `orderNumber` is a snapshot for the support
 /// inbox. Stored here and forwarded to the support inbox by email, like SupportMessage.
 model SupportTicket {
-  id          String              @id @default(uuid(7))
-  userId      String              @map("user_id")
-  orderId     String?             @map("order_id")
-  orderNumber String?             @map("order_number")
-  topic       SupportTicketTopic
-  message     String
-  status      SupportTicketStatus @default(OPEN)
+  id             String              @id @default(uuid(7))
+  userId         String              @map("user_id")
+  orderId        String?             @map("order_id")
+  orderNumber    String?             @map("order_number")
+  topic          SupportTicketTopic
+  message        String
+  status         SupportTicketStatus @default(OPEN)
   /// v1.17: the AI help chat that led to this request ("You: ... / Assistant: ..."), so support
   /// sees what was already tried. Null for requests raised directly.
-  chatTranscript String?          @map("chat_transcript")
+  chatTranscript String?             @map("chat_transcript")
   /// v1.14: support's answer, shown to the customer under My Help Requests.
-  adminReply  String?             @map("admin_reply")
-  repliedAt   DateTime?           @map("replied_at")
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
-  deletedAt   DateTime?           @map("deleted_at")
+  adminReply     String?             @map("admin_reply")
+  repliedAt      DateTime?           @map("replied_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  deletedAt      DateTime?           @map("deleted_at")
 
   @@index([userId, createdAt])
   @@index([orderId])
@@ -1504,6 +1508,22 @@ enum BuyReminderRepeat {
   @@schema("notifications")
 }
 
+/// v1.18 a product listed under another category too (a bed mosquito net also in Insect Netting).
+/// Its own `Product.category` stays its home (breadcrumb, filters); this only adds it to that
+/// category's listing - the product is never copied.
+model ProductExtraCategory {
+  productId  String   @map("product_id")
+  product    Product  @relation(fields: [productId], references: [id])
+  categoryId String   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+  @@map("product_extra_category")
+  @@schema("catalog")
+}
+
 /// v1.18 "Remind me to buy": the customer picks a product and a date/time; at that time they get a
 /// WhatsApp (+ email + in-app Alert) with the product and its price then. Repeating reminders (refills)
 /// move on to the next week / month instead of finishing.
@@ -1532,6 +1552,29 @@ model BuyReminder {
   @@index([status, remindAt])
   @@index([userId, status])
   @@map("buy_reminder")
+  @@schema("notifications")
+}
+
+/// v1.18 "Still in your cart" nudge: the customer opened checkout and left without ordering. An
+/// hour later - if items are still in the cart and nothing was ordered since - one WhatsApp (product
+/// photo, name, price, Shop now) + Alert + email; at most one a day per customer.
+model CheckoutNudge {
+  userId     String    @id @map("user_id")
+  /// The last time they opened checkout.
+  startedAt  DateTime  @map("started_at")
+  /// What they were checking out: their cart ("CART") or one product via Buy Now ("BUY_NOW" -
+  /// it leaves the cart again when they back out, so the nudge is about that product).
+  source     String    @default("CART")
+  /// The SKUs at checkout (Buy Now: the product to nudge about).
+  skuIds     String[]  @default([]) @map("sku_ids")
+  /// Set when an order is placed after `startedAt` (nothing to nudge about).
+  orderedAt  DateTime? @map("ordered_at")
+  /// The last nudge sent (one a day at most).
+  lastSentAt DateTime? @map("last_sent_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@index([startedAt])
+  @@map("checkout_nudge")
   @@schema("notifications")
 }
 

@@ -29,6 +29,7 @@ import { SaveButton } from '@/components/SaveButton';
 import { useSession } from '@/stores/session';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductAbout, ProductHeading, ProductPricing } from '@/components/ProductDetails';
+import { VariantPicker } from '@/components/VariantPicker';
 import { ProductCard } from '@/components/ProductCard';
 import { InfiniteRail } from '@/components/InfiniteRail';
 import { ProductReviews } from '@/components/ProductReviews';
@@ -250,12 +251,36 @@ export default function ProductScreen() {
   const picked = pickedSku ? variant : undefined;
   const shownTitle = picked?.title ?? null;
   const baseImages = prod.images.length > 0 ? [...prod.images] : [''];
-  const images = picked?.image
-    ? [picked.image, ...baseImages.filter((u) => u && u !== picked.image)]
-    : baseImages;
+  const colourStrip =
+    prod.variantDims.some((d) => d.key === 'color') && prod.variants.some((v) => v.image);
+  // v1.18 a variant with its own photo set (a colour) shows only its photos.
+  const images = picked?.images.length
+    ? [...picked.images]
+    : picked?.image
+      ? [picked.image, ...baseImages.filter((u) => u && u !== picked.image)]
+      : baseImages;
+  // The cart / order line names what was picked ("... (32 · Black)") when its title doesn't.
+  const missing = variant
+    ? Object.values(variant.options).filter(
+        (o) =>
+          !new RegExp(`(^|\\W)${o.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\W|$)`, 'i').test(
+            variant.title ?? prod.title,
+          ),
+      )
+    : [];
   const lineTitle = variant
-    ? (variant.title ?? `${prod.title}${variant.label ? ` (${variant.label})` : ''}`)
+    ? `${variant.title ?? prod.title}${missing.length ? ` (${missing.join(' · ')})` : ''}`
     : prod.title;
+  // v1.18 the picked variant's own details lead the specifications (its fit, length...).
+  const shownProd = variant?.specs.length
+    ? {
+        ...prod,
+        specifications: [
+          ...variant.specs,
+          ...prod.specifications.filter((s) => !variant.specs.some((v) => v.label === s.label)),
+        ],
+      }
+    : prod;
   const gridData = more ? more.products : [];
   const hasExplore = Boolean(categorySlug) || gridData.length > 0;
 
@@ -292,7 +317,13 @@ export default function ProductScreen() {
         <Pressable
           onPress={() => {
             void Haptics.selectionAsync().catch(() => undefined);
-            void shareProduct({ title: prod.title, slug: prod.slug, price });
+            void shareProduct({
+              title: lineTitle,
+              slug: prod.slug,
+              price,
+              mrp,
+              imageUrl: images[0] || undefined,
+            });
           }}
           style={({ pressed }) => [
             styles.shareBtn,
@@ -307,6 +338,17 @@ export default function ProductScreen() {
       </ProductGallery>
 
       <View style={styles.info}>
+        {/* v1.18 clothing: the colours sit right under the photo, so picking one shows it
+            without scrolling back up; sizes are one row of chips under the price. */}
+        {colourStrip ? (
+          <VariantPicker
+            prod={prod}
+            selectedSkuId={skuId}
+            onSelect={setPickedSku}
+            show={(key) => key === 'color'}
+            style={styles.colourStrip}
+          />
+        ) : null}
         <ProductHeading prod={prod} title={shownTitle} />
         <ProductPricing
           prod={prod}
@@ -314,6 +356,7 @@ export default function ProductScreen() {
           mrp={mrp}
           selectedSkuId={skuId}
           onSelect={setPickedSku}
+          showOptions={colourStrip ? (key) => key !== 'color' : undefined}
         />
       </View>
 
@@ -352,7 +395,7 @@ export default function ProductScreen() {
           sections.current.info = e.nativeEvent.layout.y;
         }}
       >
-        <ProductAbout prod={prod} />
+        <ProductAbout prod={shownProd} />
       </View>
 
       <View
@@ -533,6 +576,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   shareBtnTop: { top: space.md },
+  colourStrip: { marginTop: 0, paddingHorizontal: space.lg, paddingTop: space.md },
   info: {
     paddingBottom: space.lg,
     backgroundColor: colors.page,

@@ -5,6 +5,8 @@ export interface UserContactView {
   userId: string;
   phone: string | null;
   email: string | null;
+  /** v1.18 for greetings ("Hey Vijesh"); null when the customer hasn't given one. */
+  name: string | null;
 }
 
 /**
@@ -23,5 +25,5 @@ export async function getUserContact(userId: string): Promise<UserContactView> {
   if (!user) {
     throw new AppError('NOT_FOUND', 404, 'User not found');
   }
-  return { userId: user.id, phone: user.phone, email: user.email };
+  return { userId: user.id, phone: user.phone, email: user.email, name: user.name };
 }

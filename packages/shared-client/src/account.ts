@@ -366,8 +366,14 @@ export function orderListStatusLabel(order: {
 }
 
 /** Mirrors order-service's cancel rule: unpaid, or paid and nothing has shipped yet. */
+/** v1.18 policy: no cancelling a placed order (only returns after delivery). The cancel buttons
+ * stay in the code for later - flip this (and order-service's CUSTOMER_CANCELLATION_ENABLED). */
+export const CUSTOMER_CANCELLATION_ENABLED = false;
+
 export function canCancelOrder(order: OrderProgressSource): boolean {
   if (order.status === 'CANCELLED') return false;
+  // The website has no unpaid-order cancel either: an unpaid order lapses after 30 minutes.
+  if (!CUSTOMER_CANCELLATION_ENABLED) return false;
   return order.items.every((item) => STEP_OF[item.sellerStatus] < 2);
 }
 

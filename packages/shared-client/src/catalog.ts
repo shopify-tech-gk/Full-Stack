@@ -137,11 +137,12 @@ export function listingPageHref(basePath: string, queryString: string, page: num
 /** The catalog API query for a listing (`GET /api/catalog/products`, `.../filters`). */
 export function catalogQuery(
   query: ListingQuery,
-  extra: { category?: string; limit?: number } = {},
+  extra: { category?: string; limit?: number; seed?: number } = {},
 ): ProductListQuery {
   return {
     ...query.filters,
     ...(extra.category ? { category: extra.category } : {}),
+    ...(extra.seed ? { seed: extra.seed } : {}),
     sort: SORT_TO_API[query.sort],
     ...(query.minPrice !== null ? { min_price: query.minPrice } : {}),
     ...(query.maxPrice !== null ? { max_price: query.maxPrice } : {}),
@@ -295,7 +296,31 @@ export interface ProductVariant {
   /** The variant's own title / picture, shown when it's picked; null = the product's. */
   title: string | null;
   image: string | null;
+  /** v1.18 its own photo set (a colour's photos), empty = the product's. */
+  images: readonly string[];
+  /** v1.18 its own details ("Fit Type", "Jeans length"...), shown in the specifications. */
+  specs: readonly { label: string; value: string }[];
 }
+
+const LETTER_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL'];
+/** v1.18 clothing size order: kids' ages (3-4 Y), then S < M < XL < 2XL, then waist 28 < 30. */
+export function sizeRank(size: string): number {
+  const s = size
+    .trim()
+    .toUpperCase()
+    .replace(/^XXL$/, '2XL')
+    .replace(/^XXXL$/, '3XL');
+  const age = /^(\d+)(?:\s*-\s*\d+)?\s*Y/.exec(s);
+  if (age) return Number(age[1]);
+  const letter = LETTER_SIZES.indexOf(s);
+  if (letter >= 0) return 100 + letter;
+  const inches = /^(\d+(?:\.\d+)?)/.exec(s);
+  return inches ? 200 + Number(inches[1]) : 1000;
+}
+
+/** v1.18 picker order: Colour (photo cards) first, then Style..., then Size, Weight last. */
+const DIM_ORDER: Readonly<Record<string, number>> = { color: 0, size: 2, weight: 3 };
+const dimOrder = (key: string) => DIM_ORDER[key] ?? 1;
 
 /** A SKU's option values (string attributes; `_title` / `_image` are its own title and picture). */
 function variantOptions(attributes: Record<string, unknown> | null | undefined) {
@@ -362,6 +387,8 @@ export function toProductDetailData(
             const options = variantOptions(s.attributes);
             const own = (k: string) =>
               typeof s.attributes?.[k] === 'string' ? (s.attributes[k] as string) : null;
+            const list = (k: string): unknown[] =>
+              Array.isArray(s.attributes?.[k]) ? (s.attributes[k] as unknown[]) : [];
             return {
               skuId: s.id,
               label: optionsLabel(options, i),
@@ -370,13 +397,20 @@ export function toProductDetailData(
               mrp: s.mrp,
               title: own('_title'),
               image: own('_image'),
+              images: list('_images').filter((u): u is string => typeof u === 'string'),
+              specs: list('_specs').filter(
+                (r): r is { label: string; value: string } =>
+                  !!r &&
+                  typeof (r as { label?: unknown }).label === 'string' &&
+                  typeof (r as { value?: unknown }).value === 'string',
+              ),
             };
           })
       : [];
-  // Picker order: the kinds as they appear, weight last (style -> weight, like the import).
+  // Picker order: colour, then the other kinds as they appear, then size, weight last.
   const dimKeys = [
     ...new Set([...variants, ...unavailable].flatMap((v) => Object.keys(v.options))),
-  ].sort((a, b) => Number(a === 'weight') - Number(b === 'weight'));
+  ].sort((a, b) => dimOrder(a) - dimOrder(b));
   return {
     id: detail.id,
     slug: detail.slug,
@@ -393,10 +427,13 @@ export function toProductDetailData(
       name: category.name,
       href: categoryHref(...detail.categoryPath.slice(0, index + 1).map((c) => c.slug)),
     })),
-    specifications: detail.specifications.map((row) => ({
-      label: row.label,
-      value: row.unit ? `${row.value} ${row.unit}` : row.value,
-    })),
+    // v1.18 what the shopper picks (Size, Colour) is the picker, not a specification row.
+    specifications: detail.specifications
+      .filter((row) => !dimKeys.includes(row.key))
+      .map((row) => ({
+        label: row.label,
+        value: row.unit ? `${row.value} ${row.unit}` : row.value,
+      })),
     variants,
     variantDims: dimKeys.map((key) => ({ key, name: dimName(key) })),
     unavailableVariants: unavailable,

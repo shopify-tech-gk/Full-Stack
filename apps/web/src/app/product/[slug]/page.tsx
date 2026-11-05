@@ -38,9 +38,43 @@ const CARD_ICONS: Record<(typeof SAFE_CHECKOUT_METHODS)[number], string> = {
 const STRIKE =
   "relative no-underline text-black before:absolute before:inset-x-0 before:top-[0.56em] before:h-[2px] before:rotate-[18deg] before:bg-price-strike before:content-[''] after:absolute after:inset-x-0 after:top-[0.56em] after:h-[2px] after:-rotate-[18deg] after:bg-price-strike after:content-['']";
 
+/** Link previews want JPEG / PNG; our photos are WebP, so previews use wsrv.nl's JPEG of them. */
+function previewImage(url: string): string {
+  return /\.webp(\?|$)/i.test(url)
+    ? `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=jpg&w=1200&h=1200&fit=contain&bg=white`
+    : url;
+}
+
+// v1.18 a shared product link shows a rich card (photo, name, price) in WhatsApp, Facebook, X...
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const product = await getProductDetail(params.slug);
-  return product ? { title: `${product.title} - You Mart` } : {};
+  if (!product) return {};
+  const off = discountPercent(product.mrp, product.sellingPrice);
+  const price = formatMoney(product.sellingPrice).replace(/\.00$/, '');
+  const title = `${product.title} - ${price}${off > 0 ? ` (${off}% off)` : ''}`;
+  const description = (
+    product.highlights[0] ??
+    product.description ??
+    'Shop easy, live better with YouMart.'
+  )
+    .replace(/\s+/g, ' ')
+    .slice(0, 180);
+  const image = product.images[0] ? previewImage(product.images[0]) : undefined;
+  const images = image ? [{ url: image, width: 1200, height: 1200, alt: product.title }] : [];
+  return {
+    title: `${product.title} - You Mart`,
+    description,
+    alternates: { canonical: `/product/${product.slug}` },
+    openGraph: {
+      type: 'website',
+      siteName: 'YouMart',
+      url: `/product/${product.slug}`,
+      title,
+      description,
+      images,
+    },
+    twitter: { card: 'summary_large_image', title, description, images: image ? [image] : [] },
+  };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {

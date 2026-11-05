@@ -102,6 +102,8 @@ export interface AdminCategoryItem extends CategoryListItem {
 
 const PRODUCT_LIST_INCLUDE = {
   category: true,
+  // v1.18 other categories it is also listed under (indexed like its own one).
+  extraCategories: { select: { categoryId: true } },
   skus: { where: { deletedAt: null } },
   images: { where: { deletedAt: null }, orderBy: { position: 'asc' as const }, take: 1 },
 } satisfies Prisma.ProductInclude;
@@ -257,7 +259,15 @@ function toProductForIndex(
   product: ProductWithListRelations,
   links: CategoryLinks,
 ): ProductForIndex {
-  const pathIds = categoryPathIds(product.categoryId, links.parents);
+  const ownPath = categoryPathIds(product.categoryId, links.parents);
+  // v1.18 also listed under other categories: their paths join the product's own, so it shows
+  // on those listings (and their parents') too - one product, several shelves.
+  const extraIds = product.extraCategories
+    .map((extra) => extra.categoryId)
+    .filter((id) => id !== product.categoryId && links.parents.has(id));
+  const pathIds = [
+    ...new Set([...ownPath, ...extraIds.flatMap((id) => categoryPathIds(id, links.parents))]),
+  ];
   const cheapest = cheapestSku(product.skus);
   const primaryImage = product.images[0];
   return {
@@ -271,10 +281,14 @@ function toProductForIndex(
     categoryName: product.category.name,
     categorySlug: product.category.slug,
     categoryPathIds: pathIds,
-    categoryPathNames: pathIds
-      .map((id) => links.names.get(id))
-      .filter((name): name is string => Boolean(name))
-      .reverse(),
+    // Its own path (root first), then the extra categories' names - all searchable.
+    categoryPathNames: [
+      ...ownPath
+        .map((id) => links.names.get(id))
+        .filter((name): name is string => Boolean(name))
+        .reverse(),
+      ...extraIds.map((id) => links.names.get(id)).filter((name): name is string => Boolean(name)),
+    ],
     price: cheapest ? decimalToMoney(cheapest.sellingPrice) : null,
     mrp: cheapest ? decimalToMoney(cheapest.mrp) : null,
     skuId: cheapest?.id ?? null,
@@ -446,11 +460,16 @@ export interface SkuDetail {
  * option values - "Organic Manure (500 g)". Same rule as the product page's variant title. */
 function skuTitle(productTitle: string, attributes: Record<string, unknown> | null): string {
   const own = attributes?._title;
-  if (typeof own === 'string' && own.trim()) return own.trim();
+  const base = typeof own === 'string' && own.trim() ? own.trim() : productTitle;
+  // v1.18 options the title doesn't already name ("... Cargo Pants (32 · Black)").
   const options = Object.entries(attributes ?? {})
     .filter(([k, v]) => !k.startsWith('_') && typeof v === 'string' && v.trim())
-    .map(([, v]) => v as string);
-  return options.length ? `${productTitle} (${options.join(' · ')})` : productTitle;
+    .map(([, v]) => (v as string).trim())
+    .filter(
+      (v) =>
+        !new RegExp(`(^|\\W)${v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\W|$)`, 'i').test(base),
+    );
+  return options.length ? `${base} (${options.join(' · ')})` : base;
 }
 
 /**
