@@ -20,6 +20,10 @@ import type {
   CreateWalletTopupResult,
   HelpTicket,
   AssistantReply,
+  FinderFeed,
+  FinderMessage,
+  RegisterBody,
+  UsernameCheck,
   AssistantTurn,
   InboxKind,
   InboxPage,
@@ -206,6 +210,18 @@ export function createApiClient(options: ApiClientOptions) {
         json<OtpVerifyResponse>('POST', '/auth/otp/verify', {
           body: { identifier, code } satisfies OtpVerifyBody,
         }),
+      /** v1.18 username + password: check a name, register (OTP to the mobile), log in. */
+      checkUsername: (username: string) =>
+        json<UsernameCheck>('GET', '/auth/username/check', { query: { u: username } }),
+      registerStart: (body: RegisterBody) =>
+        json<OtpRequestResponse>('POST', '/auth/register/start', { body }),
+      registerVerify: (body: RegisterBody & { code: string }) =>
+        json<OtpVerifyResponse>('POST', '/auth/register/verify', { body }),
+      /** v1.18 Account: pick the username (once) and/or a first password. */
+      setLogin: (body: { username?: string; password?: string }) =>
+        json<AuthUser>('PATCH', '/auth/me/login', { body }),
+      loginWithPassword: (body: { username: string; password: string }) =>
+        json<OtpVerifyResponse>('POST', '/auth/login/password', { body }),
       refresh: () => json<RefreshResponse>('POST', '/auth/refresh'),
       logout: () => json<{ status: 'logged_out' }>('POST', '/auth/logout'),
       me: () => json<AuthUser>('GET', '/auth/me'),
@@ -442,6 +458,13 @@ export function createApiClient(options: ApiClientOptions) {
       /** v1.17 AI help: send the conversation so far (last turn = the new question). */
       askAssistant: (messages: AssistantTurn[]) =>
         json<AssistantReply>('POST', '/support/assistant', { body: { messages } }),
+      /** v1.18 Product Finder Live: the public room (anyone can read; asking needs sign-in). */
+      finder: {
+        list: (query: { after?: string; before?: string; limit?: number } = {}) =>
+          json<FinderFeed>('GET', '/support/finder/messages', { query }),
+        ask: (text: string) =>
+          json<FinderMessage>('POST', '/support/finder/messages', { body: { text } }),
+      },
       /** v1.17 "Request restock" for something YouMart AI couldn't find (works signed out). */
       requestRestock: (body: { item: string; note?: string; transcript?: string }) =>
         json<{ requestId: string; createdAt: string }>('POST', '/support/product-requests', {

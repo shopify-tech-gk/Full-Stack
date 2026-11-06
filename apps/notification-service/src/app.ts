@@ -12,6 +12,7 @@ import { supportRouter } from './routes/support.routes';
 import { inboxRouter } from './routes/inbox.routes';
 import { reminderRouter } from './routes/reminder.routes';
 import { nudgeRouter } from './routes/nudge.routes';
+import { finderRouter } from './routes/finder.routes';
 
 /**
  * Builds the Express app without listening - mirrors the template every
@@ -52,6 +53,7 @@ export function createApp(): Express {
       });
   });
 
+  app.use('/support/finder', finderRouter);
   app.use('/support', supportRouter);
   app.use('/notifications/reminders', reminderRouter);
   app.use('/notifications/checkout-nudge', nudgeRouter);

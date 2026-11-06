@@ -88,12 +88,19 @@ export function AssistantCategoryCards({ categories }: { categories: AssistantCa
 }
 
 /** Product cards - each opens the product page. */
-export function AssistantProductCards({ products }: { products: AssistantProduct[] }) {
+export function AssistantProductCards({
+  products,
+  label = 'Picked for you',
+}: {
+  products: AssistantProduct[];
+  /** v1.18 the heading over the cards (Product Finder: "Found for you"). */
+  label?: string;
+}) {
   const router = useRouter();
   if (products.length === 0) return null;
   return (
     <View>
-      <SectionLabel icon="bag-handle" text="Picked for you" />
+      <SectionLabel icon="bag-handle" text={label} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

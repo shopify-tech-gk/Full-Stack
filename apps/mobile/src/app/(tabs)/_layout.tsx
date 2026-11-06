@@ -76,10 +76,7 @@ export default function TabsLayout() {
         }}
       />
       {/* v1.17: YouMart AI in the middle - a raised button that opens the assistant on top. */}
-      <Tabs.Screen
-        name="ai"
-        options={{ title: 'YouMart AI', tabBarButton: () => <AiNavButton /> }}
-      />
+      <Tabs.Screen name="ai" options={{ title: 'Ask', tabBarButton: () => <AiNavButton /> }} />
       <Tabs.Screen
         name="cart"
         options={{

@@ -182,6 +182,11 @@ model User {
   phone           String?
   email           String?
   name            String?
+  /// v1.18 optional login name (lowercase, unique) for username + password sign-in; the account
+  /// still belongs to its mobile number (registering with a username needs the number's OTP).
+  username        String?    @unique
+  /// v1.18 scrypt hash of the password (null = OTP-only account).
+  passwordHash    String?    @map("password_hash")
   isPhoneVerified Boolean    @default(false) @map("is_phone_verified")
   isEmailVerified Boolean    @default(false) @map("is_email_verified")
   status          UserStatus @default(ACTIVE)
@@ -1869,4 +1874,32 @@ model InvoiceCounter {
 
   @@map("invoice_counter")
   @@schema("invoices")
+}
+
+/// v1.18 Product Finder Live: the public "ask for a product" room (Telegram movie-bot style).
+/// One row = one shopper's question and the bot's reply to it (its search result snapshot).
+model FinderQuery {
+  id          String       @id @default(uuid(7))
+  userId      String       @map("user_id")
+  /// Masked shown name ("Vijay K.") - the room never shows phone numbers or full names.
+  displayName String       @map("display_name")
+  text        String
+  result      FinderResult
+  /// How many products matched (the reply shows the first few).
+  found       Int          @default(0)
+  /// The products the bot replied with (id, slug, title, price, mrp, imageUrl, category).
+  products    Json         @default("[]")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("finder_query")
+  @@schema("notifications")
+}
+
+enum FinderResult {
+  FOUND
+  NOT_FOUND
+
+  @@schema("notifications")
 }

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { AuthUser } from '@youmart/shared-client';
+import type { AuthUser, RegisterBody } from '@youmart/shared-client';
 import { api, setAccessToken, setUnauthorizedHandler } from '@/lib/api';
 
 // RN session, mirroring the web's lib/session.ts. The difference is storage: the web restores from
@@ -63,6 +63,24 @@ export async function loginWithOtp(identifier: string, code: string): Promise<Au
   const { accessToken, user } = await api.auth.verifyOtp(identifier, code);
   epoch += 1;
   signIn(accessToken, user); // the refresh token was captured into secure-store by lib/api.ts
+  return user;
+}
+
+/** v1.18 username + password sign-in. */
+export async function loginWithPassword(username: string, password: string): Promise<AuthUser> {
+  const { accessToken, user } = await api.auth.loginWithPassword({ username, password });
+  epoch += 1;
+  signIn(accessToken, user);
+  return user;
+}
+
+/** v1.18 registering with a username: the OTP sent to the mobile number completes it. */
+export async function registerWithUsername(
+  body: RegisterBody & { code: string },
+): Promise<AuthUser> {
+  const { accessToken, user } = await api.auth.registerVerify(body);
+  epoch += 1;
+  signIn(accessToken, user);
   return user;
 }
 

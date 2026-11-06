@@ -41,6 +41,10 @@ export const BrowseRequestBody = z.object({
   /** v1.18 browsing order (no search text, default sort) is a random mix of the category's
    * products; the same seed gives the same order, so paging never repeats or skips one. */
   seed: z.number().int().min(1).max(2147483647).optional(),
+  /** v1.18 every word must match title / brand / category (no look-alikes) - see browse.service. */
+  strict: z.boolean().optional(),
+  /** v1.18 with `strict`: also forgive one typo in words of 4+ letters (a retry for "prunning"). */
+  strictTypos: z.boolean().optional(),
   filters: z.array(BrowseFilter).max(30).default([]),
   minPrice: z.number().nonnegative().optional(),
   maxPrice: z.number().nonnegative().optional(),

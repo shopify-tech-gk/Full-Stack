@@ -12,7 +12,7 @@ import {
   type ScrollViewInstance,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useRouter } from '@/lib/router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -45,6 +45,7 @@ import {
   AssistantProductCards,
   RestockCard,
 } from '@/components/AssistantCards';
+import { AiMark } from '@/components/AiMark';
 import { api } from '@/lib/api';
 import { getJSON, removeKey, setJSON } from '@/lib/storage';
 import { useSession } from '@/stores/session';
@@ -57,7 +58,6 @@ import { colors, font, space } from '@/theme';
 
 const BRAND = colors.brand.DEFAULT;
 const HERO_GRADIENT = 'linear-gradient(145deg, #0b1b3f 0%, #0142aa 55%, #3b6fe0 100%)';
-const ORB_GRADIENT = 'linear-gradient(135deg, #60a5fa 0%, #0142aa 45%, #7c3aed 100%)';
 const USER_GRADIENT = 'linear-gradient(135deg, #0142aa 0%, #2f6ae8 100%)';
 const SCREEN_GRADIENT = 'linear-gradient(180deg, #e9f0ff 0%, #f5f8fe 32%, #f4f7fd 100%)';
 /** Play every animation here even with the phone's Reduce Motion on (common on iPhones) -
@@ -131,6 +131,9 @@ export default function AssistantScreen() {
   const firstName =
     session.status === 'authenticated' ? (session.user.name?.split(' ')[0] ?? '') : '';
   const [intro, setIntro] = useState(true);
+  const { q: preset } = useLocalSearchParams<{ q?: string }>();
+  const [ready, setReady] = useState(false);
+  const askedPreset = useRef(false);
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -152,6 +155,7 @@ export default function AssistantScreen() {
       setBubbles(fresh.map((b) => ({ ...b, shown: undefined })));
       nextId.current = fresh.reduce((max, b) => Math.max(max, b.id), 0) + 1;
       restored.current = who;
+      setReady(true);
     });
     return () => {
       active = false;
@@ -165,6 +169,13 @@ export default function AssistantScreen() {
     if (keep.length === 0) void removeKey(SAVED_KEY(who));
     else void setJSON(SAVED_KEY(who), { savedAt: Date.now(), bubbles: keep } satisfies SavedChat);
   }, [bubbles, who, typingNow]);
+
+  // v1.18 the Ask hub's suggestion ("Track my order") is asked as soon as the chat is ready.
+  useEffect(() => {
+    if (!ready || intro || !preset || askedPreset.current) return;
+    askedPreset.current = true;
+    void ask(preset);
+  }, [ready, intro, preset]);
 
   /** Remember on an answer that its restock / support request went out. */
   const markBubble = (id: number, patch: Partial<Bubble>) =>
@@ -485,7 +496,7 @@ export default function AssistantScreen() {
   );
 }
 
-/** The AI's mark: a gradient orb with a sparkle (optionally with a breathing glow). */
+/** The AI's mark (v1.18 AiMark: the "AI" sphere), optionally with a breathing glow. */
 function Orb({ size, glow, error }: { size: number; glow?: boolean; error?: boolean }) {
   const pulse = useSharedValue(0);
   useEffect(() => {
@@ -518,22 +529,22 @@ function Orb({ size, glow, error }: { size: number; glow?: boolean; error?: bool
           ]}
         />
       ) : null}
-      <View
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: size >= 30 ? 1.5 : 0,
-          borderColor: 'rgba(255,255,255,0.55)',
-          experimental_backgroundImage: error
-            ? 'linear-gradient(135deg, #f87171 0%, #b91c1c 100%)'
-            : ORB_GRADIENT,
-        }}
-      >
-        <Ionicons name={error ? 'alert' : 'sparkles'} size={size * 0.5} color={colors.white} />
-      </View>
+      {error ? (
+        <View
+          style={{
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            alignItems: 'center',
+            justifyContent: 'center',
+            experimental_backgroundImage: 'linear-gradient(135deg, #f87171 0%, #b91c1c 100%)',
+          }}
+        >
+          <Ionicons name="alert" size={size * 0.5} color={colors.white} />
+        </View>
+      ) : (
+        <AiMark size={size} animated={size >= 30} />
+      )}
     </View>
   );
 }

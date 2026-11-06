@@ -30,6 +30,10 @@ export const PUBLIC_FORM_PATHS = [
   '/api/orders/track',
   '/api/support/messages',
   '/api/auth/otp/request',
+  // v1.18 username registration (sends an OTP) and password login (guessing).
+  '/api/auth/register/start',
+  '/api/auth/register/verify',
+  '/api/auth/login/password',
 ];
 
 const publicFormLimiter = rateLimit({

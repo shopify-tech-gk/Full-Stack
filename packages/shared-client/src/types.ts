@@ -47,8 +47,25 @@ export interface AuthUser {
   phone: string | null;
   email: string | null;
   name: string | null;
+  /** v1.18 login username (null = OTP-only account); optional for older servers. */
+  username?: string | null;
+  /** v1.18 a password is set (username login works); optional for older servers. */
+  hasPassword?: boolean;
   isPhoneVerified: boolean;
   isEmailVerified: boolean;
+}
+/** v1.18 registering with a username (the mobile number's OTP is required). */
+export interface RegisterBody {
+  name: string;
+  username: string;
+  password: string;
+  /** E.164, e.g. "+919876543210". */
+  phone: string;
+}
+export interface UsernameCheck {
+  username: string;
+  available: boolean;
+  reason: string | null;
 }
 export interface OtpVerifyResponse {
   accessToken: string;
@@ -778,6 +795,25 @@ export interface AssistantProduct {
   mrp: Money;
   imageUrl: string | null;
   category: string;
+}
+/** v1.18 Product Finder Live: one shopper's question and the bot's reply (everyone sees it). */
+export interface FinderMessage {
+  id: string;
+  /** Masked: "Vijay K." */
+  name: string;
+  /** The viewer's own question. */
+  mine: boolean;
+  text: string;
+  result: 'FOUND' | 'NOT_FOUND';
+  /** How many products matched (the reply shows the first few). */
+  found: number;
+  products: AssistantProduct[];
+  createdAt: string;
+}
+export interface FinderFeed {
+  items: FinderMessage[];
+  /** Questions asked today. */
+  todayCount: number;
 }
 export interface AssistantReply {
   reply: string;

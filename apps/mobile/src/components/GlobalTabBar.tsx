@@ -61,6 +61,8 @@ const HIDDEN = [
   '/addresses/map',
   // The assistant chat has its own message bar at the bottom.
   '/help/assistant',
+  // v1.18 Product Finder Live has its own ask bar at the bottom.
+  '/ask/finder',
 ];
 
 const ACCOUNT_AREA = [

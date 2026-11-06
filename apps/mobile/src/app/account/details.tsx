@@ -11,8 +11,11 @@ import {
 import { useRouter } from '@/lib/router';
 import { Ionicons } from '@expo/vector-icons';
 import { ContactChangeSheet } from '@/components/ContactChangeSheet';
-import { authUserLabel, formatPhone } from '@youmart/shared-client';
-import { updateProfileName, useSession } from '@/stores/session';
+import { UsernameSheet } from '@/components/UsernameSheet';
+import { api } from '@/lib/api';
+import { passwordOk, passwordRules } from '@/lib/username';
+import { ApiError, authUserLabel, formatPhone } from '@youmart/shared-client';
+import { applyUserUpdate, updateProfileName, useSession } from '@/stores/session';
 import { colors, font, radii, space } from '@/theme';
 
 export default function AccountDetailsScreen() {
@@ -25,6 +28,12 @@ export default function AccountDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [change, setChange] = useState<'PHONE' | 'EMAIL' | null>(null);
   const [contactSaved, setContactSaved] = useState<string | null>(null);
+  // v1.18 username (set once) and a first password for username login.
+  const [usernameSheet, setUsernameSheet] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pw, setPw] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState<string | null>(null);
 
   if (!user) {
     return (
@@ -33,6 +42,23 @@ export default function AccountDetailsScreen() {
       </View>
     );
   }
+
+  const savePassword = async () => {
+    if (!passwordOk(pw) || pwBusy) return;
+    setPwBusy(true);
+    setPwMsg(null);
+    try {
+      applyUserUpdate(await api.auth.setLogin({ password: pw }));
+      setPw('');
+      setPwOpen(false);
+      setPwMsg('Password saved ✓ - you can log in with your username now.');
+    } catch (err) {
+      setPwMsg(err instanceof ApiError ? err.message : 'Could not save the password.');
+    } finally {
+      setPwBusy(false);
+    }
+  };
+  const rules = passwordRules(pw);
 
   const save = async () => {
     if (name.trim().length < 1) {
@@ -89,6 +115,82 @@ export default function AccountDetailsScreen() {
         </View>
         {contactSaved ? <Text style={styles.okMsg}>{contactSaved}</Text> : null}
 
+        {/* v1.18 Username (set once - shown to others) + password for username login */}
+        <View style={styles.contactCard}>
+          <View style={styles.contactRow}>
+            <Ionicons name="at" size={20} color={colors.brand.DEFAULT} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.roLabel}>Username</Text>
+              <Text style={user.username ? styles.contactValue : styles.contactEmpty}>
+                {user.username ? `@${user.username}` : 'Not set'}
+              </Text>
+            </View>
+            {user.username ? (
+              <View style={styles.lockPill}>
+                <Ionicons name="lock-closed" size={11} color={colors.text.muted} />
+                <Text style={styles.lockText}>Permanent</Text>
+              </View>
+            ) : (
+              <Pressable onPress={() => setUsernameSheet(true)} hitSlop={8}>
+                <Text style={styles.changeText}>Set</Text>
+              </Pressable>
+            )}
+          </View>
+          {user.username ? (
+            <View style={[styles.contactRow, styles.contactDivider]}>
+              <Ionicons name="key-outline" size={20} color={colors.brand.DEFAULT} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.roLabel}>Password</Text>
+                <Text style={user.hasPassword ? styles.contactValue : styles.contactEmpty}>
+                  {user.hasPassword ? 'Set  ✓' : 'Not set - OTP login only'}
+                </Text>
+              </View>
+              {!user.hasPassword ? (
+                <Pressable onPress={() => setPwOpen((o) => !o)} hitSlop={8}>
+                  <Text style={styles.changeText}>{pwOpen ? 'Cancel' : 'Add'}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+          {pwOpen ? (
+            <View style={[styles.pwBox, styles.contactDivider]}>
+              <TextInput
+                value={pw}
+                onChangeText={setPw}
+                placeholder="New password (8+ letters & numbers)"
+                placeholderTextColor={colors.text.placeholder}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={72}
+                style={styles.input}
+              />
+              <Text style={styles.pwRules}>
+                {rules.length ? '✓' : '•'} 8+ characters {rules.letter ? '✓' : '•'} a letter
+                {'   '}
+                {rules.number ? '✓' : '•'} a number
+              </Text>
+              <Pressable
+                style={[styles.button, (!passwordOk(pw) || pwBusy) && styles.disabled]}
+                onPress={savePassword}
+                disabled={!passwordOk(pw) || pwBusy}
+              >
+                {pwBusy ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.buttonText}>Save password</Text>
+                )}
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+        {pwMsg ? <Text style={styles.okMsg}>{pwMsg}</Text> : null}
+        {!user.username ? (
+          <Text style={styles.muted}>
+            Your username is shown in Product Finder Live and lets you log in with a password.
+          </Text>
+        ) : null}
+
         <Text style={styles.label}>Display name</Text>
         <TextInput
           value={name}
@@ -113,6 +215,12 @@ export default function AccountDetailsScreen() {
           )}
         </Pressable>
       </View>
+      <UsernameSheet
+        visible={usernameSheet}
+        reason="account"
+        hasPassword={user.hasPassword ?? false}
+        onClose={() => setUsernameSheet(false)}
+      />
       <ContactChangeSheet
         kind={change ?? 'PHONE'}
         visible={change !== null}
@@ -154,6 +262,18 @@ const styles = StyleSheet.create({
   contactValue: { fontFamily: font.uiSemibold, fontSize: 15, color: colors.text.strong },
   contactEmpty: { fontFamily: font.body, fontSize: 14, color: colors.text.muted },
   changeText: { fontFamily: font.uiBold, fontSize: 14, color: colors.brand.DEFAULT },
+  lockPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f1f4f9',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  lockText: { fontFamily: font.uiSemibold, fontSize: 11, color: colors.text.muted },
+  pwBox: { padding: space.md, gap: space.sm },
+  pwRules: { fontFamily: font.uiMedium, fontSize: 12, color: colors.text.muted },
   label: {
     fontFamily: font.uiSemibold,
     fontSize: 13,

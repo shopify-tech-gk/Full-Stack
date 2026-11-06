@@ -79,7 +79,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'arts-and-crafts',
     'Arts and Crafts',
-    'art-sets=Art Sets;beeds=Beads;boards=Boards;card-stocks=Card Stocks;clay-arts-and-crafts=Clay;coloured-paper=Coloured Paper;craft-kit=Craft Kits;drawing-materials=Drawing Materials;magnets=Magnets;painting-craft-kits=Painting Craft Kits;painting-materials=Painting Materials;paper=Paper;paper-craft=Paper Craft;pim-pom=Pom Pom;stones=Stones;thread=Thread;writing-supplies=Writing Supplies',
+    'art-sets=Art Sets;beeds=Beads;boards=Boards;card-stocks=Card Stocks;clay-arts-and-crafts=Clay;coloured-paper=Coloured Paper;craft-kit=Craft Kits;drawing-materials=Drawing Materials;magnets=Magnets;painting-craft-kits=Painting Craft Kits;painting-materials=Painting Materials;paper=Paper;paper-craft=Paper Craft;pim-pom=Pom Pom;stones=Stones;thread=Thread;writing-supplies=Writing Supplies;sewing-tools=Sewing Tools',
   ],
   [
     'artifical-flowers-and-plants',
@@ -89,7 +89,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'auto-accessories',
     'Auto Accessories',
-    'automative-air-fresheners=Automotive Air Fresheners;car-interior=Car Interior;cloth-and-towels=Cloth and Towels;consoles-organizers=Consoles & Organizers;mobile-phone-chargers=Mobile Phone Chargers',
+    'automative-air-fresheners=Automotive Air Fresheners;car-interior=Car Interior;cloth-and-towels=Cloth and Towels;consoles-organizers=Consoles & Organizers;mobile-phone-chargers=Mobile Phone Chargers;riding-gloves=Riding Gloves',
   ],
   [
     'baby-care',
@@ -104,7 +104,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'cleaning-products',
     'Cleaning Products',
-    'brooms=Brooms;brush=Brush;detergents-cleaners=Detergents & Cleaners;dishwash=Dishwash;duster=Duster;dust-pan=Dust Pan;mops=Mops;scrubbers-sponges=Scrubbers & Sponges;rope=Rope;air-fresheners=Air Fresheners',
+    'brooms=Brooms;brush=Brush;detergents-cleaners=Detergents & Cleaners;dishwash=Dishwash;duster=Duster;dust-pan=Dust Pan;mops=Mops;scrubbers-sponges=Scrubbers & Sponges;rope=Rope;air-fresheners=Air Fresheners;cleaning-gloves=Cleaning Gloves',
   ],
   [
     'cosmetics',
@@ -138,6 +138,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
     'anklet=Anklet;bracelet=Bracelet;bangle=Bangle;brooch=Brooch;earrings=Earrings;head-jewellery=Head Jewellery;jewellery-set=Jewellery Set;mangalsutra=Mangalsutra;necklace-and-chains=Necklace and Chains;nosepin=Nosepin;pendant=Pendant;ring=Ring;saree-accessories=Saree Accessories',
   ],
   ['clothing', 'Clothing', 'bottomwear=Bottomwear'],
+  ['grocery', 'Grocery & Gourmet Foods', 'sweeteners=Sweeteners'],
   ['footwear', 'Footwear', 'kids-footwear=Kids Footwear;men=Men;women=Women'],
   [
     'gifts',
@@ -198,7 +199,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'tools',
     'Tools',
-    'carpenters-tools=Carpenters Tools;construction-tools=Construction Tools;cutters=Cutters;gardening-tools=Gardening Tools;hand-tools=Hand Tools;power-tools=Power Tools',
+    'carpenters-tools=Carpenters Tools;construction-tools=Construction Tools;cutters=Cutters;gardening-tools=Gardening Tools;hand-tools=Hand Tools;power-tools=Power Tools;safety-gloves=Safety Gloves',
   ],
   [
     'toys',
@@ -221,7 +222,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
 const THIRD_LEVEL: Readonly<Record<string, string>> = {
   // v1.17 catalog import: Compost (products imported from the data delivery).
   'lawn-and-gardening/fertilizer':
-    'compost=Compost;organic-manure=Organic Manure;organic-fertilizers=Organic Fertilizers;vermicompost=Vermicompost;npk-fertilizers=NPK Fertilizers;liquid-fertilizers=Liquid Fertilizers;chemical-fertilizers=Chemical Fertilizers;potting-mix=Potting Mix;vermiculite=Vermiculite;soil-amendments=Soil Amendments',
+    'compost=Compost;organic-manure=Organic Manure;organic-fertilizers=Organic Fertilizers;vermicompost=Vermicompost;npk-fertilizers=NPK Fertilizers;liquid-fertilizers=Liquid Fertilizers;chemical-fertilizers=Chemical Fertilizers;potting-mix=Potting Mix;vermiculite=Vermiculite;soil-amendments=Soil Amendments;soil-fertilizers=Soil Fertilizers;perlite=Perlite;plant-protection=Plant Protection',
   'lawn-and-gardening/garden-decor':
     'garden-statues=Garden Statues;bird-baths=Bird Baths;garden-fountains=Garden Fountains;garden-ornaments=Garden Ornaments;garden-lights=Garden Lights',
   'bath-fittings/taps-bath-fittings':
@@ -262,7 +263,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'pet-products/dogs':
     'dry-bath=Dry Bath;hair-oil=Hair Oil;shampoo-pet-products=Shampoo;pet-perfumes=Pet Perfumes',
   'pet-products/fish':
-    'fish-food=Fish Food;aquarium-accessories=Aquarium Accessories;aquarium-pumps-filters=Aquarium Pumps & Filters;aquarium-water-testing-treatment=Aquarium Water Testing & Treatment',
+    'fish-food=Fish Food;aquarium-accessories=Aquarium Accessories;aquarium-pumps-filters=Aquarium Pumps & Filters;aquarium-water-testing-treatment=Aquarium Water Testing & Treatment;aquarium-decor=Aquarium Decor',
   'pet-products/cat':
     'cat-food=Cat Food;cat-health-supplies=Cat Health Supplies;cat-shampoo=Cat Shampoo',
   'stationary/pen': 'hero-pen=Hero Pen;fountain-pens=Fountain Pens',
@@ -272,7 +273,8 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'lawn-and-gardening/nets-and-fence':
     'bird-netting=Bird Netting;insect-netting=Insect Netting;shade-netting=Shade Netting;plant-support-netting=Plant Support Netting;garden-fencing=Garden Fencing',
   'lawn-and-gardening/irrigation-equipment': 'sprinklers=Sprinklers',
-  'lawn-and-gardening/agri-gardening-tools': 'sprayers=Sprayers',
+  'lawn-and-gardening/agri-gardening-tools':
+    'sprayers=Sprayers;pruning-tools=Pruning Tools;garden-hand-tools=Garden Hand Tools;gardening-gloves=Gardening Gloves;garden-hoses=Garden Hoses',
   'lawn-and-gardening/plant-saplings': 'indoor-plants=Indoor Plants',
   'stationary/eraser':
     'fancy-eraser=Fancy Eraser;ink-eraser=Ink Eraser;electric-and-pen-eraser=Electric and Pen Eraser',

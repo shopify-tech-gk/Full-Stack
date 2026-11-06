@@ -14,11 +14,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, font } from '@/theme';
 
-const ORB_GRADIENT = 'linear-gradient(135deg, #60a5fa 0%, #0142aa 45%, #7c3aed 100%)';
+// v1.18 Ask: brand blue into the Product Finder teal (YouMart AI keeps its own AiMark).
+const ORB_GRADIENT = 'linear-gradient(135deg, #38bdf8 0%, #0142aa 50%, #0d9488 100%)';
 
 /**
  * v1.17 the centre item of the bottom bar (both the tab bar and GlobalTabBar): a breathing
- * gradient orb that opens YouMart AI. It is a shortcut, not a tab - the assistant opens on top.
+ * gradient orb. It is a shortcut, not a tab. v1.18 it opens "Ask" - YouMart AI and Product Finder
+ * Live (the public product-question room) - on top.
  */
 export function AiNavButton() {
   const router = useRouter();
@@ -56,7 +58,7 @@ export function AiNavButton() {
     <Pressable
       style={styles.item}
       accessibilityRole="button"
-      accessibilityLabel="YouMart AI - ask our shopping assistant"
+      accessibilityLabel="Ask - YouMart AI and Product Finder Live"
       onPressIn={() => {
         press.value = withSpring(0.86, { damping: 12, stiffness: 300 });
       }}
@@ -65,18 +67,18 @@ export function AiNavButton() {
       }}
       onPress={() => {
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
-        router.push('/help/assistant');
+        router.push('/ask');
       }}
     >
       <View style={styles.raise}>
         <Animated.View style={[styles.halo, halo]} />
         <Animated.View style={[styles.orb, orb]}>
           <Animated.View style={spark}>
-            <Ionicons name="sparkles" size={15} color={colors.white} />
+            <Ionicons name="chatbubbles" size={15} color={colors.white} />
           </Animated.View>
         </Animated.View>
       </View>
-      <Text style={styles.label}>YouMart AI</Text>
+      <Text style={styles.label}>Ask</Text>
     </Pressable>
   );
 }
@@ -95,7 +97,7 @@ const styles = StyleSheet.create({
     width: HALO,
     height: HALO,
     borderRadius: HALO / 2,
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#14b8a6',
   },
   orb: {
     width: SIZE,

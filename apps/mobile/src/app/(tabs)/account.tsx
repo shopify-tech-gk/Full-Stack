@@ -209,6 +209,12 @@ export default function AccountScreen() {
               <Text style={styles.name} numberOfLines={1}>
                 {label}
               </Text>
+              {/* v1.18 the login username (shown to others in Product Finder Live). */}
+              {loggedIn && user?.username ? (
+                <Text style={styles.username} numberOfLines={1}>
+                  @{user.username}
+                </Text>
+              ) : null}
               <Text style={styles.contact} numberOfLines={1}>
                 {loggedIn ? contact : 'Sign in to see orders, wallet & more'}
               </Text>
@@ -403,6 +409,7 @@ const styles = StyleSheet.create({
   profileText: { flex: 1, gap: 3 },
   name: { fontFamily: font.uiBold, fontSize: 20, color: colors.white },
   contact: { fontFamily: font.body, fontSize: 13, color: '#d6e3ff' },
+  username: { fontFamily: font.uiSemibold, fontSize: 13, color: '#ffe500' },
   editPill: {
     flexDirection: 'row',
     alignItems: 'center',

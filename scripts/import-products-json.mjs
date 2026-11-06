@@ -45,6 +45,8 @@ const VARIANT_META = new Set([
   'Availability',
   'Gallery Image URLs',
 ]);
+/** v1.18 "Pack Of 03" / "(Pack of 2)": a pack-size option. */
+const PACK_OPTION = /^\(?\s*pack\s+of\s+0*(\d+)\s*\)?$/i;
 /** v1.18 a size the delivery left as its placeholder: not a real option. */
 const PLACEHOLDER_OPTION = /^select\b/i;
 /** Option values that don't tell variants apart ("(Pack of 1)", a bare "2"): not a real option. */
@@ -106,19 +108,45 @@ function variantLabel(raw) {
  * a later field is kept only if it varies within the earlier ones' choices (a kit's "Weight" that
  * is just each kit's shipping weight isn't a second picker).
  */
+/**
+ * v1.18 the product's variant entries. A delivery can list the same options twice ("Weight
+ * Variants" 5 m / 10 m hose with a shipping weight, and "Size & Color Variants" 5 m / 10 m) under
+ * different ids: only one list is used - the longest, and on a tie not the weight one.
+ */
+function variantList(p) {
+  const lists = Object.entries(p)
+    .filter(([key, list]) => /variants$/i.test(key) && Array.isArray(list) && list.length > 0)
+    .sort(
+      ([ka, a], [kb, b]) =>
+        b.length - a.length || Number(/^weight/i.test(ka)) - Number(/^weight/i.test(kb)),
+    );
+  return lists.length ? lists[0][1] : [];
+}
+
 function optionDims(optionsList) {
-  const keys = [...new Set(optionsList.flatMap((o) => Object.keys(o)))].sort(
+  const norm = (v) => (v ?? '').toLowerCase().replace(/\s+/g, '');
+  const valuesOf = (key) => optionsList.map((o) => o[key]).filter(Boolean);
+  // v1.18 bare numbers / "(Pack of 1)" usually just repeat the real option, except sizes (waist
+  // 28, 30, 32): they're used only when nothing else tells the variants apart.
+  const noise = (key) =>
+    key !== 'weight' && key !== 'size' && valuesOf(key).every((v) => NOISE_OPTION.test(v.trim()));
+  const all = [...new Set(optionsList.flatMap((o) => Object.keys(o)))].sort(
     (a, b) => (a === 'weight') - (b === 'weight'),
   );
-  const norm = (v) => (v ?? '').toLowerCase().replace(/\s+/g, '');
+  const keys = [...all.filter((k) => !noise(k)), ...all.filter(noise)];
+  // v1.18 one option that names every variant on its own (each has it, all different) is the
+  // whole picker: "900 g / 1.8 kg / 4.5 kg", not a half-filled Style next to it.
+  if (optionsList.length > 1) {
+    const alone = keys.find(
+      (k) =>
+        optionsList.every((o) => o[k]) &&
+        new Set(optionsList.map((o) => norm(o[k]))).size === optionsList.length,
+    );
+    if (alone) return [alone];
+  }
   const dims = [];
   for (const key of keys) {
-    const values = optionsList.map((o) => o[key]).filter(Boolean);
-    if (new Set(values.map(norm)).size < 2) continue;
-    // v1.18 bare numbers are pack counts, except sizes (waist 28, 30, 32 are real sizes).
-    if (key !== 'weight' && key !== 'size' && values.every((v) => NOISE_OPTION.test(v.trim()))) {
-      continue;
-    }
+    if (new Set(valuesOf(key).map(norm)).size < 2) continue;
     if (dims.length) {
       const groups = new Map();
       for (const o of optionsList) {
@@ -167,9 +195,7 @@ for (const [index, p] of items.entries()) {
   const title = clean(p.Title);
   const id = clean(p.Youmart_Product_ID);
   // v1.18 no product-level price (its own size is unavailable): the cheapest sellable variant's.
-  const variantPrices = Object.entries(p)
-    .filter(([key, list]) => /variants$/i.test(key) && Array.isArray(list))
-    .flatMap(([, list]) => list)
+  const variantPrices = variantList(p)
     .filter((v) => v && Number(v['Selling Price (INR)']) > 0)
     .sort((a, b) => Number(a['Selling Price (INR)']) - Number(b['Selling Price (INR)']));
   const priceSource = Number(p['Selling Price (INR)']) > 0 ? p : (variantPrices[0] ?? p);
@@ -194,9 +220,7 @@ for (const [index, p] of items.entries()) {
   // tell the variants apart (optionDims); its own title / image show when it's picked. The variant
   // matching the product's own price takes its MRP; the others get the product's discount applied
   // backwards (unless the entry carries its own MRP).
-  const allVariants = Object.entries(p)
-    .filter(([key, list]) => /variants$/i.test(key) && Array.isArray(list))
-    .flatMap(([, list]) => list)
+  const allVariants = variantList(p)
     .filter((v) => v && typeof v === 'object' && v.Youmart_Product_ID)
     .map((v) => {
       const options = {};
@@ -214,6 +238,12 @@ for (const [index, p] of items.entries()) {
           continue;
         }
         if (PLACEHOLDER_OPTION.test(String(raw))) continue;
+        // v1.18 "Pack Of 03" in a Style / Colour / Size field is a pack size ("Pack of 3").
+        const pack = key === 'weight' ? null : PACK_OPTION.exec(String(raw));
+        if (pack) {
+          options.pack_size = `Pack of ${Number(pack[1])}`;
+          continue;
+        }
         const label =
           key === 'weight'
             ? variantLabel(String(raw))
@@ -234,7 +264,11 @@ for (const [index, p] of items.entries()) {
         images: [...new Set([httpsUrl(v['Image URL']), ...gallery].filter(Boolean))].slice(0, 8),
       };
     });
-  const dims = optionDims(allVariants.map((x) => x.options));
+  let dims = optionDims(allVariants.map((x) => x.options));
+  // v1.18 "Pack of 2 / 3 / 4" next to one without a pack size: that one is the single pack.
+  if (dims.includes('pack_size')) {
+    for (const x of allVariants) x.options.pack_size ??= 'Pack of 1';
+  }
   const comboOf = (options) =>
     dims.map((d) => (options[d] ?? '').toLowerCase().replace(/\s+/g, '')).join('|');
   let sellable = allVariants.filter(({ v }) => Number(v['Selling Price (INR)']) > 0);
@@ -252,6 +286,39 @@ for (const [index, p] of items.entries()) {
       }
     }
     if (best.size) sellable = sellable.filter((x) => [...best.values()].includes(x));
+  }
+  // v1.18 variants their options can't tell apart (a hoe set and a tiller, both "Orange"): their
+  // own titles name them (without the words every title starts with); the same title twice keeps
+  // its cheapest offer.
+  if (!target.variantOptions && sellable.length > 1) {
+    if (new Set(sellable.map((x) => comboOf(x.options))).size < sellable.length) {
+      const titles = sellable.map((x) => x.title ?? title);
+      const words = titles.map((t) => t.split(/\s+/));
+      let common = 0;
+      while (words.every((w) => w.length > common + 1 && w[common] === words[0][common])) common++;
+      const names = words.map((w) =>
+        w
+          .slice(common)
+          .join(' ')
+          .replace(/^[-–:|,\s]+/, ''),
+      );
+      if (new Set(names.map((n) => n.toLowerCase())).size === names.length) {
+        sellable.forEach((x, i) => {
+          x.options = { style_name: names[i].slice(0, 80) };
+        });
+        dims = ['style_name'];
+      } else {
+        const best = new Map();
+        for (const x of sellable) {
+          const key = comboOf(x.options);
+          const had = best.get(key);
+          if (!had || Number(x.v['Selling Price (INR)']) < Number(had.v['Selling Price (INR)'])) {
+            best.set(key, x);
+          }
+        }
+        sellable = [...best.values()];
+      }
+    }
   }
   const sellableCombos = new Set(sellable.map((x) => comboOf(x.options)));
   // A variant the delivery gives no price for can't be sold, but it's still kept: the product page

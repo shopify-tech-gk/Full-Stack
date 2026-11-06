@@ -22,6 +22,7 @@ import { BAR_SPACE, WithGlobalTabBar, routeNeedsBar } from '@/components/GlobalT
 import { BrandHeader } from '@/components/BrandHeader';
 import { FreeDeliveryNudge } from '@/components/FreeDeliveryNudge';
 import { CartNoticeToast } from '@/components/CartNoticeToast';
+import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { colors } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
@@ -148,6 +149,10 @@ export default function RootLayout() {
                       />
                       {/* v1.17 Refer & Earn: one-time "Got a friend's code?" after sign-up. */}
                       <Stack.Screen
+                        name="auth/register"
+                        options={{ headerShown: true, title: 'Create account' }}
+                      />
+                      <Stack.Screen
                         name="auth/referral"
                         options={{ headerShown: true, title: 'Referral code' }}
                       />
@@ -244,6 +249,14 @@ export default function RootLayout() {
                         options={{ headerShown: true, title: 'Help Center' }}
                       />
                       <Stack.Screen
+                        name="ask/index"
+                        options={{ headerShown: false, title: 'Ask YouMart' }}
+                      />
+                      <Stack.Screen
+                        name="ask/finder"
+                        options={{ headerShown: true, title: 'Product Finder Live' }}
+                      />
+                      <Stack.Screen
                         name="help/assistant"
                         options={{ headerShown: true, title: 'YouMart Assistant' }}
                       />
@@ -262,6 +275,8 @@ export default function RootLayout() {
                   <FreeDeliveryNudge />
                   {/* Why an Add / quantity change was refused (out of stock...), on any screen. */}
                   <CartNoticeToast />
+                  {/* v1.18 "Pick your username" after sign-in while the account has none. */}
+                  <UsernamePrompt />
                   <Intro />
                 </WishlistProvider>
               </CartProvider>

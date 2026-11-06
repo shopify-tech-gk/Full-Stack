@@ -8,6 +8,10 @@ export interface SessionUser {
   phone: string | null;
   email: string | null;
   name: string | null;
+  /** v1.18 the login username (null = OTP-only account). */
+  username: string | null;
+  /** v1.18 a password is set (the account can log in with its username). */
+  hasPassword: boolean;
   isPhoneVerified: boolean;
   isEmailVerified: boolean;
 }
@@ -28,12 +32,19 @@ async function loadActiveUser(userId: string) {
   return user;
 }
 
-function toSessionUser(user: SessionUser): SessionUser {
+function toSessionUser(
+  user: Omit<SessionUser, 'username' | 'hasPassword'> & {
+    username?: string | null;
+    passwordHash?: string | null;
+  },
+): SessionUser {
   return {
     id: user.id,
     phone: user.phone,
     email: user.email,
     name: user.name,
+    username: user.username ?? null,
+    hasPassword: Boolean(user.passwordHash),
     isPhoneVerified: user.isPhoneVerified,
     isEmailVerified: user.isEmailVerified,
   };

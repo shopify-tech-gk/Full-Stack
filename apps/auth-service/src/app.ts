@@ -9,6 +9,7 @@ import { logger } from './logger';
 import { prisma } from './db';
 import { config } from './config';
 import { otpRouter } from './routes/otp.routes';
+import { passwordRouter } from './routes/password.routes';
 import { sessionRouter } from './routes/session.routes';
 import { internalRouter } from './routes/internal.routes';
 import { qrRouter } from './routes/qr.routes';
@@ -52,6 +53,7 @@ export function createApp(): Express {
   });
 
   app.use('/auth', otpRouter);
+  app.use('/auth', passwordRouter);
   app.use('/auth', sessionRouter);
   app.use('/auth', internalRouter);
   // QR sign-in (website shows, app scans + confirms) and Logged-in devices.

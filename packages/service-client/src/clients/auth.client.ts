@@ -9,6 +9,8 @@ export interface UserContactView {
   email: string | null;
   /** v1.18 for greetings; null when the customer hasn't given one. */
   name?: string | null;
+  /** v1.18 the public username (Product Finder Live shows it); null when none. */
+  username?: string | null;
 }
 
 /** W9: which channels the customer wants for each kind of message (`GET

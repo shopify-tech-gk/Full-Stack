@@ -30,6 +30,23 @@ export const TEXT_PARAMS = {
   // The vectors are big and the API never returns them.
   exclude_fields: 'embedding',
 };
+/**
+ * v1.18 strict keyword matching (Product Finder Live's bot): every word must be in the title,
+ * brand, category or keywords - no "similar meaning" matches, no dropped words, no description
+ * hits - so "shoes" finds shoes or nothing (never shade nets or hoes).
+ */
+export const STRICT_TEXT_PARAMS = {
+  query_by: 'title,brand,categoryPath,keywords',
+  query_by_weights: '10,8,5,5',
+  prefix: 'false',
+  num_typos: '1,1,1,1',
+  // Plurals come from stemming ("shoe" / "shoes"); a typo only in long words ("prunning"), so
+  // "shoes" can't become "hoes".
+  min_len_1typo: 7,
+  drop_tokens_threshold: 0,
+  synonym_sets: SYNONYM_SET,
+  exclude_fields: 'embedding',
+};
 const MAX_FACET_VALUES = 100;
 const PRICE_FIELD = 'pricePaise';
 const PRICE_KEY = '__price';
@@ -206,7 +223,11 @@ export async function browse(
   const hasText = Boolean(body.q && body.q.trim());
   // Plain browsing (q = *) has no text to embed: keyword-only params.
   const common = hasText
-    ? { q: body.q!.trim(), ...TEXT_PARAMS }
+    ? {
+        q: body.q!.trim(),
+        ...(body.strict ? STRICT_TEXT_PARAMS : TEXT_PARAMS),
+        ...(body.strict && body.strictTypos ? { min_len_1typo: 4 } : {}),
+      }
     : { q: '*', query_by: 'title', exclude_fields: 'embedding' };
   const sort = sortBy(body.sort, hasText, body.seed);
   const searches: Record<string, unknown>[] = [

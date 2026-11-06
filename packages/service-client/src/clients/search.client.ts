@@ -12,6 +12,10 @@ export type BrowseSort =
 
 export interface BrowseRequest {
   q?: string;
+  /** v1.18 strict keyword match: every word in title / brand / category, no look-alikes. */
+  strict?: boolean;
+  /** v1.18 with `strict`: forgive one typo in words of 4+ letters. */
+  strictTypos?: boolean;
   /** Matches the category AND its descendants. */
   categoryId?: string;
   filters?: BrowseFilter[];

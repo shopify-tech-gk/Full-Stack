@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { BUSINESS, CUSTOMER_CARE_PAGE } from '@youmart/shared-client';
 import { colors, font, space } from '@/theme';
+import { AiMark } from './AiMark';
 
 // v1.17 Customer Care: YouMart AI for instant answers, then WhatsApp / call / email with the real
 // number and address shown, quick self-help links and the store address. Same contact details as
@@ -86,7 +87,7 @@ export function CustomerCare() {
           accessibilityLabel="Ask YouMart AI"
         >
           <View style={styles.aiOrb}>
-            <Ionicons name="sparkles" size={20} color={colors.white} />
+            <AiMark size={40} animated />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.aiTitle}>Ask YouMart AI</Text>
