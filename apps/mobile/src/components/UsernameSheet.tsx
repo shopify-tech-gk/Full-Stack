@@ -21,7 +21,7 @@ import { cleanUsername, passwordOk, passwordRules, useUsernameCheck } from '@/li
 import { colors, font, radii, space } from '@/theme';
 
 // v1.18 "Pick your username": a bottom sheet for accounts that signed up with OTP. The username is
-// set once (shown to others, e.g. in Product Finder Live); a password is optional here and lets
+// set once (shown to others, e.g. in YouFind Bot); a password is optional here and lets
 // them log in with the username too. `reason` says why it's asked (after login / for the room).
 
 const RM = ReduceMotion.Never;
@@ -81,7 +81,7 @@ export function UsernameSheet({
 
   const subtitle =
     reason === 'finder'
-      ? 'Product Finder Live shows your username with every question you ask.'
+      ? 'YouFind Bot shows your username with every question you ask.'
       : 'Your username is how other shoppers see you - and you can log in with it too.';
 
   return (

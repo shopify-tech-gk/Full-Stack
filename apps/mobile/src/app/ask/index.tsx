@@ -15,12 +15,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { FinderMessage } from '@youmart/shared-client';
 import { AiMark } from '@/components/AiMark';
+import { ChatAvatar } from '@/components/ChatAvatar';
 import { api } from '@/lib/api';
 import { useRouter } from '@/lib/router';
 import { colors, font, space } from '@/theme';
 
 // v1.18 "Ask" - the bottom bar's centre button. A hero, then the two ways to ask: YouMart AI (a
-// private assistant, with one-tap starter questions) and Product Finder Live (the public room,
+// private assistant, with one-tap starter questions) and YouFind Bot (the public room,
 // with what people are asking right now), and how the live room works.
 
 const RM = ReduceMotion.Never;
@@ -116,7 +117,7 @@ export default function AskHub() {
             <AiMark size={58} animated />
             <View style={{ flex: 1, gap: 3 }}>
               <View style={styles.titleRow}>
-                <Text style={styles.cardTitle}>YouMart AI</Text>
+                <Text style={styles.cardTitle}>Yumo</Text>
                 <View style={[styles.tag, { backgroundColor: '#eef2ff' }]}>
                   <Ionicons name="lock-closed" size={10} color="#4338ca" />
                   <Text style={[styles.tagText, { color: '#4338ca' }]}>Private</Text>
@@ -154,7 +155,7 @@ export default function AskHub() {
           </Pressable>
         </Animated.View>
 
-        {/* Product Finder Live */}
+        {/* YouFind Bot */}
         <Animated.View
           entering={FadeInDown.delay(220).duration(380).reduceMotion(RM)}
           style={[styles.card, { padding: 0, overflow: 'hidden' }]}
@@ -175,7 +176,7 @@ export default function AskHub() {
                 </View>
               </View>
               <View style={{ flex: 1, gap: 3 }}>
-                <Text style={styles.cardTitle}>Product Finder Live</Text>
+                <Text style={styles.cardTitle}>YouFind Bot</Text>
                 <Text style={styles.cardText}>
                   Ask for any product - our bot replies to everyone in the room.
                 </Text>
@@ -187,11 +188,7 @@ export default function AskHub() {
                 <Text style={styles.miniLabel}>Asked just now</Text>
                 {recent.map((m) => (
                   <View key={m.id} style={styles.tick}>
-                    <View style={styles.tickAvatar}>
-                      <Text style={styles.tickAvatarText}>
-                        {(m.mine ? 'Y' : m.name.charAt(0)).toUpperCase()}
-                      </Text>
-                    </View>
+                    <ChatAvatar name={m.name} size={26} />
                     <Text style={styles.tickText} numberOfLines={1}>
                       <Text style={styles.tickName}>{m.mine ? 'You' : m.name}</Text> asked for “
                       {m.text}”

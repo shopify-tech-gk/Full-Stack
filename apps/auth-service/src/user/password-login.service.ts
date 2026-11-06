@@ -114,6 +114,26 @@ export async function usernameAvailability(
   };
 }
 
+// --- public profile photo (by username) ---
+
+/**
+ * v1.18 a username's profile photo as image bytes (Product Finder Live shows it next to their
+ * questions); null when there's no such username or no photo. The username is already public.
+ */
+export async function avatarByUsername(
+  raw: string,
+): Promise<{ type: string; bytes: Buffer } | null> {
+  const parsed = Username.safeParse(raw);
+  if (!parsed.success) return null;
+  const user = await prisma.user.findFirst({
+    where: { username: parsed.data, deletedAt: null, status: 'ACTIVE' },
+    select: { avatar: true },
+  });
+  const match = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/s.exec(user?.avatar ?? '');
+  if (!match) return null;
+  return { type: match[1]!, bytes: Buffer.from(match[2]!, 'base64') };
+}
+
 // --- registration ---
 
 /** The number's own account (if any) may take the username; nobody else may. */

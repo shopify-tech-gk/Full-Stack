@@ -8,6 +8,7 @@ import {
   RegisterStartBody,
   RegisterVerifyBody,
   SetLoginBody,
+  avatarByUsername,
   completeRegistration,
   setLogin,
   passwordLogin,
@@ -31,6 +32,18 @@ async function signIn(res: Response, userId: string, userAgent: string | undefin
     user: session.user,
   });
 }
+
+// v1.18 public profile photo by username (Product Finder Live); 404 = show the initial.
+passwordRouter.get('/users/:username/avatar', async (req, res) => {
+  const photo = await avatarByUsername(String(req.params.username ?? ''));
+  if (!photo) {
+    res.status(404).end();
+    return;
+  }
+  res.setHeader('Content-Type', photo.type);
+  res.setHeader('Cache-Control', 'public, max-age=600');
+  res.status(200).send(photo.bytes);
+});
 
 passwordRouter.get('/username/check', async (req, res) => {
   res.json(await usernameAvailability(String(req.query.u ?? '')));

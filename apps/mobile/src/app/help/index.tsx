@@ -60,7 +60,7 @@ export default function HelpCenterScreen() {
           <Ionicons name="sparkles" size={20} color={colors.brand.DEFAULT} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.aiTitle}>Ask YouMart Assistant</Text>
+          <Text style={styles.aiTitle}>Ask Yumo</Text>
           <Text style={styles.aiSub}>
             Instant answers about orders, delivery, returns & refunds
           </Text>

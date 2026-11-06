@@ -3,7 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Headset, Mail, Phone, Send } from 'lucide-react';
-import { adminFetch, fmtDateTime, timeAgo, type AdminTicket, type Page, type Tone } from '@/lib/admin';
+import {
+  adminFetch,
+  fmtDateTime,
+  timeAgo,
+  type AdminTicket,
+  type Page,
+  type Tone,
+} from '@/lib/admin';
 import { useAdmin } from './AdminShell';
 import {
   Badge,
@@ -70,7 +77,13 @@ export function AdminSupport() {
       <PageHeader
         title="Support"
         subtitle="Help requests from signed-in customers. Your reply shows under their Help Requests."
-        actions={<SearchInput value={q} onChange={setQ} placeholder="Message, order no. or HLP- reference" />}
+        actions={
+          <SearchInput
+            value={q}
+            onChange={setQ}
+            placeholder="Message, order no. or HLP- reference"
+          />
+        }
       />
       <div className="mb-[14px]">
         <Tabs
@@ -92,7 +105,11 @@ export function AdminSupport() {
         <Loading />
       ) : items.length === 0 ? (
         <Card>
-          <Empty icon={Headset} title={status === 'OPEN' ? 'Inbox zero' : 'No requests here'} text={status === 'OPEN' ? 'No new help requests. Nice work.' : undefined} />
+          <Empty
+            icon={Headset}
+            title={status === 'OPEN' ? 'Inbox zero' : 'No requests here'}
+            text={status === 'OPEN' ? 'No new help requests. Nice work.' : undefined}
+          />
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-[16px] lg:grid-cols-[380px_1fr]">
@@ -106,17 +123,25 @@ export function AdminSupport() {
                       type="button"
                       onClick={() => setSelectedId(t.ticketId)}
                       className={`block w-full px-[18px] py-[14px] text-left transition ${
-                        active ? 'bg-[#eef3ff] shadow-[inset_3px_0_0_#0142aa]' : 'hover:bg-[#fafbfe]'
+                        active
+                          ? 'bg-[#eef3ff] shadow-[inset_3px_0_0_#0142aa]'
+                          : 'hover:bg-[#fafbfe]'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-[8px]">
-                        <span className="text-[13.5px] font-semibold text-[#0b1b3f]">{t.topicLabel}</span>
+                        <span className="text-[13.5px] font-semibold text-[#0b1b3f]">
+                          {t.topicLabel}
+                        </span>
                         <span className="text-[12px] text-[#8a95ab]">{timeAgo(t.createdAt)}</span>
                       </div>
-                      <p className="mt-[3px] line-clamp-2 text-[13px] text-[#5d6b85]">{t.message}</p>
+                      <p className="mt-[3px] line-clamp-2 text-[13px] text-[#5d6b85]">
+                        {t.message}
+                      </p>
                       <div className="mt-[6px] flex items-center gap-[8px]">
                         <Badge tone={STATUS[t.status].tone}>{STATUS[t.status].label}</Badge>
-                        <span className="text-[11.5px] font-semibold text-[#8a95ab]">{t.reference}</span>
+                        <span className="text-[11.5px] font-semibold text-[#8a95ab]">
+                          {t.reference}
+                        </span>
                       </div>
                     </button>
                   </li>
@@ -130,8 +155,12 @@ export function AdminSupport() {
               <div className="border-b border-[#eef1f6] px-[22px] py-[16px]">
                 <div className="flex flex-wrap items-start justify-between gap-[10px]">
                   <div>
-                    <p className="text-[12px] font-semibold tracking-[0.06em] text-[#8a95ab]">{selected.reference}</p>
-                    <h2 className="text-[18px] font-semibold text-[#0b1b3f]">{selected.topicLabel}</h2>
+                    <p className="text-[12px] font-semibold tracking-[0.06em] text-[#8a95ab]">
+                      {selected.reference}
+                    </p>
+                    <h2 className="text-[18px] font-semibold text-[#0b1b3f]">
+                      {selected.topicLabel}
+                    </h2>
                   </div>
                   <Badge tone={STATUS[selected.status].tone}>{STATUS[selected.status].label}</Badge>
                 </div>
@@ -147,7 +176,10 @@ export function AdminSupport() {
                     </span>
                   )}
                   {selected.orderNumber && (
-                    <Link href={`/admin/orders/${selected.orderNumber}`} className="font-semibold text-[#0142aa] hover:underline">
+                    <Link
+                      href={`/admin/orders/${selected.orderNumber}`}
+                      className="font-semibold text-[#0142aa] hover:underline"
+                    >
                       Order {selected.orderNumber}
                     </Link>
                   )}
@@ -157,7 +189,7 @@ export function AdminSupport() {
                 {selected.chatTranscript && (
                   <details className="rounded-[12px] border border-[#dfe6f3] bg-[#f8fafd] px-[14px] py-[10px]">
                     <summary className="cursor-pointer text-[13px] font-semibold text-[#0142aa]">
-                      ✨ Came from YouMart Assistant - view the AI chat
+                      ✨ Came from Yumo - view the AI chat
                     </summary>
                     <p className="mt-[8px] max-h-[280px] overflow-y-auto whitespace-pre-wrap text-[13px] leading-[1.55] text-[#475569]">
                       {selected.chatTranscript}
@@ -165,12 +197,18 @@ export function AdminSupport() {
                   </details>
                 )}
                 <div className="max-w-[85%] rounded-[14px] rounded-tl-[4px] bg-[#f1f4f9] px-[16px] py-[12px]">
-                  <p className="whitespace-pre-wrap text-[14.5px] leading-[1.55] text-[#24324d]">{selected.message}</p>
-                  <p className="mt-[6px] text-[11.5px] text-[#8a95ab]">Customer · {fmtDateTime(selected.createdAt)}</p>
+                  <p className="whitespace-pre-wrap text-[14.5px] leading-[1.55] text-[#24324d]">
+                    {selected.message}
+                  </p>
+                  <p className="mt-[6px] text-[11.5px] text-[#8a95ab]">
+                    Customer · {fmtDateTime(selected.createdAt)}
+                  </p>
                 </div>
                 {selected.adminReply && (
                   <div className="ml-auto max-w-[85%] rounded-[14px] rounded-tr-[4px] bg-[#0142aa] px-[16px] py-[12px] text-white">
-                    <p className="whitespace-pre-wrap text-[14.5px] leading-[1.55]">{selected.adminReply}</p>
+                    <p className="whitespace-pre-wrap text-[14.5px] leading-[1.55]">
+                      {selected.adminReply}
+                    </p>
                     <p className="mt-[6px] text-[11.5px] text-[#c6d6fb]">
                       YouMart Support · {selected.repliedAt ? fmtDateTime(selected.repliedAt) : ''}
                     </p>
@@ -182,22 +220,33 @@ export function AdminSupport() {
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
                   rows={4}
-                  placeholder={selected.adminReply ? 'Update your reply…' : 'Write a reply to the customer…'}
+                  placeholder={
+                    selected.adminReply ? 'Update your reply…' : 'Write a reply to the customer…'
+                  }
                   className="w-full resize-y rounded-[12px] border border-[#d7deea] px-[14px] py-[10px] text-[14px] text-[#0b1b3f] placeholder:text-[#8a95ab] focus:border-[#0142aa] focus:outline-none focus:ring-2 focus:ring-[#0142aa]/15"
                 />
                 <div className="mt-[10px] flex flex-wrap justify-between gap-[8px]">
                   <div className="flex gap-[8px]">
                     {selected.status !== 'IN_PROGRESS' && (
-                      <Button busy={busy === 'IN_PROGRESS'} onClick={() => void update({ status: 'IN_PROGRESS' }, 'Marked in progress')}>
+                      <Button
+                        busy={busy === 'IN_PROGRESS'}
+                        onClick={() => void update({ status: 'IN_PROGRESS' }, 'Marked in progress')}
+                      >
                         In progress
                       </Button>
                     )}
                     {selected.status !== 'RESOLVED' ? (
-                      <Button busy={busy === 'RESOLVED'} onClick={() => void update({ status: 'RESOLVED' }, 'Marked resolved')}>
+                      <Button
+                        busy={busy === 'RESOLVED'}
+                        onClick={() => void update({ status: 'RESOLVED' }, 'Marked resolved')}
+                      >
                         Resolve
                       </Button>
                     ) : (
-                      <Button busy={busy === 'OPEN'} onClick={() => void update({ status: 'OPEN' }, 'Reopened')}>
+                      <Button
+                        busy={busy === 'OPEN'}
+                        onClick={() => void update({ status: 'OPEN' }, 'Reopened')}
+                      >
                         Reopen
                       </Button>
                     )}
@@ -206,7 +255,12 @@ export function AdminSupport() {
                     <Button
                       disabled={reply.trim().length < 2}
                       busy={busy === 'reply-resolve'}
-                      onClick={() => void update({ reply: reply.trim(), status: 'RESOLVED' }, 'Replied & resolved')}
+                      onClick={() =>
+                        void update(
+                          { reply: reply.trim(), status: 'RESOLVED' },
+                          'Replied & resolved',
+                        )
+                      }
                     >
                       Reply & resolve
                     </Button>

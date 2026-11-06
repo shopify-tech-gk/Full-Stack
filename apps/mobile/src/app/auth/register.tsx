@@ -210,7 +210,7 @@ export default function RegisterScreen() {
               ]}
             >
               {check.message ??
-                'Shown to others (e.g. in Product Finder Live). Different from your name.'}
+                'Shown to others (e.g. in the YouFind Bot room). Different from your name.'}
             </Text>
 
             <Field

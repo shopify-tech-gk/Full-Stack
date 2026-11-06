@@ -290,7 +290,7 @@ export default function AssistantScreen() {
         <Orb size={38} glow />
         <View style={{ flex: 1 }}>
           <View style={styles.titleRow}>
-            <Text style={styles.headerTitle}>YouMart AI</Text>
+            <Text style={styles.headerTitle}>Yumo</Text>
             <View style={styles.aiBadge}>
               <Text style={styles.aiBadgeText}>AI</Text>
             </View>
@@ -337,7 +337,8 @@ export default function AssistantScreen() {
               <Orb size={64} glow />
               <Text style={styles.hello}>{firstName ? `Hi ${firstName} 👋` : 'Hi there 👋'}</Text>
               <Text style={styles.helloSub}>
-                Plan a trip, a party or a gift - or ask about your orders.
+                I&apos;m Yumo, your YouMart assistant. Plan a trip, a party or a gift - or ask about
+                your orders.
               </Text>
               <Text style={styles.tryLabel}>TRY ASKING</Text>
               <View style={styles.grid}>
@@ -403,7 +404,7 @@ export default function AssistantScreen() {
               >
                 <View style={styles.aiHead}>
                   <Orb size={22} error={b.error} />
-                  <Text style={styles.aiName}>YouMart AI</Text>
+                  <Text style={styles.aiName}>Yumo</Text>
                 </View>
                 <AiText text={b.text} shown={b.shown} error={b.error} />
                 {/* Cards appear once the reply has finished typing. */}
@@ -470,7 +471,7 @@ export default function AssistantScreen() {
             <TextInput
               value={text}
               onChangeText={setText}
-              placeholder="Ask YouMart AI anything…"
+              placeholder="Ask Yumo anything…"
               placeholderTextColor={colors.text.placeholder}
               style={styles.input}
               multiline
@@ -486,7 +487,7 @@ export default function AssistantScreen() {
           <Text style={styles.disclaimer}>
             {remaining !== null && remaining <= 5
               ? `${remaining} questions left today`
-              : 'YouMart AI can make mistakes. Check important details in My Orders.'}
+              : 'Yumo can make mistakes. Check important details in My Orders.'}
           </Text>
         </View>
       </KeyboardAvoidingView>
@@ -606,7 +607,7 @@ function IntroOverlay({ onDone }: { onDone: () => void }) {
         </Animated.View>
       </View>
       <Animated.View style={[{ alignItems: 'center', gap: 6 }, titleStyle]}>
-        <Text style={styles.introTitle}>YouMart AI</Text>
+        <Text style={styles.introTitle}>Yumo</Text>
         <Text style={styles.introSub}>Smart help for everything you shop</Text>
       </Animated.View>
     </Animated.View>

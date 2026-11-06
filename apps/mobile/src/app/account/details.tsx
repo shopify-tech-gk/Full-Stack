@@ -187,7 +187,7 @@ export default function AccountDetailsScreen() {
         {pwMsg ? <Text style={styles.okMsg}>{pwMsg}</Text> : null}
         {!user.username ? (
           <Text style={styles.muted}>
-            Your username is shown in Product Finder Live and lets you log in with a password.
+            Your username is shown in the YouFind Bot room and lets you log in with a password.
           </Text>
         ) : null}
 

@@ -93,7 +93,7 @@ export function AssistantProductCards({
   label = 'Picked for you',
 }: {
   products: AssistantProduct[];
-  /** v1.18 the heading over the cards (Product Finder: "Found for you"). */
+  /** v1.18 the heading over the cards (YouFind Bot: "Results"). */
   label?: string;
 }) {
   const router = useRouter();

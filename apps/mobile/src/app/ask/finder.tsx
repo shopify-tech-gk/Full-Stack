@@ -19,12 +19,13 @@ import Animated, { FadeIn, FadeInDown, ReduceMotion } from 'react-native-reanima
 import { ApiError, type FinderMessage } from '@youmart/shared-client';
 import { AssistantProductCards, RestockCard } from '@/components/AssistantCards';
 import { UsernameSheet } from '@/components/UsernameSheet';
+import { ChatAvatar } from '@/components/ChatAvatar';
 import { api } from '@/lib/api';
 import { useRouter } from '@/lib/router';
 import { useSession } from '@/stores/session';
 import { colors, font, space } from '@/theme';
 
-// v1.18 Product Finder Live - a public room like a Telegram movie-bot group. Every shopper sees
+// v1.18 YouFind Bot - a public room like a Telegram movie-bot group. Every shopper sees
 // every question and the bot's reply to it (a reply card quoting the question): the matching
 // products, or "not found" with Request restock. Shoppers can only ask for products - they can't
 // reply to or message each other. New questions arrive live (polled every few seconds).
@@ -77,7 +78,7 @@ function FinderGate({ signedIn, hasPassword }: { signedIn: boolean; hasPassword:
         </Text>
         <Text style={styles.emptyText}>
           {signedIn
-            ? 'Everyone in Product Finder Live sees who asked - so the room shows your username with each question.'
+            ? 'Everyone in the YouFind Bot room sees who asked - so the room shows your username with each question.'
             : 'Ask for any product and our bot replies to everyone in the room. Sign in and pick a username to join.'}
         </Text>
         <Pressable
@@ -108,6 +109,7 @@ function ProductFinderLive() {
   const insets = useSafeAreaInsets();
   const session = useSession();
   const signedIn = session.status === 'authenticated';
+  const myName = session.status === 'authenticated' ? (session.user.username ?? 'You') : 'You';
 
   // Newest first: the list is inverted, so the newest sits at the bottom by the composer.
   const [items, setItems] = useState<FinderMessage[]>([]);
@@ -206,7 +208,9 @@ function ProductFinderLive() {
   const header = sending ? (
     <View style={styles.pending}>
       <View style={[styles.askRow, styles.askRowMine]}>
+        <ChatAvatar name={myName} />
         <View style={[styles.bubble, styles.bubbleMine]}>
+          <Text style={[styles.name, styles.nameMine]}>You</Text>
           <Text style={[styles.bubbleText, styles.bubbleTextMine]}>{sending}</Text>
         </View>
       </View>
@@ -215,7 +219,7 @@ function ProductFinderLive() {
           <Ionicons name="search" size={13} color={colors.white} />
         </View>
         <ActivityIndicator size="small" color="#059669" />
-        <Text style={styles.typingText}>YouMart Bot is searching…</Text>
+        <Text style={styles.typingText}>YouFind Bot is searching…</Text>
       </View>
     </View>
   ) : undefined;
@@ -356,13 +360,10 @@ function FinderRow({
   return (
     <Animated.View entering={FadeInDown.duration(260).reduceMotion(RM)} style={styles.row}>
       <View style={[styles.askRow, m.mine && styles.askRowMine]}>
-        {!m.mine ? (
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{m.name.charAt(0).toUpperCase()}</Text>
-          </View>
-        ) : null}
+        {/* v1.18 everyone's picture (profile photo or initial); mine says "You", like WhatsApp. */}
+        <ChatAvatar name={m.name} />
         <View style={[styles.bubble, m.mine && styles.bubbleMine]}>
-          {!m.mine ? <Text style={styles.name}>{m.name}</Text> : null}
+          <Text style={[styles.name, m.mine && styles.nameMine]}>{m.mine ? 'You' : m.name}</Text>
           <Text style={[styles.bubbleText, m.mine && styles.bubbleTextMine]}>{m.text}</Text>
           <Text style={[styles.time, m.mine && styles.timeMine]}>{timeOf(m.createdAt)}</Text>
         </View>
@@ -373,7 +374,7 @@ function FinderRow({
           <View style={[styles.botAvatar, { experimental_backgroundImage: BOT_GRADIENT }]}>
             <Ionicons name="search" size={13} color={colors.white} />
           </View>
-          <Text style={styles.botName}>YouMart Bot</Text>
+          <Text style={styles.botName}>YouFind Bot</Text>
           <View style={styles.botBadge}>
             <Ionicons name="checkmark" size={9} color={colors.white} />
           </View>
@@ -411,7 +412,7 @@ function FinderRow({
             </View>
             <RestockCard
               item={m.text}
-              transcript={() => `Product Finder Live: "${m.text}"`}
+              transcript={() => `YouFind Bot: "${m.text}"`}
               sent={requested}
               onSent={onRequested}
               signedIn={signedIn}
@@ -493,6 +494,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   name: { fontFamily: font.uiBold, fontSize: 11.5, color: '#7c3aed', marginBottom: 1 },
+  nameMine: { color: '#ffe500', textAlign: 'right' },
   bubbleText: { fontFamily: font.uiMedium, fontSize: 14.5, color: colors.heading },
   bubbleTextMine: { color: colors.white },
   time: { fontFamily: font.body, fontSize: 10, color: colors.text.muted, alignSelf: 'flex-end' },

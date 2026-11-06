@@ -84,13 +84,13 @@ export function CustomerCare() {
             router.push('/help/assistant');
           }}
           style={({ pressed }) => [styles.ai, pressed && styles.pressed]}
-          accessibilityLabel="Ask YouMart AI"
+          accessibilityLabel="Ask Yumo"
         >
           <View style={styles.aiOrb}>
             <AiMark size={40} animated />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.aiTitle}>Ask YouMart AI</Text>
+            <Text style={styles.aiTitle}>Ask Yumo</Text>
             <Text style={styles.aiText}>
               Instant answers on orders, delivery, returns - and help finding what to buy.
             </Text>

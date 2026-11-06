@@ -5,7 +5,7 @@ import { UsernameSheet } from './UsernameSheet';
 
 // v1.18 After every sign-in (and each app start while signed in), an account without a username
 // is asked to pick one - once per sign-in; "Maybe later" waits for the next one. Not over the
-// sign-in screens, and not in Product Finder Live (it asks there itself).
+// sign-in screens, and not in YouFind Bot (it asks there itself).
 
 const QUIET = ['/auth', '/welcome', '/ask/finder', '/lens', '/scan', '/checkout', '/payment'];
 

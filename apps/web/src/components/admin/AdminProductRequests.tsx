@@ -88,7 +88,7 @@ export function AdminProductRequests() {
     <>
       <PageHeader
         title="Product requests"
-        subtitle="What shoppers asked YouMart AI for that we don't have in stock (its “Request restock” button)."
+        subtitle="What shoppers asked Yumo (or YouFind Bot) for that we don't have in stock (its “Request restock” button)."
         actions={<SearchInput value={q} onChange={setQ} placeholder="Search requested item" />}
       />
       <div className="mb-[14px]">
@@ -159,7 +159,7 @@ export function AdminProductRequests() {
                     {r.chatTranscript && (
                       <details className="mt-[8px] rounded-[10px] border border-[#dfe6f3] bg-[#f8fafd] px-[12px] py-[8px]">
                         <summary className="cursor-pointer text-[12.5px] font-semibold text-[#0142aa]">
-                          ✨ View the YouMart AI chat
+                          ✨ View the Yumo chat
                         </summary>
                         <p className="mt-[6px] max-h-[220px] overflow-y-auto whitespace-pre-wrap text-[13px] leading-[1.5] text-[#475569]">
                           {r.chatTranscript}

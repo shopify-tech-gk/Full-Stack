@@ -209,7 +209,7 @@ export default function AccountScreen() {
               <Text style={styles.name} numberOfLines={1}>
                 {label}
               </Text>
-              {/* v1.18 the login username (shown to others in Product Finder Live). */}
+              {/* v1.18 the login username (shown to others in YouFind Bot). */}
               {loggedIn && user?.username ? (
                 <Text style={styles.username} numberOfLines={1}>
                   @{user.username}

@@ -254,11 +254,11 @@ export default function RootLayout() {
                       />
                       <Stack.Screen
                         name="ask/finder"
-                        options={{ headerShown: true, title: 'Product Finder Live' }}
+                        options={{ headerShown: true, title: 'YouFind Bot' }}
                       />
                       <Stack.Screen
                         name="help/assistant"
-                        options={{ headerShown: true, title: 'YouMart Assistant' }}
+                        options={{ headerShown: true, title: 'Yumo' }}
                       />
                       <Stack.Screen
                         name="help/new"

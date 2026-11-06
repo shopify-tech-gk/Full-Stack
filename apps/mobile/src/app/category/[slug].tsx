@@ -12,6 +12,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useRouter } from '@/lib/router';
 import type { ListingQuery, ProductCardData } from '@youmart/shared-client';
 import {
   emptyListingQuery,
@@ -59,6 +60,7 @@ export default function CategoryScreen() {
   }>();
   const routeSlug = String(slug ?? '');
   const navigation = useNavigation();
+  const router = useRouter();
   const { width } = useWindowDimensions();
 
   const startPath = useMemo(
@@ -128,10 +130,28 @@ export default function CategoryScreen() {
   }, [navigation, node, data]);
 
   // Changing category starts clean (filters belong to the category they were picked in).
-  const go = useCallback((next: string[]) => {
-    setPath(next);
-    setQuery(emptyListingQuery());
-  }, []);
+  // v1.18 going deeper (main -> sub -> sub-to-sub) opens a new page, so Back walks the same way up
+  // (sub-to-sub -> sub -> main -> where they came from). Switching between items on the same level,
+  // or back up to "All ...", stays on this page.
+  const go = useCallback(
+    (next: string[]) => {
+      const deeper = next.length > path.length && path.every((seg, i) => next[i] === seg);
+      if (deeper) {
+        const target = taxNode(next);
+        router.push({
+          pathname: '/category/[slug]',
+          params: {
+            slug: (target && catalogSlugOf(target.href)) || routeSlug,
+            taxo: next.join('~'),
+          },
+        });
+        return;
+      }
+      setPath(next);
+      setQuery(emptyListingQuery());
+    },
+    [path, router, routeSlug],
+  );
 
   useEffect(() => {
     let active = true;

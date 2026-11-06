@@ -14,13 +14,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, font } from '@/theme';
 
-// v1.18 Ask: brand blue into the Product Finder teal (YouMart AI keeps its own AiMark).
+// v1.18 Ask: brand blue into the YouFind Bot teal (YouMart AI keeps its own AiMark).
 const ORB_GRADIENT = 'linear-gradient(135deg, #38bdf8 0%, #0142aa 50%, #0d9488 100%)';
 
 /**
  * v1.17 the centre item of the bottom bar (both the tab bar and GlobalTabBar): a breathing
- * gradient orb. It is a shortcut, not a tab. v1.18 it opens "Ask" - YouMart AI and Product Finder
- * Live (the public product-question room) - on top.
+ * gradient orb. It is a shortcut, not a tab. v1.18 it opens "Ask" - YouMart AI and YouFind Bot
+ * (the public product-question room) - on top.
  */
 export function AiNavButton() {
   const router = useRouter();
@@ -58,7 +58,7 @@ export function AiNavButton() {
     <Pressable
       style={styles.item}
       accessibilityRole="button"
-      accessibilityLabel="Ask - YouMart AI and Product Finder Live"
+      accessibilityLabel="Ask - Yumo and YouFind Bot"
       onPressIn={() => {
         press.value = withSpring(0.86, { damping: 12, stiffness: 300 });
       }}

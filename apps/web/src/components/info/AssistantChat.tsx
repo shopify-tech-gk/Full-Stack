@@ -26,7 +26,7 @@ interface Bubble extends AssistantTurn {
 }
 
 const WELCOME =
-  "Hi! I'm YouMart Assistant. Ask me about your orders, delivery, payments, returns, refunds or anything about shopping on YouMart.";
+  "Hi! I'm Yumo, the YouMart assistant. Ask me about your orders, delivery, payments, returns, refunds or anything about shopping on YouMart.";
 
 /** **bold** and "- " bullets, as the assistant formats replies. */
 function Rich({ text }: { text: string }) {
@@ -122,7 +122,7 @@ export function AssistantChat() {
 
   return (
     <section
-      aria-label="YouMart Assistant"
+      aria-label="Yumo"
       className="mx-auto mt-[30px] flex max-w-[760px] flex-col overflow-hidden rounded-[18px] border border-catalog-rule bg-white font-ui shadow-[0_10px_30px_rgba(1,66,170,0.08)]"
     >
       <header className="flex items-center gap-[12px] bg-brand px-[18px] py-[14px] text-white">
@@ -130,7 +130,7 @@ export function AssistantChat() {
           <Sparkles aria-hidden="true" className="size-[19px]" />
         </span>
         <div>
-          <h2 className="text-[17px] font-semibold">YouMart Assistant</h2>
+          <h2 className="text-[17px] font-semibold">Yumo</h2>
           <p className="text-[12.5px] opacity-85">
             Instant answers 24×7 - if I can&rsquo;t solve it, I&rsquo;ll pass it to our team.
           </p>
