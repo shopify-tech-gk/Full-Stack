@@ -27,7 +27,12 @@ import { useCart } from '@/stores/cart';
 import { useWishlist } from '@/stores/wishlist';
 import { SaveButton } from '@/components/SaveButton';
 import { useSession } from '@/stores/session';
-import { ImagePeek, ProductGallery, type PeekTarget } from '@/components/ProductGallery';
+import {
+  ImagePeek,
+  ProductGallery,
+  usePeekZoom,
+  type PeekTarget,
+} from '@/components/ProductGallery';
 import { ProductAbout, ProductHeading, ProductPricing } from '@/components/ProductDetails';
 import { VariantPicker } from '@/components/VariantPicker';
 import { ProductCard } from '@/components/ProductCard';
@@ -85,6 +90,7 @@ export default function ProductScreen() {
   const [remindOpen, setRemindOpen] = useState(false);
   // v1.18 the gallery photo being held (full-screen peek), if any.
   const [peek, setPeek] = useState<PeekTarget | null>(null);
+  const peekZoom = usePeekZoom();
   const [remindPick, setRemindPick] = useState<string | undefined>();
 
   const listRef = useRef<FlatList<ProductCardData>>(null);
@@ -305,7 +311,13 @@ export default function ProductScreen() {
 
   const header = (
     <View>
-      <ProductGallery key={images[0] ?? ''} images={images} width={width} onPeek={setPeek}>
+      <ProductGallery
+        key={images[0] ?? ''}
+        images={images}
+        width={width}
+        onPeek={setPeek}
+        zoom={peekZoom}
+      >
         {canBuy ? (
           <SaveButton
             saved={saved}
@@ -544,7 +556,7 @@ export default function ProductScreen() {
         />
       ) : null}
 
-      <ImagePeek target={peek} />
+      <ImagePeek target={peek} zoom={peekZoom} />
     </View>
   );
 }

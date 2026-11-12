@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   runOnJS,
@@ -35,17 +36,41 @@ export interface PeekTarget {
   h: number;
 }
 
+/** v1.18 the live pinch on a held photo: how far it's zoomed and where the fingers are (slide px). */
+export interface PeekZoom {
+  scale: SharedValue<number>;
+  /** Where the pinch started, and where its centre is now. */
+  originX: SharedValue<number>;
+  originY: SharedValue<number>;
+  focalX: SharedValue<number>;
+  focalY: SharedValue<number>;
+}
+
+export function usePeekZoom(): PeekZoom {
+  const scale = useSharedValue(1);
+  const originX = useSharedValue(0);
+  const originY = useSharedValue(0);
+  const focalX = useSharedValue(0);
+  const focalY = useSharedValue(0);
+  return { scale, originX, originY, focalX, focalY };
+}
+
+const MAX_ZOOM = 5;
+
 export function ProductGallery({
   images,
   width,
   children,
   onPeek,
+  zoom,
 }: {
   images: readonly string[];
   width: number;
   children?: ReactNode;
   /** v1.18 press-and-hold an image: the photo to show full screen; null when the finger lifts. */
   onPeek?: (target: PeekTarget | null) => void;
+  /** v1.18 pinch state shared with the full-screen view (from usePeekZoom). */
+  zoom?: PeekZoom;
 }) {
   const [index, setIndex] = useState(0);
   const scrollX = useSharedValue(0);
@@ -88,6 +113,69 @@ export function ProductGallery({
     });
   };
 
+  // v1.18 hold and pinch both open the full view; it closes once every finger is off. A short
+  // grace keeps it open while one gesture hands over to the other (hold -> two-finger pinch).
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const open = (i: number) => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+    if (!holding.current) peek(i);
+  };
+  const scheduleClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      peek(null);
+    }, 90);
+  };
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
+  const holdOn = useSharedValue(false);
+  const pinchOn = useSharedValue(false);
+  const gestureFor = (i: number, enabled: boolean) => {
+    const hold = Gesture.LongPress()
+      .enabled(enabled)
+      .minDuration(220)
+      .maxDistance(40)
+      .onStart(() => {
+        holdOn.value = true;
+        runOnJS(open)(i);
+      })
+      .onFinalize(() => {
+        if (!holdOn.value) return;
+        holdOn.value = false;
+        if (!pinchOn.value) runOnJS(scheduleClose)();
+      });
+    const pinch = Gesture.Pinch()
+      .enabled(enabled)
+      .onStart((e) => {
+        pinchOn.value = true;
+        if (zoom) {
+          zoom.originX.value = e.focalX;
+          zoom.originY.value = e.focalY;
+          zoom.focalX.value = e.focalX;
+          zoom.focalY.value = e.focalY;
+        }
+        runOnJS(open)(i);
+      })
+      .onUpdate((e) => {
+        if (!zoom) return;
+        zoom.scale.value = Math.min(MAX_ZOOM, Math.max(1, e.scale));
+        zoom.focalX.value = e.focalX;
+        zoom.focalY.value = e.focalY;
+      })
+      .onFinalize(() => {
+        if (!pinchOn.value) return;
+        pinchOn.value = false;
+        if (!holdOn.value) runOnJS(scheduleClose)();
+      });
+    return Gesture.Simultaneous(hold, pinch);
+  };
+
   const jump = (i: number) => {
     void Haptics.selectionAsync().catch(() => undefined);
     ref.current?.scrollTo({ x: i * width, animated: true });
@@ -110,46 +198,45 @@ export function ProductGallery({
           }
         >
           {images.map((src, i) => (
-            <Pressable
-              key={`${src}-${i}`}
-              ref={(v) => {
-                slides.current[i] = v;
-              }}
-              style={[styles.slide, { width, height }]}
-              delayLongPress={220}
-              onLongPress={src && onPeek ? () => peek(i) : undefined}
-              onPressOut={() => {
-                if (peeking) peek(null);
-              }}
-              accessibilityHint={onPeek ? 'Press and hold to view the full image' : undefined}
-            >
-              {src && fitOf(src) === 'contain' ? (
-                // A tall / wide photo shown whole: the sides are a soft blur of itself, not
-                // a white box.
-                <Image
-                  source={{ uri: src }}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="cover"
-                  blurRadius={28}
-                />
-              ) : null}
-              {src ? (
-                <Image
-                  source={{ uri: src }}
-                  style={styles.img}
-                  contentFit={fitOf(src)}
-                  transition={180}
-                  onLoad={(e) => {
-                    const { width: w, height: h } = e.source;
-                    if (w > 0 && h > 0 && ratios[src] == null) {
-                      setRatios((prev) => ({ ...prev, [src]: h / w }));
-                    }
-                  }}
-                />
-              ) : (
-                <Ionicons name="image-outline" size={56} color={colors.card.border} />
-              )}
-            </Pressable>
+            <GestureDetector key={`${src}-${i}`} gesture={gestureFor(i, !!src && !!onPeek)}>
+              <View
+                ref={(v) => {
+                  slides.current[i] = v;
+                }}
+                collapsable={false}
+                style={[styles.slide, { width, height }]}
+                accessibilityHint={
+                  onPeek ? 'Press and hold, or pinch, to view the full image' : undefined
+                }
+              >
+                {src && fitOf(src) === 'contain' ? (
+                  // A tall / wide photo shown whole: the sides are a soft blur of itself, not
+                  // a white box.
+                  <Image
+                    source={{ uri: src }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                    blurRadius={28}
+                  />
+                ) : null}
+                {src ? (
+                  <Image
+                    source={{ uri: src }}
+                    style={styles.img}
+                    contentFit={fitOf(src)}
+                    transition={180}
+                    onLoad={(e) => {
+                      const { width: w, height: h } = e.source;
+                      if (w > 0 && h > 0 && ratios[src] == null) {
+                        setRatios((prev) => ({ ...prev, [src]: h / w }));
+                      }
+                    }}
+                  />
+                ) : (
+                  <Ionicons name="image-outline" size={56} color={colors.card.border} />
+                )}
+              </View>
+            </GestureDetector>
           ))}
         </Animated.ScrollView>
 
@@ -209,7 +296,7 @@ export function ProductGallery({
  * lifts it glides back into place. It never takes touches, so the lift still reaches the gallery.
  * Mount it once over the whole screen.
  */
-export function ImagePeek({ target }: { target: PeekTarget | null }) {
+export function ImagePeek({ target, zoom }: { target: PeekTarget | null; zoom?: PeekZoom }) {
   const root = useRef<ViewHandle>(null);
   // Where this overlay sits in the window (to place the photo's start), and its size.
   const [box, setBox] = useState({ x: 0, y: 0, w: 0, h: 0 });
@@ -221,6 +308,12 @@ export function ImagePeek({ target }: { target: PeekTarget | null }) {
       setShown(target);
       progress.value = withSpring(1, { damping: 21, stiffness: 210, mass: 0.85 });
     } else {
+      // Zoom settles back with the photo.
+      if (zoom) {
+        zoom.scale.value = withTiming(1, { duration: 240, easing: Easing.out(Easing.cubic) });
+        zoom.focalX.value = withTiming(zoom.originX.value, { duration: 240 });
+        zoom.focalY.value = withTiming(zoom.originY.value, { duration: 240 });
+      }
       progress.value = withTiming(
         0,
         { duration: 240, easing: Easing.out(Easing.cubic) },
@@ -229,12 +322,12 @@ export function ImagePeek({ target }: { target: PeekTarget | null }) {
         },
       );
     }
-  }, [target, progress]);
+  }, [target, progress, zoom]);
 
   const from = shown
     ? { x: shown.x - box.x, y: shown.y - box.y, w: shown.w, h: shown.h }
     : { x: 0, y: 0, w: 0, h: 0 };
-  const to = { x: 0, y: box.h * 0.08, w: box.w, h: box.h * 0.84 };
+  const to = { x: 0, y: 0, w: box.w, h: box.h };
 
   const backdrop = useAnimatedStyle(() => ({
     opacity: Math.min(1, Math.max(0, progress.value)),
@@ -251,6 +344,23 @@ export function ImagePeek({ target }: { target: PeekTarget | null }) {
     };
   });
 
+  // v1.18 pinch: grows around the point between the fingers and follows them as they move.
+  const pinched = useAnimatedStyle(() => {
+    if (!zoom) return {};
+    const s = zoom.scale.value;
+    const kx = to.w / Math.max(1, from.w);
+    const ky = to.h / Math.max(1, from.h);
+    const fx = zoom.originX.value * kx - to.w / 2;
+    const fy = zoom.originY.value * ky - to.h / 2;
+    return {
+      transform: [
+        { translateX: fx * (1 - s) + (zoom.focalX.value - zoom.originX.value) * kx },
+        { translateY: fy * (1 - s) + (zoom.focalY.value - zoom.originY.value) * ky },
+        { scale: s },
+      ],
+    };
+  });
+
   return (
     <View
       ref={root}
@@ -262,7 +372,9 @@ export function ImagePeek({ target }: { target: PeekTarget | null }) {
         <>
           <Animated.View style={[styles.peekShade, backdrop]} />
           <Animated.View style={[styles.peekFrame, frame]}>
-            <Image source={{ uri: shown.src }} style={styles.img} contentFit="contain" />
+            <Animated.View style={[styles.img, pinched]}>
+              <Image source={{ uri: shown.src }} style={styles.img} contentFit="contain" />
+            </Animated.View>
           </Animated.View>
         </>
       ) : null}
