@@ -9,6 +9,7 @@ import type {
 import type { ProductCardData } from './storefront';
 import { categoryHref } from './categories';
 import { DEMO_PRODUCT_IMAGE } from './demo';
+import { formatMoney } from './money';
 
 // Category listing: live WooCommerce query-string names, so links/bookmarks stay compatible.
 export type ListingSort = 'default' | 'price' | 'price-desc' | 'date' | 'rating' | 'discount';
@@ -358,6 +359,107 @@ function optionRows(
   return out;
 }
 
+/** One fact a title states, normalised so "450g" / "450 gm" or "8-Pack" / "Pack of 8" compare equal. */
+interface TitleFact {
+  re: RegExp;
+  norm: (m: RegExpExecArray) => string;
+}
+const unit = (u: string) => {
+  const l = u.toLowerCase();
+  if (/^(g|gm|grams?)$/.test(l)) return 'g';
+  if (/^(l|ltr|litres?|liters?)$/.test(l)) return 'L';
+  if (/^(ft|feet)$/.test(l)) return 'ft';
+  if (/^inch(es)?$/.test(l)) return 'in';
+  return l;
+};
+const TITLE_FACTS: readonly TitleFact[] = [
+  {
+    re: /\b(\d+(?:\.\d+)?)\s?[x×]\s?(\d+(?:\.\d+)?)(?:\s?(ft|feet|cm|mm|m|inch(?:es)?|in)\b)?/i,
+    norm: (m) => `${m[1]}x${m[2]}${m[3] ? ` ${unit(m[3])}` : ''}`,
+  },
+  {
+    re: /\b(\d+(?:\.\d+)?)\s?(kg|g|gm|grams?|ml|l|ltr|litres?|liters?)\b/i,
+    norm: (m) => `${m[1]} ${unit(m[2]!)}`,
+  },
+  {
+    re: /\b(?:(?:pack|set) of (\d+)|(\d+)[\s-]?(?:pack|pcs|pieces|piece|pc)s?|(dual|twin) pack)\b/i,
+    norm: (m) => `Pack of ${m[1] ?? m[2] ?? '2'}`,
+  },
+  { re: /\b(\d+)\s?w\b/i, norm: (m) => `${m[1]}W` },
+];
+
+const words = (t: string) => t.split(/\s+/).filter(Boolean);
+const tidy = (t: string) => {
+  const s = t.replace(/^[\s\-–—,:|(]+|[\s\-–—,:|)]+$/g, '').replace(/^(with|for|and)\s+/i, '');
+  const cut = s.length > 40 ? `${s.slice(0, 40).replace(/\s+\S*$/, '')}…` : s;
+  return cut.charAt(0).toUpperCase() + cut.slice(1);
+};
+const allDistinct = (labels: readonly string[]) =>
+  labels.every((l) => l) && new Set(labels.map((l) => l.toLowerCase())).size === labels.length;
+
+/** The facts that differ between these titles ("Pack of 6", "3x10 ft"); a title without the
+ * pack fact others have is the single one. */
+function factLabels(titles: readonly string[]): string[] {
+  const found = TITLE_FACTS.map((f) =>
+    titles.map((t) => {
+      const m = f.re.exec(t);
+      return m ? f.norm(m) : '';
+    }),
+  );
+  const varying = found.filter((vals) => new Set(vals.map((v) => v.toLowerCase())).size > 1);
+  return titles.map((_, i) =>
+    varying
+      .map((vals) => vals[i] || (vals.some((v) => v.startsWith('Pack of')) ? 'Single' : ''))
+      .filter(Boolean)
+      .join(' · '),
+  );
+}
+
+/** What each title says after the words they all share ("Body - Grey Insect Killer"). */
+function tailLabels(titles: readonly string[]): string[] {
+  const split = titles.map(words);
+  let common = 0;
+  while (
+    split.every((w) => common < w.length - 1) &&
+    split.every((w) => w[common]!.toLowerCase() === split[0]![common]!.toLowerCase())
+  ) {
+    common += 1;
+  }
+  return split.map((w) => tidy(w.slice(common).join(' ')));
+}
+
+/**
+ * v1.18 variants that came without option values (only their own titles): exact repeats (same
+ * facts / title and price) are dropped, the rest named by the facts that tell them apart, else by
+ * what their titles say differently, else "Option N".
+ */
+function nameTitleVariants(variants: ProductVariant[], fallbackTitle: string): ProductVariant[] {
+  const titleOf = (v: ProductVariant) => v.title ?? fallbackTitle;
+  const facts = factLabels(variants.map(titleOf));
+  const seen = new Set<string>();
+  const kept = variants.filter((v, i) => {
+    const key = `${(facts[i] || titleOf(v)).toLowerCase().replace(/[^a-z0-9]+/g, '')}|${v.sellingPrice}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (kept.length < 2) return [];
+  const titles = kept.map(titleOf);
+  const byFacts = factLabels(titles);
+  const tails = tailLabels(titles);
+  let labels = allDistinct(byFacts) ? byFacts : allDistinct(tails) ? tails : null;
+  if (!labels) {
+    // Still alike: the fact (or title difference) plus the price, then a number as a last resort.
+    const base = kept.map((v, i) => byFacts[i] || tails[i] || 'Option');
+    const priced = base.map((b, i) => {
+      const clash = base.some((o, j) => j !== i && o.toLowerCase() === b.toLowerCase());
+      return clash ? `${b} · ${formatMoney(kept[i]!.sellingPrice).replace(/\.00$/, '')}` : b;
+    });
+    labels = allDistinct(priced) ? priced : titles.map((_, i) => `Option ${i + 1}`);
+  }
+  return kept.map((v, i) => ({ ...v, label: labels[i]! }));
+}
+
 const optionsLabel = (options: Record<string, string>, index: number) =>
   Object.values(options).join(' · ') || `Option ${index + 1}`;
 
@@ -406,7 +508,7 @@ export function toProductDetailData(
   const sku = [...detail.skus].sort((a, b) => Number(a.sellingPrice) - Number(b.sellingPrice))[0];
   const description = detail.description ?? '';
   const unavailable = unavailableOf(detail.attributes as Record<string, unknown> | null);
-  const variants: ProductVariant[] =
+  let variants: ProductVariant[] =
     detail.skus.length > 1 || unavailable.length > 0
       ? [...detail.skus]
           .sort((a, b) => Number(a.sellingPrice) - Number(b.sellingPrice))
@@ -441,6 +543,10 @@ export function toProductDetailData(
             };
           })
       : [];
+  // Variants with no option values at all: named from their titles, not "Option 1 / 2".
+  if (variants.length > 1 && variants.every((v) => Object.keys(v.options).length === 0)) {
+    variants = nameTitleVariants(variants, detail.title);
+  }
   // Picker order: colour, then the other kinds as they appear, then size, weight last.
   const dimKeys = [
     ...new Set([...variants, ...unavailable].flatMap((v) => Object.keys(v.options))),

@@ -61,7 +61,8 @@ function ProductCardBase({ product, width, accent, compact, stacked }: Props) {
       onPress={open}
       style={({ pressed }) => [
         styles.card,
-        width ? { width } : styles.flex,
+        // Fixed width: still grow to the row's height (maxWidth keeps a lone card from widening).
+        width ? { width, maxWidth: width, flexGrow: 1 } : styles.flex,
         accent
           ? {
               borderColor: accent,
@@ -136,14 +137,22 @@ const styles = StyleSheet.create({
   image: { borderTopLeftRadius: radii.productCard, borderTopRightRadius: radii.productCard },
   accentStrip: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3 },
   save: { position: 'absolute', top: space.sm, right: space.sm },
-  body: { padding: space.md, gap: 6 },
-  title: { fontFamily: font.body, fontSize: 13.5, lineHeight: 18, color: colors.text.strong },
-  add: { marginTop: 4 },
+  // The body fills the card (cards in a row share the tallest one's height) and the buttons sit
+  // at its bottom, so Add / Buy line up across a row whatever the title or price wraps to.
+  body: { flex: 1, padding: space.md, gap: 6 },
+  title: {
+    fontFamily: font.body,
+    fontSize: 13.5,
+    lineHeight: 18,
+    minHeight: 36,
+    color: colors.text.strong,
+  },
+  add: { marginTop: 'auto', paddingTop: 4 },
   actions: { flexDirection: 'row', gap: 5 },
   actionsStacked: { flexDirection: 'column', gap: 5 },
   addBtn: { flex: 1.3 },
   buyBtn: { flex: 1 },
   bodyCompact: { padding: 8, gap: 3 },
-  titleCompact: { fontSize: 11.5, lineHeight: 15 },
-  addCompact: { marginTop: 2 },
+  titleCompact: { fontSize: 11.5, lineHeight: 15, minHeight: 30 },
+  addCompact: { marginTop: 'auto', paddingTop: 2 },
 });
