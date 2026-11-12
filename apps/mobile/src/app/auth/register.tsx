@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +19,7 @@ import { api } from '@/lib/api';
 import { useRouter } from '@/lib/router';
 import { registerWithUsername } from '@/stores/session';
 import { referralAfterSignIn } from '@/lib/referral-signup';
+import { otpFromClipboard, useOtpClipboardAutofill } from '@/lib/otp-autofill';
 import { colors, font, radii, space } from '@/theme';
 
 // v1.18 Register with a username. Name, a unique username, a password and the MOBILE NUMBER (not
@@ -128,6 +130,14 @@ export default function RegisterScreen() {
     } finally {
       setBusy(false);
     }
+  };
+
+  // v1.18 Android: the code copied from WhatsApp fills in by itself.
+  useOtpClipboardAutofill((c) => onCode(c), step === 'otp' && !busy);
+  const paste = async () => {
+    const c = await otpFromClipboard();
+    if (c) onCode(c);
+    else setError(`Copy the ${OTP_LENGTH}-digit code from WhatsApp first, then tap Paste.`);
   };
 
   const onCode = (t: string) => {
@@ -294,7 +304,8 @@ export default function RegisterScreen() {
               value={code}
               onChangeText={onCode}
               keyboardType="number-pad"
-              autoComplete="sms-otp"
+              autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
+              importantForAutofill="yes"
               textContentType="oneTimeCode"
               maxLength={OTP_LENGTH}
               autoFocus
@@ -304,6 +315,15 @@ export default function RegisterScreen() {
               editable={!busy}
             />
             {error ? <Text style={styles.error}>{error}</Text> : null}
+            <Pressable onPress={() => void paste()} style={styles.paste} hitSlop={6}>
+              <Ionicons name="clipboard-outline" size={16} color={colors.brand.DEFAULT} />
+              <Text style={styles.link}>Paste code</Text>
+            </Pressable>
+            {Platform.OS === 'android' ? (
+              <Text style={[styles.hint, { textAlign: 'center', marginTop: 0 }]}>
+                Tip: tap “Copy code” in WhatsApp and come back - we&apos;ll fill it in.
+              </Text>
+            ) : null}
             {busy ? <ActivityIndicator color={colors.brand.DEFAULT} /> : null}
             <Pressable
               onPress={() => void sendOtp()}
@@ -484,6 +504,7 @@ const styles = StyleSheet.create({
     letterSpacing: 10,
     color: colors.heading,
   },
+  paste: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center' },
   link: { fontFamily: font.uiBold, fontSize: 13.5, color: colors.brand.DEFAULT },
   footer: { fontFamily: font.body, fontSize: 13.5, color: colors.text.body },
 });

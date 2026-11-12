@@ -22,6 +22,8 @@ import {
 import { api } from '@/lib/api';
 import { loginWithOtp } from '@/stores/session';
 import { referralAfterSignIn } from '@/lib/referral-signup';
+import { otpFromClipboard, useOtpClipboardAutofill } from '@/lib/otp-autofill';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, font, radii, space } from '@/theme';
 
 // OTP entry -> verify -> logged in. The session store captures the refresh token into secure-store.
@@ -86,6 +88,14 @@ export default function OtpScreen() {
     if (digits.length === OTP_LENGTH) void verify(digits);
   };
 
+  // v1.18 Android: the code copied from WhatsApp ("Copy code") fills in by itself.
+  useOtpClipboardAutofill((c) => onChange(c), !busy);
+  const paste = async () => {
+    const c = await otpFromClipboard();
+    if (c) onChange(c);
+    else setError(`Copy the ${OTP_LENGTH}-digit code from WhatsApp first, then tap Paste.`);
+  };
+
   const resend = async () => {
     if (seconds > 0 || !detected) return;
     try {
@@ -128,6 +138,16 @@ export default function OtpScreen() {
           accessibilityLabel={`${OTP_LENGTH}-digit code`}
         />
       </View>
+
+      <Pressable onPress={() => void paste()} style={styles.paste} hitSlop={6}>
+        <Ionicons name="clipboard-outline" size={16} color={colors.brand.DEFAULT} />
+        <Text style={styles.pasteText}>Paste code</Text>
+      </Pressable>
+      {Platform.OS === 'android' ? (
+        <Text style={styles.tip}>
+          Tip: tap “Copy code” in WhatsApp and come back - we&apos;ll fill it in.
+        </Text>
+      ) : null}
 
       {busy ? (
         <ActivityIndicator color={colors.brand.DEFAULT} style={{ marginTop: space.lg }} />
@@ -182,6 +202,27 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
   },
   resend: { marginTop: space.xl },
+  paste: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: space.lg,
+    borderWidth: 1.5,
+    borderColor: colors.brand.accent,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: colors.white,
+  },
+  pasteText: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.brand.DEFAULT },
+  tip: {
+    fontFamily: font.body,
+    fontSize: 12.5,
+    color: colors.text.muted,
+    textAlign: 'center',
+    marginTop: space.sm,
+    maxWidth: 300,
+  },
   resendText: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.brand.DEFAULT },
   resendDisabled: { color: colors.text.muted },
 });

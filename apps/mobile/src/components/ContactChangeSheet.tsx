@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError, type AuthUser } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { applyUserUpdate } from '@/stores/session';
+import { useOtpClipboardAutofill } from '@/lib/otp-autofill';
 import { colors, font, radii, space } from '@/theme';
 
 /**
@@ -60,6 +61,15 @@ export function ContactChangeSheet({
       setBusy(false);
     }
   };
+
+  // v1.18 Android: the code copied from WhatsApp fills in by itself.
+  useOtpClipboardAutofill(
+    (c) => {
+      setCode(c);
+      setError(null);
+    },
+    visible && step === 'code' && !busy,
+  );
 
   const verify = async () => {
     setBusy(true);

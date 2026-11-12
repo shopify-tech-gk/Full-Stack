@@ -44,16 +44,26 @@ interface Item {
   auth?: boolean;
 }
 
+// v1.18 its own section: "Remind me to buy" reminders, the Alerts inbox (also the bell in the
+// header) and how we notify you.
+const REMINDERS: Item[] = [
+  { icon: 'alarm', label: 'Remind me to buy', tint: 'amber', to: '/reminders', auth: true },
+  { icon: 'notifications', label: 'Alerts', tint: 'blue', to: '/inbox', auth: true },
+  {
+    icon: 'options',
+    label: 'Notification settings',
+    tint: 'violet',
+    to: '/account/notifications',
+    auth: true,
+  },
+];
+
 const ACTIVITY: Item[] = [
   // v1.17: earn 2.5% of friends' orders.
   { icon: 'gift', label: 'Refer & Earn', tint: 'violet', to: '/refer' },
   { icon: 'navigate', label: 'Track an order', tint: 'blue', to: '/track-order' },
   { icon: 'location', label: 'Saved addresses', tint: 'teal', to: '/addresses', auth: true },
   { icon: 'cart', label: 'My cart', tint: 'amber', to: '/cart' },
-  // v1.15: the inbox (also the bell in the header).
-  { icon: 'notifications', label: 'Alerts', tint: 'blue', to: '/inbox', auth: true },
-  // v1.18: "Remind me to buy" reminders.
-  { icon: 'alarm', label: 'Buy reminders', tint: 'amber', to: '/reminders', auth: true },
   {
     icon: 'return-down-back',
     label: 'Returns & refunds',
@@ -67,13 +77,6 @@ const ACTIVITY: Item[] = [
 
 const SETTINGS: Item[] = [
   { icon: 'person', label: 'Account details', tint: 'violet', to: '/account/details', auth: true },
-  {
-    icon: 'notifications',
-    label: 'Notification settings',
-    tint: 'amber',
-    to: '/account/notifications',
-    auth: true,
-  },
   {
     icon: 'shield-checkmark',
     label: 'Privacy & account',
@@ -283,6 +286,7 @@ export default function AccountScreen() {
           ))}
         </View>
 
+        <Section title="Reminders & alerts" items={REMINDERS} onPress={go} />
         <Section title="My activity" items={ACTIVITY} onPress={go} />
         {loggedIn ? <Section title="Settings" items={SETTINGS} onPress={go} /> : null}
         <Section title="Help & information" items={INFO} onPress={go} />

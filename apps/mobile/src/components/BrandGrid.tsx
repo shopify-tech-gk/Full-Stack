@@ -71,7 +71,7 @@ const BRANDS = [
   'PHILIPS',
   'homecrop',
   'COIR GARDEN',
-  'Amazon',
+  'Casa De Amor',
   'Garden Genie',
   'Biostadt',
   'Mitti Soul',

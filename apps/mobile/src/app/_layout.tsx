@@ -201,7 +201,7 @@ export default function RootLayout() {
                       <Stack.Screen name="inbox" options={{ headerShown: true, title: 'Alerts' }} />
                       <Stack.Screen
                         name="reminders"
-                        options={{ headerShown: true, title: 'Buy reminders' }}
+                        options={{ headerShown: true, title: 'Remind me to buy' }}
                       />
                       <Stack.Screen
                         name="account/recently-viewed"

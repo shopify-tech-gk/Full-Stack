@@ -28,7 +28,6 @@ export const BRAND_DOMAINS: Readonly<Record<string, string>> = {
   'allen solly': 'allensolly.com',
   amante: 'amantelingerie.in',
   amazfit: 'amazfit.com',
-  amazon: 'amazon.in',
   ambrane: 'ambraneindia.com',
   'american tourister': 'americantourister.in',
   amscan: 'amscan.com',

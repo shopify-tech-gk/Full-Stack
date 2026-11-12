@@ -45,6 +45,8 @@ const VARIANT_META = new Set([
   'Availability',
   'Gallery Image URLs',
 ]);
+/** v1.18 brands the store doesn't sell: Amazon's own (Amazon, Amazon Basics, Solimo...). */
+const BLOCKED_BRAND = /\bamazon\b|amazonbasics|\bsolimo\b/i;
 /** v1.18 "Pack Of 03" / "(Pack of 2)": a pack-size option. */
 const PACK_OPTION = /^\(?\s*pack\s+of\s+0*(\d+)\s*\)?$/i;
 /** v1.18 a size the delivery left as its placeholder: not a real option. */
@@ -200,6 +202,11 @@ for (const [index, p] of items.entries()) {
     .sort((a, b) => Number(a['Selling Price (INR)']) - Number(b['Selling Price (INR)']));
   const priceSource = Number(p['Selling Price (INR)']) > 0 ? p : (variantPrices[0] ?? p);
   const price = Number(priceSource['Selling Price (INR)']);
+  // v1.18 the store doesn't sell Amazon's own brands (Amazon, Amazon Basics, Solimo...).
+  if (BLOCKED_BRAND.test(`${p.Brand ?? ''} ${title ?? ''}`)) {
+    problems.push(`${where}: Amazon brand ("${p.Brand ?? title}") - not sold here, skipped`);
+    continue;
+  }
   if (!title || !id || !(price > 0)) {
     problems.push(`${where}: missing title / id / price - skipped`);
     continue;
