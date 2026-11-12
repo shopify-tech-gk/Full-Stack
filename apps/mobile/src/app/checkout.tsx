@@ -553,21 +553,6 @@ export default function CheckoutScreen() {
           ) : null}
         </Section>
 
-        <View style={styles.trust}>
-          {(
-            [
-              ['shield-checkmark', 'Secure payments'],
-              ['refresh-circle', 'Easy returns'],
-              ['ribbon', '100% genuine'],
-            ] as const
-          ).map(([icon, label]) => (
-            <View key={label} style={styles.trustItem}>
-              <Ionicons name={icon} size={18} color={colors.brand.DEFAULT} />
-              <Text style={styles.trustText}>{label}</Text>
-            </View>
-          ))}
-        </View>
-
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
 
@@ -711,13 +696,6 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   saveText: { fontFamily: font.uiSemibold, fontSize: 12.5, color: colors.feature.guarantee },
-  trust: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: space.sm,
-  },
-  trustItem: { alignItems: 'center', gap: 4 },
-  trustText: { fontFamily: font.uiMedium, fontSize: 11.5, color: colors.text.body },
   payInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   discountValue: { fontFamily: font.uiSemibold, fontSize: 14, color: colors.feature.guarantee },
   couponOn: {

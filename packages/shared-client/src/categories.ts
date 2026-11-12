@@ -74,7 +74,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'lawn-and-gardening',
     'Agri and Gardening',
-    'fertilizer=Fertilizer;garden-decor=Garden Decor;agri-gardening-tools=Gardening Tools;grow-bags=Grow Bags;irrigation-equipment=Irrigation Equipment;nets-and-fence=Nets and Fence;plant-saplings=Plant Saplings;pots-and-planters=Pots & Planters;seeds=Seeds',
+    'fertilizer=Fertilizer;garden-decor=Garden Decor;agri-gardening-tools=Gardening Tools;grow-bags=Grow Bags;irrigation-equipment=Irrigation Equipment;nets-and-fence=Nets and Fence;pesticides=Pesticides;plant-saplings=Plant Saplings;pots-and-planters=Pots & Planters;seeds=Seeds',
   ],
   [
     'arts-and-crafts',
@@ -261,7 +261,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'pet-products/birds':
     'bird-feeders=Bird Feeders;birds-health-supplies=Birds Health Supplies;bird-foods=Bird Foods;nests=Nests;bird-cages=Bird Cages & Covers',
   'pet-products/dogs':
-    'dry-bath=Dry Bath;hair-oil=Hair Oil;shampoo-pet-products=Shampoo;pet-perfumes=Pet Perfumes',
+    'dry-bath=Dry Bath;hair-oil=Hair Oil;shampoo-pet-products=Shampoo;pet-perfumes=Pet Perfumes;tick-flea=Tick & Flea Care',
   'pet-products/fish':
     'fish-food=Fish Food;aquarium-accessories=Aquarium Accessories;aquarium-pumps-filters=Aquarium Pumps & Filters;aquarium-water-testing-treatment=Aquarium Water Testing & Treatment;aquarium-decor=Aquarium Decor',
   'pet-products/cat':
@@ -273,8 +273,9 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'lawn-and-gardening/nets-and-fence':
     'bird-netting=Bird Netting;insect-netting=Insect Netting;shade-netting=Shade Netting;plant-support-netting=Plant Support Netting;garden-fencing=Garden Fencing',
   'lawn-and-gardening/irrigation-equipment': 'sprinklers=Sprinklers',
+  'lawn-and-gardening/pesticides': 'insecticides=Insecticides',
   'lawn-and-gardening/agri-gardening-tools':
-    'sprayers=Sprayers;pruning-tools=Pruning Tools;garden-hand-tools=Garden Hand Tools;gardening-gloves=Gardening Gloves;garden-hoses=Garden Hoses',
+    'sprayers=Sprayers;pruning-tools=Pruning Tools;garden-hand-tools=Garden Hand Tools;gardening-gloves=Gardening Gloves;garden-hoses=Garden Hoses;lawn-edgers=Lawn Edgers & Trimmers',
   'lawn-and-gardening/plant-saplings': 'indoor-plants=Indoor Plants',
   'stationary/eraser':
     'fancy-eraser=Fancy Eraser;ink-eraser=Ink Eraser;electric-and-pen-eraser=Electric and Pen Eraser',

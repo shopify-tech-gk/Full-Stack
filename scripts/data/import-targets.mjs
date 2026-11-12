@@ -419,6 +419,35 @@ const basicTarget = (...chain) => ({ chain, filters: BASIC_FILTERS, derive: deri
  * delivery keeps them there.
  */
 export const TARGET_OVERRIDES = {
+  // Insecticides delivery: household pest control (naphthalene, cockroach gel / chalk / traps,
+  // mosquito refills), vermicompost and a dog tick spray filed with crop insecticides. Lawn
+  // Edgers delivery: shears, scissors and a sickle filed with edgers.
+  B06IL9B47A: 'Insect Killers & Pest Control',
+  B0HJNX8QQS: 'Insect Killers & Pest Control',
+  B0S2E1YLOL: 'Insect Killers & Pest Control',
+  B0X2KKQ5FM: 'Insect Killers & Pest Control',
+  B0S5NSQ029: 'Insect Killers & Pest Control',
+  B0T4E193Y1: 'Insect Killers & Pest Control',
+  B0Y326SB3R: 'Insect Killers & Pest Control',
+  B07BD7Y673: 'Insect Killers & Pest Control',
+  B008IC3LLM: 'Insect Killers & Pest Control',
+  B07E0V8UDZ: 'Insect Killers & Pest Control',
+  B0Q19XOJZK: 'Insect Killers & Pest Control',
+  B017SRE6U6: 'Insect Killers & Pest Control',
+  B0R4LQKI59: 'Insect Killers & Pest Control',
+  B09O9UITT7: 'Insect Killers & Pest Control',
+  B0U7ZCIUPE: 'Insect Killers & Pest Control',
+  B0PIBWD5BH: 'Insect Killers & Pest Control',
+  B057MDJDDK: 'Insect Killers & Pest Control',
+  B0NM2WOZ0Y: 'Insect Killers & Pest Control',
+  B06IOCBIKU: 'Insect Killers & Pest Control',
+  B0AH0CBP14: 'Insect Killers & Pest Control',
+  B0VNTQN7LE: 'Vermicompost',
+  B0QUUAWB5L: 'Dog Tick & Flea Care',
+  B0MTTSBTEU: 'Pruning Tools',
+  B06QQGDJ3A: 'Pruning Tools',
+  B01FMOO88L: 'Pruning Tools',
+  B0OGCCYIYB: 'Garden Hand Tools',
   // Mixed delivery (soil fertilizers, perlite, pruning / hand tools, gloves, hoses): pruners filed
   // as hand tools and back, work / kitchen / disposable gloves, power-tool batteries, potting
   // media, aquarium sand, cosmetics and sweetener filed with them.
@@ -1427,6 +1456,14 @@ const GARDEN_TOOL_TYPES = {
     ['Rubber Gloves', ['rubber', 'latex', 'nitrile', 'pvc']],
     ['Cotton & Fabric Gloves', ['cotton', 'knitted', 'canvas', 'bamboo', 'polyester']],
   ],
+  'Lawn Edgers & Trimmers': [
+    ['Trimmer Heads & Parts', ['trimmer head', 'spool', 'replacement', 'blade for']],
+    [
+      'Cordless & Electric Trimmers',
+      ['cordless', 'electric', 'battery', 'string trimmer', 'grass cutter'],
+    ],
+    ['Half-Moon & Step Edgers', ['half moon', 'crescent', 'step edger', 'edger', 'edge cleaner']],
+  ],
   'Garden Hoses': [
     ['Hose Reels & Holders', ['reel', 'holder', 'hanger', 'hook', 'trolley']],
     ['Spray Nozzles & Guns', ['nozzle', 'gun', 'spray', 'shower']],
@@ -1470,6 +1507,33 @@ function derivePerlite(product, text) {
   return {
     ...deriveFertilizer(product, text),
     product_type: /mix|blend|cocopeat|vermiculite/.test(title) ? 'Perlite Mixes' : 'Perlite',
+  };
+}
+
+/** v1.18 crop / garden insecticides (household pest control goes to Insect Killers). */
+const INSECTICIDE_FILTERS = [
+  { key: 'brand', label: 'Brand', type: 'multi_select', order: 1 },
+  { key: 'product_type', label: 'Type', type: 'multi_select', order: 2 },
+  { key: 'form', label: 'Item Form', type: 'multi_select', order: 3 },
+  { key: 'discount_band', label: 'Discount', type: 'multi_select', order: 4 },
+];
+
+function deriveInsecticide(product, text) {
+  const title = String(product.Title ?? '').toLowerCase();
+  const all = `${title} ${text}`;
+  return {
+    weight_band: null,
+    product_type: firstMatch(all, [
+      [
+        'Organic & Bio Insecticides',
+        ['organic', 'bio ', 'bio-', 'neem', 'essential oil', 'beauveria', 'verticill', 'maggot'],
+      ],
+      ['Chemical Insecticides', ['insecticide', 'pesticide', '%']],
+    ]),
+    form: firstMatch(title, [
+      ['Granules / WG', [' wg', 'granul', ' sp ', ' sp)', 'powder']],
+      ['Liquid', ['liquid', ' ec', ' zc', 'ml', 'ltr', 'litre', 'spray']],
+    ]),
   };
 }
 
@@ -1639,6 +1703,17 @@ export const TARGETS = {
   'Garden Hand Tools': gardenToolTarget('Garden Hand Tools', 'garden-hand-tools'),
   'Gardening Gloves': gardenToolTarget('Gardening Gloves', 'gardening-gloves'),
   'Garden Hoses': gardenToolTarget('Garden Hoses', 'garden-hoses'),
+  'Lawn Edgers': gardenToolTarget('Lawn Edgers & Trimmers', 'lawn-edgers'),
+  Insecticides: {
+    chain: [AGRI, ['pesticides', 'Pesticides'], ['insecticides', 'Insecticides']],
+    filters: INSECTICIDE_FILTERS,
+    derive: deriveInsecticide,
+  },
+  'Dog Tick & Flea Care': basicTarget(
+    ['pet-products', 'Pet Supplies'],
+    ['dogs', 'Dogs'],
+    ['tick-flea', 'Tick & Flea Care'],
+  ),
   'Grow Bags': basicTarget(AGRI, ['grow-bags', 'Grow Bags']),
   'Cleaning Gloves': basicTarget(
     ['cleaning-products', 'Cleaning Products'],

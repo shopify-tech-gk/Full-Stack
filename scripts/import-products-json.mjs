@@ -96,6 +96,13 @@ function variantLabel(raw) {
   if (first && s.length > first.length && s.endsWith(` ${first}`)) {
     s = s.slice(0, -first.length - 1).trim();
   }
+  // v1.18 "250 ml (Pack of 1)" is just 250 ml; "1000ml" reads better as "1 L".
+  s = s.replace(/\s*\(\s*pack\s+of\s+1\s*\)$/i, '');
+  const vol = /^(\d+(?:\.\d+)?)\s*(ml|millilit(?:er|re)s?|l|ltrs?|lit(?:er|re)s?)$/i.exec(s);
+  if (vol) {
+    const ml = /^m/i.test(vol[2]) ? Number(vol[1]) : Number(vol[1]) * 1000;
+    return ml >= 1000 ? `${+(ml / 1000).toFixed(2)} L` : `${Math.round(ml)} ml`;
+  }
   const plain = /^(\d+(?:\.\d+)?)\s*(kilograms?|kgs?|grams?|gms?|g)$/i.exec(s);
   if (plain) {
     const kg = /^k/i.test(plain[2]) ? Number(plain[1]) : Number(plain[1]) / 1000;
@@ -116,11 +123,21 @@ function variantLabel(raw) {
  * different ids: only one list is used - the longest, and on a tie not the weight one.
  */
 function variantList(p) {
+  // v1.18 a list whose options are only bare counts ("5 / 10 / 20" sachets) says less than a
+  // weight list of the same products ("50 g / 100 g / 200 g").
+  const bare = (list) =>
+    list.every((v) =>
+      Object.entries(v)
+        .filter(([k, val]) => !VARIANT_META.has(k) && val != null && val !== '')
+        .every(([, val]) => /^\d+(\.\d+)?$/.test(String(val).trim())),
+    );
   const lists = Object.entries(p)
     .filter(([key, list]) => /variants$/i.test(key) && Array.isArray(list) && list.length > 0)
     .sort(
       ([ka, a], [kb, b]) =>
-        b.length - a.length || Number(/^weight/i.test(ka)) - Number(/^weight/i.test(kb)),
+        b.length - a.length ||
+        Number(bare(a)) - Number(bare(b)) ||
+        Number(/^weight/i.test(ka)) - Number(/^weight/i.test(kb)),
     );
   return lists.length ? lists[0][1] : [];
 }
@@ -459,6 +476,12 @@ for (const target of categoriesNeeded.values()) {
     sql.push(`INSERT INTO catalog.category (id, name, slug, parent_id, created_at, updated_at)
       SELECT gen_random_uuid(), ${lit(name)}, ${lit(slug)}, ${parentId}, now(), now()
       WHERE NOT EXISTS (SELECT 1 FROM catalog.category WHERE slug = ${lit(slug)} AND deleted_at IS NULL);`);
+    // v1.18 a category the target now files elsewhere (Insecticides: Fertilizer -> Pesticides)
+    // moves under its new parent.
+    if (parent) {
+      sql.push(`UPDATE catalog.category SET parent_id = ${parentId}, updated_at = now()
+      WHERE slug = ${lit(slug)} AND deleted_at IS NULL AND parent_id IS DISTINCT FROM ${parentId};`);
+    }
   });
   const leaf = target.chain[target.chain.length - 1][0];
   sql.push(`UPDATE catalog.category SET filter_definition = ${jsonb(target.filters)}, updated_at = now()
