@@ -318,7 +318,6 @@ function Tile({ choice: c, onPress }: { choice: Choice; onPress: () => void }) {
           {off > 0 ? <Text style={styles.tileOff}>{off}% off</Text> : null}
         </View>
       )}
-      {c.on ? <View style={styles.tileBar} /> : null}
     </Pressable>
   );
 }
@@ -392,14 +391,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tileOn: { borderColor: BRAND, backgroundColor: '#f2f7ff' },
-  tileBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 3,
-    backgroundColor: BRAND,
-  },
   tileName: { fontFamily: font.uiSemibold, fontSize: 13, color: colors.text.strong },
   tilePriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 5, flexWrap: 'wrap' },
   tilePrice: { fontFamily: font.uiBold, fontSize: 13.5, color: colors.heading },

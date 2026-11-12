@@ -415,7 +415,7 @@ export default function CheckoutScreen() {
           )}
         </Section>
 
-        <Section icon="pricetag" title="Offers & coupons">
+        <View style={[styles.section, styles.couponCard]}>
           {couponNote ? <Text style={styles.couponNote}>{couponNote}</Text> : null}
           {coupon ? (
             <View style={[styles.couponRow, styles.couponOn]}>
@@ -436,7 +436,7 @@ export default function CheckoutScreen() {
               <Ionicons name="chevron-forward" size={16} color={colors.brand.DEFAULT} />
             </Pressable>
           )}
-        </Section>
+        </View>
 
         <Section icon="card" title="Payment method">
           <Pressable
@@ -584,7 +584,7 @@ export default function CheckoutScreen() {
         }}
       />
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + space.md }]}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
         <View>
           <Text style={styles.footerTotal}>{formatMoney(payNow)}</Text>
           <Text style={styles.footerLabel}>
@@ -620,15 +620,16 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#eef5fb' },
   body: {
     paddingHorizontal: space.md,
-    paddingTop: space.md,
-    gap: space.md,
-    paddingBottom: space.lg,
+    paddingTop: 10,
+    gap: 10,
+    paddingBottom: space.md,
   },
   section: {
     backgroundColor: colors.white,
     borderRadius: 16,
-    padding: space.md,
-    gap: 10,
+    paddingHorizontal: space.md,
+    paddingVertical: 11,
+    gap: 8,
     shadowColor: '#0f2a5c',
     shadowOpacity: 0.07,
     shadowRadius: 10,
@@ -636,9 +637,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  couponCard: { paddingVertical: 8 },
   sectionIcon: {
-    width: 26,
-    height: 26,
+    width: 24,
+    height: 24,
     borderRadius: 8,
     backgroundColor: colors.brandPopup.bg,
     alignItems: 'center',
@@ -668,12 +670,12 @@ const styles = StyleSheet.create({
     borderColor: colors.brand.DEFAULT,
     backgroundColor: '#f6f9fd',
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 9,
   },
   couponView: { fontFamily: font.uiBold, fontSize: 12.5, color: colors.brand.DEFAULT },
   methodIcon: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderRadius: 10,
     backgroundColor: colors.brandPopup.bg,
     alignItems: 'center',
@@ -715,11 +717,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.2,
     borderColor: colors.card.border,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   methodOn: { borderColor: colors.brand.DEFAULT, backgroundColor: colors.brandPopup.bg },
   methodDisabled: { opacity: 0.55 },
-  methodBody: { flex: 1, gap: 2 },
+  methodBody: { flex: 1, gap: 1 },
   methodTitle: { fontFamily: font.uiSemibold, fontSize: 14.5, color: colors.text.strong },
   methodSub: { fontFamily: font.body, fontSize: 12.5, color: colors.text.body },
   sectionTitle: { flex: 1, fontFamily: font.uiBold, fontSize: 15, color: colors.heading },
@@ -742,14 +744,14 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: 'row',
     gap: 10,
-    paddingBottom: space.sm,
-    marginBottom: space.sm,
+    paddingBottom: 6,
+    marginBottom: 6,
     borderBottomWidth: 1,
     borderBottomColor: colors.cart.line,
   },
   itemLast: { borderBottomWidth: 0, marginBottom: 0 },
   itemThumb: { width: 50, height: 50, borderRadius: 10 },
-  itemBody: { flex: 1, gap: 2 },
+  itemBody: { flex: 1, gap: 1 },
   itemTitle: { fontFamily: font.uiMedium, fontSize: 13.5, color: colors.text.strong },
   itemUnit: { fontFamily: font.body, fontSize: 12, color: colors.text.muted },
   itemRow: {
@@ -766,7 +768,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.white,
   },
-  stepBtn: { paddingHorizontal: 10, paddingVertical: 4 },
+  stepBtn: { paddingHorizontal: 10, paddingVertical: 3 },
   qty: {
     fontFamily: font.uiSemibold,
     fontSize: 14,
@@ -791,14 +793,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brandPopup.bg,
     borderRadius: 12,
     paddingHorizontal: space.md,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   buyNoteText: { flex: 1, fontFamily: font.uiMedium, fontSize: 13, color: colors.brand.DEFAULT },
   totalRow: {
     borderTopWidth: 1,
     borderTopColor: colors.cart.line,
-    paddingTop: space.sm,
-    marginTop: 2,
+    paddingTop: 7,
   },
   totalLabel: { fontFamily: font.uiBold, fontSize: 15, color: colors.text.strong },
   totalValue: { fontFamily: font.uiBold, fontSize: 17, color: colors.brand.DEFAULT },
@@ -833,7 +834,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.white,
     paddingHorizontal: space.lg,
-    paddingTop: space.md,
+    paddingTop: 10,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     shadowColor: '#0f2a5c',
@@ -848,7 +849,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand.DEFAULT,
     borderRadius: 12,
     paddingHorizontal: 26,
-    paddingVertical: 13,
+    paddingVertical: 12,
     minWidth: 170,
     alignItems: 'center',
   },

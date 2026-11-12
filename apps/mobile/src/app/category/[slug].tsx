@@ -272,6 +272,7 @@ export default function CategoryScreen() {
       return { ...q, page: 1, filters };
     });
 
+  const showBrands = brands.length > 0 && !comingSoon;
   const gridWidth = width - (rail.length ? RAIL_W : 0);
   const cardWidth = (gridWidth - space.sm * 3) / 2;
 
@@ -311,18 +312,20 @@ export default function CategoryScreen() {
         ) : null}
 
         <View style={styles.main}>
-          {data?.filters ? (
+          {data?.filters || showBrands ? (
             <View style={styles.topBar}>
-              <Pressable style={styles.filterBtn} onPress={() => setSheet(true)}>
-                <Ionicons name="options-outline" size={14} color={colors.brand.DEFAULT} />
-                <Text style={styles.filterText}>Filter & Sort</Text>
-              </Pressable>
+              {showBrands ? <Text style={styles.brandLabel}>Shop by brand</Text> : <View />}
+              {data?.filters ? (
+                <Pressable style={styles.filterBtn} onPress={() => setSheet(true)}>
+                  <Ionicons name="options-outline" size={14} color={colors.brand.DEFAULT} />
+                  <Text style={styles.filterText}>Filter & Sort</Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
 
-          {brands.length && !comingSoon ? (
+          {showBrands ? (
             <View style={styles.brandWrap}>
-              <Text style={styles.brandLabel}>Shop by brand</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -606,7 +609,7 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     paddingHorizontal: space.sm + 2,
     paddingTop: space.sm,
   },
@@ -622,15 +625,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   filterText: { fontFamily: font.uiSemibold, fontSize: 12, color: colors.brand.DEFAULT },
-  brandWrap: { paddingTop: space.sm },
-  brandLabel: {
-    fontFamily: font.uiBold,
-    fontSize: 12,
-    color: colors.heading,
-    paddingHorizontal: space.sm + 2,
-    marginBottom: 6,
-  },
-  brandRow: { paddingHorizontal: space.sm, gap: 8, paddingTop: 6, paddingBottom: 4 },
+  brandWrap: { paddingTop: 2 },
+  brandLabel: { fontFamily: font.uiBold, fontSize: 12, color: colors.heading },
+  brandRow: { paddingHorizontal: space.sm, gap: 8, paddingTop: 4, paddingBottom: 4 },
   tile: {
     width: TILE_W,
     height: TILE_H,

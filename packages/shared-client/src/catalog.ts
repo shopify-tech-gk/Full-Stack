@@ -331,6 +331,33 @@ function variantOptions(attributes: Record<string, unknown> | null | undefined) 
   );
 }
 
+/**
+ * Product-level rows that really describe one option (the product data says "Item weight:
+ * 5 Kilograms" while the shopper can pick 1 / 5 / 10 / 20 kg): they show the picked option's value
+ * instead, so the specifications always match the selected variant.
+ */
+const OPTION_ROWS: Readonly<Record<string, readonly string[]>> = {
+  weight: ['item_weight', 'net_quantity', 'net_weight'],
+  weightKg: ['item_weight', 'net_quantity', 'net_weight'],
+  pack_size: ['item_weight', 'net_quantity', 'net_weight'],
+  material_type: ['material'],
+};
+
+/** The spec rows (label + value) a variant's options set, for the rows this product has. */
+function optionRows(
+  options: Readonly<Record<string, string>>,
+  rows: readonly { key: string; label: string }[],
+): { label: string; value: string }[] {
+  const out: { label: string; value: string }[] = [];
+  for (const [dim, value] of Object.entries(options)) {
+    for (const key of OPTION_ROWS[dim] ?? []) {
+      const row = rows.find((r) => r.key === key);
+      if (row && !out.some((o) => o.label === row.label)) out.push({ label: row.label, value });
+    }
+  }
+  return out;
+}
+
 const optionsLabel = (options: Record<string, string>, index: number) =>
   Object.values(options).join(' · ') || `Option ${index + 1}`;
 
@@ -389,6 +416,12 @@ export function toProductDetailData(
               typeof s.attributes?.[k] === 'string' ? (s.attributes[k] as string) : null;
             const list = (k: string): unknown[] =>
               Array.isArray(s.attributes?.[k]) ? (s.attributes[k] as unknown[]) : [];
+            const ownSpecs = list('_specs').filter(
+              (r): r is { label: string; value: string } =>
+                !!r &&
+                typeof (r as { label?: unknown }).label === 'string' &&
+                typeof (r as { value?: unknown }).value === 'string',
+            );
             return {
               skuId: s.id,
               label: optionsLabel(options, i),
@@ -398,12 +431,13 @@ export function toProductDetailData(
               title: own('_title'),
               image: own('_image'),
               images: list('_images').filter((u): u is string => typeof u === 'string'),
-              specs: list('_specs').filter(
-                (r): r is { label: string; value: string } =>
-                  !!r &&
-                  typeof (r as { label?: unknown }).label === 'string' &&
-                  typeof (r as { value?: unknown }).value === 'string',
-              ),
+              // Its own detail rows, then the product rows its options decide (Item weight: 10 kg).
+              specs: [
+                ...ownSpecs,
+                ...optionRows(options, detail.specifications).filter(
+                  (o) => !ownSpecs.some((r) => r.label === o.label),
+                ),
+              ],
             };
           })
       : [];
@@ -428,12 +462,17 @@ export function toProductDetailData(
       href: categoryHref(...detail.categoryPath.slice(0, index + 1).map((c) => c.slug)),
     })),
     // v1.18 what the shopper picks (Size, Colour) is the picker, not a specification row.
+    // Option-specific rows (Item weight) show the default - cheapest - option's value, matching the
+    // price shown (the app swaps in the picked option's value).
     specifications: detail.specifications
       .filter((row) => !dimKeys.includes(row.key))
-      .map((row) => ({
-        label: row.label,
-        value: row.unit ? `${row.value} ${row.unit}` : row.value,
-      })),
+      .map((row) => {
+        const own = variants[0]?.specs.find((v) => v.label === row.label);
+        return {
+          label: row.label,
+          value: own?.value ?? (row.unit ? `${row.value} ${row.unit}` : row.value),
+        };
+      }),
     variants,
     variantDims: dimKeys.map((key) => ({ key, name: dimName(key) })),
     unavailableVariants: unavailable,

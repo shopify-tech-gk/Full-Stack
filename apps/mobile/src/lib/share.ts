@@ -1,7 +1,5 @@
-import { Platform, Share, ToastAndroid } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { Platform, Share } from 'react-native';
 import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import { discountPercent, formatMoney, type Money } from '@youmart/shared-client';
 import { api } from '@/lib/api';
 import { getSession } from '@/stores/session';
@@ -52,8 +50,9 @@ async function sharePhoto(url: string, slug: string): Promise<string | null> {
 /**
  * v1.18 Share a product WITH its photo, Flipkart / Meesho style: the picture plus a short caption
  * (name, price, discount, link, the sharer's referral code). iOS shares the photo and the caption
- * together. Android's share sheet can carry only one of them, so the photo goes in the share and
- * the caption is copied - the customer pastes it next to the photo (a toast says so).
+ * together. Android's share sheet can't carry a photo and text together, so Android shares the
+ * caption with the link - WhatsApp and the other apps show the product photo as the link's preview
+ * card (the product page's og:image), so the photo, name, price and link all arrive in one share.
  */
 export async function shareProduct(p: {
   title: string;
@@ -64,7 +63,7 @@ export async function shareProduct(p: {
 }): Promise<void> {
   const [code, photo] = await Promise.all([
     myReferralCode(),
-    p.imageUrl ? sharePhoto(p.imageUrl, p.slug) : Promise.resolve(null),
+    p.imageUrl && Platform.OS === 'ios' ? sharePhoto(p.imageUrl, p.slug) : Promise.resolve(null),
   ]);
   const link = `${SITE}/product/${p.slug}${code ? `?ref=${code}` : ''}`;
   const off = p.mrp ? discountPercent(p.mrp, p.price) : 0;
@@ -81,14 +80,8 @@ export async function shareProduct(p: {
   if (code) lines.push('', `🎁 New to YouMart? Join with my code *${code}*`);
   const caption = lines.join('\n');
 
-  if (photo && Platform.OS === 'ios') {
+  if (photo) {
     await Share.share({ message: caption, url: photo });
-    return;
-  }
-  if (photo && Platform.OS === 'android' && (await Sharing.isAvailableAsync())) {
-    await Clipboard.setStringAsync(caption);
-    ToastAndroid.show('Caption & link copied - paste it with the photo', ToastAndroid.LONG);
-    await Sharing.shareAsync(photo, { mimeType: 'image/jpeg', dialogTitle: p.title });
     return;
   }
   await Share.share({ message: caption, title: p.title });

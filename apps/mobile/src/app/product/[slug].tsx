@@ -279,13 +279,14 @@ export default function ProductScreen() {
   const lineTitle = variant
     ? `${variant.title ?? prod.title}${missing.length ? ` (${missing.join(' · ')})` : ''}`
     : prod.title;
-  // v1.18 the picked variant's own details lead the specifications (its fit, length...).
+  // v1.18 the picked variant's details win: rows the product also has (Item weight) take the
+  // picked option's value in place; its own extra rows (fit, length...) lead the list.
   const shownProd = variant?.specs.length
     ? {
         ...prod,
         specifications: [
-          ...variant.specs,
-          ...prod.specifications.filter((s) => !variant.specs.some((v) => v.label === s.label)),
+          ...variant.specs.filter((v) => !prod.specifications.some((s) => s.label === v.label)),
+          ...prod.specifications.map((s) => variant.specs.find((v) => v.label === s.label) ?? s),
         ],
       }
     : prod;
