@@ -12,6 +12,7 @@ import {
   Loader2,
   LockKeyhole,
   LogOut,
+  Megaphone,
   Menu,
   PackageCheck,
   PackageSearch,
@@ -128,6 +129,13 @@ const NAV: Array<{ heading: string; items: NavItem[] }> = [
         href: '/admin/seller-applications',
         label: 'Seller applications',
         icon: Store,
+        permission: 'sellers.approve',
+      },
+      // v1.19: photo / video ads booked in the app.
+      {
+        href: '/admin/ads',
+        label: 'Advertisements',
+        icon: Megaphone,
         permission: 'sellers.approve',
       },
     ],

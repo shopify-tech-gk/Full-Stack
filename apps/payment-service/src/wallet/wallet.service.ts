@@ -60,7 +60,7 @@ function runLocked<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
   });
 }
 
-type TxnType = 'TOPUP' | 'REFUND' | 'ORDER_PAYMENT' | 'FORFEIT' | 'REFERRAL_REWARD';
+type TxnType = 'TOPUP' | 'REFUND' | 'ORDER_PAYMENT' | 'FORFEIT' | 'REFERRAL_REWARD' | 'AD_PAYMENT';
 
 interface LedgerEntry {
   userId: string;
@@ -466,6 +466,42 @@ export async function forfeitWallet(userId: string): Promise<{ forfeited: Money 
       idempotencyKey: `forfeit:${wallet.id}:${Date.now()}`,
     });
     return { forfeited: wallet.balance };
+  });
+}
+
+/**
+ * v1.19 Advertising (seller-service, SERVICE-ONLY): the advertiser pays for an approved ad from
+ * their spendable balance (balance minus money held for unpaid orders). All or nothing - a short
+ * balance is refused (409 INSUFFICIENT_FUNDS) so they can add money first. Idempotent on `idempotencyKey` (one key
+ * per ad), so a retry never charges twice.
+ */
+export async function adPayment(
+  userId: string,
+  input: { amount: Money; idempotencyKey: string; description: string },
+): Promise<{ charged: Money; balance: Money }> {
+  return runLocked(async (tx) => {
+    const wallet = await lockWallet(tx, userId);
+    const seen = await tx.walletTransaction.findFirst({
+      where: { idempotencyKey: input.idempotencyKey, deletedAt: null },
+    });
+    if (seen) return { charged: input.amount, balance: wallet.balance };
+    const available = subtract(wallet.balance, wallet.held);
+    if (compare(available, input.amount) < 0) {
+      throw new AppError('CONFLICT', 409, 'Not enough money in your YouMart Wallet', {
+        reason: 'INSUFFICIENT_FUNDS',
+        available,
+        needed: input.amount,
+      });
+    }
+    const after = await applyEntry(tx, wallet, {
+      userId,
+      type: 'AD_PAYMENT',
+      direction: 'DEBIT',
+      amount: input.amount,
+      description: input.description,
+      idempotencyKey: input.idempotencyKey,
+    });
+    return { charged: input.amount, balance: after.balance };
   });
 }
 

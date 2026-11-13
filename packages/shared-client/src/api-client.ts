@@ -76,6 +76,11 @@ import type {
   WishlistView,
   SellerApplication,
   SellerApplicationBody,
+  AdAvailability,
+  AdCreateBody,
+  AdKind,
+  AdView,
+  LiveAd,
 } from './types';
 
 export class ApiError extends Error {
@@ -453,6 +458,17 @@ export function createApiClient(options: ApiClientOptions) {
       remove: async (id: Uuid): Promise<void> => {
         await send('DELETE', `/notifications/reminders/${id}`);
       },
+    },
+    /** v1.19 Advertising: book, pay and follow ads; what's live for shoppers. Uploads go
+     * straight to `${baseUrl}/sellers/ads/media` (raw file body), see the app's ad-upload. */
+    ads: {
+      live: () => json<{ image: LiveAd | null; video: LiveAd | null }>('GET', '/sellers/ads/live'),
+      availability: (kind: AdKind) =>
+        json<AdAvailability>('GET', '/sellers/ads/availability', { query: { kind } }),
+      mine: () => json<{ items: AdView[] }>('GET', '/sellers/ads/mine'),
+      create: (body: AdCreateBody) => json<{ ad: AdView }>('POST', '/sellers/ads', { body }),
+      pay: (adId: string) => json<{ ad: AdView }>('POST', `/sellers/ads/${adId}/pay`),
+      cancel: (adId: string) => json<{ ad: AdView }>('POST', `/sellers/ads/${adId}/cancel`),
     },
     /** v1.19 "Sell on YouMart" early access (selling itself is not open yet). */
     sellers: {

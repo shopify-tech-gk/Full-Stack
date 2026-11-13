@@ -597,7 +597,14 @@ export interface WalletSummary {
   available: Money;
   topupLimits: { min: Money; max: Money; maxBalance: Money };
 }
-export type WalletTxnType = 'TOPUP' | 'REFUND' | 'ORDER_PAYMENT' | 'FORFEIT' | 'REFERRAL_REWARD';
+export type WalletTxnType =
+  | 'TOPUP'
+  | 'REFUND'
+  | 'ORDER_PAYMENT'
+  | 'FORFEIT'
+  | 'REFERRAL_REWARD'
+  // v1.19 paid for an advertisement.
+  | 'AD_PAYMENT';
 
 /** v1.17 Refer & Earn: the customer's code and stats (GET /auth/me/referral). */
 export interface MyReferral {
@@ -903,4 +910,86 @@ export interface SellerApplication extends Omit<SellerApplicationBody, 'email' |
   contactedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// v1.19 Advertising (seller-service). IMAGE = 1-5 photos (Home "Sponsored" carousel); VIDEO = one
+// video (Home floating video window). Booked in whole 24-hour days; one ad per kind at a time.
+export type AdKind = 'IMAGE' | 'VIDEO';
+export type AdState =
+  | 'IN_REVIEW'
+  | 'AWAITING_PAYMENT'
+  | 'EXPIRED'
+  | 'SCHEDULED'
+  | 'LIVE'
+  | 'ENDED'
+  | 'REJECTED'
+  | 'CANCELLED'
+  | 'REMOVED';
+
+export interface AdCreateBody {
+  kind: AdKind;
+  advertiserName: string;
+  headline: string;
+  caption?: string;
+  linkUrl?: string;
+  /** File names returned by the upload. */
+  media: string[];
+  /** ISO start (rounded up to the hour by the server). */
+  startsAt: string;
+  days: number;
+}
+
+export interface AdView {
+  adId: string;
+  referenceCode: string;
+  kind: AdKind;
+  advertiserName: string;
+  headline: string;
+  caption: string | null;
+  linkUrl: string | null;
+  /** API-relative paths ("/sellers/ads/media/<file>"); see adMediaUrl. */
+  media: string[];
+  startsAt: string;
+  endsAt: string;
+  days: number;
+  pricePerDay: Money;
+  amount: Money;
+  state: AdState;
+  rejectReason: string | null;
+  reviewedAt: string | null;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+/** A live ad as every shopper gets it. */
+export interface LiveAd {
+  adId: string;
+  kind: AdKind;
+  advertiserName: string;
+  headline: string;
+  caption: string | null;
+  linkUrl: string | null;
+  media: string[];
+  endsAt: string;
+}
+
+export interface AdAvailability {
+  kind: AdKind;
+  pricePerDay: Money;
+  maxDays: number;
+  /** Windows already taken by approved / paid ads of this kind. */
+  booked: { startsAt: string; endsAt: string }[];
+}
+
+export interface AdUpload {
+  fileName: string;
+  url: string;
+  mimeType: string;
+  bytes: number;
+  video: boolean;
+}
+
+/** An ad media path from the API -> a full URL for <Image> / video players. */
+export function adMediaUrl(apiBaseUrl: string, path: string): string {
+  return `${apiBaseUrl.replace(/\/+$/, '')}${path}`;
 }

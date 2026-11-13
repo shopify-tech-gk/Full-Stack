@@ -9,6 +9,7 @@ import { prisma } from './db';
 import { config } from './config';
 import { sellerRouter } from './seller/seller.routes';
 import { adminRouter } from './seller/admin.routes';
+import { adminAdsRouter, adsRouter } from './ads/ads.routes';
 
 /**
  * Builds the Express app without listening - mirrors the auth-service
@@ -46,6 +47,9 @@ export function createApp(): Express {
       });
   });
 
+  // v1.19 ads first: '/sellers/ads' and '/admin/sellers/ads' must not reach the ':id' routes.
+  app.use('/sellers/ads', adsRouter);
+  app.use('/admin/sellers/ads', adminAdsRouter);
   app.use('/sellers', sellerRouter);
   app.use('/admin', adminRouter);
 

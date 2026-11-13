@@ -30,6 +30,8 @@ import { ReferBanner } from '@/components/ReferBanner';
 import { BestCategories } from '@/components/BestCategories';
 import { BrandGrid } from '@/components/BrandGrid';
 import { BrandVideoPip } from '@/components/BrandVideoPip';
+import { SponsoredCarousel } from '@/components/SponsoredCarousel';
+import { useLiveAds } from '@/lib/ads';
 import { ProductShowcase } from '@/components/ProductShowcase';
 import { Footer } from '@/components/Footer';
 import { SwipeTabs, HScrollZone } from '@/components/SwipeTabs';
@@ -64,6 +66,7 @@ type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; da
 export default function HomeScreen() {
   const [state, setState] = useState<State>({ status: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
+  const liveAds = useLiveAds();
 
   const load = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
@@ -150,6 +153,10 @@ export default function HomeScreen() {
             </HScrollZone>
             <HScrollZone>
               <CategoryPager />
+            </HScrollZone>
+            {/* v1.19 the live image ad (approved + paid), as a carousel. */}
+            <HScrollZone>
+              <SponsoredCarousel ad={liveAds.image} />
             </HScrollZone>
 
             <RailsHeader />

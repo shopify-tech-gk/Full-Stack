@@ -21,6 +21,7 @@ const TYPE_ICON: Record<WalletTransaction['type'], keyof typeof Ionicons.glyphMa
   ORDER_PAYMENT: 'bag-handle',
   FORFEIT: 'remove-circle',
   REFERRAL_REWARD: 'gift',
+  AD_PAYMENT: 'megaphone',
 };
 
 function when(iso: string): string {

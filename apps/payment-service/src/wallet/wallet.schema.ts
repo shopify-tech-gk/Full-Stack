@@ -9,6 +9,13 @@ export const WalletTransactionsQuery = z.object({
 /** "Add money": the amount in rupees, 2 decimals (limits checked in wallet.service.ts). */
 export const CreateTopupBody = z.object({ amount: Money });
 
+/** v1.19 Advertising (SERVICE-ONLY): pay for an approved ad from the wallet. */
+export const AdPaymentBody = z.object({
+  amount: Money,
+  idempotencyKey: z.string().min(4).max(120),
+  description: z.string().min(1).max(200),
+});
+
 /** v1.17 Refer & Earn (SERVICE-ONLY): a reward credited, or taken back after a return. */
 export const ReferralEntryBody = z.object({
   direction: z.enum(['CREDIT', 'DEBIT']),

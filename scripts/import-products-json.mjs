@@ -646,5 +646,15 @@ for (const { id, code } of unstocked) {
 console.log(`stock set for ${stocked} new SKU(s)`);
 
 // --- Search index rebuilt once -------------------------------------------------------------------
-const re = await gatewayPost(`${gateway}/api/search/admin/reindex`, { headers: { authorization } });
-console.log(`search reindex: HTTP ${re.status} ${(await re.text()).slice(0, 200)}`);
+// A big catalog can take longer than fetch's 5-minute wait; the rebuild carries on in
+// search-service and swaps in when done, so a timeout here is not a failure.
+try {
+  const re = await gatewayPost(`${gateway}/api/search/admin/reindex`, {
+    headers: { authorization },
+  });
+  console.log(`search reindex: HTTP ${re.status} ${(await re.text()).slice(0, 200)}`);
+} catch (err) {
+  console.log(
+    `search reindex: still running on the server (${err?.cause?.code ?? err?.message}) - it finishes on its own in a few minutes`,
+  );
+}

@@ -36,6 +36,16 @@ const sellerServiceEnvSchema = baseEnvSchema.extend({
   // hash is useless without this server-side secret; keeps verification
   // possible without ever persisting/logging the raw number).
   BANK_ACCOUNT_HASH_SECRET: z.string().min(1),
+  // v1.19 Advertising: ads are paid from the advertiser's YouMart Wallet (payment-service).
+  PAYMENT_SERVICE_URL: z.string().url(),
+  // Where uploaded ad photos / videos are kept (dev: local disk, like INVOICE_STORAGE_DIR;
+  // production swaps this for object storage). Relative paths are from the repo root.
+  ADS_MEDIA_DIR: z.string().default('storage/ad-media'),
+  // Price of one 24-hour ad day, in rupees.
+  AD_PRICE_PER_DAY: z
+    .string()
+    .regex(/^\d+\.\d{2}$/)
+    .default('1000.00'),
 });
 
 const parsed = loadConfigWith(sellerServiceEnvSchema);
@@ -59,6 +69,9 @@ export interface SellerServiceConfig {
   bankAccountHashSecret: string;
   serviceJwtSecret: string;
   serviceTokenTtlSeconds: number;
+  paymentServiceUrl: string;
+  adsMediaDir: string;
+  adPricePerDay: string;
 }
 
 export const config: Readonly<SellerServiceConfig> = Object.freeze({
@@ -76,4 +89,7 @@ export const config: Readonly<SellerServiceConfig> = Object.freeze({
   bankAccountHashSecret: parsed.BANK_ACCOUNT_HASH_SECRET,
   serviceJwtSecret: parsed.SERVICE_JWT_SECRET,
   serviceTokenTtlSeconds: parsed.SERVICE_TOKEN_TTL_SECONDS,
+  paymentServiceUrl: parsed.PAYMENT_SERVICE_URL,
+  adsMediaDir: path.resolve(__dirname, '../../..', parsed.ADS_MEDIA_DIR),
+  adPricePerDay: parsed.AD_PRICE_PER_DAY,
 });

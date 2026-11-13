@@ -1,4 +1,8 @@
-import { createSettingsClient, type ServiceAuthOptions } from '@youmart/service-client';
+import {
+  createPaymentClient,
+  createSettingsClient,
+  type ServiceAuthOptions,
+} from '@youmart/service-client';
 import { config } from './config';
 
 // Ch6.5 - self-minted short-lived service token attached to every internal
@@ -14,5 +18,11 @@ const serviceAuth: ServiceAuthOptions = {
 // client-side (default 30s TTL).
 export const settingsClient = createSettingsClient({
   baseUrl: config.adminServiceUrl,
+  serviceAuth,
+});
+
+// v1.19 Advertising: approved ads are paid from the advertiser's YouMart Wallet.
+export const paymentClient = createPaymentClient({
+  baseUrl: config.paymentServiceUrl,
   serviceAuth,
 });

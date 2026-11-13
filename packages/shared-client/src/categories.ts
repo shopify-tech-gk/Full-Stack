@@ -277,12 +277,13 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'lawn-and-gardening/pesticides': 'insecticides=Insecticides',
   'lawn-and-gardening/agri-gardening-tools':
     'sprayers=Sprayers;pruning-tools=Pruning Tools;garden-hand-tools=Garden Hand Tools;gardening-gloves=Gardening Gloves;garden-hoses=Garden Hoses;lawn-edgers=Lawn Edgers & Trimmers',
-  'lawn-and-gardening/plant-saplings': 'indoor-plants=Indoor Plants',
+  'lawn-and-gardening/plant-saplings': 'indoor-plants=Indoor Plants;flower-plants=Flower Plants;fruit-plants=Fruit Plants',
   'stationary/eraser':
     'fancy-eraser=Fancy Eraser;ink-eraser=Ink Eraser;electric-and-pen-eraser=Electric and Pen Eraser',
   'stationary/taps':
     'cellophane-tape-celo-tape=Cellophane Tape (Celo Tape);double-sided-tape=Double-Sided Tape;nano-tape=Nano Tape',
   'cleaning-products/floor-cleaners': 'all-purpose-cleaners=All Purpose Cleaners',
+  'lawn-and-gardening/seeds': 'flower-seeds=Flower Seeds',
 };
 
 /** The homepage category strip, in the exact order and naming of youmartshop.com. */

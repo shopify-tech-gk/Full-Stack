@@ -55,6 +55,12 @@ export interface PaymentClient {
   getWallet(userId: string): Promise<WalletSummary>;
   /** W9: account deletion - the customer agreed to give up the balance. */
   forfeitWallet(userId: string): Promise<{ forfeited: Money }>;
+  /** v1.19 Advertising: pay for an approved ad from the wallet (all or nothing; a short
+   * spendable balance throws CONFLICT 409, details.reason INSUFFICIENT_FUNDS). Idempotent. */
+  adPayment(
+    userId: string,
+    input: { amount: Money; idempotencyKey: string; description: string },
+  ): Promise<{ charged: Money; balance: Money }>;
   /** v1.17 Refer & Earn: pay a reward into the referrer's wallet (CREDIT) or take it back after a
    * return (DEBIT, capped at the spendable balance). Idempotent on `idempotencyKey`. */
   referralEntry(
@@ -154,6 +160,17 @@ export function createPaymentClient({
         baseUrl,
         path: `/wallet/internal/users/${userId}/forfeit`,
         method: 'POST',
+        authToken: authToken(),
+        timeoutMs,
+      });
+    },
+
+    adPayment(userId, input) {
+      return request<{ charged: Money; balance: Money }>({
+        baseUrl,
+        path: `/wallet/internal/users/${userId}/ad-payment`,
+        method: 'POST',
+        body: input,
         authToken: authToken(),
         timeoutMs,
       });

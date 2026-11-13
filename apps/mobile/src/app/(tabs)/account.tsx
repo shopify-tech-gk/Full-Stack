@@ -21,6 +21,7 @@ import { useAvatar } from '@/stores/profile';
 import { Avatar } from '@/components/Avatar';
 import { SwipeTabs } from '@/components/SwipeTabs';
 import { SellerComingSoon } from '@/components/SellerComingSoon';
+import { AdvertiseEntry } from '@/components/AdvertiseEntry';
 import { colors, font, radii, space } from '@/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -289,6 +290,8 @@ export default function AccountScreen() {
 
         {/* Multi-vendor selling: not live yet, opens the /sell launch page. */}
         <SellerComingSoon />
+        {/* v1.19 anyone can book a photo / video ad. */}
+        <AdvertiseEntry />
 
         <Section title="Reminders & alerts" items={REMINDERS} onPress={go} />
         <Section title="My activity" items={ACTIVITY} onPress={go} />

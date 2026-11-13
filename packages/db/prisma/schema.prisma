@@ -413,6 +413,76 @@ model SellerApplication {
   @@schema("sellers")
 }
 
+/// v1.19 Advertising: anyone signed in can book an ad (images carousel or one video). Flow:
+/// PENDING_REVIEW -> admin APPROVED (or REJECTED) -> advertiser PAID from the wallet -> it shows
+/// from startsAt to endsAt (whole 24-hour days). One ad per kind at a time: APPROVED / PAID ads
+/// of the same kind never overlap (checked on submit, approve and pay).
+enum AdKind {
+  IMAGE
+  VIDEO
+
+  @@schema("sellers")
+}
+
+enum AdStatus {
+  PENDING_REVIEW
+  APPROVED
+  PAID
+  REJECTED
+  CANCELLED
+  /// Taken down by the admin team after it went live.
+  REMOVED
+
+  @@schema("sellers")
+}
+
+model AdCampaign {
+  id             String    @id @default(uuid(7))
+  /// Shown to the advertiser, e.g. "YMA-482913".
+  referenceCode  String    @unique @map("reference_code")
+  userId         String    @map("user_id")
+  kind           AdKind
+  /// Who the ad is from (shown on the ad), e.g. a brand or shop name.
+  advertiserName String    @map("advertiser_name")
+  headline       String
+  caption        String?
+  /// Optional https link opened when the ad is tapped.
+  linkUrl        String?   @map("link_url")
+  /// Ordered file names in the ad media store (1-5 images, or 1 video).
+  media          Json
+  startsAt       DateTime  @map("starts_at")
+  endsAt         DateTime  @map("ends_at")
+  days           Int
+  pricePerDay    Decimal   @map("price_per_day") @db.Decimal(10, 2)
+  amount         Decimal   @db.Decimal(12, 2)
+  status         AdStatus  @default(PENDING_REVIEW)
+  rejectReason   String?   @map("reject_reason")
+  reviewedAt     DateTime? @map("reviewed_at")
+  paidAt         DateTime? @map("paid_at")
+  cancelledAt    DateTime? @map("cancelled_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([kind, status, startsAt])
+  @@index([userId, createdAt])
+  @@map("ad_campaign")
+  @@schema("sellers")
+}
+
+/// v1.19 a file uploaded for an ad (stored on disk / object storage under `fileName`).
+model AdMedia {
+  id        String   @id @default(uuid(7))
+  userId    String   @map("user_id")
+  fileName  String   @unique @map("file_name")
+  mimeType  String   @map("mime_type")
+  bytes     Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("ad_media")
+  @@schema("sellers")
+}
+
 /// A KYC submission record for a seller (a seller may resubmit after rejection,
 /// so this is a one-to-many history, not a single row per seller). `gstin`
 /// uniqueness (when present) is enforced via a partial unique index
@@ -1105,6 +1175,8 @@ enum WalletTxnType {
   /// v1.17 Refer & Earn: 2.5% of a referred friend's delivered item (CREDIT), taken back if
   /// that item is returned (DEBIT).
   REFERRAL_REWARD
+  /// v1.19 paid for an advertisement (DEBIT).
+  AD_PAYMENT
 
   @@schema("payments")
 }

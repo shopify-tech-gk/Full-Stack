@@ -14,6 +14,7 @@ import { useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from '@/lib/router';
 import { todaysVideo } from '@/lib/brand-videos';
+import { adUrl, openAdLink, useLiveAds } from '@/lib/ads';
 import { font } from '@/theme';
 
 // Same typing workaround as components/LeafletMap.tsx.
@@ -45,6 +46,18 @@ function setMuted(m){if(!player)return;if(m){player.mute();}else{player.unMute()
 </script></body></html>`;
 }
 
+/** v1.19 an advertiser's own uploaded video (HTML5 player): muted autoplay, inline, looping. */
+function adVideoHtml(src: string): string {
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<style>html,body{margin:0;padding:0;background:#000;overflow:hidden;height:100%}video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}</style></head>
+<body><video id="v" src=${JSON.stringify(src)} autoplay muted loop playsinline webkit-playsinline preload="auto"></video>
+<script>
+var v=document.getElementById('v');
+function setMuted(m){v.muted=m;if(!m){v.volume=0.8;}v.play();}
+v.play().catch(function(){});
+</script></body></html>`;
+}
+
 /**
  * v1.18 Home: today's brand video in a small floating portrait window (bottom corner), playing
  * muted in a loop. Drag it to either side; tap the speaker for sound, "Shop" for the brand's
@@ -70,7 +83,9 @@ export function BrandVideoPip({ bottom = 14 }: { bottom?: number }) {
 
 function Pip({ width, height, bottom }: { width: number; height: number; bottom: number }) {
   const router = useRouter();
-  const video = useMemo(() => todaysVideo(), []);
+  const youtube = useMemo(() => todaysVideo(), []);
+  // v1.19 a paid video ad takes the window while it's live; YouTube brand videos otherwise.
+  const { video: ad } = useLiveAds();
   // Closing hides it only while the app stays open: it's back each time the app is opened or
   // brought back to the front.
   const [closed, setClosed] = useState(false);
@@ -122,7 +137,7 @@ function Pip({ width, height, bottom }: { width: number; height: number; bottom:
     [pos, width, height, bottom],
   );
 
-  if (!video || closed) return null;
+  if ((!ad && !youtube) || closed) return null;
 
   const toggleSound = () => {
     void Haptics.selectionAsync().catch(() => undefined);
@@ -131,7 +146,12 @@ function Pip({ width, height, bottom }: { width: number; height: number; bottom:
     web.current?.injectJavaScript(`setMuted(${next});true;`);
   };
   const close = () => setClosed(true);
-  const shop = () => router.push({ pathname: '/search', params: { q: video.brand } });
+  const shop = () => {
+    if (ad) openAdLink(ad);
+    else if (youtube) router.push({ pathname: '/search', params: { q: youtube.brand } });
+  };
+  const label = ad ? ad.advertiserName : (youtube?.brand ?? '');
+  const html = ad ? adVideoHtml(adUrl(ad.media[0] ?? '')) : playerHtml(youtube?.youtubeId ?? '');
 
   return (
     <Animated.View
@@ -141,8 +161,9 @@ function Pip({ width, height, bottom }: { width: number; height: number; bottom:
       <View style={styles.video}>
         {focused ? (
           <Web
+            key={ad?.adId ?? youtube?.youtubeId}
             ref={web}
-            source={{ html: playerHtml(video.youtubeId), baseUrl: 'https://youmart.in' }}
+            source={{ html, baseUrl: ad ? adUrl('/') : 'https://youmart.in' }}
             originWhitelist={['*']}
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
@@ -157,7 +178,7 @@ function Pip({ width, height, bottom }: { width: number; height: number; bottom:
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={shop}
-          accessibilityLabel={`Shop ${video.brand}`}
+          accessibilityLabel={ad ? `Ad from ${label}` : `Shop ${label}`}
         />
         <Pressable style={[styles.round, styles.close]} onPress={close} hitSlop={8}>
           <Ionicons name="close" size={14} color="#ffffff" />
@@ -168,13 +189,21 @@ function Pip({ width, height, bottom }: { width: number; height: number; bottom:
       </View>
       <Pressable style={styles.band} onPress={shop}>
         <Text style={styles.brand} numberOfLines={1} maxFontSizeMultiplier={1}>
-          {video.brand}
+          {label}
         </Text>
-        <View style={styles.shop}>
-          <Text style={styles.shopText} maxFontSizeMultiplier={1}>
-            Shop
-          </Text>
-        </View>
+        {ad ? (
+          <View style={styles.adTag}>
+            <Text style={styles.adTagText} maxFontSizeMultiplier={1}>
+              Ad
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.shop}>
+            <Text style={styles.shopText} maxFontSizeMultiplier={1}>
+              Shop
+            </Text>
+          </View>
+        )}
       </Pressable>
     </Animated.View>
   );
@@ -223,4 +252,12 @@ const styles = StyleSheet.create({
   brand: { flex: 1, fontFamily: font.uiBold, fontSize: 11.5, color: '#ffffff' },
   shop: { backgroundColor: '#ffd60a', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   shopText: { fontFamily: font.uiBold, fontSize: 10.5, color: '#1f1300' },
+  adTag: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  adTagText: { fontFamily: font.uiBold, fontSize: 10, color: '#ffffff' },
 });

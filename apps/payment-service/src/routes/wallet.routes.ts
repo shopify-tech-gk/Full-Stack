@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import {
+  AdPaymentBody,
   CreateTopupBody,
   ReferralEntryBody,
   WalletTransactionsQuery,
 } from '../wallet/wallet.schema';
 import {
+  adPayment,
   createTopup,
   forfeitWallet,
   getTopup,
@@ -44,6 +46,12 @@ walletRouter.post('/internal/holds/:orderId/release', requireServiceAuth, async 
 walletRouter.post('/internal/users/:userId/referral', requireServiceAuth, async (req, res) => {
   const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
   res.status(200).json(await referralEntry(userId, ReferralEntryBody.parse(req.body)));
+});
+
+// v1.19 seller-service: an advertiser pays for an approved ad.
+walletRouter.post('/internal/users/:userId/ad-payment', requireServiceAuth, async (req, res) => {
+  const userId = typeof req.params.userId === 'string' ? req.params.userId : '';
+  res.status(200).json(await adPayment(userId, AdPaymentBody.parse(req.body)));
 });
 
 // --- Customer -----------------------------------------------------------------------------------

@@ -11,6 +11,16 @@ export function setAccessToken(token: string | null): void {
   accessToken = token;
 }
 
+/** v1.19 for direct uploads (ad media) that don't go through the api client. */
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
+/** v1.19 refresh the session after a 401 on a direct upload; true when it worked. */
+export function refreshSession(): Promise<boolean> {
+  return onUnauthorized();
+}
+
 /** session store registers its refresh here (avoids a circular import). */
 export function setUnauthorizedHandler(handler: () => Promise<boolean>): void {
   onUnauthorized = handler;

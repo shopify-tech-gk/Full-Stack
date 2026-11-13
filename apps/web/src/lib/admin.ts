@@ -299,6 +299,39 @@ export interface AdminProductRequest {
   sameItemOpen: number;
 }
 
+/** v1.19 an advertisement booked in the app (Admin -> Advertisements). */
+export interface AdminAd {
+  adId: string;
+  referenceCode: string;
+  userId: string;
+  kind: 'IMAGE' | 'VIDEO';
+  advertiserName: string;
+  headline: string;
+  caption: string | null;
+  linkUrl: string | null;
+  /** API-relative media paths ("/sellers/ads/media/<file>"). */
+  media: string[];
+  startsAt: string;
+  endsAt: string;
+  days: number;
+  pricePerDay: string;
+  amount: string;
+  state:
+    | 'IN_REVIEW'
+    | 'AWAITING_PAYMENT'
+    | 'EXPIRED'
+    | 'SCHEDULED'
+    | 'LIVE'
+    | 'ENDED'
+    | 'REJECTED'
+    | 'CANCELLED'
+    | 'REMOVED';
+  rejectReason: string | null;
+  reviewedAt: string | null;
+  paidAt: string | null;
+  createdAt: string;
+}
+
 /** v1.19 a "Sell on YouMart" early-access application (Admin -> Seller applications). */
 export interface AdminSellerApplication {
   applicationId: string;
