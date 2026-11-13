@@ -4,6 +4,7 @@ import { registerSeller, getMySeller, submitKyc, getMySellerIdentity } from './s
 import { isSellerActive, listActiveSellers } from './admin.service';
 import { requireAuth, requireServiceAuth } from '../authMiddleware';
 import { requireUserId } from '../authToken';
+import { CreateApplicationBody, createApplication, getMyApplication } from './application.service';
 
 export const sellerRouter: Router = Router();
 
@@ -18,6 +19,17 @@ sellerRouter.post('/register', requireAuth, async (req, res) => {
   const body = RegisterSellerBody.parse(req.body);
   const seller = await registerSeller(userId, body);
   res.status(201).json(seller);
+});
+
+// v1.19 "Sell on YouMart" early access - NOT gated by the marketplace flag: it only records
+// interest (no Seller is created), so it works while selling is still hard-off.
+sellerRouter.get('/early-access/me', requireAuth, async (req, res) => {
+  res.status(200).json(await getMyApplication(requireUserId(req)));
+});
+
+sellerRouter.post('/early-access', requireAuth, async (req, res) => {
+  const body = CreateApplicationBody.parse(req.body);
+  res.status(201).json(await createApplication(requireUserId(req), body));
 });
 
 sellerRouter.get('/me', requireAuth, async (req, res) => {

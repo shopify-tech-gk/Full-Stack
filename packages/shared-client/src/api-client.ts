@@ -74,6 +74,8 @@ import type {
   SupportMessageReceipt,
   Uuid,
   WishlistView,
+  SellerApplication,
+  SellerApplicationBody,
 } from './types';
 
 export class ApiError extends Error {
@@ -451,6 +453,13 @@ export function createApiClient(options: ApiClientOptions) {
       remove: async (id: Uuid): Promise<void> => {
         await send('DELETE', `/notifications/reminders/${id}`);
       },
+    },
+    /** v1.19 "Sell on YouMart" early access (selling itself is not open yet). */
+    sellers: {
+      myApplication: () =>
+        json<{ application: SellerApplication | null }>('GET', '/sellers/early-access/me'),
+      apply: (body: SellerApplicationBody) =>
+        json<{ application: SellerApplication }>('POST', '/sellers/early-access', { body }),
     },
     support: {
       /** v1.17 AI help: is it switched on? */

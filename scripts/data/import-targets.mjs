@@ -411,7 +411,7 @@ const BASIC_FILTERS = [
 ];
 const deriveBasic = () => ({ weight_band: null });
 const AGRI = ['lawn-and-gardening', 'Agri and Gardening'];
-const basicTarget = (...chain) => ({ chain, filters: BASIC_FILTERS, derive: deriveBasic });
+export const basicTarget = (...chain) => ({ chain, filters: BASIC_FILTERS, derive: deriveBasic });
 
 /**
  * Products a delivery filed under the wrong "Target Name" (a pen in Garden Fountains, because of
@@ -1793,6 +1793,11 @@ export const TARGETS = {
     AGRI,
     ['pots-and-planters', 'Pots & Planters'],
     ['hanging-planters', 'Hanging Planters'],
+  ),
+  'Ceramic Pots': basicTarget(
+    AGRI,
+    ['pots-and-planters', 'Pots & Planters'],
+    ['ceramic-pots', 'Ceramic Pots'],
   ),
   Sprinklers: basicTarget(
     AGRI,

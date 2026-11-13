@@ -12,6 +12,12 @@ import {
   setCommission,
 } from './admin.service';
 import { requireAdmin } from '../authMiddleware';
+import {
+  AdminListApplicationsQuery,
+  AdminUpdateApplicationBody,
+  listApplications,
+  updateApplication,
+} from './application.service';
 
 export const adminRouter: Router = Router();
 
@@ -21,6 +27,21 @@ export const adminRouter: Router = Router();
 // still hard-off, Ch6.1) - NOT the marketplace hard-off gate (see
 // marketplace-gate.ts): an admin can manage any existing seller regardless
 // of whether self-registration is currently open.
+
+// v1.19 Admin -> Seller applications ("Sell on YouMart" early access). Registered BEFORE
+// `/sellers/:id` so "early-access" is never read as a seller id.
+adminRouter.get('/sellers/early-access', requireAdmin('sellers.approve'), async (req, res) => {
+  res.status(200).json(await listApplications(AdminListApplicationsQuery.parse(req.query)));
+});
+
+adminRouter.patch(
+  '/sellers/early-access/:id',
+  requireAdmin('sellers.approve'),
+  async (req, res) => {
+    const id = typeof req.params.id === 'string' ? req.params.id : '';
+    res.status(200).json(await updateApplication(id, AdminUpdateApplicationBody.parse(req.body)));
+  },
+);
 
 adminRouter.get('/sellers', requireAdmin('sellers.approve'), async (req, res) => {
   const query = ListSellersQuery.parse(req.query);

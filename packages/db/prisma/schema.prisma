@@ -372,6 +372,47 @@ model Seller {
   @@schema("sellers")
 }
 
+/// v1.19 "Sell on YouMart" early access: a customer who wants to sell once the marketplace
+/// opens. One per user; the admin works it through Admin -> Seller applications and the app
+/// shows the customer its status.
+enum SellerApplicationStatus {
+  NEW
+  CONTACTED
+  SHORTLISTED
+  ONBOARDED
+  DECLINED
+
+  @@schema("sellers")
+}
+
+model SellerApplication {
+  id            String                  @id @default(uuid(7))
+  /// Shown to the customer, e.g. "YMS-482913".
+  referenceCode String                  @unique @map("reference_code")
+  userId        String                  @unique @map("user_id")
+  businessName  String                  @map("business_name")
+  contactName   String                  @map("contact_name")
+  phone         String
+  email         String?
+  city          String
+  /// INDIVIDUAL | SHOP | BRAND | MANUFACTURER | WHOLESALER
+  businessType  String                  @map("business_type")
+  /// What they sell, e.g. "Seeds & plants".
+  category      String
+  hasGstin      Boolean                 @default(false) @map("has_gstin")
+  note          String?
+  status        SellerApplicationStatus @default(NEW)
+  /// Private to the admin team.
+  adminNote     String?                 @map("admin_note")
+  contactedAt   DateTime?               @map("contacted_at")
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@map("seller_application")
+  @@schema("sellers")
+}
+
 /// A KYC submission record for a seller (a seller may resubmit after rejection,
 /// so this is a one-to-many history, not a single row per seller). `gstin`
 /// uniqueness (when present) is enforced via a partial unique index

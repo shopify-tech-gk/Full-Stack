@@ -15,7 +15,14 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TARGETS, TARGET_OVERRIDES, cleanColor, sizeRank } from './data/import-targets.mjs';
+import {
+  TARGETS,
+  TARGET_OVERRIDES,
+  basicTarget,
+  cleanColor,
+  sizeRank,
+} from './data/import-targets.mjs';
+import { createAutoTargets } from './data/auto-target.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 process.loadEnvFile(path.join(root, '.env'));
@@ -197,19 +204,26 @@ const items = JSON.parse(readFileSync(file, 'utf8'));
 if (!Array.isArray(items)) throw new Error('Expected a JSON array of products');
 
 const problems = [];
+// v1.19 Target Names not in import-targets.mjs are found in the app's category tree.
+const auto = createAutoTargets({ root, basicTarget, env });
+const autoMapped = new Map();
 const products = [];
 const categoriesNeeded = new Map();
 const seenSku = new Set();
 
 for (const [index, p] of items.entries()) {
   const where = `#${index + 1} (${p.Youmart_Product_ID ?? 'no id'})`;
-  const target =
-    TARGETS[TARGET_OVERRIDES[p.Youmart_Product_ID] ?? String(p['Target Name'] ?? '').trim()];
+  const targetName =
+    TARGET_OVERRIDES[p.Youmart_Product_ID] ?? String(p['Target Name'] ?? '').trim();
+  let target = TARGETS[targetName];
   if (!target) {
-    problems.push(
-      `${where}: no import target for "${p['Target Name']}" (add it to scripts/data/import-targets.mjs)`,
-    );
-    continue;
+    const found = auto.resolve(targetName);
+    if (found.error) {
+      problems.push(`${where}: ${found.error} - skipped`);
+      continue;
+    }
+    target = found.target;
+    autoMapped.set(targetName, `${found.label}${found.isNew ? ' (new category)' : ''}`);
   }
   const title = clean(p.Title);
   const id = clean(p.Youmart_Product_ID);
@@ -457,6 +471,7 @@ for (const [index, p] of items.entries()) {
 }
 
 console.log(`read ${items.length} products -> ${products.length} to import, ${seenSku.size} SKUs`);
+for (const [name, where] of autoMapped) console.log(`mapped "${name}" -> ${where}`);
 if (problems.length) console.log(`notes:\n  ${problems.join('\n  ')}`);
 if (dryRun) {
   console.log(
@@ -566,6 +581,11 @@ const out = execFileSync(
   { cwd: root, input: sql.join('\n'), maxBuffer: 64 * 1024 * 1024 },
 ).toString();
 const rows = out.trim().split('\n');
+// v1.19 new categories found in the app's tree: link them in the storefront so their page lists
+// the products (instead of "Coming soon").
+for (const change of auto.applyStorefrontEdits()) {
+  console.log(`storefront link added in packages/shared-client/src/categories.ts: ${change}`);
+}
 rows
   .filter((l) => l.startsWith('COUNT|'))
   .forEach((l) => {

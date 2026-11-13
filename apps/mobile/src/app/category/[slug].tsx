@@ -47,6 +47,12 @@ type Results = { products: ProductCardData[]; total: number; filters: Listing['f
  * its sub-to-sub list), the category's brands across the top (tap to filter), and a compact
  * product grid. Navigation inside the category happens in place, like a native store app.
  */
+/** The "level" a path's rail belongs to: the main, or a sub that has its own items. */
+function levelOf(path: string[]): string[] {
+  if (path.length >= 2 && taxNode(path.slice(0, 2))?.hasChildren) return path.slice(0, 2);
+  return path.slice(0, 1);
+}
+
 export default function CategoryScreen() {
   // `brand` (from Top Brands on home): open with just that brand selected.
   const {
@@ -71,10 +77,7 @@ export default function CategoryScreen() {
   const node = useMemo(() => (path.length ? taxNode(path) : null), [path]);
 
   // The rail lists the children of a "level": the main, or a sub that has its own items.
-  const levelPath = useMemo(() => {
-    if (path.length >= 2 && taxNode(path.slice(0, 2))?.hasChildren) return path.slice(0, 2);
-    return path.slice(0, 1);
-  }, [path]);
+  const levelPath = useMemo(() => levelOf(path), [path]);
   const rail = useMemo(() => (levelPath.length ? taxChildren(levelPath) : []), [levelPath]);
   const levelNode = useMemo(() => (levelPath.length ? taxNode(levelPath) : null), [levelPath]);
   const mainNode = useMemo(() => (path.length ? taxNode(path.slice(0, 1)) : null), [path]);
@@ -130,12 +133,16 @@ export default function CategoryScreen() {
   }, [navigation, node, data]);
 
   // Changing category starts clean (filters belong to the category they were picked in).
-  // v1.18 going deeper (main -> sub -> sub-to-sub) opens a new page, so Back walks the same way up
-  // (sub-to-sub -> sub -> main -> where they came from). Switching between items on the same level,
-  // or back up to "All ...", stays on this page.
+  // Opening a sub that has its own row of items (main -> "Pots & Planters") opens a new page, so
+  // Back walks up the same way (sub -> main -> where they came from). Switching within one row -
+  // "All Pots & Planters" <-> "Ceramic Pots" <-> "Hanging Planters" - stays on this page, however
+  // many times, so Back never replays those switches.
   const go = useCallback(
     (next: string[]) => {
-      const deeper = next.length > path.length && path.every((seg, i) => next[i] === seg);
+      const level = levelOf(path);
+      const nextLevel = levelOf(next);
+      const deeper =
+        nextLevel.length > level.length && level.every((seg, i) => nextLevel[i] === seg);
       if (deeper) {
         const target = taxNode(next);
         router.push({

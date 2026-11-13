@@ -299,6 +299,28 @@ export interface AdminProductRequest {
   sameItemOpen: number;
 }
 
+/** v1.19 a "Sell on YouMart" early-access application (Admin -> Seller applications). */
+export interface AdminSellerApplication {
+  applicationId: string;
+  referenceCode: string;
+  userId: string;
+  businessName: string;
+  contactName: string;
+  /** 10 digits, no +91. */
+  phone: string;
+  email: string | null;
+  city: string;
+  businessType: 'INDIVIDUAL' | 'SHOP' | 'BRAND' | 'MANUFACTURER' | 'WHOLESALER';
+  category: string;
+  hasGstin: boolean;
+  note: string | null;
+  status: 'NEW' | 'CONTACTED' | 'SHORTLISTED' | 'ONBOARDED' | 'DECLINED';
+  adminNote: string | null;
+  contactedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // --- Display helpers ---
 
 export const ITEM_STATUS_LABEL: Record<ItemStatus, string> = {

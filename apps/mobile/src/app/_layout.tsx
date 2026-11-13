@@ -228,6 +228,8 @@ export default function RootLayout() {
                         options={{ headerShown: true, title: 'Privacy & account' }}
                       />
                       {/* v1.17 Refer & Earn */}
+                      <Stack.Screen name="sell/index" options={{ headerShown: false }} />
+                      <Stack.Screen name="sell/apply" options={{ headerShown: false }} />
                       <Stack.Screen
                         name="refer"
                         options={{ headerShown: true, title: 'Refer & Earn' }}

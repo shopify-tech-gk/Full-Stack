@@ -15,6 +15,7 @@ import {
   Menu,
   PackageCheck,
   PackageSearch,
+  Store,
   Undo2,
   Users,
   X,
@@ -116,6 +117,18 @@ const NAV: Array<{ heading: string; items: NavItem[] }> = [
         label: 'Product requests',
         icon: PackageSearch,
         permission: 'support.manage',
+      },
+    ],
+  },
+  {
+    heading: 'Marketplace',
+    items: [
+      // v1.19: "Sell on YouMart" early-access applications from the app.
+      {
+        href: '/admin/seller-applications',
+        label: 'Seller applications',
+        icon: Store,
+        permission: 'sellers.approve',
       },
     ],
   },

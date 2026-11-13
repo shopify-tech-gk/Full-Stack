@@ -875,3 +875,32 @@ export interface LoggedInDevice {
   lastActiveAt: IsoDateTime;
   current: boolean;
 }
+
+// v1.19 "Sell on YouMart" early access (seller-service).
+export type SellerBusinessType = 'INDIVIDUAL' | 'SHOP' | 'BRAND' | 'MANUFACTURER' | 'WHOLESALER';
+export type SellerApplicationStatus =
+  'NEW' | 'CONTACTED' | 'SHORTLISTED' | 'ONBOARDED' | 'DECLINED';
+
+export interface SellerApplicationBody {
+  businessName: string;
+  contactName: string;
+  phone: string;
+  email?: string;
+  city: string;
+  businessType: SellerBusinessType;
+  category: string;
+  hasGstin: boolean;
+  note?: string;
+}
+
+export interface SellerApplication extends Omit<SellerApplicationBody, 'email' | 'note'> {
+  applicationId: string;
+  /** Shown to the customer, e.g. "YMS-482913". */
+  referenceCode: string;
+  email: string | null;
+  note: string | null;
+  status: SellerApplicationStatus;
+  contactedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

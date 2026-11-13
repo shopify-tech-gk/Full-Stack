@@ -104,7 +104,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'cleaning-products',
     'Cleaning Products',
-    'brooms=Brooms;brush=Brush;detergents-cleaners=Detergents & Cleaners;dishwash=Dishwash;duster=Duster;dust-pan=Dust Pan;mops=Mops;scrubbers-sponges=Scrubbers & Sponges;rope=Rope;air-fresheners=Air Fresheners;cleaning-gloves=Cleaning Gloves',
+    'brooms=Brooms;brush=Brush;detergents-cleaners=Detergents & Cleaners;dishwash=Dishwash;duster=Duster;dust-pan=Dust Pan;mops=Mops;scrubbers-sponges=Scrubbers & Sponges;rope=Rope;air-fresheners=Air Fresheners;cleaning-gloves=Cleaning Gloves;floor-cleaners=Floor Cleaners',
   ],
   [
     'cosmetics',
@@ -267,12 +267,13 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'pet-products/cat':
     'cat-food=Cat Food;cat-health-supplies=Cat Health Supplies;cat-shampoo=Cat Shampoo',
   'stationary/pen': 'hero-pen=Hero Pen;fountain-pens=Fountain Pens',
-  'lawn-and-gardening/pots-and-planters': 'hanging-planters=Hanging Planters',
+  'lawn-and-gardening/pots-and-planters':
+    'hanging-planters=Hanging Planters;ceramic-pots=Ceramic Pots',
   'home-furnishing/mosquito-nets':
     'bed-mosquito-nets=Bed Mosquito Nets;window-door-mosquito-nets=Window & Door Mosquito Nets',
   'lawn-and-gardening/nets-and-fence':
     'bird-netting=Bird Netting;insect-netting=Insect Netting;shade-netting=Shade Netting;plant-support-netting=Plant Support Netting;garden-fencing=Garden Fencing',
-  'lawn-and-gardening/irrigation-equipment': 'sprinklers=Sprinklers',
+  'lawn-and-gardening/irrigation-equipment': 'sprinklers=Sprinklers;drip-irrigation=Drip Irrigation;drip-irrigation-kits=Drip Irrigation Kits',
   'lawn-and-gardening/pesticides': 'insecticides=Insecticides',
   'lawn-and-gardening/agri-gardening-tools':
     'sprayers=Sprayers;pruning-tools=Pruning Tools;garden-hand-tools=Garden Hand Tools;gardening-gloves=Gardening Gloves;garden-hoses=Garden Hoses;lawn-edgers=Lawn Edgers & Trimmers',
@@ -281,6 +282,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
     'fancy-eraser=Fancy Eraser;ink-eraser=Ink Eraser;electric-and-pen-eraser=Electric and Pen Eraser',
   'stationary/taps':
     'cellophane-tape-celo-tape=Cellophane Tape (Celo Tape);double-sided-tape=Double-Sided Tape;nano-tape=Nano Tape',
+  'cleaning-products/floor-cleaners': 'all-purpose-cleaners=All Purpose Cleaners',
 };
 
 /** The homepage category strip, in the exact order and naming of youmartshop.com. */
