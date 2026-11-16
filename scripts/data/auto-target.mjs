@@ -113,6 +113,21 @@ const PREFERRED_SUB = {
   [nameKey('Scrubbers')]: 'Dishwashing Liquids',
   // Paint brushes are art supplies; Drawing Materials lists them too.
   [nameKey('Paint Brushes')]: 'Art Supplies',
+  // Auto deliveries: car seat covers / organisers / chargers are interior accessories; tool kits
+  // sit with the other vehicle kits; phone holders are bike mounts (car mounts: Car Mounts).
+  [nameKey('Seat Covers')]: 'Car Interior Accessories',
+  [nameKey('Car Organizers')]: 'Car Interior Accessories',
+  [nameKey('Car Chargers')]: 'Car Interior Accessories',
+  [nameKey('Car Tool Kits')]: 'Tool Kits',
+  [nameKey('Mobile Holders')]: 'Bike Accessories',
+  // Phone cables / power banks are electronics; caps are clothing accessories.
+  [nameKey('Cables')]: 'Mobile Accessories',
+  [nameKey('Power Banks')]: 'Power Banks',
+  [nameKey('Caps')]: 'Accessories',
+  // Wall / key hooks are door & cabinet hardware.
+  [nameKey('Hooks')]: 'Door & Cabinet Handles',
+  // Hair shampoo (pet shampoo comes as "Pet Shampoo").
+  [nameKey('Shampoo')]: 'Hair Care',
 };
 
 export function createAutoTargets({ root, basicTarget, env }) {
@@ -171,7 +186,14 @@ export function createAutoTargets({ root, basicTarget, env }) {
     return result;
   }
 
-  function compute(name) {
+  function compute(fullName) {
+    // v1.20 "Main › Sub › Name" (any leading parts) picks one of several places with that name.
+    const parts = String(fullName)
+      .split('›')
+      .map((x) => x.trim())
+      .filter(Boolean);
+    const name = parts.at(-1) ?? '';
+    const qualifiers = parts.slice(0, -1).map(nameKey);
     const key = nameKey(name);
     if (!key) return { error: 'empty Target Name' };
     // Where the taxonomy lists it: as a sub-to-sub item, or as a sub-category itself.
@@ -187,6 +209,11 @@ export function createAutoTargets({ root, basicTarget, env }) {
     let distinct = [
       ...new Map(found.map((p) => [`${p.main}|${p.sub}|${p.item ?? ''}`, p])).values(),
     ];
+    if (qualifiers.length) {
+      distinct = distinct.filter((p) =>
+        qualifiers.every((q) => q === nameKey(p.main) || q === nameKey(p.sub)),
+      );
+    }
     // A name the taxonomy lists twice can be settled by a chosen sub-category (PREFERRED_SUB).
     const preferred = PREFERRED_SUB[key];
     if (preferred && distinct.length > 1) {

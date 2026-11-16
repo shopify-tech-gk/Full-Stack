@@ -414,54 +414,142 @@ const AGRI = ['lawn-and-gardening', 'Agri and Gardening'];
 export const basicTarget = (...chain) => ({ chain, filters: BASIC_FILTERS, derive: deriveBasic });
 
 /**
- * v1.20 deliveries that mix in other kinds of product under one "Target Name" (the cleaning
- * delivery's "Wipers" are mostly car windscreen wipers, its "Brushes" include makeup / paint /
- * hair / tooth brushes). Each rule tests the lower-cased title + Amazon "Category Path": the first
- * match sends the product to another app category, or skips it (null) when the app has no home
- * for it - never into the wrong shelf.
- */
-const REROUTES = {
-  Wipers: [[/windscreen|windshield|wiper blade|wiper arm|wiper refill for car/, 'Wiper Blades']],
-  Brushes: [
-    [/make-?up brush|kabuki|foundation brush|eyeshadow brush|blush brush/, 'Makeup Brushes'],
-    [/paint ?brush|painting brush|artist|acrylic|water ?colou?r|gouache/, 'Paint Brushes'],
-    [/\bpet\b|\bdogs?\b|\bcats?\b|slicker|deshed/, 'Pet Brushes'],
-    [
-      /pastry|basting|oil brush|oil bottle|spatula|bbq|tooth ?brush|oral care|hair ?brush|hair styling|\bcomb\b|detangl|face|facial|skin care|massager|eyebrow|eyelash|beard|nail|bathing accessories|bath brush|loofah/,
-      null,
-    ],
-  ],
-  Scrubbers: [[/loofah|bath brush|bathing accessories|foot|heel|nail|body scrub|back scrub/, null]],
-};
-
-/** Off-topic items inside any cleaning delivery (toothpaste in Stain Removers...): skipped. */
-const CLEANING_OFF_TOPIC =
-  /oral care|toothpaste|hair colou?r|shampoo & conditioner|sanitary napkin|homeopathic|screwdriver|facial roller|skin care tools|moisturi[sz]er|deodorants & antiperspirants|pain relief|binding covers|badges & emblems/;
-
-/**
- * Where a product really goes: `{ name }` (a target name) or `{ skip: reason }`.
- * `isCleaning(name)` says whether a target name is a Cleaning Products category.
- */
-export function routeProduct(targetName, title, categoryPath, isCleaning) {
-  const text = `${String(title ?? '').toLowerCase()} | ${String(categoryPath ?? '').toLowerCase()}`;
-  for (const [re, to] of REROUTES[targetName] ?? []) {
-    if (!re.test(text)) continue;
-    if (to === null)
-      return { skip: `not a "${targetName}" item and the app has no category for it` };
-    return { name: to };
-  }
-  if (isCleaning(targetName) && CLEANING_OFF_TOPIC.test(String(categoryPath ?? '').toLowerCase())) {
-    return { skip: `off-topic for "${targetName}" (${categoryPath})` };
-  }
-  return { name: targetName };
-}
-
-/**
  * Products a delivery filed under the wrong "Target Name" (a pen in Garden Fountains, because of
  * the word "fountain"), keyed by Youmart_Product_ID: where they really belong. Re-importing the
  * delivery keeps them there.
  */
 export const TARGET_OVERRIDES = {
+  // v1.20 auto delivery: home / office / hobby items filed under vehicle targets (a rattan plant
+  // stand in Mobile Holders, a hoodie in Horn, raincoats in Bike Riding Gear...).
+  B005UZ7ZV5: 'Ride Ons',
+  B005W0FW61: 'Wall Clocks',
+  B00FWVTZZ2: 'Bathroom Mirrors',
+  B00IITEGIK: 'Drills',
+  B00OGZXG7J: 'Hand Tools',
+  B015G2C1DK: 'Surface Cleaners',
+  B019REZVM1: 'Pencil Cases',
+  B01IOYJBEM: 'Soldering Tools',
+  B01IW4EGJT: 'Raincoats',
+  B01MPJAIAN: 'Choppers',
+  B02DFUT99C: 'Hand Tools',
+  B02HYTYVO7: 'Soldering Tools',
+  B035KQNGG3: 'Festival Decorations',
+  B036Y0WI52: 'Surface Cleaners',
+  B03GQFUJDY: 'Sling Bags',
+  B03RB0BFST: 'Soldering Tools',
+  B03UU73KM6: 'Soldering Tools',
+  B05I5HESRT: 'Bathroom Mirrors',
+  B05SQC7WAS: 'Christmas Decorations',
+  B05T270P71: 'Raincoats',
+  B05YENKC90: 'Soldering Tools',
+  B05ZNNLEDH: 'Jackets',
+  B06I338DR0: 'Toilet Accessories',
+  B071LEJGY7: 'Soldering Tools',
+  B0787UKX0I: 'Door Stoppers',
+  B079EZV5ZY: 'Toilet Accessories',
+  B07CDF4ESI: 'Sling Bags',
+  B07KN18VP7: 'Shade Netting',
+  B07Q1SLX62: 'Cricket Accessories',
+  B07QX41SQK: 'Soldering Tools',
+  B080E7K1AB: 'Travel Accessories',
+  B08BWXVA7W: 'Wall Lights',
+  B08FKRU0QF: 'Soldering Tools',
+  B08PLT64TO: 'Organic Manure',
+  B08R23EMAT: 'Hand Tools',
+  B08VUB9H3X: 'Soldering Tools',
+  B08W35ELDK: 'Surge Protectors',
+  B08ZD6DTXV: 'Toys & Games › Musical Toys',
+  B093CJB2E3: 'Computer Accessories',
+  B093DI2UUC: 'Soldering Tools',
+  B0940B2IOH: 'Hand Tools',
+  B09A1CJJ8U: 'Tools › Tool Boxes',
+  B09FADC3ZQ: 'Mats',
+  B0A1KZ9KKP: 'Hand Tools',
+  B0A8RNYBBX: 'Speakers',
+  B0ABKG10RV: 'Tool Organizers',
+  B0ACGICILJ: 'Hand Tools',
+  B0AYR8ITVO: 'Soldering Tools',
+  B0B21I75GU: 'Soldering Tools',
+  B0B2KSL0JS: 'Hand Tools',
+  B0B70FW2BO: 'Hand Tools',
+  B0B7ZMOJUM: 'Chargers',
+  B0BIIHNOMD: 'Hand Tools',
+  B0CJ24Y2V4: 'Fish Food',
+  B0CO6IQLVL: 'Hand Tools',
+  B0CP42P3Y6: 'Mufflers',
+  B0D9NIFMYZ: 'Cooking Appliances',
+  B0DKTTQWVD: 'Hand Tools',
+  B0E42145OG: 'Cricket Accessories',
+  B0EFE341OL: 'Baby Diapering & Wipes',
+  B0F759SO31: 'Raincoats',
+  B0FBTBJYU4: 'Cricket Accessories',
+  B0FFCQTF2O: 'Toilet Accessories',
+  B0G5IE8YQ3: 'Wipers',
+  B0GHES4NXK: 'T-Shirts',
+  B0GPF4V3H5: 'Garden Decor',
+  B0GQ6JQ9IV: 'Soldering Tools',
+  B0GXLAZS9X: 'Cushions',
+  B0GZ1XJ2V0: 'Potty Training',
+  B0H0RYHQNJ: 'Street Lights',
+  B0H0U7B65Z: 'Outdoor Lights',
+  B0H8AA9GY0: 'Shade Netting',
+  B0HC30VBJU: 'Mats',
+  B0HL9JLCNB: 'Travel Accessories',
+  B0HNL7PK70: 'Mats',
+  B0IKAS4GMP: 'Surge Protectors',
+  B0ILM7MCNW: 'Street Lights',
+  B0IY9BRRIJ: 'Raincoats',
+  B0JTJQTP6C: 'Travel Accessories',
+  B0K6EZI3TC: 'Power Tools',
+  B0KOKCL2UL: 'Surge Protectors',
+  B0LCD44FSY: 'Patches',
+  B0LKQI6NZM: 'Baby Diapering & Wipes',
+  B0LVQF4V6F: 'Soldering Tools',
+  B0MSKK3R1K: 'Christmas Decorations',
+  B0NESKYRM1: 'Kitchen Tools',
+  B0NJ61KOKO: 'Kids Art & Craft',
+  B0NL0OJW8M: 'Smart Sensors',
+  B0NS00HUZA: 'Cricket Accessories',
+  B0O1WD6I0D: 'Hand Tools',
+  B0OE6BS4KV: 'Office Supplies',
+  B0OQ2V7IK6: 'Hand Tools',
+  B0PA55HKN6: 'Smart Switches',
+  B0PTVTW37W: 'Drills',
+  B0QI6OJG69: 'Hand Tools',
+  B0QISLL81V: 'Soldering Tools',
+  B0R817LVX0: 'Car Polish',
+  B0RMW08DIB: 'Hand Tools',
+  B0RSC566JZ: 'Chair Covers',
+  B0SDT15FQZ: 'Outdoor Lights',
+  B0SJ953YGJ: 'Outdoor Furniture',
+  B0SMXK7WBW: 'Toilet Accessories',
+  B0SQ30U0TL: 'Hand Tools',
+  B0SS2872KW: 'Raincoats',
+  B0SXL2FLWT: 'Computer Accessories',
+  B0TA144OU9: 'Organic Fertilizers',
+  B0TIGQDBDY: 'Office Supplies',
+  B0U0ND1AX1: 'Patches',
+  B0U8USEYPA: 'Raincoats',
+  B0UXH8XLU4: 'Toilet Accessories',
+  B0UZDNLQ0A: 'Office Supplies',
+  B0V5SFK3RT: 'Agri and Gardening › Plant Stands',
+  B0W6LJ7W6B: 'Cushions',
+  B0WJ4JF37Y: 'Hand Tools',
+  B0WOKC7Q1C: 'Raincoats',
+  B0WXRNHXB3: 'Soldering Tools',
+  B0X65HHRCT: 'Arts and Crafts › Art Supplies',
+  B0XBZEEYEH: 'Chargers',
+  B0XGPU4ADH: 'Soldering Tools',
+  B0XOS1GMNG: 'Sweatshirts',
+  B0Y1O3NXLV: 'Chargers',
+  B0Y3E4Y8R9: 'Hand Tools',
+  B0Y8U6W3Q6: 'Raincoats',
+  B0YB77AGOS: 'Soldering Tools',
+  B0YMGH0R7U: 'CCTV',
+  B0Z0BZVEDY: 'Hand Tools',
+  B0ZB0CBG3G: 'Skating',
+  B0ZSHK57II: 'Festival Decorations',
+  B0ZZJA7DF0: 'Sprayers',
   // Insecticides delivery: household pest control (naphthalene, cockroach gel / chalk / traps,
   // mosquito refills), vermicompost and a dog tick spray filed with crop insecticides. Lawn
   // Edgers delivery: shears, scissors and a sickle filed with edgers.
@@ -1607,7 +1695,37 @@ function deriveInsecticide(product, text) {
   };
 }
 
+const BABY = ['baby-care', 'Baby Care'];
+const BABY_FEEDING = ['baby-feeding-bottles', 'Baby Feeding Bottles'];
+const BABY_SAFETY = ['baby-safety', 'Baby Safety'];
+const BABY_BATH = ['baby-bath-and-skin-care', 'Baby Bath & Skin Care'];
+
 export const TARGETS = {
+  // v1.20 Baby Care menu pages that are the same shelf as another one: the products are listed
+  // on both (Bottle Sterilizers + Bottle Warmers on Sterilizers & Warmers, Baby Safety Gates on
+  // Safety Gates, Baby Oil on Baby Massage Oils).
+  'Sterilizers & Warmers': basicTarget(BABY, BABY_FEEDING, [
+    'sterilizers-and-warmers',
+    'Sterilizers & Warmers',
+  ]),
+  'Safety Gates': basicTarget(BABY, BABY_SAFETY, ['safety-gates', 'Safety Gates']),
+  'Baby Massage Oils': basicTarget(BABY, BABY_BATH, ['baby-massage-oils', 'Baby Massage Oils']),
+  'Bottle Sterilizers': {
+    ...basicTarget(BABY, BABY_FEEDING, ['bottle-sterilizers', 'Bottle Sterilizers']),
+    also: ['Sterilizers & Warmers'],
+  },
+  'Bottle Warmers': {
+    ...basicTarget(BABY, BABY_FEEDING, ['bottle-warmers', 'Bottle Warmers']),
+    also: ['Sterilizers & Warmers'],
+  },
+  'Baby Safety Gates': {
+    ...basicTarget(BABY, BABY_SAFETY, ['baby-safety-gates', 'Baby Safety Gates']),
+    also: ['Safety Gates'],
+  },
+  'Baby Oil': {
+    ...basicTarget(BABY, BABY_BATH, ['baby-oil', 'Baby Oil']),
+    also: ['Baby Massage Oils'],
+  },
   Compost: {
     chain: [
       ['lawn-and-gardening', 'Agri and Gardening'],

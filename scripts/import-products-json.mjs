@@ -18,12 +18,12 @@ import { fileURLToPath } from 'node:url';
 import {
   TARGETS,
   TARGET_OVERRIDES,
-  routeProduct,
   basicTarget,
   cleanColor,
   sizeRank,
 } from './data/import-targets.mjs';
 import { createAutoTargets } from './data/auto-target.mjs';
+import { routeProduct } from './data/reroutes.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 process.loadEnvFile(path.join(root, '.env'));
@@ -207,9 +207,11 @@ if (!Array.isArray(items)) throw new Error('Expected a JSON array of products');
 const problems = [];
 // v1.19 Target Names not in import-targets.mjs are found in the app's category tree.
 const auto = createAutoTargets({ root, basicTarget, env });
-/** A target name that files into Cleaning Products (its own off-topic rules apply). */
-const isCleaningTarget = (name) =>
-  (TARGETS[name] ?? auto.resolve(name).target)?.chain?.[0]?.[0] === 'cleaning-products';
+/** TARGETS by lower-cased name: deliveries spell Target Names in any case ("bottle warmers"). */
+const targetsByLower = new Map(Object.entries(TARGETS).map(([k, v]) => [k.toLowerCase(), v]));
+const targetFor = (name) => TARGETS[name] ?? targetsByLower.get(String(name).toLowerCase());
+/** Slug of the main category a target name files under (for the delivery-specific rules). */
+const rootOf = (name) => (targetFor(name) ?? auto.resolve(name).target)?.chain?.[0]?.[0];
 const autoMapped = new Map();
 const products = [];
 const categoriesNeeded = new Map();
@@ -221,18 +223,13 @@ for (const [index, p] of items.entries()) {
   // v1.20 mixed deliveries: rerouted / skipped by title + Amazon category path.
   const routed = override
     ? { name: override }
-    : routeProduct(
-        String(p['Target Name'] ?? '').trim(),
-        p.Title,
-        p['Category Path'],
-        isCleaningTarget,
-      );
+    : routeProduct(String(p['Target Name'] ?? '').trim(), p.Title, p['Category Path'], rootOf);
   if (routed.skip) {
     problems.push(`${where}: ${routed.skip} - skipped`);
     continue;
   }
   const targetName = routed.name;
-  let target = TARGETS[targetName];
+  let target = targetFor(targetName);
   if (!target) {
     const found = auto.resolve(targetName);
     if (found.error) {
