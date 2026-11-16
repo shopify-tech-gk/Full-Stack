@@ -103,6 +103,18 @@ function readStorefront(text) {
   return roots;
 }
 
+// Names listed under more than one sub-category, and the one their products go to.
+// "Weed Control" is under Lawn Care and Pesticides; its products are mostly weed mats, weeders
+// and mulch, and Pesticides already has Herbicides, so it goes to Lawn Care.
+const PREFERRED_SUB = {
+  [nameKey('Weed Control')]: 'Lawn Care',
+  // Cleaning deliveries: household brushes / scrubbers (pet brushes come as "Pet Brushes").
+  [nameKey('Brushes')]: 'Home Cleaning Sets',
+  [nameKey('Scrubbers')]: 'Dishwashing Liquids',
+  // Paint brushes are art supplies; Drawing Materials lists them too.
+  [nameKey('Paint Brushes')]: 'Art Supplies',
+};
+
 export function createAutoTargets({ root, basicTarget, env }) {
   const csvPath = path.join(root, 'packages/shared-client/data/category-taxonomy.csv');
   const tsPath = path.join(root, 'packages/shared-client/src/categories.ts');
@@ -172,9 +184,15 @@ export function createAutoTargets({ root, basicTarget, env }) {
     const found = [...places.values()].map((p) =>
       p.item && nameKey(p.item) === nameKey(p.sub) ? { ...p, item: null } : p,
     );
-    const distinct = [
+    let distinct = [
       ...new Map(found.map((p) => [`${p.main}|${p.sub}|${p.item ?? ''}`, p])).values(),
     ];
+    // A name the taxonomy lists twice can be settled by a chosen sub-category (PREFERRED_SUB).
+    const preferred = PREFERRED_SUB[key];
+    if (preferred && distinct.length > 1) {
+      const pick = distinct.filter((p) => nameKey(p.sub) === nameKey(preferred));
+      if (pick.length) distinct = pick;
+    }
     if (distinct.length === 0) return { error: `"${name}" is not in the app's category list` };
     const mains = [...new Set(distinct.map((p) => `${p.main} › ${p.sub}`))];
     if (mains.length > 1) {

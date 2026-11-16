@@ -9,7 +9,7 @@
 //   - main + gallery images, 50 units of stock per SKU, then one search reindex.
 // Idempotent: products are matched by their Youmart_Product_ID (in the slug) and SKUs by sku_code,
 // so re-running updates them instead of duplicating.
-// Usage: node scripts/import-products-json.mjs <file.json> [--dry-run]
+// Usage: node scripts/import-products-json.mjs <file.json> [--dry-run] [--no-reindex]
 import { createSign } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import {
   TARGETS,
   TARGET_OVERRIDES,
+  routeProduct,
   basicTarget,
   cleanColor,
   sizeRank,
@@ -206,6 +207,9 @@ if (!Array.isArray(items)) throw new Error('Expected a JSON array of products');
 const problems = [];
 // v1.19 Target Names not in import-targets.mjs are found in the app's category tree.
 const auto = createAutoTargets({ root, basicTarget, env });
+/** A target name that files into Cleaning Products (its own off-topic rules apply). */
+const isCleaningTarget = (name) =>
+  (TARGETS[name] ?? auto.resolve(name).target)?.chain?.[0]?.[0] === 'cleaning-products';
 const autoMapped = new Map();
 const products = [];
 const categoriesNeeded = new Map();
@@ -213,8 +217,21 @@ const seenSku = new Set();
 
 for (const [index, p] of items.entries()) {
   const where = `#${index + 1} (${p.Youmart_Product_ID ?? 'no id'})`;
-  const targetName =
-    TARGET_OVERRIDES[p.Youmart_Product_ID] ?? String(p['Target Name'] ?? '').trim();
+  const override = TARGET_OVERRIDES[p.Youmart_Product_ID];
+  // v1.20 mixed deliveries: rerouted / skipped by title + Amazon category path.
+  const routed = override
+    ? { name: override }
+    : routeProduct(
+        String(p['Target Name'] ?? '').trim(),
+        p.Title,
+        p['Category Path'],
+        isCleaningTarget,
+      );
+  if (routed.skip) {
+    problems.push(`${where}: ${routed.skip} - skipped`);
+    continue;
+  }
+  const targetName = routed.name;
   let target = TARGETS[targetName];
   if (!target) {
     const found = auto.resolve(targetName);
@@ -449,6 +466,15 @@ for (const [index, p] of items.entries()) {
   for (const [k, v] of Object.entries(attributes)) {
     if (v == null || v === '' || (Array.isArray(v) && v.length === 0)) delete attributes[k];
   }
+  // v1.20 `alsoMatch(title, attributes)`: per-product extra targets (a trowel delivered as a Garden
+  // Hand Tool is also on the Trowels shelf).
+  for (const name of target.alsoMatch?.(title, attributes) ?? []) {
+    const other = TARGETS[name];
+    if (!other) throw new Error(`import-targets: "alsoMatch" names unknown target "${name}"`);
+    categoriesNeeded.set(other.chain.at(-1)[0], other);
+    const leaf = other.chain.at(-1)[0];
+    if (!also.includes(leaf)) also.push(leaf);
+  }
 
   const gallery =
     clean(p['Gallery Image URLs'])
@@ -601,20 +627,22 @@ const unstocked = rows
 
 // --- Admin token (dev: minted with the local signing key, like dev-seed-catalog) ------------
 const b64 = (v) => Buffer.from(JSON.stringify(v)).toString('base64url');
-const now = Math.floor(Date.now() / 1000);
-const unsigned = `${b64({ alg: 'RS256', typ: 'JWT' })}.${b64({
-  typ: 'admin',
-  role: 'SUPER_ADMIN',
-  sub: '00000000-0000-4000-8000-000000000000',
-  iss: env.JWT_ISSUER || 'youmart-auth',
-  aud: env.JWT_AUDIENCE || 'youmart',
-  iat: now,
-  exp: now + 600,
-})}`;
-const signature = createSign('RSA-SHA256')
-  .update(unsigned)
-  .sign(Buffer.from(env.JWT_PRIVATE_KEY, 'base64').toString('utf8'), 'base64url');
-const authorization = `Bearer ${unsigned}.${signature}`;
+const signingKey = Buffer.from(env.JWT_PRIVATE_KEY, 'base64').toString('utf8');
+// Minted per call: a big delivery takes longer to stock than one short-lived token lasts.
+function authorization() {
+  const now = Math.floor(Date.now() / 1000);
+  const unsigned = `${b64({ alg: 'RS256', typ: 'JWT' })}.${b64({
+    typ: 'admin',
+    role: 'SUPER_ADMIN',
+    sub: '00000000-0000-4000-8000-000000000000',
+    iss: env.JWT_ISSUER || 'youmart-auth',
+    aud: env.JWT_AUDIENCE || 'youmart',
+    iat: now,
+    exp: now + 600,
+  })}`;
+  const signature = createSign('RSA-SHA256').update(unsigned).sign(signingKey, 'base64url');
+  return `Bearer ${unsigned}.${signature}`;
+}
 const gateway = env.GATEWAY_URL || 'http://localhost:4000';
 
 // The gateway rate-limits every caller (RATE_LIMIT_MAX per minute, 300 by default): calls are paced
@@ -637,7 +665,7 @@ async function gatewayPost(url, init) {
 let stocked = 0;
 for (const { id, code } of unstocked) {
   const res = await gatewayPost(`${gateway}/api/inventory/${id}/set`, {
-    headers: { authorization, 'content-type': 'application/json' },
+    headers: { authorization: authorization(), 'content-type': 'application/json' },
     body: JSON.stringify({ available: STOCK_PER_SKU }),
   });
   if (res.ok) stocked++;
@@ -648,13 +676,17 @@ console.log(`stock set for ${stocked} new SKU(s)`);
 // --- Search index rebuilt once -------------------------------------------------------------------
 // A big catalog can take longer than fetch's 5-minute wait; the rebuild carries on in
 // search-service and swaps in when done, so a timeout here is not a failure.
-try {
-  const re = await gatewayPost(`${gateway}/api/search/admin/reindex`, {
-    headers: { authorization },
-  });
-  console.log(`search reindex: HTTP ${re.status} ${(await re.text()).slice(0, 200)}`);
-} catch (err) {
-  console.log(
-    `search reindex: still running on the server (${err?.cause?.code ?? err?.message}) - it finishes on its own in a few minutes`,
-  );
-}
+// --no-reindex: skip it (e.g. several deliveries in a row, rebuilt once at the end).
+if (process.argv.includes('--no-reindex')) {
+  console.log('search reindex: skipped (--no-reindex)');
+} else
+  try {
+    const re = await gatewayPost(`${gateway}/api/search/admin/reindex`, {
+      headers: { authorization: authorization() },
+    });
+    console.log(`search reindex: HTTP ${re.status} ${(await re.text()).slice(0, 200)}`);
+  } catch (err) {
+    console.log(
+      `search reindex: still running on the server (${err?.cause?.code ?? err?.message}) - it finishes on its own in a few minutes`,
+    );
+  }

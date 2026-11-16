@@ -74,12 +74,12 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'lawn-and-gardening',
     'Agri and Gardening',
-    'fertilizer=Fertilizer;garden-decor=Garden Decor;agri-gardening-tools=Gardening Tools;grow-bags=Grow Bags;irrigation-equipment=Irrigation Equipment;nets-and-fence=Nets and Fence;pesticides=Pesticides;plant-saplings=Plant Saplings;pots-and-planters=Pots & Planters;seeds=Seeds',
+    'fertilizer=Fertilizer;garden-decor=Garden Decor;agri-gardening-tools=Gardening Tools;grow-bags=Grow Bags;irrigation-equipment=Irrigation Equipment;nets-and-fence=Nets and Fence;pesticides=Pesticides;plant-saplings=Plant Saplings;pots-and-planters=Pots & Planters;seeds=Seeds;lawn-care=Lawn Care;greenhouse-accessories=Greenhouse Accessories;garden-soil=Garden Soil',
   ],
   [
     'arts-and-crafts',
     'Arts and Crafts',
-    'art-sets=Art Sets;beeds=Beads;boards=Boards;card-stocks=Card Stocks;clay-arts-and-crafts=Clay;coloured-paper=Coloured Paper;craft-kit=Craft Kits;drawing-materials=Drawing Materials;magnets=Magnets;painting-craft-kits=Painting Craft Kits;painting-materials=Painting Materials;paper=Paper;paper-craft=Paper Craft;pim-pom=Pom Pom;stones=Stones;thread=Thread;writing-supplies=Writing Supplies;sewing-tools=Sewing Tools',
+    'art-sets=Art Sets;beeds=Beads;boards=Boards;card-stocks=Card Stocks;clay-arts-and-crafts=Clay;coloured-paper=Coloured Paper;craft-kit=Craft Kits;drawing-materials=Drawing Materials;magnets=Magnets;painting-craft-kits=Painting Craft Kits;painting-materials=Painting Materials;paper=Paper;paper-craft=Paper Craft;pim-pom=Pom Pom;stones=Stones;thread=Thread;writing-supplies=Writing Supplies;sewing-tools=Sewing Tools;art-supplies=Art Supplies',
   ],
   [
     'artifical-flowers-and-plants',
@@ -89,7 +89,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'auto-accessories',
     'Auto Accessories',
-    'automative-air-fresheners=Automotive Air Fresheners;car-interior=Car Interior;cloth-and-towels=Cloth and Towels;consoles-organizers=Consoles & Organizers;mobile-phone-chargers=Mobile Phone Chargers;riding-gloves=Riding Gloves',
+    'automative-air-fresheners=Automotive Air Fresheners;car-interior=Car Interior;cloth-and-towels=Cloth and Towels;consoles-organizers=Consoles & Organizers;mobile-phone-chargers=Mobile Phone Chargers;riding-gloves=Riding Gloves;car-exterior-accessories=Car Exterior Accessories',
   ],
   [
     'baby-care',
@@ -104,12 +104,12 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'cleaning-products',
     'Cleaning Products',
-    'brooms=Brooms;brush=Brush;detergents-cleaners=Detergents & Cleaners;dishwash=Dishwash;duster=Duster;dust-pan=Dust Pan;mops=Mops;scrubbers-sponges=Scrubbers & Sponges;rope=Rope;air-fresheners=Air Fresheners;cleaning-gloves=Cleaning Gloves;floor-cleaners=Floor Cleaners',
+    'brooms=Brooms;brush=Brush;detergents-cleaners=Detergents & Cleaners;dishwash=Dishwash;duster=Duster;dust-pan=Dust Pan;mops=Mops;scrubbers-sponges=Scrubbers & Sponges;rope=Rope;air-fresheners=Air Fresheners;cleaning-gloves=Cleaning Gloves;floor-cleaners=Floor Cleaners;dishwashing-liquids=Dishwashing Liquids;laundry-detergents=Laundry Detergents;home-cleaning-sets=Home Cleaning Sets;garbage-bags-cleaning-products=Garbage Bags',
   ],
   [
     'cosmetics',
     'Cosmetics',
-    'both-and-body=Bath and Body;blush=Blush;body-spray=Body Spray;brushes=Brushes;compact=Compact;combs=Combs;eyeliner=Eyeliner;eye-shadow=Eye Shadow;face-pack=Face Pack;face-peel-of-mask=Face Peel of Mask;face-scrub=Face Scrub;face-wash=Face Wash;foundation=Foundation;hair=Hair;kajal=Kajal;lip-care=Lip Care;lip-gloss=Lip Gloss;lipstick=Lipstick;liquid-lipstick=Liquid Lipstick;mascara=Mascara;moisturizer=Moisturizer;nail-polish=Nail Polish;perfumes=Perfumes;powder=Powder;primer=Primer;sunscreen=Sunscreen',
+    'both-and-body=Bath and Body;blush=Blush;body-spray=Body Spray;brushes=Brushes;compact=Compact;combs=Combs;eyeliner=Eyeliner;eye-shadow=Eye Shadow;face-pack=Face Pack;face-peel-of-mask=Face Peel of Mask;face-scrub=Face Scrub;face-wash=Face Wash;foundation=Foundation;hair=Hair;kajal=Kajal;lip-care=Lip Care;lip-gloss=Lip Gloss;lipstick=Lipstick;liquid-lipstick=Liquid Lipstick;mascara=Mascara;moisturizer=Moisturizer;nail-polish=Nail Polish;perfumes=Perfumes;powder=Powder;primer=Primer;sunscreen=Sunscreen;makeup=Makeup',
   ],
   [
     'crockery',
@@ -175,7 +175,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
     'Party Decorations',
     'anniversary=Anniversary Decoration;baby-shower=Baby Shower Decoration;birthday-banners=Banners;birthday-caps=Caps;snow-spary=Snow Spray;balloon-decoration-accessories=Balloon Decoration Accessories;baloon-pump=Balloon Pump;birthday-sash=Sash;birthday-photo-banner=Photo Banner;party-popper=Party Popper;birthday-decoration-set=Decoration Set;balloons=Balloons;birthday=Birthday;butterfly-wings=Butterfly Wings;bride-to-be=Bride to Be Decoration;cake-toper=Cake Toper;candles=Candles;chinees-doom=Chinese Dome;chinese-visiri=Chinese Visiri;crown=Crown;eye-mask=Eye Mask;face-beard=Face Beard;face-mask=Face Mask;fancy-umbrella=Fancy Umbrella;foil-fringe-curtain=Foil Fringe Curtain;foil-balloons=Foil Balloons;hand-gloves=Hand Gloves;maalai=Maalai;naming-ceremony=Naming Ceremony Decoration;net-cloth=Net Cloth;paper-cutting=Paper Cutting;party-caps=Party Caps;photo-prop=Photo Prop;reception-maalai=Reception Maalai;ribbon=Ribbon;screen=Screen;sky-lantern=Sky Lantern;strings=Strings;thermocol-design=Thermocol Design;thoranam=Thoranam;wigs=Wigs;zoomer=Zoomer',
   ],
-  ['pet-products', 'Pet Supplies', 'birds=Birds;dogs=Dogs;fish=Fish;cat=Cat'],
+  ['pet-products', 'Pet Supplies', 'birds=Birds;dogs=Dogs;fish=Fish;cat=Cat;pet-grooming=Pet Grooming'],
   [
     'plastic-household',
     'Plastic Household',
@@ -222,7 +222,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
 const THIRD_LEVEL: Readonly<Record<string, string>> = {
   // v1.17 catalog import: Compost (products imported from the data delivery).
   'lawn-and-gardening/fertilizer':
-    'compost=Compost;organic-manure=Organic Manure;organic-fertilizers=Organic Fertilizers;vermicompost=Vermicompost;npk-fertilizers=NPK Fertilizers;liquid-fertilizers=Liquid Fertilizers;chemical-fertilizers=Chemical Fertilizers;potting-mix=Potting Mix;vermiculite=Vermiculite;soil-amendments=Soil Amendments;soil-fertilizers=Soil Fertilizers;perlite=Perlite;plant-protection=Plant Protection',
+    'compost=Compost;organic-manure=Organic Manure;organic-fertilizers=Organic Fertilizers;vermicompost=Vermicompost;npk-fertilizers=NPK Fertilizers;liquid-fertilizers=Liquid Fertilizers;chemical-fertilizers=Chemical Fertilizers;soil-amendments=Soil Amendments;plant-protection=Plant Protection',
   'lawn-and-gardening/garden-decor':
     'garden-statues=Garden Statues;bird-baths=Bird Baths;garden-fountains=Garden Fountains;garden-ornaments=Garden Ornaments;garden-lights=Garden Lights',
   'bath-fittings/taps-bath-fittings':
@@ -268,22 +268,41 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
     'cat-food=Cat Food;cat-health-supplies=Cat Health Supplies;cat-shampoo=Cat Shampoo',
   'stationary/pen': 'hero-pen=Hero Pen;fountain-pens=Fountain Pens',
   'lawn-and-gardening/pots-and-planters':
-    'hanging-planters=Hanging Planters;ceramic-pots=Ceramic Pots',
+    'hanging-planters=Hanging Planters;ceramic-pots=Ceramic Pots;plastic-pots=Plastic Pots;self-watering-planters=Self-Watering Planters',
   'home-furnishing/mosquito-nets':
     'bed-mosquito-nets=Bed Mosquito Nets;window-door-mosquito-nets=Window & Door Mosquito Nets',
   'lawn-and-gardening/nets-and-fence':
     'bird-netting=Bird Netting;insect-netting=Insect Netting;shade-netting=Shade Netting;plant-support-netting=Plant Support Netting;garden-fencing=Garden Fencing',
-  'lawn-and-gardening/irrigation-equipment': 'sprinklers=Sprinklers;drip-irrigation=Drip Irrigation;drip-irrigation-kits=Drip Irrigation Kits',
-  'lawn-and-gardening/pesticides': 'insecticides=Insecticides',
+  'lawn-and-gardening/irrigation-equipment':
+    'sprinklers=Sprinklers;drip-irrigation=Drip Irrigation;drip-irrigation-kits=Drip Irrigation Kits;irrigation-pipes=Irrigation Pipes;hose-connectors=Hose Connectors;micro-irrigation=Micro Irrigation',
+  'lawn-and-gardening/pesticides':
+    'insecticides=Insecticides;organic-pesticides=Organic Pesticides;herbicides=Herbicides;fungicides=Fungicides',
   'lawn-and-gardening/agri-gardening-tools':
-    'sprayers=Sprayers;pruning-tools=Pruning Tools;garden-hand-tools=Garden Hand Tools;gardening-gloves=Gardening Gloves;garden-hoses=Garden Hoses;lawn-edgers=Lawn Edgers & Trimmers',
-  'lawn-and-gardening/plant-saplings': 'indoor-plants=Indoor Plants;flower-plants=Flower Plants;fruit-plants=Fruit Plants',
+    'sprayers=Sprayers;pruning-tools=Pruning Tools;garden-hand-tools=Garden Hand Tools;gardening-gloves=Gardening Gloves;garden-hoses=Garden Hoses;lawn-edgers=Lawn Edgers & Trimmers;trowels=Trowels;cultivators=Cultivators;rakes=Rakes;garden-forks=Garden Forks;shovels=Shovels;pruners-secateurs=Pruners/Secateurs',
+  'lawn-and-gardening/plant-saplings':
+    'indoor-plants=Indoor Plants;flower-plants=Flower Plants;fruit-plants=Fruit Plants;vegetable-plants=Vegetable Plants',
   'stationary/eraser':
     'fancy-eraser=Fancy Eraser;ink-eraser=Ink Eraser;electric-and-pen-eraser=Electric and Pen Eraser',
   'stationary/taps':
     'cellophane-tape-celo-tape=Cellophane Tape (Celo Tape);double-sided-tape=Double-Sided Tape;nano-tape=Nano Tape',
-  'cleaning-products/floor-cleaners': 'all-purpose-cleaners=All Purpose Cleaners',
-  'lawn-and-gardening/seeds': 'flower-seeds=Flower Seeds',
+  'cleaning-products/floor-cleaners': 'all-purpose-cleaners=All Purpose Cleaners;marble-cleaners=Marble Cleaners;kitchen-cleaners=Kitchen Cleaners;tile-cleaners=Tile Cleaners;glass-cleaners=Glass Cleaners;floor-disinfectants=Floor Disinfectants;toilet-cleaners=Toilet Cleaners;disinfectants=Disinfectants;surface-cleaners=Surface Cleaners;drain-cleaners=Drain Cleaners',
+  'lawn-and-gardening/seeds':
+    'flower-seeds=Flower Seeds;herb-seeds=Herb Seeds;vegetable-seeds=Vegetable Seeds;fruit-seeds=Fruit Seeds',
+  'lawn-and-gardening/lawn-care':
+    'grass-seeds=Grass Seeds;lawn-fertilizers=Lawn Fertilizers;weed-control=Weed Control;lawn-mowers=Lawn Mowers',
+  'lawn-and-gardening/greenhouse-accessories':
+    'greenhouse-covers=Greenhouse Covers;greenhouse-frames=Greenhouse Frames',
+  'lawn-and-gardening/garden-soil':
+    'potting-mix=Potting Mix;cocopeat=Cocopeat;vermiculite=Vermiculite;perlite=Perlite;soil-fertilizers=Soil Fertilizers',
+  'cleaning-products/dishwashing-liquids': 'dishwashing-bars=Dishwashing Bars;scrubbers=Scrubbers;dishwasher-tablets=Dishwasher Tablets',
+  'cleaning-products/laundry-detergents': 'fabric-softeners=Fabric Softeners;stain-removers=Stain Removers;washing-powders=Washing Powders;liquid-detergents=Liquid Detergents',
+  'cleaning-products/home-cleaning-sets': 'scrub-pads=Scrub Pads;cleaning-cloths=Cleaning Cloths;mop-refills=Mop Refills;wipers=Wipers;brushes-home-cleaning-sets=Brushes;cleaning-brush-sets=Cleaning Brush Sets;dustpans=Dustpans',
+  'cleaning-products/garbage-bags-cleaning-products': 'large-garbage-bags=Large Garbage Bags;drawstring-bags=Drawstring Bags;biodegradable-bags=Biodegradable Bags;small-garbage-bags=Small Garbage Bags',
+  'auto-accessories/car-exterior-accessories': 'wiper-blades=Wiper Blades',
+  'cleaning-products/air-fresheners': 'electric-diffusers=Electric Diffusers;room-sprays=Room Sprays;gel-fresheners=Gel Fresheners;car-fresheners=Car Fresheners',
+  'arts-and-crafts/art-supplies': 'paint-brushes=Paint Brushes',
+  'cosmetics/makeup': 'makeup-brushes=Makeup Brushes',
+  'pet-products/pet-grooming': 'pet-brushes=Pet Brushes',
 };
 
 /** The homepage category strip, in the exact order and naming of youmartshop.com. */

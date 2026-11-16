@@ -414,6 +414,49 @@ const AGRI = ['lawn-and-gardening', 'Agri and Gardening'];
 export const basicTarget = (...chain) => ({ chain, filters: BASIC_FILTERS, derive: deriveBasic });
 
 /**
+ * v1.20 deliveries that mix in other kinds of product under one "Target Name" (the cleaning
+ * delivery's "Wipers" are mostly car windscreen wipers, its "Brushes" include makeup / paint /
+ * hair / tooth brushes). Each rule tests the lower-cased title + Amazon "Category Path": the first
+ * match sends the product to another app category, or skips it (null) when the app has no home
+ * for it - never into the wrong shelf.
+ */
+const REROUTES = {
+  Wipers: [[/windscreen|windshield|wiper blade|wiper arm|wiper refill for car/, 'Wiper Blades']],
+  Brushes: [
+    [/make-?up brush|kabuki|foundation brush|eyeshadow brush|blush brush/, 'Makeup Brushes'],
+    [/paint ?brush|painting brush|artist|acrylic|water ?colou?r|gouache/, 'Paint Brushes'],
+    [/\bpet\b|\bdogs?\b|\bcats?\b|slicker|deshed/, 'Pet Brushes'],
+    [
+      /pastry|basting|oil brush|oil bottle|spatula|bbq|tooth ?brush|oral care|hair ?brush|hair styling|\bcomb\b|detangl|face|facial|skin care|massager|eyebrow|eyelash|beard|nail|bathing accessories|bath brush|loofah/,
+      null,
+    ],
+  ],
+  Scrubbers: [[/loofah|bath brush|bathing accessories|foot|heel|nail|body scrub|back scrub/, null]],
+};
+
+/** Off-topic items inside any cleaning delivery (toothpaste in Stain Removers...): skipped. */
+const CLEANING_OFF_TOPIC =
+  /oral care|toothpaste|hair colou?r|shampoo & conditioner|sanitary napkin|homeopathic|screwdriver|facial roller|skin care tools|moisturi[sz]er|deodorants & antiperspirants|pain relief|binding covers|badges & emblems/;
+
+/**
+ * Where a product really goes: `{ name }` (a target name) or `{ skip: reason }`.
+ * `isCleaning(name)` says whether a target name is a Cleaning Products category.
+ */
+export function routeProduct(targetName, title, categoryPath, isCleaning) {
+  const text = `${String(title ?? '').toLowerCase()} | ${String(categoryPath ?? '').toLowerCase()}`;
+  for (const [re, to] of REROUTES[targetName] ?? []) {
+    if (!re.test(text)) continue;
+    if (to === null)
+      return { skip: `not a "${targetName}" item and the app has no category for it` };
+    return { name: to };
+  }
+  if (isCleaning(targetName) && CLEANING_OFF_TOPIC.test(String(categoryPath ?? '').toLowerCase())) {
+    return { skip: `off-topic for "${targetName}" (${categoryPath})` };
+  }
+  return { name: targetName };
+}
+
+/**
  * Products a delivery filed under the wrong "Target Name" (a pen in Garden Fountains, because of
  * the word "fountain"), keyed by Youmart_Product_ID: where they really belong. Re-importing the
  * delivery keeps them there.
@@ -1501,6 +1544,33 @@ const gardenToolTarget = (name, slug) => ({
   derive: deriveGardenTool(name),
 });
 
+/**
+ * v1.20 the app menu's single-tool shelves under Gardening Tools (Trowels, Rakes...). Deliveries
+ * come as "Garden Hand Tools" / "Pruning Tools"; a product whose title names one of these tools is
+ * ALSO listed on that shelf. Multi-piece sets stay on Garden Hand Tools only.
+ */
+export const TOOL_SHELVES = [
+  ['Trowels', 'trowels', /trowel/],
+  ['Cultivators', 'cultivators', /cultivator|tiller/],
+  ['Rakes', 'rakes', /\brakes?\b/],
+  ['Garden Forks', 'garden-forks', /\bforks?\b/],
+  ['Shovels', 'shovels', /shovel|spade/],
+  ['Pruners/Secateurs', 'pruners-secateurs', /secateur|\bpruners?\b/],
+];
+
+/** The tool shelves a product belongs on too (names of TARGETS). */
+export function toolShelves(title, attributes) {
+  if (attributes.product_type === 'Tool Sets') return [];
+  const t = String(title).toLowerCase();
+  // Gloves "for pruning", sickles / coconut pluckers "with branch cutter" aren't the tool itself.
+  if (/glove|sickle|plucker/.test(t)) return [];
+  return TOOL_SHELVES.filter(
+    ([name, , re]) =>
+      re.test(t) ||
+      (name === 'Pruners/Secateurs' && attributes.product_type === 'Hand Pruners & Secateurs'),
+  ).map(([name]) => name);
+}
+
 /** Perlite (and perlite mixes). */
 function derivePerlite(product, text) {
   const title = String(product.Title ?? '').toLowerCase();
@@ -1602,7 +1672,7 @@ export const TARGETS = {
     derive: deriveFertilizer,
   },
   Vermiculite: {
-    chain: [AGRI, ['fertilizer', 'Fertilizer'], ['vermiculite', 'Vermiculite']],
+    chain: [AGRI, ['garden-soil', 'Garden Soil'], ['vermiculite', 'Vermiculite']],
     filters: FERTILIZER_FILTERS,
     derive: deriveVermiculite,
   },
@@ -1630,7 +1700,7 @@ export const TARGETS = {
     derive: derivePottingMix,
     chain: [
       ['lawn-and-gardening', 'Agri and Gardening'],
-      ['fertilizer', 'Fertilizer'],
+      ['garden-soil', 'Garden Soil'],
       ['potting-mix', 'Potting Mix'],
     ],
     filters: FERTILIZER_FILTERS,
@@ -1685,12 +1755,12 @@ export const TARGETS = {
   Cricket: basicTarget(['sports-fitness', 'Sports & Fitness'], ['cricket', 'Cricket']),
   // v1.18 mixed delivery: Garden Soil and Gardening Tools (the Explore menu's names).
   'Soil Fertilizers': {
-    chain: [AGRI, ['fertilizer', 'Fertilizer'], ['soil-fertilizers', 'Soil Fertilizers']],
+    chain: [AGRI, ['garden-soil', 'Garden Soil'], ['soil-fertilizers', 'Soil Fertilizers']],
     filters: FERTILIZER_FILTERS,
     derive: deriveFertilizer,
   },
   Perlite: {
-    chain: [AGRI, ['fertilizer', 'Fertilizer'], ['perlite', 'Perlite']],
+    chain: [AGRI, ['garden-soil', 'Garden Soil'], ['perlite', 'Perlite']],
     filters: FERTILIZER_FILTERS,
     derive: derivePerlite,
   },
@@ -1699,8 +1769,25 @@ export const TARGETS = {
     filters: FERTILIZER_FILTERS,
     derive: deriveFertilizer,
   },
-  'Pruning Tools': gardenToolTarget('Pruning Tools', 'pruning-tools'),
-  'Garden Hand Tools': gardenToolTarget('Garden Hand Tools', 'garden-hand-tools'),
+  'Pruning Tools': {
+    ...gardenToolTarget('Pruning Tools', 'pruning-tools'),
+    alsoMatch: toolShelves,
+  },
+  'Garden Hand Tools': {
+    ...gardenToolTarget('Garden Hand Tools', 'garden-hand-tools'),
+    alsoMatch: toolShelves,
+  },
+  ...Object.fromEntries(
+    TOOL_SHELVES.map(([name, slug]) => [
+      name,
+      {
+        ...gardenToolTarget(name, slug),
+        derive: deriveGardenTool(
+          slug === 'pruners-secateurs' ? 'Pruning Tools' : 'Garden Hand Tools',
+        ),
+      },
+    ]),
+  ),
   'Gardening Gloves': gardenToolTarget('Gardening Gloves', 'gardening-gloves'),
   'Garden Hoses': gardenToolTarget('Garden Hoses', 'garden-hoses'),
   'Lawn Edgers': gardenToolTarget('Lawn Edgers & Trimmers', 'lawn-edgers'),
