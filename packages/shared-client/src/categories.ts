@@ -144,7 +144,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'clothing',
     'Clothing',
-    'bottomwear=Bottomwear;accessories=Accessories;clothing-accessories=Clothing Accessories;winter-wear=Winter Wear;topwear=Topwear',
+    'bottomwear=Bottomwear;accessories=Accessories;clothing-accessories=Clothing Accessories;winter-wear=Winter Wear;topwear=Topwear;ethnic-wear=Ethnic Wear;sports-and-gym-wear=Sports & Gym Wear;sarees-and-saree-essentials=Sarees and Saree Essentials;lingerie-sleep-and-swimwear=Lingerie, Sleep & Swimwear;kids-clothing=Kids\' Clothing;formal-wear=Formal Wear;dresses-and-western-wear=Dresses & Western Wear;fabrics=Fabrics',
   ],
   ['grocery', 'Grocery & Gourmet Foods', 'sweeteners=Sweeteners'],
   ['footwear', 'Footwear', 'kids-footwear=Kids Footwear;men=Men;women=Women;shoe-care=Shoe Care'],
@@ -166,7 +166,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'home-furnishing',
     'Home Furnishing',
-    'bath-linen=Bath Linen;bedsheets=Bedsheets;curtain-accessories=Curtain & Accessories;cushion-covers=Cushion Covers;carpets=Carpets;door-mats=Door Mats;fabric=Fabric;heavy-bed=Mattress;pillow-covers=Pillow Covers;quilts=Quilts;ready-made-curtains=Ready Made Curtains;rugs=Rugs;sheer-curtains=Sheer Curtains;sofa-covers=Sofa Covers;sofa-headrests=Sofa Headrests;string-curtains=String Curtains;table-linen=Table Linen;table-mat=Table Mat;towel=Towel;mosquito-nets=Mosquito Nets;cushions-and-pillows=Cushions & Pillows;rugs-and-mats=Rugs & Mats;sofa-and-chair-covers=Sofa & Chair Covers',
+    'bath-linen=Bath Linen;bedsheets=Bedsheets;curtain-accessories=Curtain & Accessories;cushion-covers=Cushion Covers;carpets=Carpets;door-mats=Door Mats;fabric=Fabric;heavy-bed=Mattress;pillow-covers=Pillow Covers;quilts=Quilts;ready-made-curtains=Ready Made Curtains;rugs=Rugs;sheer-curtains=Sheer Curtains;sofa-covers=Sofa Covers;sofa-headrests=Sofa Headrests;string-curtains=String Curtains;table-linen=Table Linen;table-mat=Table Mat;towel=Towel;mosquito-nets=Mosquito Nets;cushions-and-pillows=Cushions & Pillows;rugs-and-mats=Rugs & Mats;sofa-and-chair-covers=Sofa & Chair Covers;blankets=Blankets',
   ],
   [
     'stainless-steel-vessels',
@@ -263,7 +263,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
     'adaptor-plug=Adaptor Plug;extension-cords=Extension Cords;lamp-holder=Lamp Holder;light-socket=Light Socket;breakers-fuses=Breakers & Fuses;electrical-hardware=Electrical Hardware;regulators=Regulators;enclosure-metal=Enclosure Metal;socket=Socket;switch=Switch',
   'footwear/men':
     'mens-bounceez=Bounceez;mens-flip-flops=Flip-Flops;slippers-footwear=Men\u2019s Slippers;mens-sandals-clogs=Sandals & Clogs;mens-sneakers=Sneakers',
-  'clothing/bottomwear': 'cargos=Cargos',
+  'clothing/bottomwear': 'cargos=Cargos;leggings-and-jeggings=Leggings and Jeggings;palazzos=Palazzos;track-pants=Track Pants;harem-pants=Harem Pants;three-fourths=Three-Fourths;shorts=Shorts;jeans=Jeans;trousers=Trousers;skirts=Skirts',
   'footwear/women':
     'bounceez=Bounceez;flip-flops=Flip-Flops;sandals-and-clogs=Sandals and Clogs;sneakers=Sneakers;slippers=Women\u2019s Slippers',
   'gifts/metal-wall-decor':
@@ -334,7 +334,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'auto-accessories/car-interior-accessories':
     'seat-cushions=Seat Cushions;steering-covers=Steering Covers;car-sun-shades=Car Sun Shades;car-chargers=Car Chargers;floor-mats=Floor Mats;gear-knobs=Gear Knobs;car-organizers=Car Organizers;seat-covers=Seat Covers',
   'electronics/smart-devices': 'smart-sensors=Smart Sensors',
-  'clothing/accessories': 'caps=Caps',
+  'clothing/accessories': 'caps=Caps;stockings=Stockings;garters=Garters;suspenders=Suspenders;stoles=Stoles;bandanas=Bandanas;handkerchiefs=Handkerchiefs;hats=Hats;collar-stays=Collar Stays;wristbands=Wristbands;applique-patch=Applique Patch;mittens=Mittens;ties-and-cufflinks=Ties and Cufflinks;turbans=Turbans;socks=Socks',
   'footwear/shoe-care': 'shoe-accessories=Shoe Accessories',
   'electrical-and-lights/decorative-lights': 'string-lights=String Lights;night-lamps=Night Lamps',
   'electrical-and-lights/led-bulbs': 'led-tubelights=LED Tubelights',
@@ -359,7 +359,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
     'toilet-paper-holders=Toilet Paper Holders;toilet-seats=Toilet Seats',
   'hardwares/door-and-cabinet-handles': 'hooks=Hooks',
   'tools/power-tools': 'drills=Drills;soldering-tools=Soldering Tools',
-  'clothing/clothing-accessories': 'sewing-kits=Sewing Kits;patches=Patches',
+  'clothing/clothing-accessories': 'sewing-kits=Sewing Kits;patches=Patches;velcro=Velcro;waistband-elastic=Waistband Elastic;polyester-threads=Polyester Threads;cotton-threads=Cotton Threads;embroidery-threads=Embroidery Threads;laces=Laces;ribbons=Ribbons;presser-feet=Presser Feet;bias-tapes=Bias Tapes;embroidery-scissors=Embroidery Scissors;tailoring-scissors=Tailoring Scissors;machine-needles=Machine Needles;bobbins=Bobbins;bobbin-cases=Bobbin Cases;marking-tools=Marking Tools;tailor-chalk=Tailor Chalk;fabric-cutters=Fabric Cutters;hooks-and-eyes=Hooks & Eyes;fabric-glue=Fabric Glue;fusible-interlining=Fusible Interlining;non-woven-interfacing=Non-Woven Interfacing;hand-sewing-needles=Hand Sewing Needles;zippers=Zippers;elastic-bands=Elastic Bands;embroidery-kits=Embroidery Kits;embroidery-needles=Embroidery Needles;embroidery-hoops=Embroidery Hoops',
   'auto-accessories/tyre-accessories': 'tyre-repair-kits=Tyre Repair Kits',
   'gifts/trophies-and-awards': 'plaques=Plaques',
   'electronics/storage-devices': 'memory-cards=Memory Cards',
@@ -371,7 +371,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'hardwares/safety-hardware': 'safety-helmets=Safety Helmets',
   'home-furnishing/sofa-and-chair-covers': 'chair-covers=Chair Covers',
   'clothing/winter-wear':
-    'scarves=Scarves;sweatshirts=Sweatshirts;raincoats=Raincoats;jackets=Jackets;mufflers=Mufflers',
+    'scarves=Scarves;sweatshirts=Sweatshirts;raincoats=Raincoats;jackets=Jackets;mufflers=Mufflers;windcheaters=Windcheaters;shawls=Shawls;ponchos=Ponchos;sweaters-and-cardigans=Sweaters and Cardigans;thermals=Thermals;gloves-winter-wear=Gloves',
   'cosmetics/body-care': 'foot-care=Foot Care;body-wash=Body Wash',
   'baby-care/baby-grooming':
     'baby-oral-care=Baby Oral Care;baby-hair-brushes=Baby Hair Brushes;grooming-kits=Grooming Kits;baby-nail-clippers=Baby Nail Clippers;baby-combs=Baby Combs',
@@ -395,13 +395,22 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'baby-care/baby-safety':
     'bed-rails=Bed Rails;baby-safety-gates=Baby Safety Gates;safety-gates=Safety Gates;corner-guards=Corner Guards;socket-covers=Socket Covers',
   'home-appliances/cooking-appliances': 'electric-kettles=Electric Kettles',
-  'clothing/topwear': 't-shirts=T-Shirts',
+  'clothing/topwear': 't-shirts=T-Shirts;tops=Tops;shirts=Shirts',
   'stainless-steel-vessels/knives': 'choppers=Choppers',
   'party-decorations/festival-decorations': 'christmas-decorations=Christmas Decorations',
   'tools/tool-boxes-and-organizers': 'tool-organizers=Tool Organizers;tool-boxes=Tool Boxes',
   'toys/outdoor-and-ride-on-toys': 'ride-ons=Ride Ons',
   'sports-fitness/cricket': 'cricket-accessories=Cricket Accessories',
-  'stationary/school-supplies': 'pencil-cases=Pencil Cases',
+  'stationary/school-supplies': 'pencil-cases=Pencil Cases;school-bags=School Bags',
+  'clothing/ethnic-wear': 'abayas-and-burqas=Abayas and Burqas;kurtas-ethnic-sets-and-bottoms=Kurtas, Ethnic Sets and Bottoms;kurtas=Kurtas;women-s-lehenga-cholis=Women\'s Lehenga Cholis;ethnic-sets=Ethnic Sets;ethnic-pyjamas=Ethnic Pyjamas;dhotis=Dhotis;salwars-and-patialas=Salwars and Patialas;shararas=Shararas;dhoti-pants=Dhoti Pants;lehenga-cholis=Lehenga Cholis;sherwanis=Sherwanis;dupattas=Dupattas',
+  'clothing/sports-and-gym-wear': 'kids-tracksuits=Kids\' Tracksuits;women-s-tracksuits=Women\'s Tracksuits;men-s-tracksuits=Men\'s Tracksuits',
+  'clothing/sarees-and-saree-essentials': 'petticoats=Petticoats;saree-falls=Saree Falls;sarees=Sarees;blouses=Blouses',
+  'clothing/lingerie-sleep-and-swimwear': 'shapewears=Shapewears;pyjamas-and-lounge-pants=Pyjamas and Lounge Pants;babydolls=Babydolls;lingerie-sets-and-accessories=Lingerie Sets and Accessories;swimsuits=Swimsuits;night-suits=Night Suits;bras=Bras;night-dresses-and-nighties=Night Dresses and Nighties;briefs-and-trunks=Briefs and Trunks;camisoles-and-slips=Camisoles and Slips;panties=Panties',
+  'clothing/kids-clothing': 'kids-windcheaters=Kids\' Windcheaters;kids-apparel-combos=Kids\' Apparel Combos;kids-costume-wear=Kids\' Costume Wear;kids-lehenga-cholis=Kids\' Lehenga Cholis;kids-raincoats=Kids\' Raincoats;kids-rompers-and-dungarees=Kids\' Rompers and Dungarees',
+  'clothing/formal-wear': 'waistcoats=Waistcoats;suits=Suits;blazers=Blazers',
+  'clothing/dresses-and-western-wear': 'women-s-clothing=Women\'s Clothing;gowns=Gowns;jumpsuits-and-dungarees=Jumpsuits and Dungarees;women-s-jumpsuits-and-dungarees=Women\'s Jumpsuits and Dungarees;men-s-dungarees=Men\'s Dungarees;twinning-sets=Twinning Sets;co-ords=Co-ords;dresses=Dresses;dresses-and-gowns=Dresses and Gowns',
+  'clothing/fabrics': 'blouse-material=Blouse Material;shirt-and-trouser-fabrics=Shirt and Trouser Fabrics;formal-suit-fabrics=Formal Suit Fabrics;dress-materials=Dress Materials',
+  'arts-and-crafts/craft-kit': 'embroidery-kits-craft-kit=Embroidery Kits',
 };
 
 /** The homepage category strip, in the exact order and naming of youmartshop.com. */

@@ -359,11 +359,13 @@ export async function listProductsForIndex(query: {
 }): Promise<PaginatedList<ProductForIndex>> {
   const { cursor, limit } = query;
 
+  // Keyset pages on the primary key: `id > cursor` seeks straight to the page. (Prisma's
+  // `cursor` + createdAt order compiles to an OR the planner can't seek on, so every page re-read
+  // the table from the start - seconds per page past ~40k products, timing out full reindexes.)
   const rows = await prisma.product.findMany({
-    where: { status: 'ACTIVE', deletedAt: null },
-    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    where: { status: 'ACTIVE', deletedAt: null, ...(cursor ? { id: { gt: cursor } } : {}) },
+    orderBy: { id: 'asc' },
     take: limit + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: PRODUCT_LIST_INCLUDE,
   });
 

@@ -51,6 +51,26 @@ const REROUTES = {
   'Washing Powders': [[/badges & emblems/, 'Car Cleaning']],
   Scrubbers: [[/loofah|bath brush|bathing accessories|foot|heel|nail|body scrub|back scrub/, null]],
 
+  // --- clothing deliveries: names the app spells differently / lists in two mains, and the few
+  // non-clothing items filed with them ---
+  'women lehenga cholis': [[/./, "Women's Lehenga Cholis"]],
+  // The source paths on these deliveries are often wrong (bib overalls under "blankets", collar
+  // stays under "neck braces", dupattas under "sindoors"), so clothing rules match the TITLE only.
+  'mens dungarees': [[/./, "Men's Dungarees"]],
+  'womens jumpsuits': [[/./, "Women's Jumpsuits and Dungarees"]],
+  'mens tracksuits': [[/./, "Men's Tracksuits"]],
+  'womens tracksuits': [[/./, "Women's Tracksuits"]],
+  'applique patches': [[/./, 'Applique Patch']],
+  'womens clothing': [[/./, "Women's Clothing"]],
+  gloves: [[/./, 'Clothing › Gloves']],
+  // Satin trim ribbons: Clothing Accessories, and the party Backdrop Decorations page too.
+  ribbons: [[/./, 'Clothing › Ribbons', ['Party Decorations › Ribbons']]],
+  // The app menu has Embroidery Kits under Clothing Accessories and under Arts and Crafts' Craft
+  // Kits: filed with the other embroidery items, shown on both pages.
+  'embroidery kits': [[/./, 'Clothing › Embroidery Kits', ['Arts and Crafts › Embroidery Kits']]],
+  // Foam / rope hot knives and cardboard scissors are workshop tools, not fabric cutters.
+  'fabric cutters': [[/^[^|]*(styrofoam|foam|hot knife|rope|cardboard|zipsnip|lanyard)/, 'Hand Tools']],
+
   // --- baby care delivery: names the app spells differently / lists in two mains ---
   'baby bottle accessories': [[/./, 'Baby Care › Bottle Accessories']],
   'baby travel systems': [[/./, 'Travel Systems']],
@@ -286,8 +306,9 @@ export function routeProduct(targetName, title, categoryPath, rootOf) {
   const path = String(categoryPath ?? '').toLowerCase();
   const text = `${String(title ?? '').toLowerCase()} | ${path}`;
   const related = () => RELATED.find(([re]) => re.test(path))?.[1] ?? targetName;
-  for (const [re, to] of REROUTES[targetName] ?? []) {
-    if (re.test(text)) return { name: to ?? related() };
+  // A rule's optional third entry: other app categories the product is ALSO listed on.
+  for (const [re, to, also] of REROUTES[targetName] ?? []) {
+    if (re.test(text)) return { name: to ?? related(), also: also ?? [] };
   }
   if (VEHICLE_ONLY.has(targetName) && path && !VEHICLE_PATH.test(path)) {
     return { name: related() };

@@ -135,6 +135,21 @@ export async function deleteProduct(productId: string): Promise<void> {
 }
 
 const FULL_REINDEX_PAGE_SIZE = 100;
+const FULL_REINDEX_PAGE_ATTEMPTS = 4;
+
+/** One catalog page, retried: a single slow page (a GC pause, a busy catalog-service) must not
+ * throw away a rebuild that is hundreds of pages in. */
+async function listProductsForIndexWithRetry(cursor: string | undefined) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await listProductsForIndex(cursor, FULL_REINDEX_PAGE_SIZE);
+    } catch (err) {
+      if (attempt >= FULL_REINDEX_PAGE_ATTEMPTS) throw err;
+      logger.warn({ err, cursor, attempt }, 'full reindex: catalog page failed, retrying');
+      await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+    }
+  }
+}
 
 /**
  * THE nightly safety-net rebuild (also manually triggerable via the admin
@@ -152,20 +167,29 @@ export async function fullReindex(): Promise<{ indexed: number; collectionName: 
 
   let indexed = 0;
   let cursor: string | undefined;
-  for (;;) {
-    const page = await listProductsForIndex(cursor, FULL_REINDEX_PAGE_SIZE);
-    if (page.items.length > 0) {
-      const docs = page.items.map(toDocument);
-      await typesenseClient
-        .collections(physicalName)
-        .documents()
-        .import(docs, { action: 'upsert' });
-      indexed += docs.length;
+  try {
+    for (;;) {
+      const page = await listProductsForIndexWithRetry(cursor);
+      if (page.items.length > 0) {
+        const docs = page.items.map(toDocument);
+        await typesenseClient
+          .collections(physicalName)
+          .documents()
+          .import(docs, { action: 'upsert' });
+        indexed += docs.length;
+      }
+      if (!page.nextCursor) {
+        break;
+      }
+      cursor = page.nextCursor;
     }
-    if (!page.nextCursor) {
-      break;
-    }
-    cursor = page.nextCursor;
+  } catch (err) {
+    // The alias still points at the old collection; drop the half-built one, not leave it behind.
+    await typesenseClient
+      .collections(physicalName)
+      .delete()
+      .catch(() => undefined);
+    throw err;
   }
 
   const previousCollectionName = await currentPhysicalCollectionName();

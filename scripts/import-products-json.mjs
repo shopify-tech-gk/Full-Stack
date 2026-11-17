@@ -264,6 +264,13 @@ for (const [index, p] of items.entries()) {
     categoriesNeeded.set(other.chain.at(-1)[0], other);
     return other.chain.at(-1)[0];
   });
+  // v1.20 a routing rule's extra app categories ("Arts and Crafts › Embroidery Kits").
+  for (const name of routed.also ?? []) {
+    const other = targetFor(name) ?? auto.resolve(name).target;
+    if (!other) throw new Error(`reroutes: "also" names unknown category "${name}"`);
+    categoriesNeeded.set(other.chain.at(-1)[0], other);
+    if (!also.includes(other.chain.at(-1)[0])) also.push(other.chain.at(-1)[0]);
+  }
   const discount = Number(priceSource['Discount (%)']) || 0;
   const mrp = Math.max(Number(priceSource['MRP (INR)']) || price, price);
 
