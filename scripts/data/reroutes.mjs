@@ -34,6 +34,43 @@ const VEHICLE_ONLY = new Set([
   'Car Chargers',
 ]);
 
+/**
+ * Non-floral items mixed into the artificial flowers delivery, matched on "title | path"
+ * (lehengas, paper plates, incense, pebbles...): each goes to its own app category.
+ */
+const ARTIFICIAL_STRAYS = [
+  [/lehenga/, "Women's Lehenga Cholis"],
+  [/dhoti kurta/, 'Ethnic Sets'],
+  [/sleep & lounge wear > babydolls/, 'Babydolls'],
+  [/ethnic wear > dress material/, 'Dress Materials'],
+  [/hair styling accessories|hair accessories/, 'Hair Accessories'],
+  [/mangalsutra/, 'Mangalsutra'],
+  [/jewellery > women > jewelry sets/, 'Jewellery Sets'],
+  [/disposable tableware|paper plate/, 'Paper Plates'],
+  // Incense / dhoop sticks (the "Flower Sticks" in this delivery are temple-flower incense): home
+  // fragrance, as Religion has no storefront section yet.
+  [/incense|agarbatti|dhoop/, 'Air Fresheners'],
+  [/broom|floor wiper/, 'Wipers'],
+  [/grass carpet|grass mat|lawnmat|synthetic turf/, 'Artificial Grass'],
+  [/furniture pads|furniture protector/, 'Furniture Fittings'],
+  [/^[^|]*machine[^|]*stand/, 'Washing Machines'],
+  // Pebbles by their own category path (many flowers are sold "with decorative pebbles").
+  [/\|.*(decorative stones|decorative marbles|hardscaping)/, 'Garden Decor'],
+  // Empty pots / planters (not sold with an artificial plant): the gardening shelves; pots are
+  // listed on this main's Artificial Plant Pots page too.
+  [
+    /^(?![^|]*(artificial|fake|faux))[^|]*\|.*plant containers > hanging planters/,
+    'Hanging Planters',
+  ],
+  [
+    /^(?![^|]*(artificial|fake|faux))[^|]*\|.*plant containers > flower pots/,
+    'Pots & Planters',
+    ['Artificial Plant Pots'],
+  ],
+  [/photo backgrounds/, 'Wedding Backdrops'],
+  [/model kit/, 'DIY Kits'],
+];
+
 const REROUTES = {
   // --- cleaning delivery ---
   Wipers: [[/windscreen|windshield|wiper blade|wiper arm|wiper refill for car/, 'Wiper Blades']],
@@ -69,7 +106,45 @@ const REROUTES = {
   // Kits: filed with the other embroidery items, shown on both pages.
   'embroidery kits': [[/./, 'Clothing › Embroidery Kits', ['Arts and Crafts › Embroidery Kits']]],
   // Foam / rope hot knives and cardboard scissors are workshop tools, not fabric cutters.
-  'fabric cutters': [[/^[^|]*(styrofoam|foam|hot knife|rope|cardboard|zipsnip|lanyard)/, 'Hand Tools']],
+  'fabric cutters': [
+    [/^[^|]*(styrofoam|foam|hot knife|rope|cardboard|zipsnip|lanyard)/, 'Hand Tools'],
+  ],
+
+  // --- artificial flowers delivery: the few non-floral items mixed in (see ARTIFICIAL_STRAYS) ---
+  ...Object.fromEntries(
+    [
+      'Glass Vases',
+      'Ceramic Vases',
+      'Decorative Vases',
+      'Floor Vases',
+      'Artificial Bouquets',
+      'Flower Sticks',
+      'Artificial Garlands',
+      'Decorative Flowers',
+      'Festival Flowers',
+      'Flower Arrangements',
+      'Wedding Flowers',
+      'Wall Hanging Plants',
+      'Hanging Plants',
+      'Artificial Bonsai',
+      'Artificial Cactus',
+      'Artificial Leaves',
+      'Artificial Vines',
+      'Artificial Succulents',
+    ].map((name) => [
+      name,
+      [
+        ...ARTIFICIAL_STRAYS,
+        // Flower bunches / sticks filed as vases.
+        ...(name.endsWith('Vases')
+          ? [
+              [/^[^|]*(bunch|bouquet)[^|]*\|.*artificial flowers/, 'Artificial Bouquets'],
+              [/^[^|]*flower sticks?[^|]*\|.*artificial flowers/, 'Flower Sticks'],
+            ]
+          : []),
+      ],
+    ]),
+  ),
 
   // --- baby care delivery: names the app spells differently / lists in two mains ---
   'baby bottle accessories': [[/./, 'Baby Care › Bottle Accessories']],

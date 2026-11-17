@@ -84,7 +84,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'artifical-flowers-and-plants',
     'Artificial Flowers and Plants',
-    'bocckey-flower=Bouquet Flower;customized-product=Customized Product;cone-rose=Cone Rose;dry-flower=Dry Flower;flower-bunch=Flower Bunch;flower-kodi=Flower Kodi;flower-wase=Flower Vase;fruits=Fruits;hanging-pot=Hanging Pot;leaf-kodi=Leaf Kodi;lotus-flower=Lotus Flower;plants=Plants;plastic-accessories=Plastic Accessories;pocket-rose=Pocket Rose;single-foam-flower=Single Foam Flower;single-glitter-flower=Single Glitter Flower;stick-flower=Stick Flower;tree=Tree;wall-grass-mat=Wall Grass Mat;wall-hanging-grass=Wall Hanging Grass;wall-stand=Wall Stand;wooden-stand=Wooden Stand;pots=Pots',
+    'bocckey-flower=Bouquet Flower;customized-product=Customized Product;cone-rose=Cone Rose;dry-flower=Dry Flower;flower-bunch=Flower Bunch;flower-kodi=Flower Kodi;flower-wase=Flower Vase;fruits=Fruits;hanging-pot=Hanging Pot;leaf-kodi=Leaf Kodi;lotus-flower=Lotus Flower;plants=Plants;plastic-accessories=Plastic Accessories;pocket-rose=Pocket Rose;single-foam-flower=Single Foam Flower;single-glitter-flower=Single Glitter Flower;stick-flower=Stick Flower;tree=Tree;wall-grass-mat=Wall Grass Mat;wall-hanging-grass=Wall Hanging Grass;wall-stand=Wall Stand;wooden-stand=Wooden Stand;pots=Pots;artificial-plant-pots=Artificial Plant Pots;artificial-plants=Artificial Plants;artificial-flowers=Artificial Flowers;artificial-grass=Artificial Grass',
   ],
   [
     'auto-accessories',
@@ -139,12 +139,12 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'fashion-jewellery',
     'Fashion Jewellery',
-    'anklet=Anklet;bracelet=Bracelet;bangle=Bangle;brooch=Brooch;earrings=Earrings;head-jewellery=Head Jewellery;jewellery-set=Jewellery Set;mangalsutra=Mangalsutra;necklace-and-chains=Necklace and Chains;nosepin=Nosepin;pendant=Pendant;ring=Ring;saree-accessories=Saree Accessories',
+    'anklet=Anklet;bracelet=Bracelet;bangle=Bangle;brooch=Brooch;earrings=Earrings;head-jewellery=Head Jewellery;jewellery-set=Jewellery Set;mangalsutra=Mangalsutra;necklace-and-chains=Necklace and Chains;nosepin=Nosepin;pendant=Pendant;ring=Ring;saree-accessories=Saree Accessories;hair-accessories=Hair Accessories',
   ],
   [
     'clothing',
     'Clothing',
-    'bottomwear=Bottomwear;accessories=Accessories;clothing-accessories=Clothing Accessories;winter-wear=Winter Wear;topwear=Topwear;ethnic-wear=Ethnic Wear;sports-and-gym-wear=Sports & Gym Wear;sarees-and-saree-essentials=Sarees and Saree Essentials;lingerie-sleep-and-swimwear=Lingerie, Sleep & Swimwear;kids-clothing=Kids\' Clothing;formal-wear=Formal Wear;dresses-and-western-wear=Dresses & Western Wear;fabrics=Fabrics',
+    "bottomwear=Bottomwear;accessories=Accessories;clothing-accessories=Clothing Accessories;winter-wear=Winter Wear;topwear=Topwear;ethnic-wear=Ethnic Wear;sports-and-gym-wear=Sports & Gym Wear;sarees-and-saree-essentials=Sarees and Saree Essentials;lingerie-sleep-and-swimwear=Lingerie, Sleep & Swimwear;kids-clothing=Kids' Clothing;formal-wear=Formal Wear;dresses-and-western-wear=Dresses & Western Wear;fabrics=Fabrics",
   ],
   ['grocery', 'Grocery & Gourmet Foods', 'sweeteners=Sweeteners'],
   ['footwear', 'Footwear', 'kids-footwear=Kids Footwear;men=Men;women=Women;shoe-care=Shoe Care'],
@@ -156,12 +156,12 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'hardwares',
     'Hardware',
-    'bearings=Bearings;cabinet-hardware=Cabinet Hardware;fasteners-fittings=Fasteners & Screws;latches-bolts=Latches & Bolts;locks-security-hardware=Locks & Security Hardware;angles-brackets-fasteners=Angles and Brackets;paints=Paints;cement-mortar=Cement & Mortar;door-and-cabinet-handles=Door & Cabinet Handles;door-locks=Door Locks;safety-hardware=Safety Hardware',
+    'bearings=Bearings;cabinet-hardware=Cabinet Hardware;fasteners-fittings=Fasteners & Screws;latches-bolts=Latches & Bolts;locks-security-hardware=Locks & Security Hardware;angles-brackets-fasteners=Angles and Brackets;paints=Paints;cement-mortar=Cement & Mortar;door-and-cabinet-handles=Door & Cabinet Handles;door-locks=Door Locks;safety-hardware=Safety Hardware;furniture-fittings=Furniture Fittings',
   ],
   [
     'home-appliances',
     'Home Appliances',
-    'air-purifiers=Air Purifiers;airfryers=Airfryers;citrus-press=Citrus Press;garment-steamers=Garment Steamers;hand-blenders=Hand Blenders;hand-mixers=Hand Mixers;induction-cooktops=Induction Cooktops;steam-irons=Iron Box;jmg=Juicer Mixer Grinder;juicer=Juicer;kettles=Kettles;mixer-grinders=Mixer Grinders;otg=Oven Toaster Grill;sandwich-maker=Sandwich Maker;toasters=Toasters;vacuum-cleaners=Vacuum Cleaners;cooking-appliances=Cooking Appliances',
+    'air-purifiers=Air Purifiers;airfryers=Airfryers;citrus-press=Citrus Press;garment-steamers=Garment Steamers;hand-blenders=Hand Blenders;hand-mixers=Hand Mixers;induction-cooktops=Induction Cooktops;steam-irons=Iron Box;jmg=Juicer Mixer Grinder;juicer=Juicer;kettles=Kettles;mixer-grinders=Mixer Grinders;otg=Oven Toaster Grill;sandwich-maker=Sandwich Maker;toasters=Toasters;vacuum-cleaners=Vacuum Cleaners;cooking-appliances=Cooking Appliances;washing-machines=Washing Machines',
   ],
   [
     'home-furnishing',
@@ -171,7 +171,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'stainless-steel-vessels',
     'Kitchenware',
-    'water-bottle=Bottle and Flask;casserole=Casserole;cookware=Cookware;electric-tiffin=Electric Tiffin;stainless-vessels=Stainless Vessels;hot-cold-flask=Hot & Cold Flask;hot-box=Hot Box;ice-packs-and-pails=Ice Packs and Pails;lunch-box=Lunch Box;jugs=Jugs and Purifier;kettle=Kettle;kitchen-utensils=Kitchen Utensils;pots-and-pans=Pots & Pans;smart-range=Smart Range;storage-jar=Storage Jar;storage-containers=Storage Containers;tableware=Tableware;tiffin-box=Tiffin Box;kitchen-tools=Kitchen Tools;knives=Knives',
+    'water-bottle=Bottle and Flask;casserole=Casserole;cookware=Cookware;electric-tiffin=Electric Tiffin;stainless-vessels=Stainless Vessels;hot-cold-flask=Hot & Cold Flask;hot-box=Hot Box;ice-packs-and-pails=Ice Packs and Pails;lunch-box=Lunch Box;jugs=Jugs and Purifier;kettle=Kettle;kitchen-utensils=Kitchen Utensils;pots-and-pans=Pots & Pans;smart-range=Smart Range;storage-jar=Storage Jar;storage-containers=Storage Containers;tableware=Tableware;tiffin-box=Tiffin Box;kitchen-tools=Kitchen Tools;knives=Knives;disposable-items-stainless-steel-vessels=Disposable Items',
   ],
   [
     'musical-instruments',
@@ -181,7 +181,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'party-decorations',
     'Party Decorations',
-    'anniversary=Anniversary Decoration;baby-shower=Baby Shower Decoration;birthday-banners=Banners;birthday-caps=Caps;snow-spary=Snow Spray;balloon-decoration-accessories=Balloon Decoration Accessories;baloon-pump=Balloon Pump;birthday-sash=Sash;birthday-photo-banner=Photo Banner;party-popper=Party Popper;birthday-decoration-set=Decoration Set;balloons=Balloons;birthday=Birthday;butterfly-wings=Butterfly Wings;bride-to-be=Bride to Be Decoration;cake-toper=Cake Toper;candles=Candles;chinees-doom=Chinese Dome;chinese-visiri=Chinese Visiri;crown=Crown;eye-mask=Eye Mask;face-beard=Face Beard;face-mask=Face Mask;fancy-umbrella=Fancy Umbrella;foil-fringe-curtain=Foil Fringe Curtain;foil-balloons=Foil Balloons;hand-gloves=Hand Gloves;maalai=Maalai;naming-ceremony=Naming Ceremony Decoration;net-cloth=Net Cloth;paper-cutting=Paper Cutting;party-caps=Party Caps;photo-prop=Photo Prop;reception-maalai=Reception Maalai;ribbon=Ribbon;screen=Screen;sky-lantern=Sky Lantern;strings=Strings;thermocol-design=Thermocol Design;thoranam=Thoranam;wigs=Wigs;zoomer=Zoomer;festival-decorations=Festival Decorations',
+    'anniversary=Anniversary Decoration;baby-shower=Baby Shower Decoration;birthday-banners=Banners;birthday-caps=Caps;snow-spary=Snow Spray;balloon-decoration-accessories=Balloon Decoration Accessories;baloon-pump=Balloon Pump;birthday-sash=Sash;birthday-photo-banner=Photo Banner;party-popper=Party Popper;birthday-decoration-set=Decoration Set;balloons=Balloons;birthday=Birthday;butterfly-wings=Butterfly Wings;bride-to-be=Bride to Be Decoration;cake-toper=Cake Toper;candles=Candles;chinees-doom=Chinese Dome;chinese-visiri=Chinese Visiri;crown=Crown;eye-mask=Eye Mask;face-beard=Face Beard;face-mask=Face Mask;fancy-umbrella=Fancy Umbrella;foil-fringe-curtain=Foil Fringe Curtain;foil-balloons=Foil Balloons;hand-gloves=Hand Gloves;maalai=Maalai;naming-ceremony=Naming Ceremony Decoration;net-cloth=Net Cloth;paper-cutting=Paper Cutting;party-caps=Party Caps;photo-prop=Photo Prop;reception-maalai=Reception Maalai;ribbon=Ribbon;screen=Screen;sky-lantern=Sky Lantern;strings=Strings;thermocol-design=Thermocol Design;thoranam=Thoranam;wigs=Wigs;zoomer=Zoomer;festival-decorations=Festival Decorations;wedding-decorations=Wedding Decorations',
   ],
   [
     'pet-products',
@@ -263,7 +263,8 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
     'adaptor-plug=Adaptor Plug;extension-cords=Extension Cords;lamp-holder=Lamp Holder;light-socket=Light Socket;breakers-fuses=Breakers & Fuses;electrical-hardware=Electrical Hardware;regulators=Regulators;enclosure-metal=Enclosure Metal;socket=Socket;switch=Switch',
   'footwear/men':
     'mens-bounceez=Bounceez;mens-flip-flops=Flip-Flops;slippers-footwear=Men\u2019s Slippers;mens-sandals-clogs=Sandals & Clogs;mens-sneakers=Sneakers',
-  'clothing/bottomwear': 'cargos=Cargos;leggings-and-jeggings=Leggings and Jeggings;palazzos=Palazzos;track-pants=Track Pants;harem-pants=Harem Pants;three-fourths=Three-Fourths;shorts=Shorts;jeans=Jeans;trousers=Trousers;skirts=Skirts',
+  'clothing/bottomwear':
+    'cargos=Cargos;leggings-and-jeggings=Leggings and Jeggings;palazzos=Palazzos;track-pants=Track Pants;harem-pants=Harem Pants;three-fourths=Three-Fourths;shorts=Shorts;jeans=Jeans;trousers=Trousers;skirts=Skirts',
   'footwear/women':
     'bounceez=Bounceez;flip-flops=Flip-Flops;sandals-and-clogs=Sandals and Clogs;sneakers=Sneakers;slippers=Women\u2019s Slippers',
   'gifts/metal-wall-decor':
@@ -334,7 +335,8 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'auto-accessories/car-interior-accessories':
     'seat-cushions=Seat Cushions;steering-covers=Steering Covers;car-sun-shades=Car Sun Shades;car-chargers=Car Chargers;floor-mats=Floor Mats;gear-knobs=Gear Knobs;car-organizers=Car Organizers;seat-covers=Seat Covers',
   'electronics/smart-devices': 'smart-sensors=Smart Sensors',
-  'clothing/accessories': 'caps=Caps;stockings=Stockings;garters=Garters;suspenders=Suspenders;stoles=Stoles;bandanas=Bandanas;handkerchiefs=Handkerchiefs;hats=Hats;collar-stays=Collar Stays;wristbands=Wristbands;applique-patch=Applique Patch;mittens=Mittens;ties-and-cufflinks=Ties and Cufflinks;turbans=Turbans;socks=Socks',
+  'clothing/accessories':
+    'caps=Caps;stockings=Stockings;garters=Garters;suspenders=Suspenders;stoles=Stoles;bandanas=Bandanas;handkerchiefs=Handkerchiefs;hats=Hats;collar-stays=Collar Stays;wristbands=Wristbands;applique-patch=Applique Patch;mittens=Mittens;ties-and-cufflinks=Ties and Cufflinks;turbans=Turbans;socks=Socks',
   'footwear/shoe-care': 'shoe-accessories=Shoe Accessories',
   'electrical-and-lights/decorative-lights': 'string-lights=String Lights;night-lamps=Night Lamps',
   'electrical-and-lights/led-bulbs': 'led-tubelights=LED Tubelights',
@@ -359,7 +361,8 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
     'toilet-paper-holders=Toilet Paper Holders;toilet-seats=Toilet Seats',
   'hardwares/door-and-cabinet-handles': 'hooks=Hooks',
   'tools/power-tools': 'drills=Drills;soldering-tools=Soldering Tools',
-  'clothing/clothing-accessories': 'sewing-kits=Sewing Kits;patches=Patches;velcro=Velcro;waistband-elastic=Waistband Elastic;polyester-threads=Polyester Threads;cotton-threads=Cotton Threads;embroidery-threads=Embroidery Threads;laces=Laces;ribbons=Ribbons;presser-feet=Presser Feet;bias-tapes=Bias Tapes;embroidery-scissors=Embroidery Scissors;tailoring-scissors=Tailoring Scissors;machine-needles=Machine Needles;bobbins=Bobbins;bobbin-cases=Bobbin Cases;marking-tools=Marking Tools;tailor-chalk=Tailor Chalk;fabric-cutters=Fabric Cutters;hooks-and-eyes=Hooks & Eyes;fabric-glue=Fabric Glue;fusible-interlining=Fusible Interlining;non-woven-interfacing=Non-Woven Interfacing;hand-sewing-needles=Hand Sewing Needles;zippers=Zippers;elastic-bands=Elastic Bands;embroidery-kits=Embroidery Kits;embroidery-needles=Embroidery Needles;embroidery-hoops=Embroidery Hoops',
+  'clothing/clothing-accessories':
+    'sewing-kits=Sewing Kits;patches=Patches;velcro=Velcro;waistband-elastic=Waistband Elastic;polyester-threads=Polyester Threads;cotton-threads=Cotton Threads;embroidery-threads=Embroidery Threads;laces=Laces;ribbons=Ribbons;presser-feet=Presser Feet;bias-tapes=Bias Tapes;embroidery-scissors=Embroidery Scissors;tailoring-scissors=Tailoring Scissors;machine-needles=Machine Needles;bobbins=Bobbins;bobbin-cases=Bobbin Cases;marking-tools=Marking Tools;tailor-chalk=Tailor Chalk;fabric-cutters=Fabric Cutters;hooks-and-eyes=Hooks & Eyes;fabric-glue=Fabric Glue;fusible-interlining=Fusible Interlining;non-woven-interfacing=Non-Woven Interfacing;hand-sewing-needles=Hand Sewing Needles;zippers=Zippers;elastic-bands=Elastic Bands;embroidery-kits=Embroidery Kits;embroidery-needles=Embroidery Needles;embroidery-hoops=Embroidery Hoops',
   'auto-accessories/tyre-accessories': 'tyre-repair-kits=Tyre Repair Kits',
   'gifts/trophies-and-awards': 'plaques=Plaques',
   'electronics/storage-devices': 'memory-cards=Memory Cards',
@@ -402,15 +405,30 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'toys/outdoor-and-ride-on-toys': 'ride-ons=Ride Ons',
   'sports-fitness/cricket': 'cricket-accessories=Cricket Accessories',
   'stationary/school-supplies': 'pencil-cases=Pencil Cases;school-bags=School Bags',
-  'clothing/ethnic-wear': 'abayas-and-burqas=Abayas and Burqas;kurtas-ethnic-sets-and-bottoms=Kurtas, Ethnic Sets and Bottoms;kurtas=Kurtas;women-s-lehenga-cholis=Women\'s Lehenga Cholis;ethnic-sets=Ethnic Sets;ethnic-pyjamas=Ethnic Pyjamas;dhotis=Dhotis;salwars-and-patialas=Salwars and Patialas;shararas=Shararas;dhoti-pants=Dhoti Pants;lehenga-cholis=Lehenga Cholis;sherwanis=Sherwanis;dupattas=Dupattas',
-  'clothing/sports-and-gym-wear': 'kids-tracksuits=Kids\' Tracksuits;women-s-tracksuits=Women\'s Tracksuits;men-s-tracksuits=Men\'s Tracksuits',
-  'clothing/sarees-and-saree-essentials': 'petticoats=Petticoats;saree-falls=Saree Falls;sarees=Sarees;blouses=Blouses',
-  'clothing/lingerie-sleep-and-swimwear': 'shapewears=Shapewears;pyjamas-and-lounge-pants=Pyjamas and Lounge Pants;babydolls=Babydolls;lingerie-sets-and-accessories=Lingerie Sets and Accessories;swimsuits=Swimsuits;night-suits=Night Suits;bras=Bras;night-dresses-and-nighties=Night Dresses and Nighties;briefs-and-trunks=Briefs and Trunks;camisoles-and-slips=Camisoles and Slips;panties=Panties',
-  'clothing/kids-clothing': 'kids-windcheaters=Kids\' Windcheaters;kids-apparel-combos=Kids\' Apparel Combos;kids-costume-wear=Kids\' Costume Wear;kids-lehenga-cholis=Kids\' Lehenga Cholis;kids-raincoats=Kids\' Raincoats;kids-rompers-and-dungarees=Kids\' Rompers and Dungarees',
+  'clothing/ethnic-wear':
+    "abayas-and-burqas=Abayas and Burqas;kurtas-ethnic-sets-and-bottoms=Kurtas, Ethnic Sets and Bottoms;kurtas=Kurtas;women-s-lehenga-cholis=Women's Lehenga Cholis;ethnic-sets=Ethnic Sets;ethnic-pyjamas=Ethnic Pyjamas;dhotis=Dhotis;salwars-and-patialas=Salwars and Patialas;shararas=Shararas;dhoti-pants=Dhoti Pants;lehenga-cholis=Lehenga Cholis;sherwanis=Sherwanis;dupattas=Dupattas",
+  'clothing/sports-and-gym-wear':
+    "kids-tracksuits=Kids' Tracksuits;women-s-tracksuits=Women's Tracksuits;men-s-tracksuits=Men's Tracksuits",
+  'clothing/sarees-and-saree-essentials':
+    'petticoats=Petticoats;saree-falls=Saree Falls;sarees=Sarees;blouses=Blouses',
+  'clothing/lingerie-sleep-and-swimwear':
+    'shapewears=Shapewears;pyjamas-and-lounge-pants=Pyjamas and Lounge Pants;babydolls=Babydolls;lingerie-sets-and-accessories=Lingerie Sets and Accessories;swimsuits=Swimsuits;night-suits=Night Suits;bras=Bras;night-dresses-and-nighties=Night Dresses and Nighties;briefs-and-trunks=Briefs and Trunks;camisoles-and-slips=Camisoles and Slips;panties=Panties',
+  'clothing/kids-clothing':
+    "kids-windcheaters=Kids' Windcheaters;kids-apparel-combos=Kids' Apparel Combos;kids-costume-wear=Kids' Costume Wear;kids-lehenga-cholis=Kids' Lehenga Cholis;kids-raincoats=Kids' Raincoats;kids-rompers-and-dungarees=Kids' Rompers and Dungarees",
   'clothing/formal-wear': 'waistcoats=Waistcoats;suits=Suits;blazers=Blazers',
-  'clothing/dresses-and-western-wear': 'women-s-clothing=Women\'s Clothing;gowns=Gowns;jumpsuits-and-dungarees=Jumpsuits and Dungarees;women-s-jumpsuits-and-dungarees=Women\'s Jumpsuits and Dungarees;men-s-dungarees=Men\'s Dungarees;twinning-sets=Twinning Sets;co-ords=Co-ords;dresses=Dresses;dresses-and-gowns=Dresses and Gowns',
-  'clothing/fabrics': 'blouse-material=Blouse Material;shirt-and-trouser-fabrics=Shirt and Trouser Fabrics;formal-suit-fabrics=Formal Suit Fabrics;dress-materials=Dress Materials',
-  'arts-and-crafts/craft-kit': 'embroidery-kits-craft-kit=Embroidery Kits',
+  'clothing/dresses-and-western-wear':
+    "women-s-clothing=Women's Clothing;gowns=Gowns;jumpsuits-and-dungarees=Jumpsuits and Dungarees;women-s-jumpsuits-and-dungarees=Women's Jumpsuits and Dungarees;men-s-dungarees=Men's Dungarees;twinning-sets=Twinning Sets;co-ords=Co-ords;dresses=Dresses;dresses-and-gowns=Dresses and Gowns",
+  'clothing/fabrics':
+    'blouse-material=Blouse Material;shirt-and-trouser-fabrics=Shirt and Trouser Fabrics;formal-suit-fabrics=Formal Suit Fabrics;dress-materials=Dress Materials',
+  'arts-and-crafts/craft-kit': 'embroidery-kits-craft-kit=Embroidery Kits;diy-kits=DIY Kits',
+  'artifical-flowers-and-plants/artificial-plants':
+    'artificial-cactus=Artificial Cactus;wall-hanging-plants=Wall Hanging Plants;artificial-succulents=Artificial Succulents;hanging-plants=Hanging Plants;artificial-leaves=Artificial Leaves;artificial-bonsai=Artificial Bonsai;artificial-vines=Artificial Vines',
+  'artifical-flowers-and-plants/flower-wase':
+    'ceramic-vases=Ceramic Vases;floor-vases=Floor Vases;glass-vases=Glass Vases;decorative-vases=Decorative Vases',
+  'artifical-flowers-and-plants/artificial-flowers':
+    'decorative-flowers=Decorative Flowers;flower-arrangements=Flower Arrangements;artificial-bouquets=Artificial Bouquets;festival-flowers=Festival Flowers;artificial-garlands=Artificial Garlands;flower-sticks=Flower Sticks;wedding-flowers=Wedding Flowers',
+  'party-decorations/wedding-decorations': 'wedding-backdrops=Wedding Backdrops',
+  'stainless-steel-vessels/disposable-items-stainless-steel-vessels': 'paper-plates=Paper Plates',
 };
 
 /** The homepage category strip, in the exact order and naming of youmartshop.com. */

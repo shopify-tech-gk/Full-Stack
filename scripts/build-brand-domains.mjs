@@ -20,6 +20,9 @@ const MANUAL = resolve(ROOT, 'scripts/data/brand-domains.manual.json');
 const OUT = resolve(ROOT, 'packages/shared-client/src/brand-domains.data.ts');
 const reportArg = process.argv.indexOf('--report');
 const REPORT = reportArg > 0 ? resolve(process.argv[reportArg + 1]) : null;
+// --min-products N: only catalog brands with at least N live products (big brands first).
+const minArg = process.argv.indexOf('--min-products');
+const MIN_PRODUCTS = minArg > 0 ? Number(process.argv[minArg + 1]) : 1;
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
@@ -268,9 +271,10 @@ function loadCatalogBrands() {
         SELECT id, id AS leaf, parent_id, slug FROM up
         UNION ALL SELECT u.id, r.leaf, u.parent_id, u.slug FROM roots r JOIN up u ON u.id = r.parent_id
       )
-      SELECT DISTINCT p.attributes->>'brand', r.slug
+      SELECT p.attributes->>'brand', r.slug, count(*)
       FROM catalog.product p JOIN roots r ON r.leaf = p.category_id AND r.parent_id IS NULL
-      WHERE p.deleted_at IS NULL AND p.status = 'ACTIVE' AND coalesce(p.attributes->>'brand', '') <> '';`;
+      WHERE p.deleted_at IS NULL AND p.status = 'ACTIVE' AND coalesce(p.attributes->>'brand', '') <> ''
+      GROUP BY 1, 2;`;
     const out = execFileSync(
       'docker',
       [
@@ -291,15 +295,24 @@ function loadCatalogBrands() {
       ],
       { cwd: ROOT, input: sql },
     ).toString();
-    return out
+    const rows = out
       .trim()
       .split('\n')
       .filter((l) => l.includes('|'))
       .map((l) => {
-        const i = l.lastIndexOf('|');
-        const root = l.slice(i + 1);
-        return { brand: l.slice(0, i).trim(), main: ROOT_ALIAS[root] ?? root };
+        const [count, root, ...rest] = l.split('|').reverse();
+        return {
+          brand: rest.reverse().join('|').trim(),
+          main: ROOT_ALIAS[root] ?? root,
+          count: Number(count),
+        };
       });
+    const totals = new Map();
+    for (const r of rows) {
+      const key = r.brand.toLowerCase();
+      totals.set(key, (totals.get(key) ?? 0) + r.count);
+    }
+    return rows.filter((r) => totals.get(r.brand.toLowerCase()) >= MIN_PRODUCTS);
   } catch (e) {
     console.warn(`catalog brands skipped (${e.message.split('\n')[0]})`);
     return [];
@@ -317,18 +330,28 @@ for (const { brand, main } of loadCatalogBrands()) {
   if (!brandMains.has(brand)) brandMains.set(brand, new Set());
   brandMains.get(brand).add(main);
 }
+// The last generated map: guesses verified on an earlier run (see "kept" below).
+const previous = (() => {
+  try {
+    const src = readFileSync(OUT, 'utf8');
+    return new Function(`return ${src.slice(src.indexOf('{'), src.lastIndexOf('}') + 1)}`)();
+  } catch {
+    return {};
+  }
+})();
 const manualRaw = JSON.parse(readFileSync(MANUAL, 'utf8'));
 delete manualRaw._comment;
-const manual = new Map(Object.entries(manualRaw));
-const excelSet = new Set(excel);
-const unknownManual = [...manual.keys()].filter((k) => !excelSet.has(k));
+// Curated names match case-insensitively: catalog brands arrive as "VIM", "Vim", "vim".
+const manual = new Map(Object.entries(manualRaw).map(([k, v]) => [k.toLowerCase(), v]));
+const excelSet = new Set(excel.map((b) => b.toLowerCase()));
+const unknownManual = [...Object.keys(manualRaw)].filter((k) => !excelSet.has(k.toLowerCase()));
 const all = [...excel, ...unknownManual];
 
 let done = 0;
 const results = await pool(all, 16, async (brand) => {
   let r;
-  if (manual.has(brand)) {
-    const domain = manual.get(brand);
+  if (manual.has(brand.toLowerCase())) {
+    const domain = manual.get(brand.toLowerCase());
     if (!domain) r = { brand, source: 'manual', verdict: 'skip' };
     else {
       const page = await fetchPage(domain);
@@ -361,6 +384,15 @@ const results = await pool(all, 16, async (brand) => {
       ) {
         r = { brand, source: 'guess', domain, verdict: 'ok', page };
         break;
+      }
+    }
+    // A guess verified on an earlier run stays when its site merely didn't answer this time
+    // (timeouts / blocked bots are common); it is dropped only once the site is parked or ok.
+    const kept = previous[brand.trim().toLowerCase()];
+    if (r.verdict === 'none' && kept) {
+      const page = await fetchPage(kept);
+      if (page.error || page.status >= 400) {
+        r = { brand, source: 'guess', domain: kept, verdict: 'ok', page, kept: true };
       }
     }
   }
