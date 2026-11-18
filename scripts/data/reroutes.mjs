@@ -71,6 +71,453 @@ const ARTIFICIAL_STRAYS = [
   [/model kit/, 'DIY Kits'],
 ];
 
+/**
+ * Non-bath items mixed into the bath fittings delivery, matched on "title | path" (curtains in
+ * Shower Panels, potty seats in Toilet Seats, pools in Whirlpool Tubs...).
+ */
+const NOT_A_HOLDER = '(?![^|]*(holder|\\bring\\b(?! ?-? ?spun)|rack|\\brod\\b|\\bbar\\b|hanger|stand|hook|shelf|clip))';
+const NOT_CURTAIN_PART = '(?![^|]*(shower|hook|\\brings?\\b|\\brod\\b|bracket|clip|track))';
+const BATH_STRAYS = [
+  [/^[^|]*(backdrop|foil curtain|fringe curtain|tinsel curtain)/, 'Wedding Backdrops'],
+  // Window / door curtains (shower curtains stay with the shower panels; curtain hooks with hooks).
+  [new RegExp(`^${NOT_CURTAIN_PART}[^|]*blackout[^|]*\\|.*curtains`), 'Blackout Curtains'],
+  [new RegExp(`^${NOT_CURTAIN_PART}[^|]*(sheer|\\bnet\\b|tulle)[^|]*\\|.*curtains`), 'Sheer Curtains'],
+  [new RegExp(`^${NOT_CURTAIN_PART}[^|]*window[^|]*\\|.*curtains`), 'Window Curtains'],
+  [new RegExp(`^${NOT_CURTAIN_PART}[^|]*curtain[^|]*\\|.*curtains`), 'Door Curtains'],
+  [/^(?![^|]*(litter|\bcats?\b))[^|]*\|.*potty seats/, 'Potty Training'],
+  [
+    /^(?![^|]*(squat|step stool|adult|litter|\bcats?\b))[^|]*(potty|toilet training|training seat|toilet trainer)/,
+    'Potty Training',
+  ],
+  [
+    new RegExp(
+      `^${NOT_A_HOLDER}(?![^|]*(dispenser|towel))[^|]*(\\bply\\b|\\d+ pulls|toilet tissue|tissue roll|toilet paper roll)`,
+    ),
+    'Tissue Paper',
+  ],
+  [/^(?![^|]*(brush|holder|stand))[^|]*(toilet (bowl )?cleaner|harpic|domex|sani fresh)/, 'Toilet Cleaners'],
+  [/^(?![^|]*(brush|holder))[^|]*kitchen cleaner/, 'Kitchen Cleaners'],
+  // Whirlpool is also a washing machine brand: spin caps, gear boxes, descalers, inlet hoses.
+  [/scalegon|^[^|]*(descal[^|]*washing machine|washing machine[^|]*descal)/, 'Washing Machines'],
+  [/^[^|]*(inlet (hose|pipe)|water fill)[^|]*washing machine/, 'Washing Machines'],
+  [
+    /^(?![^|]*(\btap\b|faucet|bib|cock|valve|inlet|outlet|pipe|hose))[^|]*(washing machine|spin cap)/,
+    'Washing Machines',
+  ],
+  [
+    /^(?![^|]*(brush|filter|overhead shower|shower arm))[^|]*(limescale|descal|tap cleaner|tap & shower cleaner|faucet cleaner|bathroom cleaner|stain remover|chrome cleaner|tap and shower cleaner)/,
+    'Bathroom Cleaners',
+  ],
+  [/^[^|]*(gaming rug|area rug)/, 'Area Rugs'],
+  [/^[^|]*\b(bath mat|bathroom mat|shower mat|anti skid mat|anti - slip mat|floor mat)s?\b/, 'Bath Mats'],
+  [
+    /^(?![^|]*(brush|\bmat\b|scrub|sponge))[^|]*(swimming pool|kiddie pool|kids pool|paddling pool|baby pool|water pool|family pool)/,
+    'Swimming',
+  ],
+  // Towels themselves (not towel rings / racks).
+  [new RegExp(`^${NOT_A_HOLDER}[^|]*\\|.*towels > hand towels`), 'Hand Towels'],
+  [new RegExp(`^${NOT_A_HOLDER}[^|]*\\|.*towels > face towels`), 'Face Towels'],
+  [new RegExp(`^${NOT_A_HOLDER}[^|]*\\|.*towels > bath towels`), 'Bath Towels'],
+  [new RegExp(`^${NOT_A_HOLDER}[^|]*\\|.*kitchen linens`), 'Kitchen Towels'],
+  [new RegExp(`^${NOT_A_HOLDER}[^|]*(napkin|hand towel)[^|]*\\|.*bathroom linen`), 'Hand Towels'],
+  [new RegExp(`^${NOT_A_HOLDER}[^|]*towel[^|]*\\|.*bathroom linen`), 'Bath Towels'],
+  [/^[^|]*crochet/, 'Hand Sewing Needles'],
+  [/^[^|]*(eye pins|jewell?e?ry making)/, 'Jewellery Making Kits'],
+  [/^[^|]*(car seat|car back seat|car headrest|headrest hook)/, 'Car Organizers'],
+  [/^[^|]*(sewing fastener|hooks? (and|&) eyes?)/, 'Hooks & Eyes'],
+  [/^[^|]*toiletry bag/, 'Toiletry Bags'],
+  [
+    /^[^|]*(paddle mixer|paint mix|concrete mix|mortar mix|drill mixer|mixer drill|mixing paddle|paint mate|putty mix|cement mixer|mud mixer|mixing machine)/,
+    'Concrete Tools',
+  ],
+  [
+    /^[^|]*(caulk|sealing strip|sealant tape|sealing tape|sink platform sticker|corner tape|trim tape|waterproof tape|sealant strip)/,
+    'Sealants',
+  ],
+  [
+    /^(?![^|]*(ceramic|vessel|coupling|jali|\btap\b|faucet|commode|shower|spray|ice bath))[^|]*(bucket|foldable (wash|basin)|collapsible (wash|basin)|wash - tub|laundry tub|dish tub)/,
+    'Water Buckets',
+  ],
+  // Mixer grinders / blenders (the "Mixers" in tap targets), their stands go with kitchen organisers.
+  [
+    /^(?![^|]*bathroom)[^|]*(mixer grinder[^|]*stand|spice rack|cord (organi[sz]er|wrap|holder))/,
+    'Kitchenware › Kitchen Organizers › Kitchen Organizers',
+  ],
+  [/^(?![^|]*(\btap\b|faucet))[^|]*(mixer grinder|blender|juicer)/, 'Mixer Grinders'],
+  [/^(?![^|]*(toilet|\btub\b|bathtub))[^|]*(splash guard|splash baffle)/, 'Kitchenware › Kitchen Organizers › Kitchen Organizers'],
+  [
+    /^(?![^|]*(toilet|\btub\b|bathtub|bathroom|soap (dish|holder)))[^|]*(sponge holder|sink caddy|sink organi[sz]er)/,
+    'Kitchenware › Kitchen Organizers › Kitchen Organizers',
+  ],
+  [
+    /^(?![^|]*(toilet|bathroom|\btub\b|bathtub|coupling|\bpipe\b|extender|aerator))[^|]*\|.*(paper towel holders|kitchen sponge holders|spice racks|dish racks|kitchen sink accessories)/,
+    'Kitchenware › Kitchen Organizers › Kitchen Organizers',
+  ],
+  // Smaller strays, each to its own app category.
+  [/^(?![^|]*(faucet|valve|\btap\b))[^|]*(litter|cat toilet)/, 'Pet Training'],
+  [
+    /^(?![^|]*(health faucet|faucet|valve|\btap\b|diverter))[^|]*(hamster|gerbil|chinchilla|\bpets?\b[^|]*(shower|sprayer|bath)|dog bath|puppies)/,
+    'Pet Supplies › Pet Grooming › Grooming Kits',
+  ],
+  [/^(?![^|]*(dispenser|holder|brush|pump))[^|]*(dish ?wash(ing)? bar|dish wash bar|utensil cleaning|black soap)/, 'Dishwashing Bars'],
+  [
+    /^(?![^|]*(dispenser|holder|brush|pump|caddy|tray))[^|]*(dishwash(er|ing)? liquid|dish soap|dish spray|liquid soap concentrate)/,
+    'Dishwashing Liquids',
+  ],
+  [/^(?![^|]*(holder|dispenser))[^|]*sanitizer spray/, 'Disinfectants'],
+  [/^(?![^|]*(squeegee|wiper|brush))[^|]*glass cleaner/, 'Glass Cleaners'],
+  [/^[^|]*(drain cleaner|drain opener|drain cleaning|dranex|hair catching claw)/, 'Drain Cleaners'],
+  [/^(?![^|]*(brush|plunger))[^|]*(all purpose cleaner|multi surface cleaner|cleaning combo)/, 'All Purpose Cleaners'],
+  [/^(?![^|]*(holder|hook|hanger|organi[sz]er))[^|]*\bmop\b/, 'Mops'],
+  [
+    /^(?![^|]*(pipe|hose|connection|\btap\b|faucet|shower|valve|\bcock\b|hook|hanger))[^|]*(water heater|geyser)/,
+    'Instant Water Heaters',
+  ],
+  [/^(?![^|]*(\btap\b|faucet))[^|]*(solar panel|sprinkler)/, 'Sprinklers'],
+  [/^[^|]*(floor drain|backflow|anti core|sewer seal|drain pipe seal|anti - rat|anti rat|cockroach)/, 'Floor Drains'],
+  [
+    /^(?![^|]*(shower|faucet|geyser|basin|sink|drain|sewer|hanger|holder))[^|]*(garden (pipe|hose)|hose connector|pipe connector|connector joint|quick connector|pipe coupler|sprinkler pipe)/,
+    'Hose Connectors',
+  ],
+  [/^(?![^|]*(\btap\b|\bcock\b|faucet))[^|]*(garden water pipe sprayer|hose nozzle)/, 'Sprayers'],
+  [/^[^|]*embroidery/, 'Arts and Crafts › Embroidery Kits'],
+  [/^(?![^|]*splash)[^|]*(water (dam|stopper|barrier)|weather strip|liquid rubber|waterproofing)/, 'Sealants'],
+  [/^(?![^|]*(artificial|fake|faux|stool|hooks?\b))[^|]*(flower pots?|planters?|plant pots?)\b/, 'Pots & Planters'],
+  [/^[^|]*(incense|agarbatti|dhoop)/, 'Air Fresheners'],
+  [/^[^|]*\bcandles?\b/, 'Candles'],
+  [/^[^|]*(play ?dough|fundough)/, 'Modelling Clay'],
+  [/^(?![^|]*(\btap\b|faucet))[^|]*(water fountain|tabletop fountain|indoor fountain)/, 'Garden Fountains'],
+  [/^[^|]*bird ?bath/, 'Bird Baths'],
+  [/^[^|]*shelf brackets?/, 'Hardwares › Building Hardware › Brackets'],
+  [/^[^|]*(shower hinges|glass door hinges?)/, 'Hardwares › Door & Cabinet Handles › Hinges'],
+  // Kitchen racks (knife / mug / pot lid racks) filed as towel racks.
+  [
+    /^(?![^|]*bathroom)[^|]*\|.*(utensil holders|cutlery (racks|trays)|mug holders|pot racks)/,
+    'Kitchenware › Kitchen Organizers › Kitchen Organizers',
+  ],
+  // Kitchen brushes (after the organisers: a sink caddy "with brush holder" is an organiser).
+  [/^(?![^|]*(toilet|commode|\bwc\b|bathroom|soap dish))[^|]*(dish|kitchen|utensil)[^|]*(\bbrush(es)?\b|\bscrubber\b)/, 'Scrubbers'],
+  // Towels by title (the path rules above catch most).
+  ...[
+    [/(face towel|washcloth|wash cloth)/, 'Face Towels'],
+    [/hand towel/, 'Hand Towels'],
+    [/(dish towel|flour sack|kitchen towel)/, 'Kitchen Towels'],
+    [/(bath towel|towels for bath|gym towel)/, 'Bath Towels'],
+  ].map(([re, to]) => [
+    new RegExp(`^${NOT_A_HOLDER}[^|]*${re.source}[^|]*\\|.*(towels|linen|cleaning cloths|exercise)`),
+    to,
+  ]),
+];
+
+/** Bath fixtures (taps, showers, basins, tubs, plumbing): accessories mixed in go to their shelf. */
+const NOT_A_FIXTURE = '(?![^|]*(faucet|shower|\\btap\\b|mixer|spray|valve))';
+const BATH_FIXTURE_STRAYS = [
+  // No Kitchen Sinks menu item yet: the nearest sink shelf.
+  [new RegExp(`^${NOT_A_FIXTURE}[^|]*kitchen sink[^|]*(bowl|handmade|\\d+ ?x ?\\d+)`), 'Wash Basins'],
+  [new RegExp(`^${NOT_A_FIXTURE}[^|]*soap dispenser`), 'Soap Dishes'],
+  [
+    new RegExp(
+      `^${NOT_A_FIXTURE}[^|]*(corner (shelf|shelves|rack)|shower caddy|\\bcaddy\\b|organi[sz]er|bathroom shelf|storage rack|shelves)`,
+    ),
+    'Bathroom Shelves',
+  ],
+  [/^(?![^|]*(toilet|commode|\bwc\b))[^|]*(dish|kitchen|utensil)[^|]*(\bbrush(es)?\b|\bscrub(ber)?s?\b|sponge)/, 'Scrubbers'],
+  [
+    /^[^|]*(spin scrubber|cleaning brush|scrubber brush|tile brush|floor brush|scrub brush|cloth brush|clothes brush|grout brush|gap brush)/,
+    'Cleaning Brush Sets',
+  ],
+  [/^[^|]*(squeegee|\bwiper\b)/, 'Wipers'],
+  [/^[^|]*grab bar/, 'Towel Racks'],
+  [new RegExp(`^${NOT_A_FIXTURE}(?![^|]*basin)[^|]*(wall hooks?|adhesive hooks?|door hooks?)`), 'Bathroom Hooks'],
+  [/^[^|]*(connection pipe|connector pipe|supply line|inlet hose)/, 'Angle Valves'],
+];
+
+/** Kitchen faucets filed as bathroom taps: Kitchen Taps, still listed on their own tap page. */
+const kitchenTap = (name) => [
+  /^(?![^|]*(bathroom|wash ?basin))[^|]*(kitchen sink|kitchen (faucet|tap|mixer)|sink (faucet|mixer|tap))/,
+  'Kitchen Taps',
+  [name],
+];
+
+const BATH_ACCESSORIES = ['Bathroom Stools', 'Towel Racks', 'Towel Rings', 'Bathroom Hooks', 'Hooks', 'Soap Dishes', 'Toothbrush Holders', 'Bathroom Mirrors', 'Bathroom Shelves', 'Toilet Brushes', 'Toilet Paper Holders', 'Toilet Seats'];
+const BATH_FIXTURES = ['Kitchen Taps', 'Pillar Taps', 'Basin Mixers', 'Wall Mixers', 'Shower Mixers', 'Health Faucets', 'Overhead Showers', 'Hand Showers', 'Shower Heads', 'Shower Panels', 'Wash Basins', 'Countertop Basins', 'Corner Basins', 'Pedestal Basins', 'Freestanding Tubs', 'Corner Tubs', 'Whirlpool Tubs', 'Waste Couplings', 'Angle Valves'];
+
+// --- arts and crafts delivery -------------------------------------------------------------------
+// Its source paths are reliable while its Target Names are not (hair oil under "Oil Colors", water
+// bottles under "Water Colors", BBQ charcoal under "Charcoal"), so these rules match the PATH.
+/** A rule on the Amazon path (the text after the last " | "), optionally not when the title has `notTitle`. */
+const P = (seg, notTitle) =>
+  new RegExp(`^${notTitle ? `(?![^|]*(?:${notTitle}))` : ''}.*\\| [^|]*(?:${seg})[^|]*$`);
+
+const ART_STRAYS = [
+  // beauty
+  [P('hair care > hair oils'), 'Hair Oil'],
+  [P('hair colou?r|hennas'), 'Cosmetics › Hair Care › Hair Care'],
+  [P('\\blips > lip glosses'), 'Lip Gloss'],
+  [P('\\blips > '), 'Lipstick'],
+  // Steel make-up mixing palettes are tools; eyeshadow palettes are eyeshadow.
+  [P('make-up palettes', 'mixing'), 'Eyeshadow'],
+  [P('make-up palettes'), 'Makeup Brushes'],
+  [P('eyes > eyeshadow'), 'Eyeshadow'],
+  [P('eyes > kajal'), 'Kajal'],
+  [P('eyes > (eyebrow|eyeliner)'), 'Eyeliner'],
+  [P('\\bface > blushes'), 'Blush'],
+  [P('\\bface > compact powder'), 'Compact Powder'],
+  [P('\\bface > concealer'), 'Concealer'],
+  [P('\\bface > (face masks|face pack)'), 'Face Masks'],
+  [P('face wash|cleansing creams'), 'Face Wash'],
+  [P('solid soap bars'), 'Body Wash'],
+  [P('oral care|hair cutting tools'), 'Cosmetics › Grooming › Grooming'],
+  [P('nose & ear trimmers|moustache & beard'), 'Trimmers'],
+  [P('nails > nail polish'), 'Nail Polish'],
+  [P('false nails|nail art'), 'Nail Care'],
+  [P('false eyelashes'), 'Mascara'],
+  [P('make-up brushes|facial cleansing brushes|skin care tools', 'art brush|artist|paint'), 'Makeup Brushes'],
+  [P('temporary tattoos|tattoo accessories|hot & cold therapies', 'stencil'), 'Cosmetics › Body Care › Body Care'],
+  // home, kitchen, garden, pets
+  [P('feeding & watering'), 'Pet Feeding Accessories'],
+  [P('water bottles'), 'Kitchenware › Plastic Household › Water Bottles'],
+  [P('aquarium'), 'Aquarium Accessories'],
+  [P('faucet mounts|replacement faucet'), 'Kitchen Taps'],
+  [P('water purifier|water filtration|water quality'), 'RO Purifiers'],
+  [P('sink aerators'), 'Kitchen Taps'],
+  [P('facial tissue|toilet tissue|paper towels'), 'Tissue Paper'],
+  [P('wraps & bags > napkins'), 'Paper Napkins'],
+  [P('mold removers'), 'Bathroom Cleaners'],
+  [P('baby care > (nail care|grooming)'), 'Baby Nail Clippers'],
+  [P('gardening scissors'), 'Pruners/Secateurs'],
+  [P('manual weeders|gardening > gardening tools'), 'Garden Hand Tools'],
+  [P('chopping boards'), 'Cutting Boards'],
+  [P('hot plates'), 'Induction Cooktops'],
+  [P('picnic'), 'Kitchenware › Storage Containers › Lunch Boxes'],
+  // Charcoal tablets for dhoop / bakhoor burners are incense supplies, not barbecue fuel.
+  [/^[^|]*(dhoop|bakhoor|incense|loban|hookah|sambrani).*\| [^|]*barbecue/, 'Air Fresheners'],
+  [P('barbecue'), 'Furniture › Outdoor Furniture › Outdoor Furniture'],
+  [P('incense|home fragrance|air fresheners'), 'Air Fresheners'],
+  [P('plant stands'), 'Agri and Gardening › Plant Stands › Plant Stands'],
+  [P('seat cushions'), 'Seat Cushions'],
+  [P('car & motorbike > .*seat'), 'Auto Accessories › Car Interior Accessories › Seat Covers'],
+  [P('car & motorbike > paintwork|paint & exterior care'), 'Car Polish'],
+  [P('tarps'), 'Greenhouse Covers'],
+  [P('shopping bags|> handbags'), 'Sling Bags'],
+  // Canvas shoes and shoe whitener (Amazon's "Shoes & Handbags").
+  [P('shoe care', 'glue|fevi'), 'Shoe Polish'],
+  [P("boys' shoes|girls' shoes"), 'School Shoes'],
+  [P("women's shoes"), "Women's Sneakers"],
+  [P("\\bmen's shoes"), 'Canvas Shoes'],
+  [P('school supplies > pencil cases'), 'Pencil Cases'],
+  [P('tool bags|tool organisers'), 'Tool Organizers'],
+  [P("women's > wallets"), 'Travel Wallets'],
+  [P('boxes, baskets & bins'), 'Plastic Storage Boxes'],
+  [P('curtains & drapes'), 'Window Curtains'],
+  [P('night lights'), 'Night Lamps'],
+  [P('wall lamps'), 'Wall Lights'],
+  [P('fish bowls'), 'Fish Tanks'],
+  [P('birds > toys|birdcage'), 'Bird Toys'],
+  [P('bead mazes|baby & toddler toys'), 'Toys & Games › Baby & Bath Toys › Baby Toys'],
+  [P('slime & putty'), 'Slime & Putty'],
+  [P('learning & education > science|model building kits > robots'), 'STEM Toys'],
+  [P('early childhood education'), 'Learning Toys'],
+  [P('lapdesks'), 'Laptop Stands'],
+  [P('end tables'), 'Side Tables'],
+  [P('chair armrests'), 'Office Chairs'],
+  // gifts, decor, frames
+  [P('rangoli', 'stencil'), 'Diwali Decorations'],
+  [P('gift wrap'), 'Gift Boxes'],
+  [P('greeting cards'), 'Greeting Cards'],
+  [P('photobooth props'), 'Photo Booth Props'],
+  [P('photo frames > poster frames'), 'Poster Frames'],
+  [P('artwork > posters', 'poster colou?rs|poster paints?'), 'Poster Frames'],
+  [P('artwork > (art prints|paintings)', 'stretched canvas|blank canvas|canvas (board|panel)'), 'Painting Frames'],
+  [P('plaques & wall art|signs & plaques|wall stickers'), 'Decorative Showpieces'],
+  [P('wall & tabletop frames'), 'Table Frames'],
+  [P('albums & refills'), 'Scrapbooks'],
+  // stationery
+  // Paper trimmers / guillotines are craft cutting tools.
+  [P('paper trimmers|guillotine', 'scissor'), 'Arts and Crafts › Craft Tools › Cutting Tools'],
+  [P('desktop calendars|clipboards|bulletin boards|magnetic boards|message boards', 'easel|scissor|drawing|doodle|writing (board|pad)|kids|\\bled\\b'), 'Stationary › Office Supplies › Office Supplies'],
+  [P('appointment books|writing pads & diaries > diaries|personal organisers'), 'Stationary › Notebooks › Diaries'],
+  [P('composition notebooks'), 'Ruled Notebooks'],
+  [P('copy & multipurpose paper'), 'Printer Paper'],
+  [P('gel ink rollerball', 'scraper|palette'), 'Gel Pens'],
+  [P('liquid ink rollerball'), 'Roller Pens'],
+  [P('ballpoint pens|pen refills', '\\bnibs?\\b|fountain|cartridge|converter'), 'Ball Pens'],
+  [P('& highlighters > highlighters'), 'Stationary › Markers › Highlighters'],
+  [P('permanent markers'), 'Permanent Markers'],
+  [P('dry erase & wet erase'), 'Whiteboard Markers'],
+  [P('mechanical pencil', 'colou?r(ed)? pencil'), 'Mechanical Pencils'],
+  [P('fountain pens', 'calligraph|\\bnibs\\b|(spare|replacement|extra)\b[^,|]{0,24}\bnib|nib (set|pack|kit|only)|fountain pen ink|ink cartridges?\b'), 'Fountain Pens'],
+  [P('stylus', 'fountain'), 'Electronics › Mobile Accessories › Mobile Accessories'],
+  [P('inks, toners & cartridges'), 'Electronics › Printers › Printers'],
+  // tools and hardware
+  [P('paint rollers|prep materials|wire brushes'), 'Tools › Construction Tools › Construction Tools'],
+  [P('brushes & dusters'), 'Dusters'],
+  [P('caulking guns|> silicone|waterproofers', 'glue (stick|gun)'), 'Hardwares › Adhesives & Tapes › Sealants'],
+  [P('epoxies'), 'Hardwares › Adhesives & Tapes › Adhesives'],
+  [P('hot air guns|heat guns'), 'Heat Guns'],
+  [P('soldering'), 'Soldering Tools'],
+  [P('wire cutters|wire strippers'), 'Tools › Hand Tools › Cutters'],
+  [P('hand tools > pliers'), 'Tools › Hand Tools › Pliers'],
+  // sewing
+  [P('> snaps'), 'Hooks & Eyes'],
+  [P('sewing sets & kits'), 'Sewing Kits'],
+  [P('hand sewing needles'), 'Hand Sewing Needles'],
+  [P('fabric adhesives'), 'Fabric Glue'],
+  [P('embroidery > hoops'), 'Embroidery Hoops'],
+  // --- second pass: household, car and tool items ---
+  [P('car styling|mud flaps'), 'Mud Flaps'],
+  [P('registration plates'), 'Number Plate Frames'],
+  [P('door protection'), 'Door Guards'],
+  [P('engine oil|oil additives|dashboard figurines'), 'Auto Accessories › Car Accessories › Car Accessories'],
+  [P('car covers'), 'Car Covers'],
+  [P('emergency tool kits|vehicle tools|windscreen wipers'), 'Car Tool Kits'],
+  [P('car accessories > interior accessories'), 'Air Fresheners'],
+  [P('paint & primer|speciality paint|paint cleaners|paint sprayers|paint roller|putty knives|hand tools > scrapers', 'acrylic sheet'), 'Tools › Construction Tools › Construction Tools'],
+  [P('respirators'), 'Tools › Safety Equipment › Safety Equipment'],
+  [P('spanners'), 'Spanners'],
+  [P('screwdriver sets'), 'Screwdriver Sets'],
+  [P('clothes hangers'), 'Clothes Hangers'],
+  [P('cloths & towels > microfibre|cleaning cloths'), 'Cleaning Cloths'],
+  [P('pillowcases|pillow cases'), 'Pillow Covers'],
+  [P('> pillows >'), 'Sleeping Pillows'],
+  [P('soup spoons'), 'Spoon Sets'],
+  [P('beds, frames|camping furniture > cots'), 'Single Beds'],
+  [P('loofahs|facial scrubs'), 'Body Scrubs'],
+  [P('range hood'), 'Chimneys'],
+  [P('towels > bath towels'), 'Bath Towels'],
+  [P('scented oil diffusers'), 'Electric Diffusers'],
+  [P('scented oils|deodorisers'), 'Air Fresheners'],
+  [P('tandoors & grills|outdoor heating|fire pits'), 'Furniture › Outdoor Furniture › Outdoor Furniture'],
+  [P('> soils|fertilizers & plant food|planting media'), 'Agri and Gardening › Garden Soil › Garden Soil'],
+  [P('gas stoves|induction cooktop'), 'Induction Cooktops'],
+  [P('> wax >|waxing|massage creams|body oils|skin care > oils|carrier & essential oils', 'seal'), 'Cosmetics › Body Care › Body Care'],
+  [P('\\bface > foundation'), 'Foundation'],
+  [P('\\bface > highlighters'), 'Cosmetics › Face Makeup › Highlighter'],
+  [P('cuticle|nail tools|nail brushes|> nail art'), 'Nail Care'],
+  [P('hair styling tools > (brushes|combs)|shampoo & conditioner'), 'Cosmetics › Hair Care › Hair Care'],
+  [P('hair styling accessories > (claws|bun)|hair clips > |hair accessories > clips'), 'Hair Clips'],
+  [P('body paint|face paints'), 'Costume Props'],
+  [P('household cleaners > toilet cleaners', 'liquid|gel'), 'Toilet Brushes'],
+  [P('brushes > kitchen brushes'), 'Cleaning Brush Sets'],
+  [P('all-purpose cleaners|stain removers'), 'All Purpose Cleaners'],
+  [P('pruning saws'), 'Pruning Tools'],
+  [P('saws & accessories|handsaw|chain saws|circular saw blades'), 'Saws'],
+  [P('angle grinders|grinder accessories|cutting tools > tool holders|power brushes'), 'Angle Grinders'],
+  [P('rotary tool|cutting wheels|drill tool kits'), 'Cutting Machines'],
+  [P('kitchen knife sets'), 'Kitchen Knife Sets'],
+  [P('fruit and vegetable knives'), 'Vegetable Knives'],
+  [P('fruit slicers|graters|pizza cutters|manual choppers'), 'Slicers'],
+  [P('tile & masonry'), 'Tiling Tools'],
+  [P('hand tools > cutters|pipe cutters'), 'Tools › Hand Tools › Cutters'],
+  [P('disposable tableware > dishes'), 'Paper Plates'],
+  [P('disposable tableware > drinkware|drinkware > cups'), 'Disposable Glasses'],
+  [P('disposable tableware > spoons'), 'Wooden Cutlery'],
+  [P('aluminium foil'), 'Aluminium Foil'],
+  [P('moist wipes|tissue holders'), 'Tissue Paper'],
+  [P('dustbin bags'), 'Cleaning Products › Garbage Bags › Garbage Bags'],
+  [P('table lamps'), 'Table Lamps'],
+  [P('close-to-ceiling'), 'LED Ceiling Lights'],
+  [P('paper towel holders'), 'Kitchenware › Kitchen Organizers › Kitchen Organizers'],
+  [P('paper bins'), 'Dustbins'],
+  [P('toilet paper holders'), 'Toilet Paper Holders'],
+  [P('> lunch boxes'), 'Kitchenware › Storage Containers › Lunch Boxes'],
+  [P('idols & figurines|dream catchers|indoor fountains|tapestries|decorative bowls'), 'Decorative Showpieces'],
+  [P('lanyards & wrist straps'), 'Electronics › Mobile Accessories › Mobile Accessories'],
+  [P('door hardware & locks > hinges'), 'Hardwares › Door & Cabinet Handles › Hinges'],
+  [P('musical toy'), 'Toys & Games › Musical Toys › Musical Toys'],
+  [P('> puzzles', 'diy|kit'), 'Puzzles'],
+  [P('hanging planters'), 'Hanging Planters'],
+  [P('kitchen playsets|kitchen toys'), 'Kitchen Sets'],
+  [P('glassware & drinkware'), 'Glassware'],
+  [P('jars & containers'), 'Plastic Jars'],
+  [P('clocks > wall clocks'), 'Designer Wall Clocks'],
+  [P('water pistols'), 'Holi Decorations'],
+  [P('electric kettles'), 'Electric Kettles'],
+  [P('pool toys'), 'Swimming'],
+  [P('toy vehicles > cars'), 'Die-Cast Cars'],
+  [P('cake stands'), 'Serving Platters'],
+  [P('blankets, throws'), 'Fleece Blankets'],
+  [P('soap holders'), 'Soap Dishes'],
+  [P('coffee tables'), 'Coffee Tables'],
+  [P('patio furniture'), 'Garden Tables'],
+  [P('notebook computer stands'), 'Laptop Stands'],
+  [P('pins & tacks|clips, clamps & rings|binder'), 'Stationary › Office Supplies › Office Supplies'],
+  [P('desk supplies organisers|pencil holders', 'brush|easel|plate'), 'Stationary › Office Supplies › Office Supplies'],
+  [P('mounting tape|transparent tape|hook & loop strips|picture hangers'), 'Double-Sided Tapes'],
+  [P('laptop messenger'), 'Laptop Bags'],
+  [P('messenger & sling|canvas & beach tote|retail bags'), 'Sling Bags'],
+  [P('cosmetic bags|make-up pouches|cosmetic cases'), 'Toiletry Bags'],
+  [P('laundry bags|> hampers'), 'Laundry Bags'],
+  [P('clothing & wardrobe storage|under-bed storage|produce storage bags'), 'Storage Baskets'],
+  [P('drawstring bags|rucksacks|coin purses'), 'Backpacks'],
+  [P('kitchen linens > aprons'), 'Aprons'],
+  [P('kitchen linens > table runners'), 'Table Runners'],
+  [P('outdoor curtains'), 'Window Curtains'],
+  [P('insulated drinks containers'), 'Tumblers'],
+  [P('pet supplies > .*grooming > scissors'), 'Pet Supplies › Pet Grooming › Grooming Kits'],
+  [P('pet supplies > .*claw care'), 'Pet Supplies › Pet Grooming › Nail Clippers'],
+];
+
+/** Hair and wrist jewellery (also checked on the Kundan Jewellery delivery). */
+const JEWELLERY_STRAYS = [
+  [P('hair accessories > bands'), 'Hair Bands'],
+  [P('hair accessories > pins|hair pins'), 'Hair Pins'],
+  [P('hair decoration'), 'Hair Clips'],
+  [P('bangles & bracelets > bangles'), 'Bangles'],
+  [P('women > anklets'), 'Anklets'],
+];
+/** Finished necklaces / sets / earrings filed as bead supplies. */
+const WEAR_JEWELLERY = [
+  [P('women > necklaces'), 'Necklaces'],
+  [P('women > jewelry sets'), 'Jewellery Sets'],
+  [P('women > earrings'), 'Earrings'],
+  [P('bangles & bracelets > bracelets'), 'Charm Bracelets'],
+];
+
+/** Per-target rules, checked before ART_STRAYS. */
+const ART_OWN = {
+  'Pearl Beads': [
+    ...JEWELLERY_STRAYS.slice(0, 3),
+    [P('hair styling accessories > claws'), 'Hair Clips'],
+    [P('women > |girls > |bangles & bracelets'), 'Pearl Jewellery'],
+  ],
+  // Eyebrow / beard scissors are grooming tools.
+  Scissors: [[P("eyebrow|tweezers|eye care|beauty > tools|women's > sets"), 'Cosmetics › Grooming › Grooming']],
+  'Paint Sets': [[P('paintbrush'), 'Paint Brushes']],
+  'Paint Brushes': [[P('painting materials > paints'), 'Paint Sets']],
+  'Modelling Clay': [[P('ceramic & pottery tools|modeling tools'), 'Clay Tools']],
+  'Polymer Clay': [
+    [P('ceramic & pottery tools|modeling tools'), 'Clay Tools'],
+    [P('candle making > moulds|chocolate moulds'), 'Moulds'],
+  ],
+  'Clay Tools': [[P('ceramics & pottery > clay|clay & dough', 'tool'), 'Modelling Clay']],
+  'Drawing Pencils': [
+    [P('coloured pencils'), 'Arts and Crafts › Drawing Materials › Color Pencils', ['Stationary › Pencils & Erasers › Color Pencils']],
+    [P('mechanical pencil'), 'Mechanical Pencils', ['Drawing Pencils']],
+  ],
+  'Color Pencils': [[P('wooden pencils', 'colou?r'), 'Drawing Pencils']],
+  'Calligraphy Sets': [[P('wooden pencils'), 'Drawing Pencils']],
+  Stencils: [[P('rangoli'), 'Stencils', ['Diwali Decorations']]],
+};
+
+/**
+ * Names the app menu has in two places: filed under Arts and Crafts, listed on the other page too
+ * (checked last, after the stray rules).
+ */
+const ART_TWO_PLACES = {
+  Canvas: ['Arts and Crafts › Art Supplies › Canvas', ['Arts and Crafts › Drawing Materials › Canvas']],
+  'Color Pencils': ['Arts and Crafts › Drawing Materials › Color Pencils', ['Stationary › Pencils & Erasers › Color Pencils']],
+  Crayons: ['Arts and Crafts › Drawing Materials › Crayons', ['Stationary › Pencils & Erasers › Crayons']],
+  Markers: ['Arts and Crafts › Drawing Materials › Markers', ['Stationary › Markers']],
+  'Sketch Pens': ['Arts and Crafts › Drawing Materials › Sketch Pens', ['Stationary › Markers › Sketch Pens']],
+  'Glue & Adhesives': ['Arts and Crafts › Craft Tools › Glue & Adhesives', ['Stationary › Glue & Adhesives']],
+  'Glue Guns': ['Arts and Crafts › Craft Tools › Glue Guns', ['Tools › Power Tools › Glue Guns']],
+  Scissors: ['Arts and Crafts › Craft Tools › Scissors', ['Stationary › Office Supplies › Scissors']],
+  'Embroidery Kits': ['Arts and Crafts › Embroidery Kits', ['Clothing › Embroidery Kits']],
+};
+
+const ART_TARGETS = ['Calligraphy Sets', 'Glass Beads', 'Modelling Clay', 'Wooden Beads', 'Moulds', 'Canvas', 'Glue & Adhesives', 'DIY Craft Kits', 'Paint Sets', 'Nibs', 'DIY Kits', 'Glue Guns', 'Palettes', 'Drawing Boards', 'Cardstock', 'Oil Colors', 'Handmade Paper', 'Pearl Beads', 'Charcoal', 'Drawing Pencils', 'Origami Paper', 'Ink', 'Polymer Clay', 'Clay Tools', 'Drawing Sheets', 'Paint Brushes', 'Sketch Pens', 'Jewellery Making Kits', 'Cutting Tools', 'Display Easels', 'Portable Easels', 'Poster Colors', 'Acrylic Colors', 'Color Pencils', 'Embroidery Kits', 'Stencils', 'Kids Craft Kits', 'Punches', 'Crayons', 'Acrylic Beads', 'Table Easels', 'Scissors', 'Markers', 'Calligraphy Pens', 'Water Colors', 'Floor Easels', 'Scrapbook Paper', 'Seed Beads'];
+
 const REROUTES = {
   // --- cleaning delivery ---
   Wipers: [[/windscreen|windshield|wiper blade|wiper arm|wiper refill for car/, 'Wiper Blades']],
@@ -145,6 +592,64 @@ const REROUTES = {
       ],
     ]),
   ),
+
+  // --- bath fittings delivery (see BATH_STRAYS) ---
+  ...Object.fromEntries(
+    BATH_FIXTURES.map((name) => [
+      name,
+      [
+        ...BATH_STRAYS,
+        ...(/Taps|Mixers/.test(name) && name !== 'Kitchen Taps' ? [kitchenTap(name)] : []),
+        // Baby / inflatable bath tubs filed as corner or whirlpool tubs.
+        ...(/^(Corner|Whirlpool) Tubs$/.test(name)
+          ? [
+              [
+                /^(?![^|]*(hot tub|spa filter|switch|hamster))[^|]*(baby bath|bath ?tub for (baby|kids)|inflatable|pool tub|bath pool)/,
+                'Freestanding Tubs',
+              ],
+            ]
+          : []),
+        ...BATH_FIXTURE_STRAYS,
+      ],
+    ]),
+  ),
+  ...Object.fromEntries(
+    BATH_ACCESSORIES.map((name) => [
+      name,
+      [
+        ...BATH_STRAYS,
+        // Wall hooks filed as towel racks / rings.
+        ...(/^Towel R/.test(name)
+          ? [
+              [
+                /^(?![^|]*(towel (ring|rack|rod|bar|holder|rail)|napkin|knife|kitchen|drying|coat rack|clothes|stand))[^|]*\bhooks?\b/,
+                'Bathroom Hooks',
+              ],
+            ]
+          : []),
+        // Hooks is in Bath Fittings and in Hardwares: filed under bath, listed on both.
+        ...(name === 'Hooks'
+          ? [[/./, 'Bath Fittings › Bathroom Accessories › Hooks', ['Hardwares › Door & Cabinet Handles › Hooks']]]
+          : []),
+      ],
+    ]),
+  ),
+
+  // --- arts and crafts delivery (see ART_STRAYS) ---
+  ...Object.fromEntries(
+    ART_TARGETS.map((name) => [
+      name,
+      [
+        ...(ART_OWN[name] ?? []),
+        ...ART_STRAYS,
+        ...JEWELLERY_STRAYS,
+        ...WEAR_JEWELLERY,
+        ...(ART_TWO_PLACES[name] ? [[/./, ...ART_TWO_PLACES[name]]] : []),
+      ],
+    ]),
+  ),
+  // Kundan sets are the right kind of item: only hair and wrist pieces move.
+  'Kundan Jewellery': JEWELLERY_STRAYS,
 
   // --- baby care delivery: names the app spells differently / lists in two mains ---
   'baby bottle accessories': [[/./, 'Baby Care › Bottle Accessories']],

@@ -55,6 +55,8 @@ const VARIANT_META = new Set([
 ]);
 /** v1.18 brands the store doesn't sell: Amazon's own (Amazon, Amazon Basics, Solimo...). */
 const BLOCKED_BRAND = /\bamazon\b|amazonbasics|\bsolimo\b/i;
+/** In a title only "Amazon Brand/Basics" counts: Hindware sells an "Amazon" basin and mixer series. */
+const BLOCKED_TITLE = /\bamazon\s*(brand|basics)\b|\bsolimo\b/i;
 /** v1.18 "Pack Of 03" / "(Pack of 2)": a pack-size option. */
 const PACK_OPTION = /^\(?\s*pack\s+of\s+0*(\d+)\s*\)?$/i;
 /** v1.18 a size the delivery left as its placeholder: not a real option. */
@@ -248,7 +250,7 @@ for (const [index, p] of items.entries()) {
   const priceSource = Number(p['Selling Price (INR)']) > 0 ? p : (variantPrices[0] ?? p);
   const price = Number(priceSource['Selling Price (INR)']);
   // v1.18 the store doesn't sell Amazon's own brands (Amazon, Amazon Basics, Solimo...).
-  if (BLOCKED_BRAND.test(`${p.Brand ?? ''} ${title ?? ''}`)) {
+  if (BLOCKED_BRAND.test(p.Brand ?? '') || BLOCKED_TITLE.test(title ?? '')) {
     problems.push(`${where}: Amazon brand ("${p.Brand ?? title}") - not sold here, skipped`);
     continue;
   }

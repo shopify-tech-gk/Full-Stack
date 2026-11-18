@@ -79,7 +79,10 @@ const parseList = (list) =>
     });
 
 /** The storefront tree from categories.ts: roots, their subs, and each sub's children. */
-function readStorefront(text) {
+function readStorefront(source) {
+  // Prettier writes a string holding an apostrophe ("Women's...") in double quotes: read those
+  // as single-quoted strings too.
+  const text = source.replace(/"((?:[^"\\]|\\.)*)"/g, (_m, s) => `'${s.replace(/'/g, "\\'")}'`);
   const treeText = text.slice(text.indexOf('const TREE'), text.indexOf('const THIRD_LEVEL'));
   const thirdText = text.slice(
     text.indexOf('const THIRD_LEVEL'),
