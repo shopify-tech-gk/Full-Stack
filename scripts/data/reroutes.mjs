@@ -518,6 +518,135 @@ const ART_TWO_PLACES = {
 
 const ART_TARGETS = ['Calligraphy Sets', 'Glass Beads', 'Modelling Clay', 'Wooden Beads', 'Moulds', 'Canvas', 'Glue & Adhesives', 'DIY Craft Kits', 'Paint Sets', 'Nibs', 'DIY Kits', 'Glue Guns', 'Palettes', 'Drawing Boards', 'Cardstock', 'Oil Colors', 'Handmade Paper', 'Pearl Beads', 'Charcoal', 'Drawing Pencils', 'Origami Paper', 'Ink', 'Polymer Clay', 'Clay Tools', 'Drawing Sheets', 'Paint Brushes', 'Sketch Pens', 'Jewellery Making Kits', 'Cutting Tools', 'Display Easels', 'Portable Easels', 'Poster Colors', 'Acrylic Colors', 'Color Pencils', 'Embroidery Kits', 'Stencils', 'Kids Craft Kits', 'Punches', 'Crayons', 'Acrylic Beads', 'Table Easels', 'Scissors', 'Markers', 'Calligraphy Pens', 'Water Colors', 'Floor Easels', 'Scrapbook Paper', 'Seed Beads'];
 
+// --- cosmetics delivery --------------------------------------------------------------------------
+// Its Target Names are mostly right and its Amazon paths are noisy (a trimmer under "cake sculpting
+// tools", a concealer under "cooling racks"), so a product moves only when BOTH agree: the path is
+// another cosmetics category's AND its own title names that kind of product (and not its target).
+// Titles carry the target name glued on ("Blush – ...", "... – Perfumes"); that part is ignored.
+/** [menu name, path regex, title regex] */
+const COS_PLACES = [
+  ['Foundation', /face > (foundation|bb creams|cc creams)/, /foundation|\bbb cream|\bcc cream/],
+  ['Compact Powder', /compact powder/, /compact|pressed powder/],
+  ['Concealer', /concealer/, /concealer/],
+  ['Cosmetics › Face Makeup › Highlighter', /highlighters & illuminators/, /highlight|illuminat|strobe/],
+  ['Blush', /blushes/, /blush/],
+  ['Bronzer', /bronzers/, /bronz/],
+  ['Makeup Primer', /> primers|eyeshadow bases & primers/, /primer/],
+  ['Eyeshadow', /eyes > eyeshadow$|make-up palettes/, /eye ?shadow/],
+  ['Eyeliner', /eyeliners/, /eye ?liner/],
+  ['Kajal', /kajal/, /kajal|kohl/],
+  ['Mascara', /mascaras/, /mascara/],
+  ['Lipstick', /lipsticks|lip stains/, /lipstick|lip (tint|stain|crayon)/],
+  ['Lip Gloss', /lip glosses/, /gloss/],
+  ['Lip Liner', /lip liners/, /lip ?liner/],
+  ['Nail Polish', /nails > (nail polish|nail gel)$/, /nail (polish|paint|lacquer|enamel)|gel polish/],
+  [
+    'Nail Care',
+    /nail polish remover|manicure & pedicure > nail care|cuticle|nail tools|manicure kits/,
+    /remover|cuticle|nail file|buffer|clipper|cutter|manicure|nail (kit|drill|care)/,
+  ],
+  ['Makeup Brushes', /make-up brushes|face brushes|eyes > (eyeshadow|eyeliner) brushes/, /brush/],
+  ['Makeup Sponges', /sponges & blenders/, /sponge|blender|puff/],
+  ['Makeup Remover', /make-up remover/, /remov|micellar|cleansing (water|oil|balm|milk)/],
+  ['Face Wash', /cleansing creams & milks > (face wash|gels)/, /face ?wash|cleanser/],
+  ['Face Creams', /face creams|night creams/, /(face|day|night) cream/],
+  ['Moisturizers', /creams & moisturisers > moisturizers/, /moisturi[sz]er/],
+  ['Serums', /creams & moisturisers > serums|eye serums/, /serum/],
+  ['Sunscreen', /sunscreen/, /sunscreen|\bspf|sun ?block/],
+  ['Face Masks', /face masks|face pack/, /mask|face pack/],
+  ['Body Scrubs', /body scrubs|facial scrubs/, /scrub/],
+  ['Body Lotion', /body lotions|body creams|body butters/, /body (lotion|cream|butter|milk)|hand (and|&) body/],
+  ['Body Wash', /body wash|bathing > body washes|bath & body > body washes/, /body wash|shower gel/],
+  ['Hand Cream', /hand creams/, /hand (moisturi[sz]ing )?(cream|lotion)/],
+  ['Foot Care', /foot care|foot creams|callus|foot rasps/, /foot|heel|callus/],
+  ['Hair Serum', /hair serums|hair regrowth/, /hair.*serum|serum.*hair/],
+  ['Hair Oil', /hair oils/, /hair oil/],
+  ['Shampoo', /> shampoos$|2-in-1 shampoo/, /shampoo/],
+  ['Conditioner', /shampoo & conditioner > conditioners$/, /conditioner/],
+  ['Hair Masks', /hair masks/, /hair mask|hair pack/],
+  ['Deodorants', /deodorant|antiperspirant/, /\bdeo/],
+  ['Perfumes', /fragrance > (perfume|eau de)/, /perfume|eau de|\bedp\b|\bedt\b|parfum/],
+  ['Body Mists', /body sprays & mists/, /mist|body spray/],
+  ['Beard Care', /beard (conditioners|oils)|moustache waxes/, /beard|moustache/],
+  ['Shaving', /razor|shaving sets|men's > (creams|gels|foams)$|aftershave/, /razor|shav|after ?shave/],
+  ['Trimmers', /trimmers|body groomers|hair clippers/, /trimmer|groomer|clipper/],
+];
+/** Each target's own words: a title that names them keeps the product where it was filed. */
+const COS_OWN_WORDS = {
+  foundation: /foundation|\bbb\b|\bcc\b/,
+  'face creams': /cream/,
+  blush: /blush/,
+  'compact powder': /compact|powder/,
+  concealer: /concealer/,
+  'hair serum': /serum/,
+  sunscreen: /sunscreen|\bspf|sun ?block|sun protection|\buv\b/,
+  serums: /serum/,
+  trimmers: /trimmer|groomer|clipper|shaver/,
+  eyeshadow: /eye ?shadow|palette/,
+  'grooming kits': /kit|\bset\b|combo|pack/,
+  'beard care': /beard|moustache/,
+  shaving: /razor|shav/,
+  'hand cream': /hand/,
+  eyeliner: /eye ?liner/,
+  // "moisturising" alone is not enough: hand creams and body lotions say it too.
+  moisturizers: /moisturi[sz]er|\bface\b|facial/,
+  kajal: /kajal|kohl/,
+  'body lotion': /body (lotion|cream|butter|milk)|lotion/,
+  'makeup primer': /primer/,
+  bronzer: /bronz|contour/,
+  'foot care': /foot|feet|heel|callus/,
+  'nail care': /nail/,
+  attars: /attar|ittar|\bitr\b/,
+  conditioner: /conditioner/,
+  shampoo: /shampoo/,
+  'hair masks': /mask|hair pack/,
+  highlighter: /highlight|illuminat|strobe/,
+  'hair oil': /oil/,
+  'face wash': /wash|cleanser/,
+  'lip liner': /liner/,
+  deodorants: /\bdeo/,
+  perfumes: /perfume|parfum|fragrance|eau de|\bedt\b|\bedp\b/,
+  lipstick: /lipstick|lip (tint|stain|crayon)|lip (&|and) cheek/,
+  'lip gloss': /gloss/,
+  'nail polish': /nail (polish|paint|lacquer|enamel)|polish/,
+  'body mists': /mist|body spray/,
+  'makeup brushes': /brush/,
+  'body scrubs': /scrub/,
+  'face masks': /mask|face pack/,
+  'body wash': /wash|shower/,
+  mascara: /mascara/,
+  'makeup remover': /remov|micellar|cleansing/,
+  'makeup sponges': /sponge|blender|puff/,
+};
+/** Rules for one cosmetics target: another category's path + title, never its own words. */
+function cosmeticRules(target) {
+  const own = COS_OWN_WORDS[target];
+  const glued = new RegExp(`^${target} – | – ${target}$`, 'g');
+  return COS_PLACES.map(([to, pathRe, titleRe]) => [
+    {
+      test(text) {
+        const cut = text.lastIndexOf(' | ');
+        const title = text.slice(0, cut).replace(glued, '');
+        const path = text.slice(cut + 3);
+        return pathRe.test(path) && titleRe.test(title) && !own.test(title);
+      },
+    },
+    to,
+  ]);
+}
+// ('grooming kits' is set with the baby delivery's rule, further down.)
+const COS_TARGETS = Object.keys(COS_OWN_WORDS).filter((t) => t !== 'grooming kits');
+/** Names the menu has in more than one place: these deliveries are the cosmetics ones. */
+const COS_HOME = {
+  highlighter: ['Cosmetics › Face Makeup › Highlighter'],
+  // (Religion › Islamic Items › Attars has no catalog category: the app finds these there by name.)
+  attars: ['Cosmetics › Fragrances › Attars'],
+};
+/** Title-only moves checked before the path + title rules (the path is wrong for these). */
+const COS_FIRST = {
+  moisturizers: [[/^[^|]*hand (and|&) body/, 'Body Lotion']],
+};
+
 const REROUTES = {
   // --- cleaning delivery ---
   Wipers: [[/windscreen|windshield|wiper blade|wiper arm|wiper refill for car/, 'Wiper Blades']],
@@ -635,6 +764,15 @@ const REROUTES = {
     ]),
   ),
 
+  // --- cosmetics and jewellery delivery: jewellery-making supplies filed as jewellery ---
+  'Charm Bracelets': [[/^[^|]*(jump ring|jewell?e?ry.making)|jewellery-making/, 'Jewellery Making Kits']],
+
+  // --- cosmetics delivery (see COS_PLACES) ---
+  ...Object.fromEntries(COS_TARGETS.map((name) => [name, [
+    ...(COS_FIRST[name] ?? []),
+    ...cosmeticRules(name),
+    ...(COS_HOME[name] ? [[/./, ...COS_HOME[name]]] : []),
+  ]])),
   // --- arts and crafts delivery (see ART_STRAYS) ---
   ...Object.fromEntries(
     ART_TARGETS.map((name) => [
@@ -659,7 +797,12 @@ const REROUTES = {
     [/baby/, 'Baby Care › Musical Toys'],
     [/./, 'Toys & Games › Musical Toys'],
   ],
-  'grooming kits': [[/./, 'Baby Care › Grooming Kits']],
+  // Baby deliveries and cosmetics deliveries both send lowercase 'grooming kits'.
+  'grooming kits': [
+    [/baby|infant|newborn|toddler|\bkids?\b|child/, 'Baby Care › Grooming Kits'],
+    ...cosmeticRules('grooming kits'),
+    [/./, 'Cosmetics › Grooming › Grooming Kits'],
+  ],
 
   // --- auto delivery ---
   'Air Fresheners': [[/\bcar\b|vehicle|dashboard|\bvent\b/, 'Car Fresheners']],

@@ -76,6 +76,15 @@ const jsonb = (v) => `${lit(JSON.stringify(v))}::jsonb`;
 const money = (n) => Number(n).toFixed(2);
 const clean = (s) =>
   typeof s === 'string' ? s.replace(/�/g, '-').replace(/\s+/g, ' ').trim() || null : (s ?? null);
+/** Deliveries glue the Target Name onto titles ("Blush – ...", "... – Perfumes"): drop it. */
+const untag = (t, name) => {
+  const n = String(name ?? '').trim().toLowerCase();
+  if (!t || !n) return t;
+  const lt = t.toLowerCase();
+  if (lt.startsWith(`${n} – `)) return t.slice(n.length + 3).trim() || t;
+  if (lt.endsWith(` – ${n}`)) return t.slice(0, -(n.length + 3)).trim() || t;
+  return t;
+};
 const slugify = (t) =>
   t
     .toLowerCase()
@@ -241,7 +250,7 @@ for (const [index, p] of items.entries()) {
     target = found.target;
     autoMapped.set(targetName, `${found.label}${found.isNew ? ' (new category)' : ''}`);
   }
-  const title = clean(p.Title);
+  const title = untag(clean(p.Title), p['Target Name']);
   const id = clean(p.Youmart_Product_ID);
   // v1.18 no product-level price (its own size is unavailable): the cheapest sellable variant's.
   const variantPrices = variantList(p)
@@ -320,7 +329,7 @@ for (const [index, p] of items.entries()) {
         v,
         options,
         specs,
-        title: clean(v.Title),
+        title: untag(clean(v.Title), p['Target Name']),
         image: httpsUrl(v['Image URL']),
         images: [...new Set([httpsUrl(v['Image URL']), ...gallery].filter(Boolean))].slice(0, 8),
       };
@@ -510,6 +519,35 @@ if (dryRun) {
     JSON.stringify(process.argv.includes('--all') ? products : products.slice(0, 2), null, 2),
   );
   process.exit(0);
+}
+
+// A product already in the store keeps its slug: it is matched by its Youmart_Product_ID (the slug's
+// last part), not by a slug rebuilt from today's title. Otherwise a changed title (a trimmed
+// "Blush – " prefix) adds a second copy and leaves the first with no SKUs, showing ₹0.
+{
+  const byId = new Map(products.map((p) => [p.slug.slice(p.slug.lastIndexOf('-') + 1), p]));
+  const ids = [...byId.keys()].map((id) => `'${id.replace(/'/g, "''")}'`).join(',');
+  const found = !ids ? '' : execFileSync(
+    'docker',
+    ['compose', '-f', 'docker/docker-compose.yml', '--env-file', '.env', 'exec', '-T', 'postgres',
+      'psql', '-v', 'ON_ERROR_STOP=1', '-U', env.POSTGRES_USER, '-d', env.POSTGRES_DB, '-At', '-F', '|'],
+    {
+      cwd: root,
+      input: `SELECT substring(slug from '[^-]+$'), slug FROM catalog.product
+        WHERE deleted_at IS NULL AND substring(slug from '[^-]+$') = ANY(ARRAY[${ids}]::text[]);`,
+      maxBuffer: 64 * 1024 * 1024,
+    },
+  ).toString();
+  let kept = 0;
+  for (const line of found.trim().split('\n').filter(Boolean)) {
+    const [id, slug] = line.split('|');
+    const p = byId.get(id);
+    if (p && p.slug !== slug) {
+      p.slug = slug;
+      kept++;
+    }
+  }
+  if (kept) console.log(`kept the existing link (slug) of ${kept} product(s) already in the store`);
 }
 
 // --- SQL (one transaction; every write is an upsert) -----------------------------------------

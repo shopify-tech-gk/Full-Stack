@@ -321,7 +321,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'cleaning-products/air-fresheners':
     'electric-diffusers=Electric Diffusers;room-sprays=Room Sprays;gel-fresheners=Gel Fresheners;car-fresheners=Car Fresheners',
   'arts-and-crafts/art-supplies': 'paint-brushes=Paint Brushes;canvas=Canvas;paint-sets=Paint Sets;palettes=Palettes;drawing-boards=Drawing Boards',
-  'cosmetics/makeup': 'makeup-brushes=Makeup Brushes;nail-care=Nail Care;eyeshadow=Eyeshadow',
+  'cosmetics/makeup': 'makeup-brushes=Makeup Brushes;nail-care=Nail Care;eyeshadow=Eyeshadow;lip-liner=Lip Liner;makeup-sponges=Makeup Sponges',
   'pet-products/pet-grooming': 'pet-brushes=Pet Brushes;grooming-kits-pet-grooming=Grooming Kits;nail-clippers=Nail Clippers',
   'auto-accessories/jump-starters':
     'battery-boosters=Battery Boosters;jump-starter-cables=Jump Starter Cables;portable-jump-starters=Portable Jump Starters',
@@ -375,13 +375,13 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'home-furnishing/sofa-and-chair-covers': 'chair-covers=Chair Covers',
   'clothing/winter-wear':
     'scarves=Scarves;sweatshirts=Sweatshirts;raincoats=Raincoats;jackets=Jackets;mufflers=Mufflers;windcheaters=Windcheaters;shawls=Shawls;ponchos=Ponchos;sweaters-and-cardigans=Sweaters and Cardigans;thermals=Thermals;gloves-winter-wear=Gloves',
-  'cosmetics/body-care': 'foot-care=Foot Care;body-wash=Body Wash;body-scrubs=Body Scrubs',
+  'cosmetics/body-care': 'foot-care=Foot Care;body-wash=Body Wash;body-scrubs=Body Scrubs;hand-cream=Hand Cream;body-lotion=Body Lotion',
   'baby-care/baby-grooming':
     'baby-oral-care=Baby Oral Care;baby-hair-brushes=Baby Hair Brushes;grooming-kits=Grooming Kits;baby-nail-clippers=Baby Nail Clippers;baby-combs=Baby Combs',
   'bath-fittings/bathroom-accessories':
     'toothbrush-holders=Toothbrush Holders;bathroom-mirrors=Bathroom Mirrors;bathroom-stools=Bathroom Stools;towel-racks=Towel Racks;bathroom-hooks=Bathroom Hooks;soap-dishes=Soap Dishes;bathroom-shelves=Bathroom Shelves;hooks-bathroom-accessories=Hooks',
-  'cosmetics/grooming': 'shaving=Shaving;beard-care=Beard Care;trimmers=Trimmers',
-  'cosmetics/fragrances': 'deodorants=Deodorants',
+  'cosmetics/grooming': 'shaving=Shaving;beard-care=Beard Care;trimmers=Trimmers;grooming-kits-grooming=Grooming Kits',
+  'cosmetics/fragrances': 'deodorants=Deodorants;attars=Attars;body-mists=Body Mists',
   'baby-care/baby-bath-and-skin-care':
     'baby-lotion-and-creams=Baby Lotion & Creams;baby-lotion=Baby Lotion;baby-oil=Baby Oil;baby-massage-oils=Baby Massage Oils;baby-shampoo=Baby Shampoo;baby-soaps=Baby Soaps;baby-powder=Baby Powder',
   'baby-care/baby-diapering-and-wipes':
@@ -392,7 +392,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
     'feeding-bottles=Feeding Bottles;bottle-accessories=Bottle Accessories;bottle-cleaners=Bottle Cleaners;bottle-sterilizers=Bottle Sterilizers;bottle-warmers=Bottle Warmers;sterilizers-and-warmers=Sterilizers & Warmers;breast-pumps=Breast Pumps',
   'baby-care/baby-toys-baby-care':
     'rattles=Rattles;teethers=Teethers;activity-toys=Activity Toys;musical-toys=Musical Toys;bath-toys=Bath Toys',
-  'cosmetics/hair-care': 'hair-oil-hair-care=Hair Oil',
+  'cosmetics/hair-care': 'hair-oil-hair-care=Hair Oil;hair-serum=Hair Serum;hair-masks=Hair Masks',
   'baby-care/baby-bedding':
     'baby-mats=Baby Mats;baby-blankets=Baby Blankets;baby-mosquito-nets=Baby Mosquito Nets;baby-pillows=Baby Pillows;baby-bedding-sets=Baby Bedding Sets',
   'baby-care/baby-safety':
@@ -459,14 +459,14 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'footwear/women-s-footwear': 'women-s-sneakers=Women\'s Sneakers',
   'gifts/photo-albums': 'scrapbooks=Scrapbooks',
   'home-furnishing/laundry-bags-and-mosquito-nets': 'laundry-bags=Laundry Bags',
-  'cosmetics/face-makeup': 'concealer=Concealer;compact-powder=Compact Powder;highlighter-face-makeup=Highlighter',
+  'cosmetics/face-makeup': 'concealer=Concealer;compact-powder=Compact Powder;highlighter-face-makeup=Highlighter;makeup-primer=Makeup Primer;bronzer=Bronzer;makeup-remover=Makeup Remover',
   'electronics/computer-accessories': 'laptop-stands=Laptop Stands',
   'arts-and-crafts/craft-paper': 'cardstock=Cardstock;handmade-paper=Handmade Paper;origami-paper=Origami Paper;scrapbook-paper=Scrapbook Paper',
   'stationary/notebooks': 'diaries=Diaries;ruled-notebooks=Ruled Notebooks',
   'stationary/office-supplies': 'printer-paper=Printer Paper',
   'stainless-steel-vessels/kitchen-tools': 'cutting-boards=Cutting Boards',
   'fashion-jewellery/artificial-jewellery': 'pearl-jewellery=Pearl Jewellery;kundan-jewellery=Kundan Jewellery',
-  'cosmetics/skin-care': 'face-masks=Face Masks',
+  'cosmetics/skin-care': 'face-masks=Face Masks;serums=Serums',
   'stationary/pencils-and-erasers': 'color-pencils-pencils-and-erasers=Color Pencils',
   'stainless-steel-vessels/storage-containers': 'lunch-boxes=Lunch Boxes',
   'furniture/beds': 'single-beds=Single Beds',
@@ -479,6 +479,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'pet-products/pet-bowls-and-feeders': 'pet-feeding-accessories=Pet Feeding Accessories',
   'home-appliances/water-purifiers': 'ro-purifiers=RO Purifiers',
   'wall-clock/wall-clocks': 'designer-wall-clocks=Designer Wall Clocks',
+  'fashion-jewellery/necklaces': 'layered-necklaces=Layered Necklaces;chokers=Chokers',
 };
 
 /** The homepage category strip, in the exact order and naming of youmartshop.com. */
