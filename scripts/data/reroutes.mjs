@@ -1051,6 +1051,38 @@ const STAT_RULES = {
 };
 for (const [name, rules] of Object.entries(STAT_RULES)) REROUTES[name] = [...rules, ...(REROUTES[name] ?? [])];
 
+// --- gift delivery --------------------------------------------------------------------------------
+// Occasion shelves (Birthday / Couple / Festive Gifts...) keep whatever is sold as a gift (watches,
+// jewellery, potlis). Product-type names catch other things: "Plaques" (toothpaste), "Table Frames"
+// (coffee tables, table legs), "Wall Frames" (picture hooks), "Certificates" (rakhis).
+const GIFT_WORDS = /personali[sz]|customi[sz]|with name|\bname\b|gift|engrav|photo|printed/;
+const GIFT_RULES = {
+  Plaques: [[P('oral care'), undefined]],
+  'Table Frames': [
+    [P('living room furniture|furniture > tables'), 'Coffee Tables'],
+    [P('furniture hardware'), 'Hardwares › Furniture Fittings'],
+  ],
+  'Wall Frames': [[P('storage hooks|hooks & hangers'), 'Hardwares › Door & Cabinet Handles › Hooks']],
+  'Digital Frames': [[P('artwork > (paintings|art prints|posters)'), 'Gifts & Frames › Photo Frames › Painting Frames']],
+  Certificates: [[P('jewellery'), 'Festive Gifts']],
+  // Two places (Gifts › Personalized Gifts; Kitchenware): gift mugs live in Gifts, plastic ones are
+  // also on Plastic Household, ceramic coffee mugs also on Crockery › Coffee Mugs.
+  Mugs: [
+    [/^[^|]*plastic/, 'Gifts & Frames › Personalized Gifts › Mugs', ['Kitchenware › Plastic Household › Mugs']],
+    [/^[^|]*(ceramic|coffee|tea)/, 'Gifts & Frames › Personalized Gifts › Mugs', ['Kitchenware › Crockery › Coffee Mugs']],
+    [/./, 'Gifts & Frames › Personalized Gifts › Mugs'],
+  ],
+  // Two places (Gifts › Personalized Gifts; Stationary › Pens): personalised / gift pens in Gifts
+  // (also on Stationary), everyday pens on Stationary.
+  Pens: [
+    [P('nails|manicure'), 'Nail Care'],
+    [P('mobile accessories'), 'Electronics › Mobile Accessories › Mobile Accessories'],
+    [{ test: (t) => GIFT_WORDS.test(t.slice(0, t.lastIndexOf(' | '))) }, 'Gifts & Frames › Personalized Gifts › Pens', ['Stationary › Pens']],
+    [/./, 'Stationary › Pens'],
+  ],
+};
+for (const [name, rules] of Object.entries(GIFT_RULES)) REROUTES[name] = [...rules, ...(REROUTES[name] ?? [])];
+
 /** Storefront slug of the Baby Care main category. */
 const BABY_ROOT = 'baby-care';
 
