@@ -474,6 +474,69 @@ const WEAR_JEWELLERY = [
   [P('bangles & bracelets > bracelets'), 'Charm Bracelets'],
 ];
 
+// --- jewellery delivery ---------------------------------------------------------------------------
+// Its Target Names are reliable for real jewellery, but some names catch other things: "Pendant Sets"
+// (ceiling pendant lights), "Fashion Rings" (keyrings, ring lights), "Adjustable Rings" (gym rings,
+// wrenches), "Chains" (door / lock / bike chains), "Cocktail Rings" (bar ware, condoms). These rules
+// move an item by its Amazon PATH; jewellery paths never match, so real jewellery stays put.
+/** A rule's destination that means "no home in the app": the product is skipped. */
+const SKIP = false;
+const MAKING_WORDS =
+  /making|diy|\bbeads?\b|findings|jump rings?|clasps?|lobster|crimp|\bwire\b|\bcord\b|thread|string|dori|\bkit\b|supplies|spacer|\bbails?\b|ear ?wires|cabochon|resin|enamel|glue|pliers|charms? for/;
+/** Bead / jewellery-making supplies (only when the title says so: finished pieces stay jewellery). */
+const JEWEL_MAKING = {
+  test(text) {
+    const cut = text.lastIndexOf(' | ');
+    return (
+      /beading|craft kits|craft supplies|craft materials|toys & games > arts & crafts/.test(text.slice(cut + 3)) &&
+      MAKING_WORDS.test(text.slice(0, cut))
+    );
+  },
+};
+const JEWEL_STRAYS = [
+  [P('sexual wellness'), SKIP],
+  [P('needlework'), 'Arts and Crafts › Craft Kits › Embroidery Kits'],
+  [JEWEL_MAKING, 'Jewellery Making Kits'],
+  [P('indoor lighting'), 'Pendant Lights'],
+  [P('keyrings & keychains|> key rings|keychain carabiners'), 'Keychains'],
+  [P('gymnastics|exercise & fitness|strength training|gym sets|braces, splints'), 'Fitness Accessories'],
+  [P('plant containers'), 'Agri and Gardening › Plant Stands › Plant Stands'],
+  [P('cameras & photography', 'display|jewel|necklace|earring'), 'Camera Accessories'],
+  [P('lingerie|sleep & lounge'), 'Babydolls'],
+  [P('suitcases & trolley|luggage sets'), 'Trolley Bags'],
+  [P('travel kits & organisers', 'jewel'), 'Packing Cubes'],
+  [P('watch boxes|watch stands'), 'Watch Boxes'],
+  [P('watch straps'), 'Watch Straps'],
+  [P('wrist watches|smart watches'), 'Quartz Watches'],
+  [P('mobile accessories'), 'Electronics › Mobile Accessories › Mobile Accessories'],
+  [P('dogs > collars|dogs > toys'), 'Dog Leashes'],
+  [P('cats > collars'), 'Cat Collars'],
+  [P('office supplies|binders|presentation supplies|identification badges', 'organi[sz]|storage|drawer|jewel|scrunchie|display|rack|holder'), 'Stationary › Office Supplies › Office Supplies'],
+  [P('bar accessories|kitchen tools|kitchen storage'), 'Kitchen Tools'],
+  [P('tableware', 'display|jewel|stand'), 'Tumblers'],
+  [P('boxing'), 'Sports & Fitness › Boxing › Boxing'],
+  [/^[^|]*spanner[^|]*\|[^|]*hand tools/, 'Spanners'],
+  [/^[^|]*plier[^|]*\|[^|]*hand tools/, 'Pliers'],
+  [P('hand tools'), 'Wrenches'],
+  [P('bathroom fixtures|water pumps|hydraulics'), 'Hardwares › Clamps › Clamps'],
+  [/^[^|]*(diya|oil lamp)[^|]*\|/, 'Gifts & Frames › Decorative Showpieces › Decorative Showpieces'],
+  [P('seasonal decorations'), 'Christmas Decorations'],
+  [P('wind chimes|decorative accessories', 'display|jewel|organi|stand|riser|rack'), 'Gifts & Frames › Decorative Showpieces › Decorative Showpieces'],
+  [/^[^|]*\bsaree[^|]*\|[^|]*ethnic wear/, 'Sarees'],
+  [/^[^|]*chunri[^|]*\|/, 'Gifts & Frames › Decorative Showpieces › Decorative Showpieces'],
+  [/^[^|]*\btops?\b[^|]*\|[^|]*western wear/, 'Clothing › Topwear › Tops'],
+];
+/** "Chains" is also a hardware shelf: non-jewellery chains go to their own place, the rest are necklaces. */
+const CHAIN_STRAYS = [
+  [/^[^|]*lock[^|]*\|[^|]*(luggage|travel)/, 'Travel Locks'],
+  [/^[^|]*lock[^|]*\|[^|]*cycl/, 'Padlocks'],
+  [P('door hardware|tarps & tie-downs|home improvement > hardware|safety signs|pulling & lifting|livestock|bathroom hardware'), 'Hardwares › Ropes & Chains › Chains'],
+  [P('car & motorbike care'), 'Car Cleaning'],
+  [P('cycling|oils & fluids|engine tools|motorbike accessories'), 'Bike Tool Kits'],
+  [P('outdoor power tool'), 'Tools › Power Tools › Saws'],
+];
+const JEWEL_TARGETS = ['Pendant Necklaces', 'Nose Rings', 'Fashion Rings', 'Adjustable Rings', 'Chokers', 'Mangalsutra', 'Meenakari Jewellery', 'CZ Jewellery', 'Hair Pins', 'Drop Earrings', 'Scrunchies', 'Chain Bracelets', 'Hoop Earrings', 'Stud Earrings', 'Oxidised Jewellery', 'Gold-Plated Jewellery', 'Temple Jewellery', 'Pearl Jewellery', 'Jhumkas', 'Bangles', 'Hair Clips', 'Charm Bracelets', 'Hair Bands', 'Pendant Sets', 'Layered Necklaces', 'Jewellery Organizers', 'Cocktail Rings', 'Travel Jewellery Cases', 'Jewellery Stands'];
+
 /** Per-target rules, checked before ART_STRAYS. */
 const ART_OWN = {
   'Pearl Beads': [
@@ -765,7 +828,9 @@ const REROUTES = {
   ),
 
   // --- cosmetics and jewellery delivery: jewellery-making supplies filed as jewellery ---
-  'Charm Bracelets': [[/^[^|]*(jump ring|jewell?e?ry.making)|jewellery-making/, 'Jewellery Making Kits']],
+  // --- jewellery delivery (see JEWEL_STRAYS) ---
+  ...Object.fromEntries(JEWEL_TARGETS.map((name) => [name, JEWEL_STRAYS])),
+  Chains: [...JEWEL_STRAYS, ...CHAIN_STRAYS, [/./, 'Fashion Jewellery › Necklaces › Chains']],
 
   // --- cosmetics delivery (see COS_PLACES) ---
   ...Object.fromEntries(COS_TARGETS.map((name) => [name, [
@@ -925,6 +990,67 @@ const REROUTES = {
   'Car Wax': [[/laundry detergents|suction cups/, null]],
 };
 
+// --- stationery delivery --------------------------------------------------------------------------
+// Names it shares with other shelves catch other things: "Scales" (kitchen / body weighing scales),
+// "Scientific" (lab glassware), "Compasses" (hiking compasses, Jeep Compass key covers), "Romance"
+// (a deodorant line), "Erasers" (magic eraser sponges). Moved by Amazon PATH (+ title where needed);
+// these run before any rules the name already has. Two-place names: filed once, `also` on the others.
+const STAT_RULES = {
+  Highlighters: [
+    [P('beauty'), 'Cosmetics › Face Makeup › Highlighter'],
+    [/./, 'Stationary › Markers › Highlighters'],
+  ],
+  'Lunch Boxes': [
+    [/^[^|]*plastic/, 'Stationary › School Supplies › Lunch Boxes', ['Kitchenware › Storage Containers › Lunch Boxes', 'Kitchenware › Plastic Household › Lunch Boxes']],
+    [/./, 'Stationary › School Supplies › Lunch Boxes', ['Kitchenware › Storage Containers › Lunch Boxes']],
+  ],
+  Diaries: [
+    [/^[^|]*(personali[sz]|customi[sz]|with name|gift|leather)/, 'Stationary › Notebooks › Diaries', ['Gifts & Frames › Personalized Gifts › Diaries']],
+    [/./, 'Stationary › Notebooks › Diaries'],
+  ],
+  'Art Supplies': [
+    [/./, 'Stationary › Art Supplies › Art Supplies', ['Arts and Crafts › Art Supplies › Art Supplies', 'Stationary › School Supplies › Art Supplies']],
+  ],
+  // Kitchen scales to Kitchen Tools, the rest (body, pocket, luggage) to Measuring Tools.
+  Scales: [
+    [/^[^|]*(kitchen|food|cooking|baking)[^|]*\|[^|]*(small kitchen|health monitors|scales & balances|kitchen & dining)/, 'Kitchenware › Kitchen Tools'],
+    [P('small kitchen|health monitors|scales & balances|luggage|kitchen & dining'), 'Tools › Measuring Tools'],
+  ],
+  Scientific: [
+    [P('learning & education|science kits'), 'STEM Toys'],
+    [P('lab & scientific'), 'Stationary › School Supplies › School Supplies'],
+  ],
+  Compasses: [
+    [P('car accessories|car & motorbike'), 'Auto Accessories › Car Accessories › Car Accessories'],
+    [P('sports gadgets|decorative|outdoor recreation|camping|keyrings', 'antique|vintage|brass|nautical|vastu|engraved') , 'Tools › Measuring Tools'],
+    [P('sports gadgets|decorative|outdoor recreation|camping|keyrings'), 'Gifts & Frames › Decorative Showpieces › Decorative Showpieces'],
+  ],
+  'Music Books': [
+    [P('music stands|music-making accessories'), 'Musical Instruments › Music Accessories & Audio › Stands'],
+    [P('learning & education'), 'Toys & Games › Educational & Building Toys › Learning Toys'],
+  ],
+  'Writing Pads': [
+    [/^[^|]*(chair pad|seat cushion|cushion)[^|]*\|[^|]*furniture/, 'Chair Covers'],
+    [/^[^|]*folding[^|]*\|[^|]*furniture/, 'Folding Chairs'],
+    [P('furniture'), 'Office Chairs'],
+  ],
+  'Printer Paper': [[P('printer accessories', 'paper\\b(?! (tray|output|input))'), 'Electronics › Printers › Printers']],
+  'Expanding Files': [[P('expanding foams|sealants'), 'Sealants']],
+  'Communication Skills': [[P('flash cards|learning & education'), 'Educational Games']],
+  Registers: [[P('dress up & pretend|shops & accessories'), 'Pretend Play']],
+  Erasers: [[P('cleaning supplies|scrubs & sponges'), 'Scrub Pads']],
+  Protractors: [[P('test, measure|measuring & layout'), 'Tools › Measuring Tools']],
+  Rulers: [[P('measuring & layout|test, measure'), 'Tools › Measuring Tools']],
+  Scissors: [[P('kitchen tools|kitchen & dining'), 'Kitchenware › Kitchen Tools']],
+  'Photography Books': [[P('cameras & photography'), 'Camera Accessories']],
+  'Glue Sticks': [[P('power tools|power & hand tools'), 'Tools › Power Tools › Glue Guns']],
+  Romance: [
+    [P('deodorants'), 'Deodorants'],
+    [P('fragrance|body sprays'), 'Body Mists'],
+  ],
+};
+for (const [name, rules] of Object.entries(STAT_RULES)) REROUTES[name] = [...rules, ...(REROUTES[name] ?? [])];
+
 /** Storefront slug of the Baby Care main category. */
 const BABY_ROOT = 'baby-care';
 
@@ -1031,6 +1157,7 @@ export function routeProduct(targetName, title, categoryPath, rootOf) {
   const related = () => RELATED.find(([re]) => re.test(path))?.[1] ?? targetName;
   // A rule's optional third entry: other app categories the product is ALSO listed on.
   for (const [re, to, also] of REROUTES[targetName] ?? []) {
+    if (re.test(text) && to === SKIP) return { skip: 'no category for it in the app' };
     if (re.test(text)) return { name: to ?? related(), also: also ?? [] };
   }
   if (VEHICLE_ONLY.has(targetName) && path && !VEHICLE_PATH.test(path)) {

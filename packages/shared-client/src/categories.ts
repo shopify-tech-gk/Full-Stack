@@ -139,7 +139,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'fashion-jewellery',
     'Fashion Jewellery',
-    'anklet=Anklet;bracelet=Bracelet;bangle=Bangle;brooch=Brooch;earrings=Earrings;head-jewellery=Head Jewellery;jewellery-set=Jewellery Set;mangalsutra=Mangalsutra;necklace-and-chains=Necklace and Chains;nosepin=Nosepin;pendant=Pendant;ring=Ring;saree-accessories=Saree Accessories;hair-accessories=Hair Accessories;necklaces=Necklaces;artificial-jewellery=Artificial Jewellery',
+    'anklet=Anklet;bracelet=Bracelet;bangle=Bangle;brooch=Brooch;earrings=Earrings;head-jewellery=Head Jewellery;jewellery-set=Jewellery Set;mangalsutra=Mangalsutra;necklace-and-chains=Necklace and Chains;nosepin=Nosepin;pendant=Pendant;ring=Ring;saree-accessories=Saree Accessories;hair-accessories=Hair Accessories;necklaces=Necklaces;artificial-jewellery=Artificial Jewellery;body-jewellery=Body Jewellery;jewellery-boxes=Jewellery Boxes',
   ],
   [
     'clothing',
@@ -156,7 +156,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'hardwares',
     'Hardware',
-    'bearings=Bearings;cabinet-hardware=Cabinet Hardware;fasteners-fittings=Fasteners & Screws;latches-bolts=Latches & Bolts;locks-security-hardware=Locks & Security Hardware;angles-brackets-fasteners=Angles and Brackets;paints=Paints;cement-mortar=Cement & Mortar;door-and-cabinet-handles=Door & Cabinet Handles;door-locks=Door Locks;safety-hardware=Safety Hardware;furniture-fittings=Furniture Fittings;adhesives-and-tapes=Adhesives & Tapes;building-hardware=Building Hardware',
+    'bearings=Bearings;cabinet-hardware=Cabinet Hardware;fasteners-fittings=Fasteners & Screws;latches-bolts=Latches & Bolts;locks-security-hardware=Locks & Security Hardware;angles-brackets-fasteners=Angles and Brackets;paints=Paints;cement-mortar=Cement & Mortar;door-and-cabinet-handles=Door & Cabinet Handles;door-locks=Door Locks;safety-hardware=Safety Hardware;furniture-fittings=Furniture Fittings;adhesives-and-tapes=Adhesives & Tapes;building-hardware=Building Hardware;ropes-and-chains=Ropes & Chains;clamps=Clamps',
   ],
   [
     'home-appliances',
@@ -176,7 +176,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'musical-instruments',
     'Musical Instruments',
-    'flutes=Flutes;harmonicas=Harmonicas;portable-keyboard=Portable Keyboard;steel-drums=Steel Drums;tambourines=Tambourines;violins=Violins',
+    'flutes=Flutes;harmonicas=Harmonicas;portable-keyboard=Portable Keyboard;steel-drums=Steel Drums;tambourines=Tambourines;violins=Violins;music-accessories-and-audio=Music Accessories & Audio',
   ],
   [
     'party-decorations',
@@ -186,7 +186,7 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'pet-products',
     'Pet Supplies',
-    'birds=Birds;dogs=Dogs;fish=Fish;cat=Cat;pet-grooming=Pet Grooming;pet-training=Pet Training;pet-toys=Pet Toys;pet-bowls-and-feeders=Pet Bowls & Feeders',
+    'birds=Birds;dogs=Dogs;fish=Fish;cat=Cat;pet-grooming=Pet Grooming;pet-training=Pet Training;pet-toys=Pet Toys;pet-bowls-and-feeders=Pet Bowls & Feeders;pet-collars-and-leashes=Pet Collars & Leashes',
   ],
   [
     'plastic-household',
@@ -196,12 +196,12 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'sports-fitness',
     'Sports & Fitness',
-    'badminton=Badminton;basketball=Basketball;carrom=Carrom;cricket=Cricket;fitness-product=Fitness Product;sports-shoes-sports-goods=Sports Shoes;football=Football;indoor-sports=Indoor Sports;tennis=Tennis;skate-board=Skate Board;sports-ball=Sports Ball;sports-kit-bag=Sports Kit Bag;squash=Squash;yoga=Yoga;swimming=Swimming;trophy=Trophy;volleyball=Volleyball;skating=Skating',
+    'badminton=Badminton;basketball=Basketball;carrom=Carrom;cricket=Cricket;fitness-product=Fitness Product;sports-shoes-sports-goods=Sports Shoes;football=Football;indoor-sports=Indoor Sports;tennis=Tennis;skate-board=Skate Board;sports-ball=Sports Ball;sports-kit-bag=Sports Kit Bag;squash=Squash;yoga=Yoga;swimming=Swimming;trophy=Trophy;volleyball=Volleyball;skating=Skating;fitness-and-gym=Fitness & Gym;boxing=Boxing',
   ],
   [
     'stationary',
     'Stationary',
-    'a3-a4-drawing-note=A3 & A4 Drawing Note;a4-white-paper=A4 White Paper;acrylic-paint=Acrylic Paint;calculator=Calculator;pen=Pen;pencil=Pencil;eraser=Eraser;pen-stand=Pen Stand;paper-weight=Paper Weight;resin-arts=Resin Arts;spray-paint=Spray Paint;sticky-notes=Sticky Notes;taps=Tapes;chart-paper=Chart Paper;colour-pencil=Colour Pencil;correction-pen=Correction Pen;correction-tape=Correction Tape;cotton=Cotton;crayons=Crayons;drawing-board=Drawing Board;files=Files;geometry-box=Geometry Box;glue-gun-and-stick=Glue Gun and Stick;highlighter=Highlighter;marker-ink=Marker;mechanical-pencil=Mechanical Pencil;magnifier-lens=Magnifier Lens;note-book=Note Book;oil-pastels=Oil Pastels;pastel-paint=Pastel Paint;permanent-marker=Permanent Marker;pin=Pin;poster-colour=Poster Colour;premium-poster-colour=Premium Poster Colour;scissors=Scissors;sketch-paper=Sketch Paper;soft-pastel=Soft Pastel;study-table=Study Table;watercolour-tube=Watercolour Tube;whiteboard-marker=Whiteboard Marker;pen-holder=Pen Holder;reading-magnifiers=Reading Magnifiers;rotary-desk-organiser=Rotary Desk Organiser;whiteboard-eraser=Whiteboard Eraser;bouquet-sheet=Bouquet Sheet;bubble-wrap=Bubble Wrap;colour-paper=Colour Paper;crepe-paper=Crepe Paper;felt-sheet=Felt Sheet;foam-sheet=Foam Sheet;gift-sheet=Gift Sheet;thermocol-sheet=Thermocol Sheet;file-folders=Files & Folders;office-supplies=Office Supplies;school-supplies=School Supplies;glue-and-adhesives-stationary=Glue & Adhesives;notebooks=Notebooks;pencils-and-erasers=Pencils & Erasers',
+    'a3-a4-drawing-note=A3 & A4 Drawing Note;a4-white-paper=A4 White Paper;acrylic-paint=Acrylic Paint;calculator=Calculator;pen=Pen;pencil=Pencil;eraser=Eraser;pen-stand=Pen Stand;paper-weight=Paper Weight;resin-arts=Resin Arts;spray-paint=Spray Paint;sticky-notes=Sticky Notes;taps=Tapes;chart-paper=Chart Paper;colour-pencil=Colour Pencil;correction-pen=Correction Pen;correction-tape=Correction Tape;cotton=Cotton;crayons=Crayons;drawing-board=Drawing Board;files=Files;geometry-box=Geometry Box;glue-gun-and-stick=Glue Gun and Stick;highlighter=Highlighter;marker-ink=Marker;mechanical-pencil=Mechanical Pencil;magnifier-lens=Magnifier Lens;note-book=Note Book;oil-pastels=Oil Pastels;pastel-paint=Pastel Paint;permanent-marker=Permanent Marker;pin=Pin;poster-colour=Poster Colour;premium-poster-colour=Premium Poster Colour;scissors=Scissors;sketch-paper=Sketch Paper;soft-pastel=Soft Pastel;study-table=Study Table;watercolour-tube=Watercolour Tube;whiteboard-marker=Whiteboard Marker;pen-holder=Pen Holder;reading-magnifiers=Reading Magnifiers;rotary-desk-organiser=Rotary Desk Organiser;whiteboard-eraser=Whiteboard Eraser;bouquet-sheet=Bouquet Sheet;bubble-wrap=Bubble Wrap;colour-paper=Colour Paper;crepe-paper=Crepe Paper;felt-sheet=Felt Sheet;foam-sheet=Foam Sheet;gift-sheet=Gift Sheet;thermocol-sheet=Thermocol Sheet;file-folders=Files & Folders;office-supplies=Office Supplies;school-supplies=School Supplies;glue-and-adhesives-stationary=Glue & Adhesives;notebooks=Notebooks;pencils-and-erasers=Pencils & Erasers;geometry-boxes=Geometry Boxes;art-supplies-stationary=Art Supplies;books=Books',
   ],
   [
     'surgical-instruments',
@@ -221,12 +221,12 @@ const TREE: ReadonlyArray<[slug: string, name: string, subcategories: string]> =
   [
     'travel-accessories',
     'Travel & Accessories',
-    'backpack=Backpack;belt=Belt;breifcase=Briefcase;duffle-bag=Duffle Bag;hand-bag=Hand Bag;laptop-backpacks=Laptop Backpacks;laptop-sleeves=Laptop Sleeves;lock=Lock;luggage-cover=Luggage Cover;lunch-bag=Lunch Bag;neck-pouches=Neck Pouches;rucksacks=Rucksacks;shoulder-bags=Shoulder Bags;sling-bag=Sling Bag;sleep-masks=Sleep Masks;straps=Straps;suitcase=Suitcase;toiletry-bags=Toiletry Bags;travel-pillow=Travel Pillow;travel-tote-bags=Travel Tote Bags;trolly=Trolley;umbrella=Umbrella;wallet=Wallet;travel-bags=Travel Bags;travel-accessories-travel-accessories=Travel Accessories;luggage-accessories=Luggage Accessories',
+    'backpack=Backpack;belt=Belt;breifcase=Briefcase;duffle-bag=Duffle Bag;hand-bag=Hand Bag;laptop-backpacks=Laptop Backpacks;laptop-sleeves=Laptop Sleeves;lock=Lock;luggage-cover=Luggage Cover;lunch-bag=Lunch Bag;neck-pouches=Neck Pouches;rucksacks=Rucksacks;shoulder-bags=Shoulder Bags;sling-bag=Sling Bag;sleep-masks=Sleep Masks;straps=Straps;suitcase=Suitcase;toiletry-bags=Toiletry Bags;travel-pillow=Travel Pillow;travel-tote-bags=Travel Tote Bags;trolly=Trolley;umbrella=Umbrella;wallet=Wallet;travel-bags=Travel Bags;travel-accessories-travel-accessories=Travel Accessories;luggage-accessories=Luggage Accessories;travel-organizers=Travel Organizers',
   ],
   [
     'wall-clock',
     'Wall Clock & Watches',
-    'alaram-clock=Alaram Clock;analog-clock=Analog Clock;digital-clock=Digital Clock;double-side-clock=Double Side Clock;modern-clock=Modern Clock;fancy-clock=Fancy Clock;watch=Watch;wall-clocks=Wall Clocks',
+    'alaram-clock=Alaram Clock;analog-clock=Analog Clock;digital-clock=Digital Clock;double-side-clock=Double Side Clock;modern-clock=Modern Clock;fancy-clock=Fancy Clock;watch=Watch;wall-clocks=Wall Clocks;watches=Watches;watch-accessories=Watch Accessories',
   ],
 ];
 
@@ -345,7 +345,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'electrical-and-lights/ceiling-lights':
     'pendant-lights=Pendant Lights;led-ceiling-lights=LED Ceiling Lights',
   'auto-accessories/car-accessories': 'sun-shades=Sun Shades',
-  'gifts/personalized-gifts': 'keychains=Keychains',
+  'gifts/personalized-gifts': 'keychains=Keychains;diaries-personalized-gifts=Diaries',
   'home-furnishing/towel': 'face-towels=Face Towels;bath-towels=Bath Towels;hand-towels=Hand Towels;kitchen-towels=Kitchen Towels',
   'electrical-and-lights/extension-boards':
     'adapters=Adapters;power-strips=Power Strips;surge-protectors=Surge Protectors',
@@ -366,10 +366,10 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'auto-accessories/tyre-accessories': 'tyre-repair-kits=Tyre Repair Kits',
   'gifts/trophies-and-awards': 'plaques=Plaques',
   'electronics/storage-devices': 'memory-cards=Memory Cards',
-  'hardwares/door-locks': 'door-stoppers=Door Stoppers',
+  'hardwares/door-locks': 'door-stoppers=Door Stoppers;padlocks=Padlocks',
   'home-furnishing/rugs-and-mats':
     'bath-mats=Bath Mats;mats=Mats;area-rugs=Area Rugs;runner-rugs=Runner Rugs',
-  'furniture/chairs': 'stools=Stools;office-chairs=Office Chairs',
+  'furniture/chairs': 'stools=Stools;office-chairs=Office Chairs;folding-chairs=Folding Chairs',
   'furniture/outdoor-furniture': 'garden-chairs=Garden Chairs;garden-tables=Garden Tables',
   'hardwares/safety-hardware': 'safety-helmets=Safety Helmets',
   'home-furnishing/sofa-and-chair-covers': 'chair-covers=Chair Covers',
@@ -404,7 +404,7 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'tools/tool-boxes-and-organizers': 'tool-organizers=Tool Organizers;tool-boxes=Tool Boxes',
   'toys/outdoor-and-ride-on-toys': 'ride-ons=Ride Ons',
   'sports-fitness/cricket': 'cricket-accessories=Cricket Accessories',
-  'stationary/school-supplies': 'pencil-cases=Pencil Cases;school-bags=School Bags',
+  'stationary/school-supplies': 'pencil-cases=Pencil Cases;school-bags=School Bags;lunch-boxes-school-supplies=Lunch Boxes',
   'clothing/ethnic-wear':
     "abayas-and-burqas=Abayas and Burqas;kurtas-ethnic-sets-and-bottoms=Kurtas, Ethnic Sets and Bottoms;kurtas=Kurtas;women-s-lehenga-cholis=Women's Lehenga Cholis;ethnic-sets=Ethnic Sets;ethnic-pyjamas=Ethnic Pyjamas;dhotis=Dhotis;salwars-and-patialas=Salwars and Patialas;shararas=Shararas;dhoti-pants=Dhoti Pants;lehenga-cholis=Lehenga Cholis;sherwanis=Sherwanis;dupattas=Dupattas",
   'clothing/sports-and-gym-wear':
@@ -447,9 +447,9 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'arts-and-crafts/craft-tools': 'glue-and-adhesives=Glue & Adhesives;glue-guns=Glue Guns;cutting-tools=Cutting Tools;stencils=Stencils;punches=Punches;scissors-craft-tools=Scissors',
   'pet-products/pet-toys': 'bird-toys=Bird Toys',
   'footwear/men-s-footwear': 'canvas-shoes=Canvas Shoes',
-  'toys/role-play-toys': 'kitchen-sets=Kitchen Sets;slime-and-putty=Slime & Putty',
-  'toys/board-games-and-puzzles': 'puzzles=Puzzles',
-  'fashion-jewellery/hair-accessories': 'hair-pins=Hair Pins;hair-clips=Hair Clips;hair-bands=Hair Bands',
+  'toys/role-play-toys': 'kitchen-sets=Kitchen Sets;slime-and-putty=Slime & Putty;pretend-play=Pretend Play',
+  'toys/board-games-and-puzzles': 'puzzles=Puzzles;educational-games=Educational Games',
+  'fashion-jewellery/hair-accessories': 'hair-pins=Hair Pins;hair-clips=Hair Clips;hair-bands=Hair Bands;scrunchies=Scrunchies',
   'travel-accessories/travel-bags': 'laptop-bags=Laptop Bags',
   'stainless-steel-vessels/crockery-stainless-steel-vessels': 'spoon-sets=Spoon Sets;tumblers=Tumblers;serving-platters=Serving Platters;glassware=Glassware',
   'party-decorations/party-decoration-kits': 'costume-props=Costume Props;photo-booth-props=Photo Booth Props',
@@ -462,10 +462,10 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'cosmetics/face-makeup': 'concealer=Concealer;compact-powder=Compact Powder;highlighter-face-makeup=Highlighter;makeup-primer=Makeup Primer;bronzer=Bronzer;makeup-remover=Makeup Remover',
   'electronics/computer-accessories': 'laptop-stands=Laptop Stands',
   'arts-and-crafts/craft-paper': 'cardstock=Cardstock;handmade-paper=Handmade Paper;origami-paper=Origami Paper;scrapbook-paper=Scrapbook Paper',
-  'stationary/notebooks': 'diaries=Diaries;ruled-notebooks=Ruled Notebooks',
-  'stationary/office-supplies': 'printer-paper=Printer Paper',
+  'stationary/notebooks': 'diaries=Diaries;ruled-notebooks=Ruled Notebooks;registers=Registers;writing-pads=Writing Pads;spiral-notebooks=Spiral Notebooks;sketchbooks=Sketchbooks',
+  'stationary/office-supplies': 'printer-paper=Printer Paper;labels=Labels',
   'stainless-steel-vessels/kitchen-tools': 'cutting-boards=Cutting Boards',
-  'fashion-jewellery/artificial-jewellery': 'pearl-jewellery=Pearl Jewellery;kundan-jewellery=Kundan Jewellery',
+  'fashion-jewellery/artificial-jewellery': 'pearl-jewellery=Pearl Jewellery;kundan-jewellery=Kundan Jewellery;meenakari-jewellery=Meenakari Jewellery;cz-jewellery=CZ Jewellery;oxidised-jewellery=Oxidised Jewellery;gold-plated-jewellery=Gold-Plated Jewellery;temple-jewellery=Temple Jewellery',
   'cosmetics/skin-care': 'face-masks=Face Masks;serums=Serums',
   'stationary/pencils-and-erasers': 'color-pencils-pencils-and-erasers=Color Pencils',
   'stainless-steel-vessels/storage-containers': 'lunch-boxes=Lunch Boxes',
@@ -475,11 +475,28 @@ const THIRD_LEVEL: Readonly<Record<string, string>> = {
   'home-furnishing/blankets': 'fleece-blankets=Fleece Blankets',
   'furniture/table': 'side-tables=Side Tables;coffee-tables=Coffee Tables',
   'toys/toy-cars-and-vehicles': 'die-cast-cars=Die-Cast Cars',
-  'travel-accessories/luggage-accessories': 'travel-wallets=Travel Wallets',
+  'travel-accessories/luggage-accessories': 'travel-wallets=Travel Wallets;travel-locks=Travel Locks',
   'pet-products/pet-bowls-and-feeders': 'pet-feeding-accessories=Pet Feeding Accessories',
   'home-appliances/water-purifiers': 'ro-purifiers=RO Purifiers',
   'wall-clock/wall-clocks': 'designer-wall-clocks=Designer Wall Clocks',
-  'fashion-jewellery/necklaces': 'layered-necklaces=Layered Necklaces;chokers=Chokers',
+  'fashion-jewellery/necklaces': 'layered-necklaces=Layered Necklaces;chokers=Chokers;pendant-necklaces=Pendant Necklaces;pendant-sets=Pendant Sets;chains=Chains',
+  'fashion-jewellery/ring': 'cocktail-rings=Cocktail Rings;nose-rings=Nose Rings;fashion-rings=Fashion Rings;adjustable-rings=Adjustable Rings',
+  'fashion-jewellery/earrings': 'drop-earrings=Drop Earrings;hoop-earrings=Hoop Earrings;stud-earrings=Stud Earrings;jhumkas=Jhumkas',
+  'fashion-jewellery/body-jewellery': 'chain-bracelets=Chain Bracelets;charm-bracelets=Charm Bracelets',
+  'wall-clock/watches': 'quartz-watches=Quartz Watches',
+  'wall-clock/watch-accessories': 'watch-straps=Watch Straps;watch-boxes=Watch Boxes',
+  'sports-fitness/fitness-and-gym': 'fitness-accessories=Fitness Accessories',
+  'pet-products/pet-collars-and-leashes': 'dog-leashes=Dog Leashes;cat-collars=Cat Collars',
+  'fashion-jewellery/jewellery-boxes': 'jewellery-organizers=Jewellery Organizers;jewellery-stands=Jewellery Stands;travel-jewellery-cases=Travel Jewellery Cases',
+  'travel-accessories/travel-organizers': 'packing-cubes=Packing Cubes',
+  'hardwares/ropes-and-chains': 'chains-ropes-and-chains=Chains',
+  'travel-accessories/suitcase': 'trolley-bags=Trolley Bags',
+  'stationary/geometry-boxes': 'compasses=Compasses;rulers=Rulers;protractors=Protractors;geometry-sets=Geometry Sets;scales=Scales',
+  'stationary/file-folders': 'document-folders=Document Folders;ring-binders=Ring Binders;folders=Folders;expanding-files=Expanding Files',
+  'stationary/books': 'photography-books=Photography Books;drawing-and-painting-books=Drawing & Painting Books;romance=Romance;music-books=Music Books;fantasy-and-science-fiction=Fantasy & Science Fiction;career-guidance=Career Guidance;communication-skills=Communication Skills;manga=Manga;historical-fiction=Historical Fiction',
+  'stationary/glue-and-adhesives-stationary': 'glue-sticks=Glue Sticks',
+  'stationary/calculator': 'scientific=Scientific;printing-calculators=Printing Calculators',
+  'musical-instruments/music-accessories-and-audio': 'stands=Stands',
 };
 
 /** The homepage category strip, in the exact order and naming of youmartshop.com. */

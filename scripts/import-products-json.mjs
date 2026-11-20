@@ -9,7 +9,7 @@
 //   - main + gallery images, 50 units of stock per SKU, then one search reindex.
 // Idempotent: products are matched by their Youmart_Product_ID (in the slug) and SKUs by sku_code,
 // so re-running updates them instead of duplicating.
-// Usage: node scripts/import-products-json.mjs <file.json> [--dry-run] [--no-reindex]
+// Usage: node scripts/import-products-json.mjs <file.json> [--dry-run] [--no-reindex | --full-reindex]
 import { createSign } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -717,12 +717,53 @@ for (const { id, code } of unstocked) {
 }
 console.log(`stock set for ${stocked} new SKU(s)`);
 
-// --- Search index rebuilt once -------------------------------------------------------------------
-// A big catalog can take longer than fetch's 5-minute wait; the rebuild carries on in
-// search-service and swaps in when done, so a timeout here is not a failure.
-// --no-reindex: skip it (e.g. several deliveries in a row, rebuilt once at the end).
+// --- Search index ---------------------------------------------------------------------------------
+// Default: only THIS delivery's products are queued on search-service's "search-reindex" queue (the
+// same queue a catalog edit uses; its worker re-reads each product from catalog-service and upserts
+// it). Minutes instead of a 40+ minute rebuild of the whole catalog.
+// --full-reindex: rebuild the whole index instead (once, after a run of deliveries; it also runs
+// nightly at 2 AM). --no-reindex: neither.
 if (process.argv.includes('--no-reindex')) {
   console.log('search reindex: skipped (--no-reindex)');
+} else if (!process.argv.includes('--full-reindex')) {
+  const slugs = products.map((p) => `'${p.slug.replace(/'/g, "''")}'`).join(',');
+  const ids = execFileSync(
+    'docker',
+    ['compose', '-f', 'docker/docker-compose.yml', '--env-file', '.env', 'exec', '-T', 'postgres',
+      'psql', '-v', 'ON_ERROR_STOP=1', '-U', env.POSTGRES_USER, '-d', env.POSTGRES_DB, '-At'],
+    {
+      cwd: root,
+      input: `SELECT id FROM catalog.product WHERE deleted_at IS NULL AND slug = ANY(ARRAY[${slugs}]::text[]);`,
+      maxBuffer: 64 * 1024 * 1024,
+    },
+  )
+    .toString()
+    .trim()
+    .split('\n')
+    .filter(Boolean);
+  // bullmq is a dependency of the shared queue package, not of the repo root.
+  const { createRequire } = await import('node:module');
+  const { Queue } = createRequire(path.join(root, 'packages/queue/package.json'))('bullmq');
+  const redisUrl = env.REDIS_URL ? new URL(env.REDIS_URL) : null;
+  const connection = redisUrl
+    ? {
+        host: redisUrl.hostname,
+        port: Number(redisUrl.port || 6379),
+        username: redisUrl.username || undefined,
+        password: redisUrl.password ? decodeURIComponent(redisUrl.password) : undefined,
+        maxRetriesPerRequest: null,
+      }
+    : { host: env.REDIS_HOST || 'localhost', port: Number(env.REDIS_PORT || 6379), maxRetriesPerRequest: null };
+  // Same job name and options as @youmart/queue's createQueue / DEFAULT_JOB_OPTIONS.
+  const queue = new Queue('search-reindex', { connection });
+  const opts = { attempts: 3, backoff: { type: 'exponential', delay: 5000 }, removeOnComplete: 1000, removeOnFail: 5000 };
+  for (let i = 0; i < ids.length; i += 500) {
+    await queue.addBulk(
+      ids.slice(i, i + 500).map((productId) => ({ name: 'search-reindex', data: { productId }, opts })),
+    );
+  }
+  await queue.close();
+  console.log(`search: ${ids.length} product(s) queued for indexing (no full rebuild; --full-reindex for that)`);
 } else
   try {
     const re = await gatewayPost(`${gateway}/api/search/admin/reindex`, {
