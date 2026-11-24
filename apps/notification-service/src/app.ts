@@ -21,6 +21,11 @@ import { finderRouter } from './routes/finder.routes';
  */
 export function createApp(): Express {
   const app = express();
+  // Behind the API gateway (which appends the client to X-Forwarded-For): trust that hop so req.ip
+  // is the real client - the restock and AI-chat limits key on it (before, every signed-out
+  // shopper shared the gateway's one address and one limit). TRUSTED_PROXY_HOPS when another
+  // proxy sits in front of the gateway.
+  app.set('trust proxy', Number(process.env.TRUSTED_PROXY_HOPS ?? 1));
 
   app.disable('x-powered-by');
   app.use(helmet());

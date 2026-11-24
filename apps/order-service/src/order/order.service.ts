@@ -892,6 +892,32 @@ export async function releaseWalletHold(orderId: string): Promise<void> {
 }
 
 /**
+ * Backstop for stock held by cancelled orders: the release after a cancel / expiry is best-effort,
+ * and once the order is CANCELLED nothing tried again - a single inventory-service hiccup held that
+ * stock forever. Re-releases every order cancelled in the last `hours` (inventory's release is
+ * idempotent: reservations already released or committed are left alone). Returns how many orders
+ * were checked.
+ */
+export async function rereleaseCancelledOrderStock(hours = 6, batchSize = 200): Promise<number> {
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+  const cancelled = await prisma.order.findMany({
+    where: { status: 'CANCELLED', deletedAt: null, updatedAt: { gte: since } },
+    orderBy: { updatedAt: 'desc' },
+    take: batchSize,
+    select: { id: true },
+  });
+  for (const { id } of cancelled) {
+    try {
+      await inventoryClient.releaseByOrder(id);
+    } catch (err: unknown) {
+      // eslint-disable-next-line no-console
+      console.error('stock re-release failed - will try again next round', { orderId: id, err });
+    }
+  }
+  return cancelled.length;
+}
+
+/**
  * W9: cancels orders still unpaid `ttlMinutes` after checkout (abandoned payments), releasing
  * their held stock and any reserved wallet money - before this, an abandoned checkout held both
  * forever. The status flip is CONDITIONAL on still being PENDING_PAYMENT, so a payment confirming
@@ -1205,8 +1231,11 @@ export async function setSellerItemStatusInternal(
     throw new AppError('NOT_FOUND', 404, 'Order item not found');
   }
 
+  // Already there: a retry (e.g. logistics re-sending DELIVERED after a failed first call) is a
+  // no-op success, so a shipment can never get stuck with its item one step behind.
+  const same = item.sellerStatus === nextStatus;
   const allowed = LOGISTICS_ALLOWED_TRANSITIONS[item.sellerStatus] ?? [];
-  if (!allowed.includes(nextStatus)) {
+  if (!same && !allowed.includes(nextStatus)) {
     throw new AppError(
       'CONFLICT',
       409,
@@ -1214,14 +1243,18 @@ export async function setSellerItemStatusInternal(
     );
   }
 
-  const updated = await prisma.orderItem.update({
-    where: { id: orderItemId },
-    data: { sellerStatus: nextStatus },
-  });
+  const updated = same
+    ? item
+    : await prisma.orderItem.update({
+        where: { id: orderItemId },
+        data: { sellerStatus: nextStatus },
+      });
 
   // v1.17 Refer & Earn: delivered -> pay the referrer; returned -> take it back. Best-effort.
   try {
-    if (nextStatus === 'DELIVERED') await rewardReferrerForDelivery(orderItemId);
+    if (same) {
+      // Done on the first transition.
+    } else if (nextStatus === 'DELIVERED') await rewardReferrerForDelivery(orderItemId);
     else if (nextStatus === 'RETURNED') await reverseReferralReward(orderItemId);
   } catch (err: unknown) {
     // eslint-disable-next-line no-console

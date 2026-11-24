@@ -2,7 +2,7 @@ import { createApp } from './app';
 import { config } from './config';
 import { logger } from './logger';
 import { close, closePromotionsDb } from './db';
-import { expireUnpaidOrders } from './order/order.service';
+import { expireUnpaidOrders, rereleaseCancelledOrderStock } from './order/order.service';
 
 const app = createApp();
 
@@ -34,6 +34,21 @@ const sweepTimer =
     : null;
 sweepTimer?.unref();
 
+// Every 10 minutes: re-release stock of recently cancelled orders, in case the release right after
+// the cancel / expiry failed (idempotent - already released stock is left alone).
+const RERELEASE_EVERY_MS = 10 * 60 * 1000;
+let rereleasing = false;
+const rereleaseTimer = setInterval(() => {
+  if (rereleasing) return;
+  rereleasing = true;
+  rereleaseCancelledOrderStock()
+    .catch((err: unknown) => logger.error({ err }, 'cancelled-order stock re-release failed'))
+    .finally(() => {
+      rereleasing = false;
+    });
+}, RERELEASE_EVERY_MS);
+rereleaseTimer.unref();
+
 let shuttingDown = false;
 
 function shutdown(signal: string): void {
@@ -42,6 +57,7 @@ function shutdown(signal: string): void {
   }
   shuttingDown = true;
   if (sweepTimer) clearInterval(sweepTimer);
+  clearInterval(rereleaseTimer);
 
   logger.info({ signal }, 'shutdown signal received');
 

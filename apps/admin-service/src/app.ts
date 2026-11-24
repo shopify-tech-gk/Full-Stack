@@ -18,6 +18,11 @@ import { internalSettingsRouter } from './routes/internal.routes';
  */
 export function createApp(): Express {
   const app = express();
+  // Requests arrive through the API gateway, which appends the client's address to
+  // X-Forwarded-For: trust that many hops (default 1 = the gateway) so req.ip is the real client
+  // (the admin login rate limit keys on it). Raise ADMIN_TRUSTED_PROXY_HOPS when another proxy
+  // (load balancer / nginx) sits in front of the gateway.
+  app.set('trust proxy', Number(process.env.ADMIN_TRUSTED_PROXY_HOPS ?? 1));
 
   app.disable('x-powered-by');
   app.use(helmet());

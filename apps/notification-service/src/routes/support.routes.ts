@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { buildApiError } from '@youmart/errors';
 import { ContactMessageBody } from '../support/support.schema';
 import { submitContactMessage } from '../support/support.service';
@@ -114,7 +114,8 @@ const restockRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `restock:${req.auth?.userId ?? req.ip ?? '-'}`,
+  keyGenerator: (req) =>
+    `restock:${req.auth?.userId ?? ipKeyGenerator(req.ip ?? 'unknown')}`,
   handler: (_req, res) => {
     res
       .status(429)

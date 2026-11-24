@@ -131,6 +131,12 @@ async function applyShipmentStatus(
   const shipment = await findActiveShipment(shipmentId);
 
   if (shipment.status === nextStatus) {
+    // A retry of DELIVERED re-sends it to order-service (idempotent there): if the first call
+    // failed after the shipment was saved as DELIVERED, this is how the item stops being stuck at
+    // SHIPPED - before, a retry returned here and the item could never move again.
+    if (nextStatus === 'DELIVERED') {
+      await orderClient.setSellerItemStatus(shipment.orderItemId, 'DELIVERED');
+    }
     return toShipmentView(shipment);
   }
 
@@ -163,6 +169,32 @@ async function applyShipmentStatus(
   }
 
   return toShipmentView(updated);
+}
+
+/**
+ * Backstop: re-sends DELIVERED to order-service for shipments delivered in the last `days`, so an
+ * item whose first update failed (order-service down for a moment) catches up by itself instead of
+ * staying SHIPPED forever. Idempotent on order-service's side; an item already RETURNED answers 409,
+ * which is expected and skipped. Returns how many shipments were checked.
+ */
+export async function resyncDeliveredItems(days = 7, batchSize = 500): Promise<number> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const delivered = await prisma.shipment.findMany({
+    where: { status: 'DELIVERED', deletedAt: null, updatedAt: { gte: since } },
+    orderBy: { updatedAt: 'desc' },
+    take: batchSize,
+    select: { orderItemId: true },
+  });
+  for (const { orderItemId } of delivered) {
+    try {
+      await orderClient.setSellerItemStatus(orderItemId, 'DELIVERED');
+    } catch (err: unknown) {
+      if (err instanceof AppError && err.httpStatus === 409) continue; // returned since - fine
+      // eslint-disable-next-line no-console
+      console.error('delivered re-sync failed - will try again next round', { orderItemId, err });
+    }
+  }
+  return delivered.length;
 }
 
 /**

@@ -2,6 +2,7 @@ import { createApp } from './app';
 import { config } from './config';
 import { logger } from './logger';
 import { close } from './db';
+import { resyncDeliveredItems } from './logistics/logistics.service';
 
 const app = createApp();
 
@@ -12,6 +13,21 @@ const server = app.listen(config.port, () => {
   );
 });
 
+// Every 10 minutes: re-send DELIVERED for recently delivered shipments whose order item may have
+// missed the first update (idempotent; see resyncDeliveredItems).
+const RESYNC_EVERY_MS = 10 * 60 * 1000;
+let resyncing = false;
+const resyncTimer = setInterval(() => {
+  if (resyncing) return;
+  resyncing = true;
+  resyncDeliveredItems()
+    .catch((err: unknown) => logger.error({ err }, 'delivered re-sync failed'))
+    .finally(() => {
+      resyncing = false;
+    });
+}, RESYNC_EVERY_MS);
+resyncTimer.unref();
+
 let shuttingDown = false;
 
 function shutdown(signal: string): void {
@@ -19,6 +35,7 @@ function shutdown(signal: string): void {
     return;
   }
   shuttingDown = true;
+  clearInterval(resyncTimer);
 
   logger.info({ signal }, 'shutdown signal received');
 

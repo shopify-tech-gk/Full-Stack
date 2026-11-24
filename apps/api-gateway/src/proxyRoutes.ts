@@ -171,6 +171,9 @@ export function registerProxyRoutes(app: Express): void {
       createProxyMiddleware({
         target: route.target,
         changeOrigin: true,
+        // Append the caller's address to X-Forwarded-For so services can tell clients apart
+        // (admin-service's login rate limit; before, every request looked like the gateway).
+        xfwd: true,
         pathFilter: route.prefix,
         pathRewrite: { '^/api': '' },
         on: {
