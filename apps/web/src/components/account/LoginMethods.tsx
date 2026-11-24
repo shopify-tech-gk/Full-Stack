@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { OtpLoginForm } from './OtpLoginForm';
+import { PasswordLoginForm } from './PasswordAuthForms';
 import { QrLoginPanel } from './QrLoginPanel';
 
-type Method = 'otp' | 'qr';
+type Method = 'otp' | 'password' | 'qr';
 
-/** Login card: mobile / email OTP (as before) or "Scan QR code" with the YouMart app. */
+/** Login card: mobile / email OTP, username + password (v1.18), or "Scan QR code" with the app. */
 export function LoginMethods({ returnTo }: { returnTo?: string }) {
   const [method, setMethod] = useState<Method>('otp');
   const tab = (value: Method, label: string) => (
@@ -30,10 +31,13 @@ export function LoginMethods({ returnTo }: { returnTo?: string }) {
         className="mb-[16px] mt-[12px] flex gap-[6px] rounded-full bg-brand-popup-bg p-[5px]"
       >
         {tab('otp', 'Mobile / Email')}
+        {tab('password', 'Username')}
         {tab('qr', 'Scan QR code')}
       </div>
       {method === 'otp' ? (
         <OtpLoginForm mode="login" returnTo={returnTo} />
+      ) : method === 'password' ? (
+        <PasswordLoginForm returnTo={returnTo} onUseOtp={() => setMethod('otp')} />
       ) : (
         <QrLoginPanel returnTo={returnTo} />
       )}

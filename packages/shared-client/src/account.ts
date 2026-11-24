@@ -52,6 +52,9 @@ export type AccountSection =
   | 'help'
   | 'devices'
   | 'privacy'
+  | 'refer'
+  | 'reminders'
+  | 'ads'
   | 'logout';
 
 /** Website account menu groups (headings over the side menu). */
@@ -70,8 +73,11 @@ export const ACCOUNT_NAV: readonly {
   { key: 'wishlist', label: 'Wishlist', href: ROUTES.wishlist, group: 'Shopping' },
   { key: 'recent', label: 'Recently viewed', href: ROUTES.recentlyViewed, group: 'Shopping' },
   { key: 'reviews', label: 'My reviews', href: ROUTES.myReviews, group: 'Shopping' },
+  { key: 'reminders', label: 'Reminders', href: ROUTES.reminders, group: 'Shopping' },
   { key: 'wallet', label: 'YouMart Wallet', href: ROUTES.wallet, group: 'Money' },
   { key: 'coupons', label: 'Coupons', href: ROUTES.coupons, group: 'Money' },
+  { key: 'refer', label: 'Refer & Earn', href: ROUTES.refer, group: 'Money' },
+  { key: 'ads', label: 'Advertise', href: ROUTES.ads, group: 'Money' },
   { key: 'account', label: 'Account details', href: ROUTES.accountDetails, group: 'Account' },
   { key: 'addresses', label: 'Addresses', href: ROUTES.addresses, group: 'Account' },
   { key: 'notifications', label: 'Notifications', href: ROUTES.notifications, group: 'Account' },

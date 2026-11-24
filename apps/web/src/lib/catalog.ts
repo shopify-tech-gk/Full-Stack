@@ -20,6 +20,8 @@ import {
   type ProductListItem,
   type ProductRail,
   type ProductRailSlider,
+  type SearchFilterGroup,
+  type SearchQuery,
   type StoreCategory,
   type StoreSubcategory,
 } from '@youmart/shared-client';
@@ -143,6 +145,37 @@ export async function searchProductsPage(
   if (!q.trim()) return { products: [], total: 0 };
   const result = await catalogApi.search.products({ q: q.trim(), page, perPage });
   return { products: result.results.map(searchResultToCardData), total: result.found };
+}
+
+/** v1.17 search filters the results page passes on (everything but the text and paging). */
+export type SearchFilterParams = Omit<SearchQuery, 'q' | 'page' | 'perPage' | 'withFilters'>;
+
+/** Search with filters; the first page also returns the filters on offer and the price range. */
+export async function searchProductsFiltered(
+  q: string,
+  page: number,
+  filters: SearchFilterParams,
+  perPage = 50,
+): Promise<{
+  products: ProductCardData[];
+  total: number;
+  filters: SearchFilterGroup[];
+  price: { min: number; max: number } | null;
+}> {
+  if (!q.trim()) return { products: [], total: 0, filters: [], price: null };
+  const result = await catalogApi.search.products({
+    ...filters,
+    q: q.trim(),
+    page,
+    perPage,
+    ...(page === 1 ? { withFilters: '1' as const } : {}),
+  });
+  return {
+    products: result.results.map(searchResultToCardData),
+    total: result.found,
+    filters: result.filters ?? [],
+    price: result.price ?? null,
+  };
 }
 
 export async function searchProducts(q: string): Promise<ProductCardData[]> {

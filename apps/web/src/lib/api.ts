@@ -11,6 +11,11 @@ export function setAccessToken(token: string | null): void {
   accessToken = token;
 }
 
+/** The in-memory access token (raw uploads that bypass the API client, e.g. ad media). */
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
 /** lib/session registers its refresh here (avoids a circular import). */
 export function setUnauthorizedHandler(handler: () => Promise<boolean>): void {
   onUnauthorized = handler;

@@ -66,6 +66,25 @@ export async function loginWithOtp(identifier: string, code: string): Promise<Au
   return user;
 }
 
+/** v1.18 username + password sign-in (accounts that set a password). */
+export async function loginWithPassword(username: string, password: string): Promise<AuthUser> {
+  const { accessToken, user } = await api.auth.loginWithPassword({ username, password });
+  epoch += 1;
+  signIn(accessToken, user);
+  return user;
+}
+
+/** v1.18 register with a username: the OTP sent to the mobile number completes it. */
+export async function registerWithUsername(
+  body: { name: string; username: string; password: string; phone: string },
+  code: string,
+): Promise<AuthUser> {
+  const { accessToken, user } = await api.auth.registerVerify({ ...body, code });
+  epoch += 1;
+  signIn(accessToken, user);
+  return user;
+}
+
 /** QR sign-in: the phone confirmed - claim this browser's session (sets the refresh cookie). */
 export async function loginWithQr(sessionId: string, browserKey: string): Promise<AuthUser> {
   const { accessToken, user } = await api.auth.qrClaim(sessionId, browserKey);

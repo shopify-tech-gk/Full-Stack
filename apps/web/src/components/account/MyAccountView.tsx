@@ -8,8 +8,8 @@ import { reloadUser, useSession } from '@/lib/session';
 import { AccountShell } from './AccountShell';
 import { LogoutButton } from './LogoutButton';
 import { OrdersList } from './OrdersList';
-import { OtpLoginForm } from './OtpLoginForm';
 import { LoginMethods } from './LoginMethods';
+import { RegisterMethods } from './RegisterMethods';
 import { BODY_TEXT, TEXT_LINK } from './formStyles';
 
 const HEADING =
@@ -57,7 +57,7 @@ function Dashboard({ label }: { label: string }) {
         .
       </p>
       {/* v1.12: quick tiles (Flipkart-style) for the most used account pages. */}
-      <ul className="mb-[28px] grid grid-cols-2 gap-[12px] md:grid-cols-3 xl:grid-cols-4">
+      <ul className="mb-[28px] grid grid-cols-2 gap-[12px] md:grid-cols-3 lg:grid-cols-4">
         {[
           { href: ROUTES.orders, label: 'Orders', sub: 'Track & manage', Icon: ShoppingBasket },
           { href: ROUTES.wallet, label: 'YouMart Wallet', sub: 'Balance & refunds', Icon: Wallet },
@@ -110,7 +110,7 @@ function LoginView({ returnTo }: { returnTo?: string }) {
           <h2 id="register-heading" className={HEADING}>
             Register
           </h2>
-          <OtpLoginForm mode="register" returnTo={returnTo} />
+          <RegisterMethods returnTo={returnTo} />
         </section>
       </div>
     </div>

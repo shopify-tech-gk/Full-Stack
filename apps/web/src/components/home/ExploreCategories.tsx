@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, LayoutGrid, X } from 'lucide-react';
 import {
   EXPLORE_CATEGORY_PLACEHOLDER,
   ROUTES,
@@ -12,6 +12,7 @@ import {
 } from '@youmart/shared-client';
 import { TileImage } from '@/components/category/TileImage';
 import type { ExploreMain, ExploreSub } from '@/lib/category-taxonomy';
+import { ArrangeCategories, useCategoryOrder } from './CategoryOrder';
 
 const ROUND_ARROW =
   'flex size-[34px] items-center justify-center rounded-full border border-card-border bg-white text-brand shadow-carousel-arrow transition-colors hover:bg-brand hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-brand';
@@ -21,7 +22,10 @@ const ROUND_ARROW =
  * cards paged by the arrows (alphabetical), each with its own horizontally scrolling sub-category
  * row; a sub-category opens its sub-to-sub list in a panel anchored to the card.
  */
-export function ExploreCategories({ mains }: { mains: readonly ExploreMain[] }) {
+export function ExploreCategories({ mains: natural }: { mains: readonly ExploreMain[] }) {
+  // W8: the shopper's own order (saved to the account when signed in - the app uses it too).
+  const { ordered: mains, save, custom } = useCategoryOrder(natural);
+  const [arranging, setArranging] = useState(false);
   const pages = taxonomyPages(mains);
   const [page, setPage] = useState(0);
   const [open, setOpen] = useState<string | null>(null);
@@ -72,9 +76,17 @@ export function ExploreCategories({ mains }: { mains: readonly ExploreMain[] }) 
             >
               <ChevronRight aria-hidden="true" className="size-[18px]" strokeWidth={2.5} />
             </button>
+            <button
+              type="button"
+              onClick={() => setArranging(true)}
+              className="ml-[16px] inline-flex h-[40px] items-center gap-[8px] rounded-full border border-brand/30 bg-white px-[16px] font-ui text-[14px] font-semibold text-brand transition-colors hover:border-brand hover:bg-[#eef3fc] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+              <LayoutGrid aria-hidden="true" className="size-[16px]" />
+              {custom ? 'My order' : 'Arrange'}
+            </button>
             <Link
               href={ROUTES.shop}
-              className="ml-[26px] inline-flex h-[40px] items-center gap-[10px] rounded-full bg-brand px-[22px] font-ui text-[14px] font-semibold text-white transition-[opacity,box-shadow] hover:opacity-90 hover:shadow-brand-button focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+              className="ml-[10px] inline-flex h-[40px] items-center gap-[10px] rounded-full bg-brand px-[22px] font-ui text-[14px] font-semibold text-white transition-[opacity,box-shadow] hover:opacity-90 hover:shadow-brand-button focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
             >
               View All Categories
               <ArrowRight aria-hidden="true" className="size-[16px]" strokeWidth={2.25} />
@@ -85,6 +97,15 @@ export function ExploreCategories({ mains }: { mains: readonly ExploreMain[] }) 
         <p aria-live="polite" className="sr-only">
           Showing categories {first} to {first + items.length - 1} of {mains.length}
         </p>
+        <ArrangeCategories
+          open={arranging}
+          onClose={() => setArranging(false)}
+          items={mains}
+          onSave={async (slugs) => {
+            await save(slugs);
+            go(0);
+          }}
+        />
         <ul className="mt-[14px] grid grid-cols-6 gap-[10px]">
           {items.map((main) => (
             <MainCard

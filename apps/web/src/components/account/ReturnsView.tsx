@@ -141,7 +141,7 @@ export function ReturnsView() {
         }
       />
 
-      <div className="mb-[20px] grid gap-[14px] sm:grid-cols-3">
+      <div className="mb-[20px] grid gap-[14px] md:grid-cols-3">
         {[
           { label: 'Returns in progress', value: items ? String(open) : '—', Icon: PackageOpen },
           {

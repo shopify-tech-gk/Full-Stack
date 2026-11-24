@@ -233,7 +233,7 @@ export function ReasonPicker({
   return (
     <fieldset>
       <legend className="mb-[10px] text-[14px] font-semibold text-heading">Choose a reason</legend>
-      <div className="grid gap-[8px] sm:grid-cols-2">
+      <div className="grid gap-[8px] md:grid-cols-2">
         {reasons.map((reason) => {
           const checked = value === reason;
           return (

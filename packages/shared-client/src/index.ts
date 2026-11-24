@@ -19,3 +19,4 @@ export * from './routes';
 export * from './site-pages';
 export * from './support';
 export * from './demo';
+export * from './brand-videos';

@@ -65,7 +65,7 @@ export function TermsGate() {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-[#0f172a]/55 p-[16px] backdrop-blur-[3px] sm:items-center">
+    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-[#0f172a]/55 p-[16px] backdrop-blur-[3px] md:items-center">
       <div
         role="dialog"
         aria-modal="true"

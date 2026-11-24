@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import {
+  AlarmClock,
   Bell,
+  Megaphone,
+  Gift,
   Clock,
   Heart,
   House,
@@ -36,6 +39,9 @@ const ICONS: Record<AccountSection, typeof House> = {
   devices: MonitorSmartphone,
   privacy: ShieldCheck,
   help: LifeBuoy,
+  refer: Gift,
+  reminders: AlarmClock,
+  ads: Megaphone,
   logout: LogOut,
 };
 

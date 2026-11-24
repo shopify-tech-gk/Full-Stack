@@ -58,7 +58,7 @@ export function PrivacyAccountView() {
       <PageHeader title="Privacy & account" subtitle="Our policies, and control over your account and data." />
 
       <Panel title="Policies">
-        <ul className="grid gap-[10px] sm:grid-cols-2">
+        <ul className="grid gap-[10px] md:grid-cols-2">
           {POLICIES.map(({ href, label, sub, Icon }) => (
             <li key={href}>
               <Link

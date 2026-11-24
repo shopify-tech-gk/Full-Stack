@@ -226,7 +226,7 @@ export function WalletView() {
         subtitle="Refunds land here instantly. Pay for orders with it - on its own or with another method."
       />
 
-      <div className="mb-[20px] grid gap-[20px] xl:grid-cols-[1.25fr_1fr]">
+      <div className="mb-[20px] grid gap-[20px] lg:grid-cols-[1.25fr_1fr]">
         <div className="relative overflow-hidden rounded-[18px] bg-[linear-gradient(135deg,#0142aa_0%,#0d66ad_55%,#1e88e5_100%)] p-[26px] font-ui text-white shadow-[0_16px_40px_rgba(1,66,170,0.28)]">
           <span
             aria-hidden="true"

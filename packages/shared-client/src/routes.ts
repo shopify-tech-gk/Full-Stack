@@ -24,6 +24,13 @@ export const ROUTES = {
   help: '/account/help',
   devices: '/account/devices',
   privacy: '/account/privacy',
+  /** v1.17 Refer & Earn; v1.18 Remind me to buy. */
+  refer: '/account/refer',
+  reminders: '/account/reminders',
+  /** v1.19 Advertise on YouMart; Sell on YouMart (early access). */
+  ads: '/account/ads',
+  adsNew: '/account/ads/new',
+  sell: '/sell',
   trackOrder: '/track-order',
   cancelOrder: '/cancel-order',
   orderNotifications: '/order-notifications',

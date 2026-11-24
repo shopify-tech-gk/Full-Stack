@@ -333,7 +333,7 @@ export function OrderDetail({ orderNumber }: { orderNumber: string }) {
         </Banner>
       ) : null}
 
-      <div className="grid items-start gap-[20px] xl:grid-cols-[1fr_320px]">
+      <div className="grid items-start gap-[20px] lg:grid-cols-[1fr_320px]">
         <div className="min-w-0">
           <Panel title={`Items (${units})`} padded={false}>
             <ul>

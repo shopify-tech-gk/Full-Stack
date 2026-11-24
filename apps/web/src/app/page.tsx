@@ -11,6 +11,8 @@ import { ProductRailSliders } from '@/components/home/ProductRailSliders';
 import { ProductShowcase } from '@/components/home/ProductShowcase';
 import { PromoBanners } from '@/components/home/PromoBanners';
 import { PromoSlider } from '@/components/home/PromoSlider';
+import { BrandVideoWindow } from '@/components/home/BrandVideoWindow';
+import { SponsoredSlot } from '@/components/home/SponsoredSlot';
 import { getHomeProducts } from '@/lib/catalog';
 import { storeCategories } from '@/lib/categories';
 import { exploreCategories, taxonomyBestSlides } from '@/lib/category-taxonomy';
@@ -36,6 +38,8 @@ export default async function HomePage() {
       </div>
 
       <div className="order-3">
+        {/* v1.19 the live image ad (approved + paid); nothing when none is live. */}
+        <SponsoredSlot />
         {rails.length > 0 && <ProductRails rails={rails} />}
         <ProductRailSliders rails={sliders} />
         <BrandStrip brands={BRAND_OFFERS} />
@@ -49,6 +53,8 @@ export default async function HomePage() {
         <BestCategoriesShowcase slides={bestSlides} />
         <FeatureCards cards={FEATURE_CARDS} />
       </div>
+      {/* v1.18 today's brand video (or a live video ad), floating in the corner on desktop. */}
+      <BrandVideoWindow />
     </div>
   );
 }

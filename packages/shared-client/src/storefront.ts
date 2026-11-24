@@ -200,6 +200,9 @@ export const FOOTER = {
       { label: 'Order Track', href: ROUTES.trackOrder },
       { label: 'Order Cancel', href: ROUTES.cancelOrder },
       { label: 'Order Notify', href: ROUTES.orderNotifications },
+      { label: 'YouFind Bot', href: '/youfind' },
+      { label: 'Sell on YouMart', href: ROUTES.sell },
+      { label: 'Advertise with us', href: ROUTES.ads },
     ] satisfies FooterLink[],
   },
   policy: {

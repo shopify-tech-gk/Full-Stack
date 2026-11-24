@@ -132,7 +132,7 @@ export function HelpCenterView() {
         subtitle="Get help with an order, a refund or your account. We reply in your notifications and by email."
       />
 
-      <div className="mb-[20px] grid gap-[14px] md:grid-cols-3">
+      <div className="mb-[20px] grid gap-[14px] md:grid-cols-2 lg:grid-cols-4">
         <Link
           href={ROUTES.customerCare}
           className="group flex items-center gap-[14px] rounded-[14px] bg-[linear-gradient(135deg,#4c1d95,#6d28d9_60%,#8b5cf6)] p-[16px] font-ui text-white shadow-[0_10px_28px_rgba(109,40,217,0.28)] transition-transform hover:-translate-y-[1px]"
@@ -158,6 +158,18 @@ export function HelpCenterView() {
           </span>
         </Link>
         <Link
+          href="/youfind"
+          className="flex items-center gap-[14px] rounded-[14px] border border-catalog-rule bg-white p-[16px] font-ui shadow-rail-card transition-shadow hover:shadow-product-card"
+        >
+          <span className="flex size-[42px] items-center justify-center rounded-[12px] bg-[#e8f7ee] text-[#047857]">
+            <PackageSearch aria-hidden="true" className="size-[20px]" />
+          </span>
+          <span>
+            <span className="block text-[15px] font-semibold text-heading">YouFind Bot</span>
+            <span className="block text-[12.5px] text-ink-muted">Can&rsquo;t find a product? Ask</span>
+          </span>
+        </Link>
+        <Link
           href="/faq"
           className="flex items-center gap-[14px] rounded-[14px] border border-catalog-rule bg-white p-[16px] font-ui shadow-rail-card transition-shadow hover:shadow-product-card"
         >
@@ -171,10 +183,10 @@ export function HelpCenterView() {
         </Link>
       </div>
 
-      <div className="grid items-start gap-[20px] xl:grid-cols-[1.1fr_1fr]">
+      <div className="grid items-start gap-[20px] lg:grid-cols-[1.1fr_1fr]">
         <Panel title="Raise a request">
           <p className="mb-[10px] font-ui text-[13.5px] font-semibold text-heading">What do you need help with?</p>
-          <div className="mb-[18px] grid grid-cols-2 gap-[8px] sm:grid-cols-3">
+          <div className="mb-[18px] grid grid-cols-2 gap-[8px] md:grid-cols-3">
             {TOPICS.map((t) => {
               const Icon = TOPIC_ICON[t];
               const on = topic === t;

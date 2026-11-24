@@ -1,6 +1,8 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
+import { MapPinned } from 'lucide-react';
+import { MapPicker } from './MapPicker';
 import {
   ADDRESS_TYPES,
   ApiError,
@@ -39,6 +41,8 @@ export function AddressForm({ initial, title, onSave, onCancel }: AddressFormPro
   const [errors, setErrors] = useState<AddressFormErrors>({});
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
 
   const set = <K extends keyof AddressFormValues>(key: K, value: AddressFormValues[K]) =>
     setValues((current) => ({ ...current, [key]: value }));
@@ -119,6 +123,34 @@ export function AddressForm({ initial, title, onSave, onCancel }: AddressFormPro
       >
         {title}
       </h2>
+      <div className="mb-[16px] flex flex-wrap items-center justify-between gap-[12px] rounded-[12px] border border-dashed border-brand/40 bg-[#f5f8fe] px-[14px] py-[12px] font-ui">
+        <span className="text-[14px] text-ink-body">
+          {pinned ? 'Address filled from the map - check the house number and street.' : 'Save time: pin your location on the map and we’ll fill in the address.'}
+        </span>
+        <button
+          type="button"
+          onClick={() => setMapOpen(true)}
+          className="inline-flex h-[38px] items-center gap-[8px] rounded-[10px] bg-brand px-[14px] text-[14px] font-semibold text-white hover:shadow-brand-button"
+        >
+          <MapPinned aria-hidden="true" className="size-[16px]" /> {pinned ? 'Pin again' : 'Pin on map'}
+        </button>
+      </div>
+      <MapPicker
+        open={mapOpen}
+        onClose={() => setMapOpen(false)}
+        onPick={(place) => {
+          setValues((current) => ({
+            ...current,
+            ...(place.line1 ? { line1: place.line1 } : {}),
+            ...(place.landmark ? { landmark: place.landmark } : {}),
+            ...(place.city ? { city: place.city } : {}),
+            ...(place.state ? { state: place.state } : {}),
+            ...(place.pincode ? { pincode: place.pincode } : {}),
+          }));
+          setPinned(true);
+          setMapOpen(false);
+        }}
+      />
       {failure && <Notice tone="error">{failure}</Notice>}
       {errorCount > 0 && (
         <Notice tone="error">

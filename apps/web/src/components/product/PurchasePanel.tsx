@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2 } from 'lucide-react';
 import type { CartProduct } from '@youmart/shared-client';
 import { buyNowLine, useAddToCart, useCart } from '@/lib/cart';
+import { RemindButton } from './RemindButton';
+import { FreeDeliveryProgress } from '@/components/cart/FreeDeliveryProgress';
 
 interface PurchasePanelProps {
   /** The SKU the buttons buy (the product's cheapest); null = the product has none to sell. */
@@ -118,6 +120,16 @@ export function PurchasePanel({ product, title }: PurchasePanelProps) {
       >
         Buy Now
       </button>
+      {product ? (
+        <div className="mb-[10px]">
+          <RemindButton product={product} />
+        </div>
+      ) : null}
+      {cart && cart.items.length > 0 ? (
+        <div className="mb-[10px] rounded-[12px] border border-catalog-rule bg-white px-[12px] py-[10px]">
+          <FreeDeliveryProgress subtotal={cart.subtotal} />
+        </div>
+      ) : null}
       {!product && (
         <p className="mb-[10px] font-ui text-[14px] text-woo-error">
           This product is currently unavailable.
