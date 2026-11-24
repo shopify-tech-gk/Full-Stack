@@ -61,7 +61,7 @@ export function BrandVideoWindow() {
   return (
     <aside
       aria-label={ad ? 'Sponsored video' : 'Brand video'}
-      className="fixed bottom-[24px] right-[24px] z-[70] hidden w-[200px] overflow-hidden rounded-[16px] bg-black font-ui shadow-[0_18px_48px_rgba(15,23,42,0.4)] ring-1 ring-black/10 lg:block"
+      className="fixed bottom-[24px] right-[24px] z-[70] hidden w-[172px] overflow-hidden rounded-[16px] bg-black font-ui shadow-[0_18px_48px_rgba(15,23,42,0.4)] ring-1 ring-black/10 lg:block"
     >
       <div className="relative aspect-[9/16]">
         {source.kind === 'ad' ? (

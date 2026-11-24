@@ -156,16 +156,16 @@ export const colors = {
   },
   /** About / Contact / FAQ / Customer Care (live Elementor pages). */
   info: {
-    heroBg: '#070614',
-    maroon: '#6e0211',
-    faqHeading: '#cf2323',
-    accordionIcon: '#ba0033',
-    accordionLine: '#ececec',
-    missionBg: '#a79d9e',
+    // Info pages (About, Contact, FAQ) in the brand blues (was the live site's maroon theme).
+    heroBg: '#061a45',
+    maroon: '#0142aa',
+    faqHeading: '#0142aa',
+    accordionIcon: '#0142aa',
+    accordionLine: '#e3e9f2',
+    missionBg: '#eef3fc',
     ctaText: '#e7f6ff',
-    muted: '#bdbdbd',
-    /** Live paints this band with a photo; its dominant crimson stands in until assets exist. */
-    ctaBand: '#a3262f',
+    muted: '#c9d8f5',
+    ctaBand: '#061a45',
     whatsapp: '#60d566',
   },
   // Declared in the Elementor kit but NOT observed in the homepage top section; unverified.

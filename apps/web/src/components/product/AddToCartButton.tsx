@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import type { ProductCardData } from '@youmart/shared-client';
 import { useAddToCart, useCart } from '@/lib/cart';
 
@@ -92,6 +92,7 @@ export function AddToCartButton({
       title={skuId ? undefined : 'Currently unavailable'}
       className={`${className} disabled:cursor-not-allowed disabled:opacity-60 aria-busy:cursor-wait aria-busy:opacity-80`}
     >
+      <ShoppingCart aria-hidden="true" className="size-[15px]" />
       Add<span className="sr-only"> {product.title} to cart</span>
     </button>
   );

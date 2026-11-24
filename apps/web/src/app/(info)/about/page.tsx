@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
+import { Home, Package, PartyPopper, ShieldCheck, Sparkles, Sprout, Tags, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { ABOUT_PAGE } from '@youmart/shared-client';
 import { RichText } from '@/components/info/RichText';
@@ -16,36 +16,52 @@ export default function AboutPage() {
   const { hero, intro, missionVision, cta } = ABOUT_PAGE;
   return (
     <>
-      <section className="bg-info-heroBg lg:bg-[linear-gradient(90deg,theme(colors.info.heroBg)_50%,#feffff_50%)]">
-        <div className="mx-auto flex max-w-[1240px] flex-col gap-[30px] px-[20px] py-[50px] lg:min-h-[533px] lg:flex-row lg:items-center lg:gap-0 lg:py-[40px]">
-          <div className="lg:w-1/2 lg:self-end lg:pb-[60px]">
-            <p className={`${EYEBROW} text-white`}>{hero.eyebrow}</p>
-            <h1 className="mt-[20px] font-ui text-[36px] font-semibold uppercase leading-[1.4] text-white lg:mt-[65px] lg:text-[52px]">
+      <section className="relative overflow-hidden bg-[linear-gradient(135deg,#061a45_0%,#0142aa_55%,#1e88e5_100%)]">
+        <span aria-hidden="true" className="absolute -right-[120px] -top-[140px] size-[460px] rounded-full bg-white/[0.06]" />
+        <div className="relative mx-auto flex max-w-[1240px] flex-col gap-[36px] px-[20px] py-[56px] lg:flex-row lg:items-center lg:gap-[48px] lg:py-[96px]">
+          <div className="lg:w-1/2">
+            <p className={`${EYEBROW} text-[#ffd60a]`}>{hero.eyebrow}</p>
+            <h1 className="mt-[14px] font-ui text-[36px] font-bold leading-[1.15] text-white lg:text-[56px]">
               {hero.title}
             </h1>
+            <p className="mt-[16px] max-w-[480px] font-ui text-[16px] leading-[1.6] text-white/80">
+              Shop easy, live better - everything for your home, garden, family and celebrations, delivered to your door.
+            </p>
           </div>
-          {/* Brand-photo placeholder - awaiting the store's own image. */}
-          <Image
-            src="/placeholders/photo.svg"
-            alt=""
-            width={547}
-            height={547}
-            unoptimized
-            className="aspect-square h-auto w-full max-w-[547px] object-cover lg:ml-auto"
-          />
+          <ul className="grid flex-1 grid-cols-2 gap-[14px]">
+            {[
+              { Icon: Package, value: '5 lakh+', label: 'Products' },
+              { Icon: Tags, value: '8,000+', label: 'Brands' },
+              { Icon: Truck, value: 'Fast', label: 'Delivery across India' },
+              { Icon: ShieldCheck, value: '100%', label: 'Secure payments' },
+            ].map(({ Icon, value, label }) => (
+              <li key={label} className="rounded-[18px] bg-white/[0.08] p-[20px] text-white ring-1 ring-white/15 backdrop-blur-[2px]">
+                <Icon aria-hidden="true" className="size-[26px] text-[#ffd60a]" />
+                <p className="mt-[14px] font-ui text-[30px] font-bold leading-none">{value}</p>
+                <p className="mt-[6px] font-ui text-[14px] text-white/75">{label}</p>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
-      <section className="mx-auto flex max-w-[1240px] flex-col gap-[30px] px-[20px] py-[50px] lg:flex-row lg:items-center lg:gap-[48px] lg:py-[150px]">
-        {/* Brand-photo placeholder - awaiting the store's own image. */}
-        <Image
-          src="/placeholders/photo.svg"
-          alt=""
-          width={628}
-          height={419}
-          unoptimized
-          className="h-auto w-full lg:w-[628px] lg:shrink-0"
-        />
+      <section className="mx-auto flex max-w-[1240px] flex-col gap-[30px] px-[20px] py-[50px] lg:flex-row lg:items-center lg:gap-[56px] lg:py-[96px]">
+        <ul className="grid w-full shrink-0 grid-cols-2 gap-[14px] lg:w-[560px]">
+          {[
+            { Icon: Sprout, title: 'Home & garden', text: 'Seeds, plants, fertilisers and tools' },
+            { Icon: Sparkles, title: 'Beauty & care', text: 'Cosmetics, skin and hair care' },
+            { Icon: PartyPopper, title: 'Celebrations', text: 'Party, gifts and festival decor' },
+            { Icon: Home, title: 'Everyday needs', text: 'Kitchen, cleaning and stationery' },
+          ].map(({ Icon, title, text }) => (
+            <li key={title} className="rounded-[18px] border border-catalog-rule bg-white p-[20px] shadow-rail-card">
+              <span className="flex size-[46px] items-center justify-center rounded-[14px] bg-[#eef3fc] text-brand">
+                <Icon aria-hidden="true" className="size-[22px]" />
+              </span>
+              <p className="mt-[12px] font-ui text-[16px] font-semibold text-heading">{title}</p>
+              <p className="mt-[2px] font-ui text-[13.5px] text-ink-muted">{text}</p>
+            </li>
+          ))}
+        </ul>
         <div>
           <p className={`${EYEBROW} text-heading`}>{intro.eyebrow}</p>
           <h2 className={`${H2} mt-[10px]`}>{intro.title}</h2>

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Loader2, Trash2, Zap } from 'lucide-react';
+import { Heart, Loader2, Trash2, Zap } from 'lucide-react';
 import {
   ROUTES,
   formatMoney,
@@ -97,8 +97,20 @@ export function WishlistTable() {
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={4} className="px-[12px] py-[16px] text-center">
-                No products added to the wishlist
+              <td colSpan={4} className="px-[12px] py-[44px] text-center font-ui">
+                <span className="mx-auto mb-[12px] flex size-[68px] items-center justify-center rounded-full bg-[#fdecef]">
+                  <Heart aria-hidden="true" className="size-[30px] text-[#e11d48]" />
+                </span>
+                <span className="block text-[18px] font-semibold text-heading">Your wishlist is empty</span>
+                <span className="mx-auto mt-[4px] block max-w-[380px] text-[14px] text-ink-muted">
+                  Tap the heart on any product to save it here for later.
+                </span>
+                <Link
+                  href="/"
+                  className="mt-[16px] inline-flex h-[42px] items-center rounded-[12px] bg-brand px-[22px] text-[14.5px] font-semibold text-white hover:shadow-brand-button"
+                >
+                  Discover products
+                </Link>
               </td>
             </tr>
           ) : (

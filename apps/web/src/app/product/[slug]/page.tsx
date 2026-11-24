@@ -11,15 +11,13 @@ import {
 } from '@youmart/shared-client';
 import { CategoryBar } from '@/components/category/CategoryBar';
 import { InfiniteProductGrid } from '@/components/listing/InfiniteProductGrid';
-import { ProductGallery } from '@/components/product/ProductGallery';
 import { ProductRail } from '@/components/product/ProductRail';
 import { ProductSectionNav } from '@/components/product/ProductSectionNav';
 import { ProductTabs } from '@/components/product/ProductTabs';
-import { PurchasePanel } from '@/components/product/PurchasePanel';
+import { ProductHero } from '@/components/product/ProductHero';
 import { ProductViewTracker } from '@/components/product/ProductViewTracker';
 import { ShareButtons } from '@/components/product/ShareButtons';
 import { ShopWithAssurance } from '@/components/product/ShopWithAssurance';
-import { StarRating } from '@/components/product/StarRating';
 import { getProductDetail, listMoreCategoryProducts } from '@/lib/catalog';
 import { WishlistButton } from '@/components/product/WishlistButton';
 import { categoryBarMains } from '@/lib/category-taxonomy';
@@ -35,8 +33,6 @@ const CARD_ICONS: Record<(typeof SAFE_CHECKOUT_METHODS)[number], string> = {
   Discover: '/placeholders/card-discover.svg',
 };
 
-const STRIKE =
-  "relative no-underline text-black before:absolute before:inset-x-0 before:top-[0.56em] before:h-[2px] before:rotate-[18deg] before:bg-price-strike before:content-[''] after:absolute after:inset-x-0 after:top-[0.56em] after:h-[2px] after:-rotate-[18deg] after:bg-price-strike after:content-['']";
 
 /** Link previews want JPEG / PNG; our photos are WebP, so previews use wsrv.nl's JPEG of them. */
 function previewImage(url: string): string {
@@ -82,7 +78,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (!product) {
     notFound();
   }
-  const off = discountPercent(product.mrp, product.sellingPrice);
   const reviewCount = product.ratingCount;
 
   // "More to Explore": the product's category feed powers the Similar rail + the infinite grid.
@@ -111,62 +106,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <ProductViewTracker productId={product.id} />
       <CategoryBar mains={categoryBarMains()} />
       <div className="mx-auto mt-[10px] max-w-[1240px] px-[20px] lg:my-[64px]">
-        <div className="lg:flex lg:items-start lg:justify-between">
-          <ProductGallery images={product.images} title={product.title} />
-
-          <div className="mb-[32px] lg:w-[552px]">
-            <h1 className="font-ui text-[20px] font-semibold leading-[1.3] text-heading md:text-[25px] lg:text-[34px]">
-              {product.title}
-            </h1>
-
-            <div className="mb-[8px] flex items-center font-sans leading-[32px]">
-              <span className="mr-[4px]">
-                <StarRating rating={product.rating} variant="woo" size={16} />
-              </span>
-              <a href="#reviews" className="font-ui text-[16px] text-brand hover:underline">
-                (<span>{reviewCount}</span> customer review{reviewCount === 1 ? '' : 's'})
-              </a>
-            </div>
-
-            <p className="mb-[16px] font-ui text-[16px] leading-[25.6px] text-ink-body">
-              {product.shortDescription}
-            </p>
-
-            <p className="mb-[3.2px] font-sans text-[16px] font-bold leading-[25.6px] text-ink-body">
-              <span className="mr-[4px] text-price-label">MRP: </span>
-              {off > 0 ? (
-                <>
-                  <del className={STRIKE}>
-                    <span className="sr-only">Original price was </span>
-                    {formatMoney(product.mrp)}
-                  </del>{' '}
-                  <ins className="no-underline">
-                    <span className="sr-only">Current price is </span>
-                    {formatMoney(product.sellingPrice)}
-                  </ins>{' '}
-                  <span className="text-price-discount">{off}% OFF</span>
-                </>
-              ) : (
-                formatMoney(product.sellingPrice)
-              )}
-            </p>
-
-            <PurchasePanel
-              title={product.title}
-              product={
-                product.skuId
-                  ? {
-                      skuId: product.skuId,
-                      productId: product.id,
-                      productSlug: product.slug,
-                      title: product.title,
-                      price: product.sellingPrice,
-                      image: product.images[0],
-                    }
-                  : null
-              }
-            />
-
+        <ProductHero product={product} reviewCount={reviewCount}>
             <div className="mt-[16px]">
               <ShopWithAssurance />
             </div>
@@ -224,8 +164,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
 
             <ShareButtons title={product.title} />
-          </div>
-        </div>
+        </ProductHero>
 
         <ProductSectionNav />
 

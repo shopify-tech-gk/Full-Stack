@@ -73,7 +73,7 @@ export function TrackOrderForm({ initialOrderNumber }: { initialOrderNumber: str
       <form
         onSubmit={(event) => void onSubmit(event)}
         noValidate
-        className="mx-auto my-[20px] max-w-[500px]"
+        className="mx-auto my-[20px] max-w-[560px] rounded-[18px] border border-catalog-rule bg-white p-[24px] shadow-rail-card"
       >
         <p className={`${BODY_TEXT} mb-[25.6px]`}>
           Enter your Order ID <em>or</em> the courier tracking number from your

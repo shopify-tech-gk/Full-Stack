@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Heart, ShoppingCart } from 'lucide-react';
 import {
   deliveryFee,
   cartTotals,
@@ -17,19 +18,31 @@ import { useProductImages } from '@/lib/product-images';
 import { CartLines } from './CartLines';
 import { CartTotals } from './CartTotals';
 
-/** Live empty cart: "Your Cart is Empty" (Outfit 24/700) + a pill "Return to shop" button. */
+/** The empty cart: a friendly card with ways back into the store. */
 export function EmptyCart() {
   return (
-    <div className="mb-[25.6px] font-ui">
-      <p className="mb-[15px] text-[24px] font-bold leading-[25.6px] text-black">
-        Your Cart is Empty
+    <div className="mx-auto mb-[32px] mt-[12px] max-w-[640px] rounded-[20px] border border-catalog-rule bg-white px-[24px] py-[40px] text-center font-ui shadow-rail-card">
+      <span className="mx-auto mb-[16px] flex size-[84px] items-center justify-center rounded-full bg-[#eef3fc]">
+        <ShoppingCart aria-hidden="true" className="size-[38px] text-brand" />
+      </span>
+      <p className="text-[24px] font-semibold text-heading">Your cart is empty</p>
+      <p className="mx-auto mt-[6px] max-w-[420px] text-[15px] leading-[1.55] text-ink-muted">
+        Looks like you haven&rsquo;t added anything yet. Explore 5 lakh+ products across every category.
       </p>
-      <Link
-        href="/"
-        className="inline-flex h-[39.8px] items-center rounded-[30px] border-2 border-white bg-brand px-[36px] text-[14px] font-bold uppercase text-white transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
-      >
-        Return to shop
-      </Link>
+      <div className="mt-[22px] flex flex-wrap justify-center gap-[10px]">
+        <Link
+          href="/"
+          className="inline-flex h-[44px] items-center gap-[8px] rounded-[12px] bg-brand px-[24px] text-[15px] font-semibold text-white transition-shadow hover:shadow-brand-button focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+        >
+          Start shopping
+        </Link>
+        <Link
+          href="/wishlist"
+          className="inline-flex h-[44px] items-center gap-[8px] rounded-[12px] border border-catalog-rule bg-white px-[20px] text-[15px] font-semibold text-heading transition-colors hover:border-brand hover:text-brand"
+        >
+          <Heart aria-hidden="true" className="size-[16px]" /> My wishlist
+        </Link>
+      </div>
     </div>
   );
 }
