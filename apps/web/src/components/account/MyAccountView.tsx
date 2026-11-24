@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { Clock, Heart, ShoppingBasket, Star, TicketPercent } from 'lucide-react';
+import { Clock, Heart, LifeBuoy, RotateCcw, ShoppingBasket, Star, TicketPercent, Wallet } from 'lucide-react';
 import { ROUTES, authUserLabel } from '@youmart/shared-client';
 import { reloadUser, useSession } from '@/lib/session';
 import { AccountShell } from './AccountShell';
@@ -57,9 +57,11 @@ function Dashboard({ label }: { label: string }) {
         .
       </p>
       {/* v1.12: quick tiles (Flipkart-style) for the most used account pages. */}
-      <ul className="mb-[28px] grid grid-cols-2 gap-[12px] md:grid-cols-3 xl:grid-cols-5">
+      <ul className="mb-[28px] grid grid-cols-2 gap-[12px] md:grid-cols-3 xl:grid-cols-4">
         {[
           { href: ROUTES.orders, label: 'Orders', sub: 'Track & manage', Icon: ShoppingBasket },
+          { href: ROUTES.wallet, label: 'YouMart Wallet', sub: 'Balance & refunds', Icon: Wallet },
+          { href: ROUTES.returns, label: 'Returns', sub: 'Return & refund status', Icon: RotateCcw },
           { href: ROUTES.wishlist, label: 'Wishlist', sub: 'Saved items', Icon: Heart },
           { href: ROUTES.coupons, label: 'Coupons', sub: 'Offers for you', Icon: TicketPercent },
           {
@@ -69,6 +71,7 @@ function Dashboard({ label }: { label: string }) {
             Icon: Clock,
           },
           { href: ROUTES.myReviews, label: 'My reviews', sub: 'Rate & edit', Icon: Star },
+          { href: ROUTES.help, label: 'Help Center', sub: 'Get help, follow requests', Icon: LifeBuoy },
         ].map(({ href, label, sub, Icon }) => (
           <li key={href}>
             <Link

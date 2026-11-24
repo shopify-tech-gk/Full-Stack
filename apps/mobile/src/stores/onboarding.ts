@@ -6,7 +6,8 @@ import { getJSON, setJSON } from '@/lib/storage';
 // the device; bumping TERMS_VERSION when the Terms change asks everyone to accept again.
 
 /** The version of the Terms + Privacy Policy the customer accepts (W9: YouMart Wallet terms). */
-export const TERMS_VERSION = '2026-10-13';
+export { TERMS_VERSION } from '@youmart/shared-client';
+import { TERMS_VERSION } from '@youmart/shared-client';
 
 const KEY = 'ym:onboarding';
 

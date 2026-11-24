@@ -13,9 +13,22 @@ interface RazorpayInstance {
   on: (event: 'payment.failed', handler: (response: RazorpayFailure) => void) => void;
 }
 
+/** What Razorpay hands the success handler - sent to /payments/verify to confirm at once. */
+export interface RazorpayProof {
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+}
+
+interface RazorpaySuccessResponse {
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
+}
+
 type RazorpayConstructor = new (
   options: ReturnType<typeof razorpayCheckoutOptions> & {
-    handler: () => void;
+    handler: (response: RazorpaySuccessResponse) => void;
     modal: { ondismiss: () => void; confirm_close: boolean };
   },
 ) => RazorpayInstance;
@@ -45,7 +58,9 @@ function loadCheckout(): Promise<RazorpayConstructor> {
   return loading;
 }
 
-export type CheckoutResult = { kind: 'paid' } | { kind: 'dismissed'; lastError: string | null };
+export type CheckoutResult =
+  | { kind: 'paid'; proof: RazorpayProof | null }
+  | { kind: 'dismissed'; lastError: string | null };
 
 /**
  * Opens Razorpay Checkout and resolves when the customer finishes: `paid` means Razorpay reported
@@ -60,7 +75,18 @@ export async function openRazorpayCheckout(
     let lastError: string | null = null;
     const checkout = new Razorpay({
       ...options,
-      handler: () => resolve({ kind: 'paid' }),
+      handler: (response) =>
+        resolve({
+          kind: 'paid',
+          proof:
+            response?.razorpay_order_id && response.razorpay_payment_id && response.razorpay_signature
+              ? {
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                }
+              : null,
+        }),
       modal: { ondismiss: () => resolve({ kind: 'dismissed', lastError }), confirm_close: true },
     });
     checkout.on('payment.failed', (response) => {

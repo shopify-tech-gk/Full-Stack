@@ -7,6 +7,7 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { CartToast } from '@/components/cart/CartToast';
 import { INTRO_SKIP_SCRIPT, IntroSplash } from '@/components/layout/IntroSplash';
 import { StoreChrome } from '@/components/layout/StoreChrome';
+import { TermsGate } from '@/components/layout/TermsGate';
 import './globals.css';
 
 // Self-hosted (SIL OFL, see src/fonts/*OFL.txt): Next 14's Google Fonts loader fails to parse Outfit's CSS.
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="pb-[calc(79px+env(safe-area-inset-bottom))] lg:pb-0">
         <StoreChrome>
           <IntroSplash />
+          <TermsGate />
         </StoreChrome>
         <a
           href="#content"

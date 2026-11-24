@@ -47,20 +47,38 @@ export type AccountSection =
   | 'reviews'
   | 'coupons'
   | 'notifications'
+  | 'wallet'
+  | 'returns'
+  | 'help'
+  | 'devices'
+  | 'privacy'
   | 'logout';
 
-export const ACCOUNT_NAV: readonly { key: AccountSection; label: string; href: string }[] = [
-  { key: 'dashboard', label: 'Dashboard', href: ROUTES.account },
-  { key: 'orders', label: 'Orders', href: ROUTES.orders },
-  { key: 'notifications', label: 'Notifications', href: ROUTES.notifications },
-  { key: 'track', label: 'Track Order', href: ROUTES.trackOrder },
-  { key: 'addresses', label: 'Addresses', href: ROUTES.addresses },
-  { key: 'account', label: 'Account details', href: ROUTES.accountDetails },
-  { key: 'wishlist', label: 'Wishlist', href: ROUTES.wishlist },
-  { key: 'recent', label: 'Recently viewed', href: ROUTES.recentlyViewed },
-  { key: 'reviews', label: 'My reviews', href: ROUTES.myReviews },
-  { key: 'coupons', label: 'Coupons', href: ROUTES.coupons },
-  { key: 'logout', label: 'Log out', href: ROUTES.account },
+/** Website account menu groups (headings over the side menu). */
+export type AccountNavGroup = 'Shopping' | 'Money' | 'Account' | 'Support';
+
+export const ACCOUNT_NAV: readonly {
+  key: AccountSection;
+  label: string;
+  href: string;
+  group: AccountNavGroup;
+}[] = [
+  { key: 'dashboard', label: 'Dashboard', href: ROUTES.account, group: 'Shopping' },
+  { key: 'orders', label: 'Orders', href: ROUTES.orders, group: 'Shopping' },
+  { key: 'returns', label: 'Returns & refunds', href: ROUTES.returns, group: 'Shopping' },
+  { key: 'track', label: 'Track Order', href: ROUTES.trackOrder, group: 'Shopping' },
+  { key: 'wishlist', label: 'Wishlist', href: ROUTES.wishlist, group: 'Shopping' },
+  { key: 'recent', label: 'Recently viewed', href: ROUTES.recentlyViewed, group: 'Shopping' },
+  { key: 'reviews', label: 'My reviews', href: ROUTES.myReviews, group: 'Shopping' },
+  { key: 'wallet', label: 'YouMart Wallet', href: ROUTES.wallet, group: 'Money' },
+  { key: 'coupons', label: 'Coupons', href: ROUTES.coupons, group: 'Money' },
+  { key: 'account', label: 'Account details', href: ROUTES.accountDetails, group: 'Account' },
+  { key: 'addresses', label: 'Addresses', href: ROUTES.addresses, group: 'Account' },
+  { key: 'notifications', label: 'Notifications', href: ROUTES.notifications, group: 'Account' },
+  { key: 'devices', label: 'Signed-in devices', href: ROUTES.devices, group: 'Account' },
+  { key: 'privacy', label: 'Privacy & account', href: ROUTES.privacy, group: 'Account' },
+  { key: 'help', label: 'Help Center', href: ROUTES.help, group: 'Support' },
+  { key: 'logout', label: 'Log out', href: ROUTES.account, group: 'Support' },
 ];
 
 // --- Phone / OTP (auth-service: E.164 phone, 6-digit code) ---
@@ -385,3 +403,9 @@ export function orderEventLabel(status: OrderView['status']): string {
     CANCELLED: 'Order cancelled',
   }[status];
 }
+
+/**
+ * The version of the Terms + Privacy Policy customers accept (W9: YouMart Wallet terms) - on the
+ * app's first launch and the website's first visit. Bump it when the Terms change to ask again.
+ */
+export const TERMS_VERSION = '2026-10-13';

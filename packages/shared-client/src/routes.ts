@@ -18,6 +18,12 @@ export const ROUTES = {
   coupons: '/account/coupons',
   /** v1.15: the inbox (bell). */
   notifications: '/account/notifications',
+  /** W9 on the website: wallet, returns, help requests, devices, privacy & account deletion. */
+  wallet: '/account/wallet',
+  returns: '/account/returns',
+  help: '/account/help',
+  devices: '/account/devices',
+  privacy: '/account/privacy',
   trackOrder: '/track-order',
   cancelOrder: '/cancel-order',
   orderNotifications: '/order-notifications',

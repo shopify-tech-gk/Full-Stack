@@ -29,6 +29,8 @@ import {
   type Money,
   type OrderView,
   type PaymentMethodId,
+  type WalletSummary,
+  walletSplit,
 } from '@youmart/shared-client';
 import { LogoutButton } from '@/components/account/LogoutButton';
 import { Notice } from '@/components/account/Notice';
@@ -47,6 +49,7 @@ import { PLACING_STEP_MS, PlacingOrderModal, atLeast } from './PlacingOrderModal
 import { OrderPanel, OrderReviewTable, type ReviewRow } from './OrderReview';
 import { OrderReceived } from './OrderReceived';
 import { PaymentMethods } from './PaymentMethods';
+import { WalletOption } from './WalletOption';
 
 type Phase =
   | { step: 'review' }
@@ -141,6 +144,9 @@ export function CheckoutView() {
   // Until we know whether this customer has an unpaid order from before a reload.
   const [resumeChecked, setResumeChecked] = useState(false);
   const polling = useRef<AbortController | null>(null);
+  // W9: the YouMart Wallet - on by default when it has money (wallet first, Razorpay for any rest).
+  const [wallet, setWallet] = useState<WalletSummary | null>(null);
+  const [useWallet, setUseWallet] = useState(true);
 
   const addressId =
     chosenId && addresses?.some((a) => a.id === chosenId)
@@ -153,6 +159,21 @@ export function CheckoutView() {
   const withShipping = (amount: Money) => fromPaise(toPaise(amount) + toPaise(shipping));
 
   useEffect(() => () => polling.current?.abort(), []);
+
+  useEffect(() => {
+    if (!userId) {
+      setWallet(null);
+      return;
+    }
+    let active = true;
+    api.wallet
+      .get()
+      .then((w) => active && setWallet(w))
+      .catch(() => active && setWallet(null));
+    return () => {
+      active = false;
+    };
+  }, [userId]);
 
   // Quantities can change on this page: an applied coupon is checked again against the new lines
   // (after a short pause, so the cart update reaches the server first). If it no longer applies it
@@ -194,6 +215,10 @@ export function CheckoutView() {
   const finish = (order: OrderView) => {
     forgetPendingOrder();
     reloadCart();
+    api.wallet
+      .get()
+      .then(setWallet)
+      .catch(() => undefined);
     setMessage(null);
     setPhase({ step: 'done', order, placedAt: new Date().toISOString() });
     window.scrollTo({ top: 0 });
@@ -231,8 +256,21 @@ export function CheckoutView() {
     setMessage(null);
     setPhase({ step: 'paying', order });
     let result;
+    const withWallet = walletOn;
     try {
-      const razorpayOrder = await api.payments.createRazorpayOrder(order.orderId);
+      let razorpayOrder;
+      if (withWallet) {
+        // Wallet first: the server takes what the wallet can cover and returns a Razorpay order
+        // for any rest (none when the wallet pays it all - the order is confirmed at once).
+        const paid = await api.payments.pay(order.orderId, true, 'ONLINE');
+        if (paid.status === 'PAID' || !paid.razorpay) {
+          await confirm(order);
+          return;
+        }
+        razorpayOrder = paid.razorpay;
+      } else {
+        razorpayOrder = await api.payments.createRazorpayOrder(order.orderId);
+      }
       const prefill = {
         name: session.user?.name ?? order.shippingAddress.fullName,
         email: session.user?.email ?? undefined,
@@ -368,10 +406,25 @@ export function CheckoutView() {
   }, [session.status, userId]);
 
   const order = 'order' in phase ? phase.order : null;
+  const payTotal = (
+    order
+      ? order.grandTotal
+      : coupon
+        ? withShipping(coupon.total)
+        : cart
+          ? cartTotals(cart, shipping).total
+          : '0.00'
+  ) as Money;
+  const codChosen = payment === 'cod' && codAvailable(payTotal);
+  const walletOn = Boolean(wallet && useWallet && wallet.available !== '0.00' && !codChosen);
   const placingSteps = [
     'Checking prices & stock',
     ...(coupon ? [`Applying ${coupon.coupon.code}`] : []),
-    payment === 'cod' ? 'Confirming your Cash on Delivery order' : 'Preparing secure payment',
+    payment === 'cod'
+      ? 'Confirming your Cash on Delivery order'
+      : walletOn
+        ? 'Applying your YouMart Wallet'
+        : 'Preparing secure payment',
   ];
   const cartEmpty = !cart || cart.items.length === 0;
 
@@ -461,7 +514,11 @@ export function CheckoutView() {
           ) : (
             <>
               <Lock aria-hidden="true" className="size-[16px]" />
-              Pay {formatMoney(order.grandTotal)}
+              {walletOn && wallet
+                ? walletSplit(order.grandTotal, wallet.available).online === '0.00'
+                  ? `Pay ${formatMoney(order.grandTotal)} from wallet`
+                  : `Pay ${formatMoney(walletSplit(order.grandTotal, wallet.available).online)}`
+                : `Pay ${formatMoney(order.grandTotal)}`}
             </>
           )}
         </button>
@@ -487,6 +544,8 @@ export function CheckoutView() {
           </>
         ) : payment === 'cod' && codAvailable(totals.total) ? (
           'Place order - Cash on Delivery'
+        ) : walletOn && wallet && walletSplit(totals.total, wallet.available).online === '0.00' ? (
+          'Place order - pay with wallet'
         ) : (
           'Place order'
         )}
@@ -616,6 +675,16 @@ export function CheckoutView() {
                   disabled={busy}
                 />
               )}
+              {wallet && loggedIn ? (
+                <WalletOption
+                  wallet={wallet}
+                  total={totals.total}
+                  on={useWallet}
+                  onChange={setUseWallet}
+                  disabled={busy || Boolean(order)}
+                  cod={codChosen}
+                />
+              ) : null}
               <PaymentMethods
                 selected={payment === 'cod' && !codAvailable(totals.total) ? 'razorpay' : payment}
                 onSelect={setPayment}
