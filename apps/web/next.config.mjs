@@ -1,6 +1,19 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Production Docker image (deploy/web.Dockerfile): a self-contained server with only the files
+  // it needs, traced from the monorepo root so the shared packages are included.
+  ...(process.env.NEXT_STANDALONE === '1'
+    ? {
+        output: 'standalone',
+        experimental: { outputFileTracingRoot: path.join(here, '../..') },
+      }
+    : {}),
   poweredByHeader: false,
   // Shared logic is shipped as TypeScript source (no build step) - Next compiles it.
   transpilePackages: ['@youmart/shared-client'],

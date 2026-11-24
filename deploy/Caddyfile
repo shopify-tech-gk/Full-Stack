@@ -1,0 +1,44 @@
+# HTTPS entry point. Cloudflare sits in front (proxied DNS, SSL mode "Full (strict)") and the
+# server's firewall only lets Cloudflare reach ports 80/443 - so the visitor's address that
+# Cloudflare puts in CF-Connecting-IP can be trusted and is handed to the gateway.
+#
+# Certificate: a Cloudflare Origin Certificate (free, 15 years) saved on the server as
+# /opt/youmart/certs/origin.pem and origin.key (deploy/README.md, step 6).
+
+{
+	# Cloudflare connects over HTTPS with the origin certificate; no public ACME needed.
+	auto_https disable_certs
+}
+
+{$SITE_DOMAIN}, www.{$SITE_DOMAIN} {
+	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+
+	encode zstd gzip
+
+	# www -> apex
+	@www host www.{$SITE_DOMAIN}
+	redir @www https://{$SITE_DOMAIN}{uri} permanent
+
+	# API (also the Razorpay webhook and the app's API) -> gateway.
+	handle /api/* {
+		reverse_proxy gateway:4000 {
+			header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+			header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+		}
+	}
+
+	# Everything else -> the Next.js website.
+	handle {
+		reverse_proxy web:3000 {
+			header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+			header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

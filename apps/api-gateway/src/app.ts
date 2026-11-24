@@ -13,6 +13,13 @@ import { registerProxyRoutes } from './proxyRoutes';
 export function createApp(): Express {
   const app = express();
 
+  // Behind a reverse proxy (production: Cloudflare -> Caddy -> gateway) every request arrives from
+  // the proxy's address, so the rate limiter below would give ALL customers one shared limit.
+  // Trust that many proxy hops so req.ip is the real client. 0 (default) = nothing in front
+  // (local dev, where a client could otherwise fake X-Forwarded-For); production sets 1 (Caddy,
+  // which puts Cloudflare's CF-Connecting-IP into X-Forwarded-For).
+  app.set('trust proxy', Number(process.env.GATEWAY_TRUSTED_PROXY_HOPS ?? 0));
+
   app.disable('x-powered-by');
   app.use(helmet());
 
